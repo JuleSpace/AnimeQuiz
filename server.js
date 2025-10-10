@@ -25,15 +25,16 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Connexion MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/animequiz', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
+const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URL || 'mongodb://localhost:27017/animequiz';
+console.log('🔗 Tentative de connexion MongoDB:', mongoUri.replace(/\/\/.*@/, '//***:***@')); // Masquer les credentials
+
+mongoose.connect(mongoUri)
 .then(() => {
   console.log('✅ Connexion MongoDB réussie');
 })
 .catch((error) => {
-  console.error('❌ Erreur connexion MongoDB:', error);
+  console.error('❌ Erreur connexion MongoDB:', error.message);
+  console.log('🔍 Vérifiez que la variable MONGODB_URI est correctement configurée');
   // Ne pas faire crash l'app si MongoDB n'est pas disponible
 });
 
@@ -340,7 +341,15 @@ function calculateFinalScores(players, questionIndex) {
   return scores;
 }
 
+// Debug des variables d'environnement
+console.log('🔧 Variables d\'environnement:');
+console.log('- NODE_ENV:', process.env.NODE_ENV || 'non définie');
+console.log('- PORT:', process.env.PORT || 'non définie');
+console.log('- CLIENT_URL:', process.env.CLIENT_URL || 'non définie');
+console.log('- MONGODB_URI:', process.env.MONGODB_URI ? 'définie' : 'non définie');
+console.log('- MONGO_URL:', process.env.MONGO_URL ? 'définie' : 'non définie');
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`Serveur démarré sur le port ${PORT}`);
+  console.log(`🚀 Serveur démarré sur le port ${PORT}`);
 });
