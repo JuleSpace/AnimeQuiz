@@ -28,6 +28,13 @@ if (process.env.NODE_ENV === 'production') {
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/animequiz', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+})
+.then(() => {
+  console.log('✅ Connexion MongoDB réussie');
+})
+.catch((error) => {
+  console.error('❌ Erreur connexion MongoDB:', error);
+  // Ne pas faire crash l'app si MongoDB n'est pas disponible
 });
 
 // Modèles
@@ -71,6 +78,16 @@ const GameSession = mongoose.model('GameSession', GameSessionSchema);
 // Variables globales pour gérer les lobbies
 const lobbies = new Map();
 const players = new Map();
+
+// Route de healthcheck
+app.get('/health', (req, res) => {
+  const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  res.status(200).json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    database: dbStatus
+  });
+});
 
 // Routes API
 app.get('/api/rooms', async (req, res) => {
