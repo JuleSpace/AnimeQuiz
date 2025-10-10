@@ -20,6 +20,7 @@ function App() {
   const [rooms, setRooms] = useState([]);
   const [adminAuth, setAdminAuth] = useState({ username: '', password: '' });
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [globalVolume, setGlobalVolume] = useState(50);
 
   useEffect(() => {
     // Charger les salles disponibles
@@ -329,6 +330,70 @@ function App() {
 
   return (
     <div className="App">
+      {/* Contrôle de volume global */}
+      {currentView !== 'admin' && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          background: 'rgba(0,0,0,0.8)',
+          padding: '10px 15px',
+          borderRadius: '25px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          zIndex: 1000,
+          color: 'white'
+        }}>
+          <span style={{ fontSize: '1.2rem' }}>🔊</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={globalVolume}
+            onChange={(e) => {
+              const volume = parseInt(e.target.value);
+              setGlobalVolume(volume);
+              
+              // Contrôler le volume global
+              try {
+                if (!window.audioContextInstance) {
+                  const AudioContext = window.AudioContext || window.webkitAudioContext;
+                  window.audioContextInstance = new AudioContext();
+                }
+                
+                if (!window.globalVolumeGainNode) {
+                  window.globalVolumeGainNode = window.audioContextInstance.createGain();
+                  window.globalVolumeGainNode.connect(window.audioContextInstance.destination);
+                }
+                
+                window.globalVolumeGainNode.gain.value = volume / 100;
+                
+                // Contrôler tous les éléments audio/vidéo
+                const audioElements = document.querySelectorAll('audio, video, iframe');
+                audioElements.forEach(element => {
+                  if (element.volume !== undefined) {
+                    element.volume = volume / 100;
+                  }
+                });
+                
+              } catch (error) {
+                console.log('Contrôle de volume global non disponible:', error);
+              }
+            }}
+            style={{
+              width: '80px',
+              height: '4px',
+              background: 'rgba(255,255,255,0.3)',
+              outline: 'none',
+              borderRadius: '2px',
+              cursor: 'pointer'
+            }}
+          />
+          <span style={{ fontSize: '0.9rem', minWidth: '35px' }}>{globalVolume}%</span>
+        </div>
+      )}
+      
       {error && (
         <div className="error" style={{ margin: '20px auto', maxWidth: '600px' }}>
           {error}

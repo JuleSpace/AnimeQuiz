@@ -129,11 +129,11 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                     <strong>Lecteur Spotify intégré</strong>
                   </div>
                   
-                  {/* Lecteur Spotify intégré */}
+                  {/* Lecteur Spotify intégré avec informations masquées */}
                   <div style={{ 
                     position: 'relative',
                     width: '100%',
-                    height: '80px',
+                    height: '120px',
                     background: 'rgba(29, 185, 84, 0.1)',
                     borderRadius: '10px',
                     overflow: 'hidden'
@@ -143,16 +143,121 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                       src={`https://open.spotify.com/embed/track/${extractSpotifyId(gameData.musicLinks[currentQuestion])}?utm_source=generator&theme=0`}
                       style={{
                         position: 'absolute',
-                        top: '0',
+                        top: '-40px', // Masquer les informations en haut
                         left: '0',
                         width: '100%',
-                        height: '80px',
+                        height: '200px', // Plus grand pour avoir les contrôles
                         border: 'none',
                         borderRadius: '10px'
                       }}
                       allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
                       loading="lazy"
                     />
+                    
+                    {/* Masque pour cacher les informations */}
+                    <div style={{
+                      position: 'absolute',
+                      top: '0',
+                      left: '0',
+                      right: '0',
+                      height: '40px',
+                      background: 'rgba(0,0,0,0.9)',
+                      borderRadius: '10px 10px 0 0'
+                    }}></div>
+                    
+                    {/* Interface audio personnalisée */}
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '0',
+                      left: '0',
+                      right: '0',
+                      height: '80px',
+                      background: 'linear-gradient(45deg, #1db954, #1ed760)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      color: 'white',
+                      padding: '0 20px',
+                      borderRadius: '0 0 10px 10px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', marginRight: '15px' }}>🎵</div>
+                        <div>
+                          <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>Audio Spotify</div>
+                          <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Informations masquées</div>
+                        </div>
+                      </div>
+                      
+                      {/* Contrôles audio personnalisés */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <button
+                          onClick={() => {
+                            // Trouver l'iframe Spotify et déclencher play
+                            const iframe = document.querySelector('iframe[title="Lecteur Spotify"]');
+                            if (iframe && iframe.contentWindow) {
+                              iframe.contentWindow.postMessage('{"event":"command","func":"togglePlay"}', '*');
+                            }
+                          }}
+                          style={{
+                            background: 'rgba(255,255,255,0.2)',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            color: 'white',
+                            fontSize: '1.2rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          ▶️
+                        </button>
+                        
+                        {/* Contrôle de volume */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '1rem' }}>🔊</span>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            defaultValue="50"
+                            onChange={(e) => {
+                              const volume = parseInt(e.target.value) / 100;
+                              
+                              // Contrôler le volume via Web Audio API
+                              try {
+                                if (!window.audioContextInstance) {
+                                  const AudioContext = window.AudioContext || window.webkitAudioContext;
+                                  window.audioContextInstance = new AudioContext();
+                                }
+                                
+                                if (!window.spotifyVolumeGainNode) {
+                                  window.spotifyVolumeGainNode = window.audioContextInstance.createGain();
+                                  window.spotifyVolumeGainNode.connect(window.audioContextInstance.destination);
+                                }
+                                
+                                window.spotifyVolumeGainNode.gain.value = volume;
+                                
+                                console.log('Volume Spotify ajusté à:', volume * 100 + '%');
+                                
+                              } catch (error) {
+                                console.log('Contrôle de volume Spotify non disponible:', error);
+                              }
+                            }}
+                            style={{
+                              width: '60px',
+                              height: '4px',
+                              background: 'rgba(255,255,255,0.3)',
+                              outline: 'none',
+                              borderRadius: '2px',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   
                   <div style={{ marginTop: '15px', fontSize: '0.8rem', opacity: 0.8 }}>
