@@ -130,6 +130,21 @@ app.delete('/api/rooms/:id', async (req, res) => {
   }
 });
 
+// Route de test pour vérifier que l'app fonctionne
+app.get('/', (req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    // En production, servir les fichiers statiques
+    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+  } else {
+    // En développement, message simple
+    res.json({ 
+      message: 'AnimeQuiz Server is running!', 
+      mode: 'development',
+      frontend: 'http://localhost:3000'
+    });
+  }
+});
+
 // Servir l'application React pour toutes les autres routes en production
 if (process.env.NODE_ENV === 'production') {
   app.get('*', (req, res) => {
@@ -348,6 +363,17 @@ console.log('- PORT:', process.env.PORT || 'non définie');
 console.log('- CLIENT_URL:', process.env.CLIENT_URL || 'non définie');
 console.log('- MONGODB_URI:', process.env.MONGODB_URI ? 'définie' : 'non définie');
 console.log('- MONGO_URL:', process.env.MONGO_URL ? 'définie' : 'non définie');
+
+// Vérifier que le dossier build existe en production
+if (process.env.NODE_ENV === 'production') {
+  const fs = require('fs');
+  const buildPath = path.join(__dirname, 'client/build');
+  if (fs.existsSync(buildPath)) {
+    console.log('✅ Dossier client/build trouvé');
+  } else {
+    console.log('❌ Dossier client/build manquant - le build frontend a échoué');
+  }
+}
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {

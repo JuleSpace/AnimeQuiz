@@ -1,12 +1,13 @@
 node_modules
 client/node_modules
-client/build
 .git
 .gitignore
 README.md
 DEPLOYMENT.md
 QUICK_DEPLOY.md
 DEPLOY_STEPS.md
+RAILWAY_TROUBLESHOOTING.md
+RAILWAY_ENV_SETUP.md
 .env
 env.example
 railway-vars.txt
