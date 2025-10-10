@@ -160,7 +160,7 @@ function App() {
             <div className="card">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '20px' }}>
               <img 
-                src="https://media1.tenor.com/m/POnOCAJtFBgAAAAC/pepe-music-pepe-listening-to-music.gif" 
+                src="https://media.tenor.com/PxudDH41WKcAAAAj/pepe-music-pepe-listening-to-music.gif" 
                 alt="Pepe Music"
                 style={{ width: '60px', height: '60px', borderRadius: '10px' }}
               />
@@ -168,7 +168,7 @@ function App() {
                 🎵 Music Quiz 🎵
               </h1>
               <img 
-                src="https://media1.tenor.com/m/t3GvxXPjPvEAAAAC/kirby-dancing-bop.gif" 
+                src="https://media.tenor.com/-oEgnxYtci4AAAAj/kirby-dancing-bop.gif" 
                 alt="Kirby Dancing"
                 style={{ width: '60px', height: '60px', borderRadius: '10px' }}
               />
@@ -178,7 +178,7 @@ function App() {
             </p>
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
               <img 
-                src="https://media1.tenor.com/m/HHdvM9b3BwAAAAAC/bully-soccer.gif" 
+                src="https://media1.tenor.com/m/8o5zzcKRkRAAAAAC/bully-soccer.gif" 
                 alt="Bully"
                 style={{ width: '80px', height: '64px', borderRadius: '10px' }}
               />
