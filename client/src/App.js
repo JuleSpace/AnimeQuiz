@@ -165,7 +165,7 @@ function App() {
                 style={{ width: '60px', height: '60px', borderRadius: '10px' }}
               />
               <h1 style={{ fontSize: '2.5rem', margin: 0 }}>
-                🎵 Music Quiz 🎵
+                Music Quiz
               </h1>
               <img 
                 src="https://media.tenor.com/-oEgnxYtci4AAAAj/kirby-dancing-bop.gif" 
@@ -203,7 +203,7 @@ function App() {
                 ) : (
                   <div style={{ 
                     display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
                     gap: '20px', 
                     marginBottom: '30px' 
                   }}>
@@ -263,7 +263,8 @@ function App() {
                             margin: '0 0 15px 0', 
                             opacity: 0.9,
                             fontSize: '0.9rem',
-                            lineHeight: '1.4'
+                            lineHeight: '1.4',
+                            textAlign: 'center'
                           }}>
                             {room.description}
                           </p>
@@ -391,7 +392,24 @@ function App() {
                 <button onClick={handleAdminAuth} className="btn btn-success">
                   Se connecter
                 </button>
-                <button onClick={() => setCurrentView('menu')} className="btn">
+                <button 
+                  onClick={() => setCurrentView('menu')} 
+                  className="btn"
+                  style={{ 
+                    background: 'linear-gradient(135deg, #ff6b6b, #c92a2a)',
+                    border: '2px solid rgba(255, 107, 107, 0.5)',
+                    boxShadow: '0 4px 15px rgba(201, 42, 42, 0.3)',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(201, 42, 42, 0.5)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(201, 42, 42, 0.3)';
+                  }}
+                >
                   Retour
                 </button>
               </div>

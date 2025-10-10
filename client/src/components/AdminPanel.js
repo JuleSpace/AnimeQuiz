@@ -125,7 +125,25 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
           🛠️ Panneau Administrateur
         </h2>
 
-        <button onClick={onBack} className="btn" style={{ marginBottom: '20px' }}>
+        <button 
+          onClick={onBack} 
+          className="btn" 
+          style={{ 
+            marginBottom: '20px',
+            background: 'linear-gradient(135deg, #ffd93d, #ff9800)',
+            border: '2px solid rgba(255, 217, 61, 0.5)',
+            boxShadow: '0 4px 15px rgba(255, 152, 0, 0.3)',
+            transition: 'all 0.3s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.05)';
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(255, 152, 0, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 152, 0, 0.3)';
+          }}
+        >
           ← Retour au menu
         </button>
 
@@ -181,7 +199,22 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                       <button
                         onClick={() => setSelectedRoom(selectedRoom === room._id ? null : room._id)}
                         className="btn"
-                        style={{ padding: '5px 15px', fontSize: '0.9rem' }}
+                        style={{ 
+                          padding: '5px 15px', 
+                          fontSize: '0.9rem',
+                          background: 'linear-gradient(135deg, #ffd93d, #ff9800)',
+                          border: '2px solid rgba(255, 217, 61, 0.5)',
+                          boxShadow: '0 2px 10px rgba(255, 152, 0, 0.3)',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.05)';
+                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 152, 0, 0.5)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)';
+                          e.currentTarget.style.boxShadow = '0 2px 10px rgba(255, 152, 0, 0.3)';
+                        }}
                       >
                         {selectedRoom === room._id ? 'Masquer' : 'Modifier'}
                       </button>
