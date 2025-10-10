@@ -117,6 +117,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                     overflow: 'hidden'
                   }}>
                     <iframe
+                      title="Lecteur audio YouTube masqué"
                       src={`https://www.youtube.com/embed/${extractYouTubeId(gameData.musicLinks[currentQuestion])}?autoplay=0&controls=1&showinfo=0&rel=0&modestbranding=1&fs=0&cc_load_policy=0&iv_load_policy=3&disablekb=1`}
                       style={{
                         position: 'absolute',

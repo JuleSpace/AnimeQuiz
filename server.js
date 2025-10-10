@@ -327,44 +327,41 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Stocker les corrections du joueur
+    // Stocker les corrections du chef
     if (!player.corrections) player.corrections = {};
     player.corrections[questionIndex] = corrections;
 
-    // Vérifier si tous les joueurs ont corrigé
-    const allCorrected = lobby.players.every(p => p.corrections && p.corrections[questionIndex]);
-    
-    if (allCorrected) {
-      // Calculer les scores finaux pour cette question
-      const finalScores = calculateFinalScores(lobby.players, questionIndex);
+    // Le chef a corrigé, on peut passer à la suite
+    // Calculer les scores finaux pour cette question
+    const finalScores = calculateFinalScores(lobby.players, questionIndex, corrections);
       
-      // Mettre à jour les scores
-      lobby.players.forEach(p => {
-        const score = finalScores[p.id] || 0;
-        p.score += score;
-        if (!p.answers[questionIndex]) p.answers[questionIndex] = {};
-        p.answers[questionIndex].points = score;
+    // Mettre à jour les scores
+    lobby.players.forEach(p => {
+      const score = finalScores[p.id] || 0;
+      p.score = (p.score || 0) + score;
+      if (!p.answers[questionIndex]) p.answers[questionIndex] = {};
+      p.answers[questionIndex].points = score;
+    });
+
+    // Passer à la question suivante ou terminer
+    lobby.currentQuestion++;
+      
+    if (lobby.currentQuestion >= lobby.musicLinks.length) {
+      // Fin du jeu
+      const finalResults = lobby.players.map(p => ({
+        username: p.username,
+        totalScore: p.score,
+        answers: p.answers
+      }));
+
+      io.to(player.roomId).emit('game-ended', { results: finalResults });
+    } else {
+      // Question suivante - envoyer à tous les joueurs
+      io.to(player.roomId).emit('next-question', {
+        questionIndex: lobby.currentQuestion,
+        players: lobby.players,
+        totalQuestions: lobby.musicLinks.length
       });
-
-      // Passer à la question suivante ou terminer
-      lobby.currentQuestion++;
-      
-      if (lobby.currentQuestion >= lobby.musicLinks.length) {
-        // Fin du jeu
-        const finalResults = lobby.players.map(p => ({
-          username: p.username,
-          totalScore: p.score,
-          answers: p.answers
-        }));
-
-        io.to(player.roomId).emit('game-ended', { results: finalResults });
-      } else {
-        // Question suivante
-        io.to(player.roomId).emit('next-question', {
-          questionIndex: lobby.currentQuestion,
-          totalQuestions: lobby.musicLinks.length
-        });
-      }
     }
   });
 
@@ -388,23 +385,23 @@ io.on('connection', (socket) => {
 });
 
 // Fonction pour calculer les scores finaux
-function calculateFinalScores(players, questionIndex) {
+function calculateFinalScores(players, questionIndex, chefCorrections) {
   const scores = {};
   
-  // Pour chaque joueur, calculer son score basé sur les corrections des autres
+  // Le chef ne gagne pas de points en corrigeant
+  // Les autres joueurs gagnent des points selon les corrections du chef
   players.forEach(player => {
-    if (!player.corrections || !player.corrections[questionIndex]) return;
-    
-    const corrections = player.corrections[questionIndex];
-    let totalPoints = 0;
-    
-    Object.keys(corrections).forEach(playerId => {
-      if (corrections[playerId]) {
-        totalPoints += 10; // 10 points par bonne correction
+    if (player.id === players[0].id) {
+      // Le chef (premier joueur) ne gagne pas de points
+      scores[player.id] = 0;
+    } else {
+      // Vérifier si ce joueur a une bonne réponse selon le chef
+      if (chefCorrections && chefCorrections[player.id]) {
+        scores[player.id] = 10; // 10 points pour une bonne réponse
+      } else {
+        scores[player.id] = 0; // 0 points pour une mauvaise réponse
       }
-    });
-    
-    scores[player.id] = totalPoints;
+    }
   });
   
   return scores;

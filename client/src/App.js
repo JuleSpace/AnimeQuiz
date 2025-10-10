@@ -43,7 +43,12 @@ function App() {
     });
 
     socket.on('next-question', (data) => {
-      setGameData(prev => ({ ...prev, currentQuestion: data.questionIndex }));
+      setGameData(prev => ({ 
+        ...prev, 
+        currentQuestion: data.questionIndex,
+        players: data.players,
+        isCorrectionPhase: false
+      }));
     });
 
     socket.on('start-correction', (data) => {
