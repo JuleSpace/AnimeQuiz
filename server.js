@@ -358,6 +358,16 @@ io.on('connection', (socket) => {
       p.answers[questionIndex].points = score;
     });
 
+    // Envoyer les scores mis à jour à tous les joueurs
+    io.to(player.roomId).emit('scores-updated', {
+      players: lobby.players.map(p => ({
+        id: p.id,
+        username: p.username,
+        score: p.score,
+        pointsThisRound: finalScores[p.id] || 0
+      }))
+    });
+
     // Passer à la question suivante ou terminer
     lobby.currentQuestion++;
       

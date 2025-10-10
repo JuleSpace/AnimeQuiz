@@ -12,8 +12,14 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
     if (gameData) {
       setCurrentQuestion(gameData.currentQuestion || 0);
       setIsCorrectionPhase(gameData.isCorrectionPhase || false);
+      
+      // Réinitialiser hasAnswered quand on passe à une nouvelle question
+      if (gameData.currentQuestion !== currentQuestion) {
+        setHasAnswered(false);
+        setAnswer('');
+      }
     }
-  }, [gameData]);
+  }, [gameData, currentQuestion]);
 
   useEffect(() => {
     // Récupérer l'URL audio et la convertir si nécessaire
@@ -207,6 +213,32 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                         >
                           ⏸️
                         </button>
+                        
+                        {/* Contrôle de volume */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '1rem' }}>🔊</span>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            defaultValue="50"
+                            onChange={(e) => {
+                              const iframe = document.querySelector('iframe[title="Lecteur audio YouTube masqué"]');
+                              if (iframe && iframe.contentWindow) {
+                                const volume = parseInt(e.target.value);
+                                iframe.contentWindow.postMessage(`{"event":"command","func":"setVolume","args":"${volume}"}`, '*');
+                              }
+                            }}
+                            style={{
+                              width: '60px',
+                              height: '4px',
+                              background: 'rgba(255,255,255,0.3)',
+                              outline: 'none',
+                              borderRadius: '2px',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

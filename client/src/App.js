@@ -61,6 +61,16 @@ function App() {
       }));
     });
 
+    socket.on('scores-updated', (data) => {
+      setGameData(prev => ({
+        ...prev,
+        players: prev.players.map(player => {
+          const updatedPlayer = data.players.find(p => p.id === player.id);
+          return updatedPlayer ? { ...player, score: updatedPlayer.score } : player;
+        })
+      }));
+    });
+
     socket.on('game-ended', (data) => {
       setGameData(prev => ({ ...prev, results: data.results }));
       setCurrentView('results');
