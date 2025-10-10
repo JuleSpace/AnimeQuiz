@@ -3,6 +3,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -17,6 +18,11 @@ const io = socketIo(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Servir les fichiers statiques du frontend en production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'client/build')));
+}
 
 // Connexion MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/animequiz', {
@@ -105,6 +111,13 @@ app.delete('/api/rooms/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Servir l'application React pour toutes les autres routes en production
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'client/build', 'index.html'));
+  });
+}
 
 // WebSocket pour les lobbies et le jeu
 io.on('connection', (socket) => {

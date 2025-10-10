@@ -1,0 +1,14 @@
+node_modules
+client/node_modules
+client/build
+.git
+.gitignore
+README.md
+DEPLOYMENT.md
+QUICK_DEPLOY.md
+DEPLOY_STEPS.md
+.env
+env.example
+railway-vars.txt
+*.log
+.DS_Store
