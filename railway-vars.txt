@@ -1,0 +1,12 @@
+# Variables d'environnement pour Railway
+# Copier ces variables dans l'onglet "Variables" de votre service web Railway
+
+MONGODB_URI=mongodb://mongo:IbeSxXaAWBaHYfYprRddXQiXaKntEJOj@mongodb.railway.internal:27017
+CLIENT_URL=https://votre-app.railway.app
+NODE_ENV=production
+PORT=5000
+
+# Instructions :
+# 1. Remplacer "votre-app.railway.app" par l'URL réelle de votre app Railway
+# 2. Coller ces variables dans Railway > Service Web > Variables
+# 3. Railway va automatiquement redémarrer avec la nouvelle config
