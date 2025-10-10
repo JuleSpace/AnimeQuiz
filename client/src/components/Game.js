@@ -101,24 +101,56 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                   textAlign: 'center'
                 }}>
                   <div style={{ color: '#ffd700', marginBottom: '15px', fontSize: '1.1rem' }}>
-                    🎵 Conversion YouTube en cours...
+                    🎵 Lecteur Audio YouTube
                   </div>
                   <div style={{ marginBottom: '15px', fontSize: '0.9rem', opacity: 0.9 }}>
-                    <strong>Conversion automatique en MP3</strong>
+                    <strong>Vidéo masquée - Audio uniquement</strong>
                   </div>
+                  
+                  {/* Lecteur YouTube avec vidéo masquée */}
                   <div style={{ 
-                    padding: '20px',
-                    background: 'rgba(255, 255, 255, 0.05)',
+                    position: 'relative',
+                    width: '100%',
+                    height: '80px',
+                    background: 'rgba(0,0,0,0.8)',
                     borderRadius: '10px',
-                    marginBottom: '15px'
+                    overflow: 'hidden'
                   }}>
-                    <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏳</div>
-                    <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-                      Conversion de la vidéo YouTube en fichier audio...
+                    <iframe
+                      src={`https://www.youtube.com/embed/${extractYouTubeId(gameData.musicLinks[currentQuestion])}?autoplay=0&controls=1&showinfo=0&rel=0&modestbranding=1&fs=0&cc_load_policy=0&iv_load_policy=3&disablekb=1`}
+                      style={{
+                        position: 'absolute',
+                        top: '-60px', // Masquer la partie vidéo
+                        left: '0',
+                        width: '100%',
+                        height: '200px', // Plus grand pour avoir les contrôles en bas
+                        border: 'none',
+                        borderRadius: '10px'
+                      }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '0',
+                      left: '0',
+                      right: '0',
+                      height: '80px',
+                      background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '1rem',
+                      fontWeight: 'bold',
+                      borderRadius: '0 0 10px 10px'
+                    }}>
+                      🎧 Contrôles YouTube (vidéo cachée)
                     </div>
                   </div>
-                  <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>
-                    💡 Si la conversion échoue, vous pourrez utiliser le lecteur YouTube intégré
+                  
+                  <div style={{ marginTop: '15px', fontSize: '0.8rem', opacity: 0.8 }}>
+                    💡 La vidéo est masquée, seul l'audio est disponible pour garder la réponse secrète
                   </div>
                 </div>
               )}
@@ -194,9 +226,9 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                     <button 
                       onClick={handleSubmitCorrection}
                       className="btn btn-success"
-                      disabled={Object.keys(corrections).length !== ((gameData.players || []).length - 1)}
+                      disabled={Object.keys(corrections).length === 0}
                     >
-                      Finaliser les corrections
+                      Finaliser les corrections ({Object.keys(corrections).length}/{gameData.players ? gameData.players.length - 1 : 0})
                     </button>
                   </div>
                 </>
