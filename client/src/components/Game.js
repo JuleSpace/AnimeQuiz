@@ -20,15 +20,25 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
     if (gameData && gameData.musicLinks && gameData.musicLinks[currentQuestion]) {
       const link = gameData.musicLinks[currentQuestion];
       
-      // Si c'est un lien YouTube, afficher un message
+      // Si c'est un lien YouTube, essayer d'extraire l'audio
       if (link.includes('youtube.com') || link.includes('youtu.be')) {
-        setAudioUrl(null); // Pas d'URL audio directe
-        console.warn('Lien YouTube détecté, conversion nécessaire:', link);
+        const videoId = extractYouTubeId(link);
+        if (videoId) {
+          // Pour l'instant, on ne peut pas extraire l'audio automatiquement
+          setAudioUrl(null);
+          console.warn('Lien YouTube détecté, extraction audio non implémentée:', link);
+        }
       } else {
         setAudioUrl(link);
       }
     }
   }, [currentQuestion, gameData]);
+
+  const extractYouTubeId = (url) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
 
   const handleSubmitAnswer = () => {
     if (answer.trim()) {
@@ -77,21 +87,36 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                   borderRadius: '10px',
                   textAlign: 'center'
                 }}>
-                  <div style={{ color: '#ffd700', marginBottom: '10px' }}>
-                    🎵 Lien YouTube détecté
+                  <div style={{ color: '#ffd700', marginBottom: '15px', fontSize: '1.1rem' }}>
+                    🎵 Musique YouTube
                   </div>
-                  <div style={{ marginBottom: '15px' }}>
-                    <a 
-                      href={gameData.musicLinks[currentQuestion]} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      style={{ color: '#51cf66', textDecoration: 'underline' }}
-                    >
-                      Ouvrir la vidéo YouTube
-                    </a>
+                  <div style={{ marginBottom: '15px', fontSize: '0.9rem', opacity: 0.9 }}>
+                    <strong>Instructions :</strong>
                   </div>
-                  <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-                    Pour une meilleure expérience, utilisez des liens audio directs (.mp3, .wav)
+                  <div style={{ marginBottom: '15px', fontSize: '0.85rem', opacity: 0.8, textAlign: 'left', maxWidth: '400px', margin: '0 auto 15px auto' }}>
+                    1. Cliquez sur le bouton ci-dessous<br/>
+                    2. Écoutez la musique (sans regarder la vidéo)<br/>
+                    3. Fermez l'onglet et revenez ici<br/>
+                    4. Répondez à la question
+                  </div>
+                  <a 
+                    href={gameData.musicLinks[currentQuestion]} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ 
+                      color: 'white', 
+                      textDecoration: 'none',
+                      background: 'linear-gradient(45deg, #ff6b6b, #ee5a52)',
+                      padding: '12px 24px',
+                      borderRadius: '25px',
+                      display: 'inline-block',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    🎧 Écouter la musique
+                  </a>
+                  <div style={{ marginTop: '15px', fontSize: '0.8rem', opacity: 0.7 }}>
+                    ⚠️ Ne regardez pas la vidéo, écoutez seulement l'audio !
                   </div>
                 </div>
               )}

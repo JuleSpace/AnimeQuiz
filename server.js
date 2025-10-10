@@ -4,6 +4,7 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
+const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
@@ -130,6 +131,23 @@ app.delete('/api/rooms/:id', async (req, res) => {
   }
 });
 
+// Route pour extraire l'audio YouTube
+app.get('/api/youtube-audio/:videoId', async (req, res) => {
+  try {
+    const { videoId } = req.params;
+    
+    // Utiliser youtube-dl ou une API alternative pour extraire l'URL audio
+    // Pour l'instant, on retourne un message d'erreur
+    res.json({ 
+      error: 'YouTube audio extraction not implemented yet',
+      videoId: videoId,
+      message: 'Please use direct audio links (.mp3, .wav) for now'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Route de test pour vérifier que l'app fonctionne
 app.get('/', (req, res) => {
   if (process.env.NODE_ENV === 'production') {
@@ -235,7 +253,8 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('game-started', {
       totalQuestions: room.musicLinks.length,
       currentQuestion: 0,
-      musicLinks: room.musicLinks
+      musicLinks: room.musicLinks,
+      players: lobby.players
     });
 
     console.log(`Jeu démarré dans le lobby ${roomId}`);

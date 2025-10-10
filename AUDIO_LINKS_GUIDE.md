@@ -1,9 +1,16 @@
 # 🎵 Guide des Liens Audio
 
-## ❌ Problème avec YouTube
-Les liens YouTube ne fonctionnent pas directement dans les lecteurs audio HTML.
+## ⚠️ Problème avec YouTube
+Les liens YouTube nécessitent une solution temporaire pour garder la réponse cachée.
 
 ## ✅ Solutions recommandées
+
+### 🎯 **Solution temporaire (actuelle)**
+- Interface avec instructions claires
+- Bouton pour écouter sans voir la réponse
+- Instructions pour ne pas regarder la vidéo
+
+### 🔧 **Solution permanente : Conversion MP3**
 
 ### 1. **Fichiers audio directs**
 - `.mp3` - Format le plus compatible
