@@ -68,15 +68,15 @@ npm run build
 ### 3. Configuration des variables d'environnement
 Dans Railway, ajouter ces variables :
 ```
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/animequiz
+MONGODB_URI=<copier depuis le service MongoDB Railway>
 CLIENT_URL=https://votre-app.railway.app
 NODE_ENV=production
 ```
 
 ### 4. Base de données MongoDB
-- Créer un cluster MongoDB Atlas (gratuit)
-- Configurer l'accès réseau (0.0.0.0/0 pour Railway)
-- Créer un utilisateur avec les permissions de lecture/écriture
+- Ajouter un service MongoDB directement dans Railway
+- Railway gère automatiquement la configuration et la connexion
+- Pas besoin de configuration réseau externe
 
 ## 🎮 Utilisation
 
@@ -133,8 +133,8 @@ AnimeQuiz/
 ## 🐛 Résolution de problèmes
 
 ### Erreur de connexion MongoDB
-- Vérifier l'URL de connexion
-- S'assurer que l'IP est autorisée (0.0.0.0/0 pour Railway)
+- Vérifier que le service MongoDB est déployé sur Railway
+- Copier correctement la variable `MONGO_URL` du service MongoDB
 
 ### Problèmes de CORS
 - Vérifier que `CLIENT_URL` correspond à l'URL de déploiement

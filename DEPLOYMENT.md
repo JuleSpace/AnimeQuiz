@@ -8,32 +8,19 @@ Ce guide vous explique comment déployer AnimeQuiz sur Railway étape par étape
 2. Compte Railway (gratuit sur [railway.app](https://railway.app))
 3. Base de données MongoDB (MongoDB Atlas gratuit)
 
-## 🗄️ Configuration de MongoDB Atlas
+## 🗄️ Configuration de MongoDB avec Railway
 
-### 1. Créer un cluster MongoDB
-1. Aller sur [MongoDB Atlas](https://cloud.mongodb.com)
-2. Créer un compte gratuit
-3. Créer un nouveau cluster (choisir la région la plus proche)
-4. Attendre que le cluster soit créé (2-3 minutes)
+### 1. Ajouter MongoDB à votre projet Railway
+1. Dans votre projet Railway, cliquer sur "New"
+2. Sélectionner "Database" puis "MongoDB"
+3. Railway va automatiquement créer une instance MongoDB
+4. Attendre que le service soit déployé (1-2 minutes)
 
-### 2. Configurer l'accès réseau
-1. Dans le menu "Network Access"
-2. Cliquer "Add IP Address"
-3. Choisir "Allow Access from Anywhere" (0.0.0.0/0)
-4. Confirmer
-
-### 3. Créer un utilisateur de base de données
-1. Dans le menu "Database Access"
-2. Cliquer "Add New Database User"
-3. Créer un utilisateur avec nom d'utilisateur et mot de passe
-4. Choisir "Read and write to any database"
-5. Confirmer
-
-### 4. Obtenir la chaîne de connexion
-1. Dans le menu "Clusters"
-2. Cliquer "Connect" sur votre cluster
-3. Choisir "Connect your application"
-4. Copier la chaîne de connexion (remplacer `<password>` par votre mot de passe)
+### 2. Obtenir la chaîne de connexion
+1. Cliquer sur votre service MongoDB
+2. Aller dans l'onglet "Variables"
+3. Copier la variable `MONGO_URL` ou `MONGODB_URI`
+4. Cette URL contient déjà les identifiants et la configuration
 
 ## 🚂 Déploiement sur Railway
 
@@ -51,24 +38,25 @@ Ce guide vous explique comment déployer AnimeQuiz sur Railway étape par étape
 6. Railway va automatiquement détecter que c'est un projet Node.js
 
 ### 3. Configuration des variables d'environnement
-Dans Railway, aller dans l'onglet "Variables" et ajouter :
+Dans Railway, aller dans l'onglet "Variables" de votre service web et ajouter :
 
 ```
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/animequiz
+MONGODB_URI=<copier depuis le service MongoDB Railway>
 CLIENT_URL=https://votre-app.railway.app
 NODE_ENV=production
 PORT=5000
 ```
 
-**Important** : Remplacer :
-- `username` et `password` par vos identifiants MongoDB Atlas
-- `cluster` par le nom de votre cluster
-- `votre-app.railway.app` par l'URL fournie par Railway
+**Important** : 
+- Copier directement la variable `MONGO_URL` du service MongoDB Railway
+- Remplacer `votre-app.railway.app` par l'URL fournie par Railway
+- Railway gère automatiquement la connexion entre les services
 
 ### 4. Déploiement automatique
 1. Railway va automatiquement construire et déployer votre application
 2. Le processus prend 2-5 minutes
 3. Vous verrez l'URL de votre application dans l'onglet "Deployments"
+4. Les services MongoDB et Web sont automatiquement connectés
 
 ### 5. Configuration du domaine personnalisé (optionnel)
 1. Dans l'onglet "Settings" de votre projet
@@ -97,9 +85,9 @@ PORT=5000
 ## 🐛 Résolution de problèmes courants
 
 ### Erreur de connexion MongoDB
-- Vérifier que l'IP 0.0.0.0/0 est autorisée dans MongoDB Atlas
-- Vérifier que le nom d'utilisateur et mot de passe sont corrects
-- S'assurer que la chaîne de connexion est bien formatée
+- Vérifier que le service MongoDB est bien déployé sur Railway
+- Copier correctement la variable `MONGO_URL` du service MongoDB
+- S'assurer que les deux services (web et MongoDB) sont dans le même projet Railway
 
 ### Erreur CORS
 - Vérifier que `CLIENT_URL` correspond exactement à l'URL Railway
@@ -145,10 +133,11 @@ PORT=5000
 - Suffisant pour des applications de test
 - Pay-as-you-go pour plus d'usage
 
-### MongoDB Atlas
-- Plan gratuit M0 : 512 MB de stockage
-- Suffisant pour des milliers de parties
-- Pas de limite de temps
+### MongoDB Railway
+- Service intégré gratuit avec Railway
+- 1 GB de stockage inclus
+- Connexion privée entre services (plus rapide et sécurisé)
+- Pas de configuration réseau nécessaire
 
 ## 🎯 Optimisations
 
