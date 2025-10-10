@@ -201,30 +201,86 @@ function App() {
                     Aucun quiz disponible pour le moment
                   </p>
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '30px' }}>
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', 
+                    gap: '20px', 
+                    marginBottom: '30px' 
+                  }}>
                     {rooms.map(room => (
-                      <div key={room._id} style={{ 
-                        background: 'rgba(255, 255, 255, 0.1)', 
-                        padding: '20px', 
-                        borderRadius: '15px',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        cursor: 'pointer',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
-                      onMouseLeave={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.1)'}
-                      onClick={() => handleJoinLobby(room._id)}
+                      <div 
+                        key={room._id} 
+                        style={{ 
+                          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2))',
+                          padding: '25px', 
+                          borderRadius: '20px',
+                          border: '2px solid rgba(255, 255, 255, 0.1)',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease',
+                          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-5px)';
+                          e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.4)';
+                          e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.6)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
+                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                        }}
+                        onClick={() => handleJoinLobby(room._id)}
                       >
-                        <h4 style={{ margin: '0 0 10px 0', color: '#ffd700' }}>{room.name}</h4>
+                        {/* Badge de nombre de musiques */}
+                        <div style={{
+                          position: 'absolute',
+                          top: '10px',
+                          right: '10px',
+                          background: 'rgba(255, 215, 0, 0.9)',
+                          color: '#000',
+                          padding: '5px 12px',
+                          borderRadius: '20px',
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold'
+                        }}>
+                          🎵 {room.musicLinks.length}
+                        </div>
+
+                        <h4 style={{ 
+                          margin: '0 0 15px 0', 
+                          color: '#ffd700', 
+                          fontSize: '1.3rem',
+                          fontWeight: 'bold',
+                          textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                        }}>
+                          {room.name}
+                        </h4>
+                        
                         {room.description && (
-                          <p style={{ margin: '0 0 10px 0', opacity: 0.8 }}>{room.description}</p>
+                          <p style={{ 
+                            margin: '0 0 15px 0', 
+                            opacity: 0.9,
+                            fontSize: '0.9rem',
+                            lineHeight: '1.4'
+                          }}>
+                            {room.description}
+                          </p>
                         )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>
-                            {room.musicLinks.length} musique(s)
-                          </span>
-                          <span style={{ fontSize: '0.8rem', color: '#51cf66' }}>
-                            Cliquer pour rejoindre
+                        
+                        <div style={{ 
+                          textAlign: 'center',
+                          marginTop: '15px',
+                          paddingTop: '15px',
+                          borderTop: '1px solid rgba(255, 255, 255, 0.2)'
+                        }}>
+                          <span style={{ 
+                            fontSize: '0.9rem', 
+                            color: '#51cf66',
+                            fontWeight: 'bold'
+                          }}>
+                            ▶️ Cliquer pour rejoindre
                           </span>
                         </div>
                       </div>
@@ -236,7 +292,21 @@ function App() {
                   <button 
                     onClick={() => setCurrentView('admin-login')} 
                     className="btn"
-                    style={{ marginTop: '20px' }}
+                    style={{ 
+                      marginTop: '20px',
+                      background: 'linear-gradient(135deg, #ff6b6b, #c92a2a)',
+                      border: '2px solid rgba(255, 107, 107, 0.5)',
+                      boxShadow: '0 4px 15px rgba(201, 42, 42, 0.3)',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(201, 42, 42, 0.5)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(201, 42, 42, 0.3)';
+                    }}
                   >
                     🔐 Connexion Admin
                   </button>
