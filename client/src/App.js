@@ -158,12 +158,31 @@ function App() {
         return (
           <div className="container">
             <div className="card">
-              <h1 style={{ textAlign: 'center', marginBottom: '30px', fontSize: '2.5rem' }}>
-                🎵 AnimeQuiz 🎵
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '20px' }}>
+              <img 
+                src="https://media1.tenor.com/m/POnOCAJtFBgAAAAC/pepe-music-pepe-listening-to-music.gif" 
+                alt="Pepe Music"
+                style={{ width: '60px', height: '60px', borderRadius: '10px' }}
+              />
+              <h1 style={{ fontSize: '2.5rem', margin: 0 }}>
+                🎵 Music Quiz 🎵
               </h1>
-              <p style={{ textAlign: 'center', marginBottom: '30px', fontSize: '1.2rem', opacity: 0.8 }}>
-                Rejoins un lobby et devine les musiques avec tes amis !
-              </p>
+              <img 
+                src="https://media1.tenor.com/m/t3GvxXPjPvEAAAAC/kirby-dancing-bop.gif" 
+                alt="Kirby Dancing"
+                style={{ width: '60px', height: '60px', borderRadius: '10px' }}
+              />
+            </div>
+            <p style={{ textAlign: 'center', marginBottom: '15px', fontSize: '1.2rem', opacity: 0.9 }}>
+              Fais toi bully par tes potes avec un maximum de plaisir toujours :)
+            </p>
+            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+              <img 
+                src="https://media1.tenor.com/m/HHdvM9b3BwAAAAAC/bully-soccer.gif" 
+                alt="Bully"
+                style={{ width: '80px', height: '64px', borderRadius: '10px' }}
+              />
+            </div>
               
               <div style={{ maxWidth: '600px', margin: '0 auto' }}>
                 <input
