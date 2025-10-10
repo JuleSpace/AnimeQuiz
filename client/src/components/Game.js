@@ -47,7 +47,12 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
               setAudioUrl(null);
             });
         }
+      } else if (link.includes('spotify.com')) {
+        // Lien Spotify - on va utiliser l'embed
+        setAudioUrl(null);
+        console.log('Lien Spotify détecté');
       } else {
+        // Lien audio direct (MP3, WAV, etc.)
         setAudioUrl(link);
       }
     }
@@ -57,6 +62,15 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const extractSpotifyId = (url) => {
+    // Support pour différents formats Spotify :
+    // https://open.spotify.com/track/1EUGo3QcDXQSv0XKF8GIZK
+    // https://open.spotify.com/intl-fr/track/1EUGo3QcDXQSv0XKF8GIZK?si=...
+    const regExp = /spotify\.com\/.*?\/track\/([a-zA-Z0-9]+)/;
+    const match = url.match(regExp);
+    return match ? match[1] : null;
   };
 
   const handleSubmitAnswer = () => {
@@ -101,6 +115,50 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                   <source src={audioUrl} type="audio/ogg" />
                   Votre navigateur ne supporte pas la lecture audio.
                 </audio>
+              ) : gameData.musicLinks[currentQuestion].includes('spotify.com') ? (
+                <div style={{ 
+                  background: 'rgba(255, 255, 255, 0.1)', 
+                  padding: '20px', 
+                  borderRadius: '10px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ color: '#1db954', marginBottom: '15px', fontSize: '1.1rem' }}>
+                    🎵 Lecteur Spotify
+                  </div>
+                  <div style={{ marginBottom: '15px', fontSize: '0.9rem', opacity: 0.9 }}>
+                    <strong>Lecteur Spotify intégré</strong>
+                  </div>
+                  
+                  {/* Lecteur Spotify intégré */}
+                  <div style={{ 
+                    position: 'relative',
+                    width: '100%',
+                    height: '80px',
+                    background: 'rgba(29, 185, 84, 0.1)',
+                    borderRadius: '10px',
+                    overflow: 'hidden'
+                  }}>
+                    <iframe
+                      title="Lecteur Spotify"
+                      src={`https://open.spotify.com/embed/track/${extractSpotifyId(gameData.musicLinks[currentQuestion])}?utm_source=generator&theme=0`}
+                      style={{
+                        position: 'absolute',
+                        top: '0',
+                        left: '0',
+                        width: '100%',
+                        height: '80px',
+                        border: 'none',
+                        borderRadius: '10px'
+                      }}
+                      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                      loading="lazy"
+                    />
+                  </div>
+                  
+                  <div style={{ marginTop: '15px', fontSize: '0.8rem', opacity: 0.8 }}>
+                    💡 Lecteur Spotify officiel - écoutez sans révéler la réponse
+                  </div>
+                </div>
               ) : (
                 <div style={{ 
                   background: 'rgba(255, 255, 255, 0.1)', 
@@ -384,7 +442,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '30px', opacity: 0.8 }}>
-          <div>Score actuel: {gameData.players && gameData.players.find(p => p.id === player.id)?.score || 0} points</div>
+          <div>Score actuel: {(gameData.players && gameData.players.find(p => p.id === player.id)?.score) || 0} points</div>
         </div>
       </div>
     </div>
