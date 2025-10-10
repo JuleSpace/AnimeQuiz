@@ -88,35 +88,52 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                   textAlign: 'center'
                 }}>
                   <div style={{ color: '#ffd700', marginBottom: '15px', fontSize: '1.1rem' }}>
-                    🎵 Musique YouTube
+                    🎵 Lecteur Audio YouTube
                   </div>
                   <div style={{ marginBottom: '15px', fontSize: '0.9rem', opacity: 0.9 }}>
-                    <strong>Instructions :</strong>
+                    <strong>Vidéo masquée - Audio uniquement</strong>
                   </div>
-                  <div style={{ marginBottom: '15px', fontSize: '0.85rem', opacity: 0.8, textAlign: 'left', maxWidth: '400px', margin: '0 auto 15px auto' }}>
-                    1. Cliquez sur le bouton ci-dessous<br/>
-                    2. Écoutez la musique (sans regarder la vidéo)<br/>
-                    3. Fermez l'onglet et revenez ici<br/>
-                    4. Répondez à la question
+                  <div style={{ 
+                    position: 'relative',
+                    width: '100%',
+                    height: '200px',
+                    background: 'rgba(0,0,0,0.8)',
+                    borderRadius: '10px',
+                    overflow: 'hidden'
+                  }}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${extractYouTubeId(gameData.musicLinks[currentQuestion])}?autoplay=0&controls=1&showinfo=0&rel=0&modestbranding=1&fs=0&cc_load_policy=0&iv_load_policy=3&disablekb=1&start=0&end=0`}
+                      style={{
+                        position: 'absolute',
+                        top: '-200px', // Masquer la vidéo en la décalant vers le haut
+                        left: '0',
+                        width: '100%',
+                        height: '400px', // Plus grand pour avoir les contrôles
+                        border: 'none'
+                      }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '0',
+                      left: '0',
+                      right: '0',
+                      height: '50px',
+                      background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'white',
+                      fontSize: '1rem',
+                      fontWeight: 'bold',
+                      borderRadius: '0 0 10px 10px'
+                    }}>
+                      🎧 Contrôles audio YouTube (vidéo cachée)
+                    </div>
                   </div>
-                  <a 
-                    href={gameData.musicLinks[currentQuestion]} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ 
-                      color: 'white', 
-                      textDecoration: 'none',
-                      background: 'linear-gradient(45deg, #ff6b6b, #ee5a52)',
-                      padding: '12px 24px',
-                      borderRadius: '25px',
-                      display: 'inline-block',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    🎧 Écouter la musique
-                  </a>
-                  <div style={{ marginTop: '15px', fontSize: '0.8rem', opacity: 0.7 }}>
-                    ⚠️ Ne regardez pas la vidéo, écoutez seulement l'audio !
+                  <div style={{ marginTop: '15px', fontSize: '0.8rem', opacity: 0.8 }}>
+                    💡 La vidéo est cachée, seul l'audio est disponible pour garder la réponse secrète
                   </div>
                 </div>
               )}

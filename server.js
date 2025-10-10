@@ -277,8 +277,12 @@ io.on('connection', (socket) => {
     const allAnswered = lobby.players.every(p => p.answers && p.answers[questionIndex]);
     
     if (allAnswered) {
-      // Déclencher la correction
-      io.to(player.roomId).emit('start-correction', { questionIndex });
+      // Déclencher la correction avec les informations des joueurs
+      const lobby = lobbies.get(player.roomId);
+      io.to(player.roomId).emit('start-correction', { 
+        questionIndex,
+        players: lobby.players 
+      });
     }
   });
 
