@@ -214,9 +214,9 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                           ⏸️
                         </button>
                         
-                        {/* Contrôle de volume via audio context */}
+                        {/* Contrôle de volume avec Web Audio API */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '1rem' }}>🔊</span>
+                          <span style={{ fontSize: '1rem' }} id="volume-icon">🔊</span>
                           <input
                             type="range"
                             min="0"
@@ -224,16 +224,52 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                             defaultValue="50"
                             onChange={(e) => {
                               const volume = parseInt(e.target.value) / 100;
-                              // Créer ou récupérer l'audio context pour contrôler le volume
-                              const audioElements = document.querySelectorAll('audio, video');
-                              audioElements.forEach(audio => {
-                                audio.volume = volume;
-                              });
                               
-                              // Essayer de contrôler l'iframe YouTube via CSS
-                              const iframe = document.querySelector('iframe[title="Lecteur audio YouTube masqué"]');
-                              if (iframe) {
-                                iframe.style.opacity = volume > 0 ? '0.01' : '0';
+                              // Contrôler le volume via Web Audio API
+                              try {
+                                // Récupérer ou créer l'audio context
+                                let audioContext = window.audioContext || window.webkitAudioContext;
+                                if (!window.audioContextInstance) {
+                                  window.audioContextInstance = new audioContext();
+                                }
+                                
+                                // Créer un gain node pour contrôler le volume
+                                if (!window.volumeGainNode) {
+                                  window.volumeGainNode = window.audioContextInstance.createGain();
+                                  window.volumeGainNode.connect(window.audioContextInstance.destination);
+                                }
+                                
+                                window.volumeGainNode.gain.value = volume;
+                                
+                                // Aussi contrôler les éléments audio/vidéo directs
+                                const audioElements = document.querySelectorAll('audio, video');
+                                audioElements.forEach(audio => {
+                                  audio.volume = volume;
+                                });
+                                
+                                // Mettre à jour l'icône de volume
+                                const volumeIcon = document.getElementById('volume-icon');
+                                if (volumeIcon) {
+                                  if (volume === 0) {
+                                    volumeIcon.textContent = '🔇';
+                                  } else if (volume < 0.3) {
+                                    volumeIcon.textContent = '🔈';
+                                  } else if (volume < 0.7) {
+                                    volumeIcon.textContent = '🔉';
+                                  } else {
+                                    volumeIcon.textContent = '🔊';
+                                  }
+                                }
+                                
+                                console.log('Volume ajusté à:', volume * 100 + '%');
+                                
+                              } catch (error) {
+                                console.log('Contrôle de volume non disponible:', error);
+                                // Fallback : contrôler l'opacité de l'iframe
+                                const iframe = document.querySelector('iframe[title="Lecteur audio YouTube masqué"]');
+                                if (iframe) {
+                                  iframe.style.opacity = volume > 0 ? '0.01' : '0';
+                                }
                               }
                             }}
                             style={{
@@ -348,7 +384,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: '30px', opacity: 0.8 }}>
-          <div>Score actuel: {player.score || 0} points</div>
+          <div>Score actuel: {gameData.players && gameData.players.find(p => p.id === player.id)?.score || 0} points</div>
         </div>
       </div>
     </div>
