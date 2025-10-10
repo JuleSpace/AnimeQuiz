@@ -66,6 +66,8 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
     setCorrections({});
     setAnswer('');
     setHasAnswered(false);
+    // Réinitialiser l'état audio pour la prochaine question
+    setAudioUrl(null);
   };
 
   const toggleCorrection = (playerId, isCorrect) => {
@@ -111,20 +113,20 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                   <div style={{ 
                     position: 'relative',
                     width: '100%',
-                    height: '80px',
+                    height: '120px',
                     background: 'rgba(0,0,0,0.8)',
                     borderRadius: '10px',
                     overflow: 'hidden'
                   }}>
                     <iframe
                       title="Lecteur audio YouTube masqué"
-                      src={`https://www.youtube.com/embed/${extractYouTubeId(gameData.musicLinks[currentQuestion])}?autoplay=0&controls=1&showinfo=0&rel=0&modestbranding=1&fs=0&cc_load_policy=0&iv_load_policy=3&disablekb=1`}
+                      src={`https://www.youtube.com/embed/${extractYouTubeId(gameData.musicLinks[currentQuestion])}?autoplay=0&controls=1&showinfo=0&rel=0&modestbranding=1&fs=0&cc_load_policy=0&iv_load_policy=3&disablekb=1&enablejsapi=1`}
                       style={{
                         position: 'absolute',
-                        top: '-60px', // Masquer la partie vidéo
+                        top: '-40px', // Masquer moins la partie vidéo pour avoir les contrôles
                         left: '0',
                         width: '100%',
-                        height: '200px', // Plus grand pour avoir les contrôles en bas
+                        height: '200px', // Plus grand pour avoir les contrôles
                         border: 'none',
                         borderRadius: '10px'
                       }}
@@ -136,17 +138,22 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                       bottom: '0',
                       left: '0',
                       right: '0',
-                      height: '80px',
-                      background: 'linear-gradient(45deg, #667eea, #764ba2)',
+                      height: '120px',
+                      background: 'rgba(0,0,0,0.7)',
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
                       justifyContent: 'center',
                       color: 'white',
-                      fontSize: '1rem',
-                      fontWeight: 'bold',
-                      borderRadius: '0 0 10px 10px'
+                      fontSize: '0.9rem',
+                      borderRadius: '0 0 10px 10px',
+                      padding: '10px'
                     }}>
-                      🎧 Contrôles YouTube (vidéo cachée)
+                      <div style={{ marginBottom: '5px', fontSize: '1.1rem' }}>🎧</div>
+                      <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Lecteur YouTube</div>
+                      <div style={{ fontSize: '0.8rem', opacity: 0.8, textAlign: 'center' }}>
+                        Utilisez les contrôles ci-dessus<br/>pour jouer l'audio
+                      </div>
                     </div>
                   </div>
                   
