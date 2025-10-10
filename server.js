@@ -136,13 +136,38 @@ app.get('/api/youtube-audio/:videoId', async (req, res) => {
   try {
     const { videoId } = req.params;
     
-    // Utiliser youtube-dl ou une API alternative pour extraire l'URL audio
-    // Pour l'instant, on retourne un message d'erreur
-    res.json({ 
-      error: 'YouTube audio extraction not implemented yet',
-      videoId: videoId,
-      message: 'Please use direct audio links (.mp3, .wav) for now'
-    });
+    // Utiliser une API publique pour convertir YouTube en MP3
+    // API gratuite : youtube-mp3-api
+    const apiUrl = `https://api.vevioz.com/api/button/mp3/${videoId}`;
+    
+    try {
+      const response = await axios.get(apiUrl);
+      
+      // Si l'API retourne une URL MP3 directe
+      if (response.data && response.data.url) {
+        res.json({ 
+          success: true,
+          audioUrl: response.data.url,
+          videoId: videoId
+        });
+      } else {
+        // Fallback : utiliser une autre API
+        const fallbackUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        res.json({ 
+          success: false,
+          videoId: videoId,
+          originalUrl: fallbackUrl,
+          message: 'Conversion automatique non disponible, utilisation du lecteur intégré'
+        });
+      }
+    } catch (apiError) {
+      console.error('Erreur API YouTube:', apiError.message);
+      res.json({ 
+        success: false,
+        videoId: videoId,
+        message: 'Conversion automatique non disponible, utilisation du lecteur intégré'
+      });
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -295,6 +320,12 @@ io.on('connection', (socket) => {
 
     const lobby = lobbies.get(player.roomId);
     if (!lobby) return;
+
+    // Vérifier que c'est le chef qui corrige
+    if (lobby.players[0].id !== socket.id) {
+      socket.emit('correction-error', { message: 'Seul le chef peut corriger les réponses' });
+      return;
+    }
 
     // Stocker les corrections du joueur
     if (!player.corrections) player.corrections = {};

@@ -24,9 +24,22 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
       if (link.includes('youtube.com') || link.includes('youtu.be')) {
         const videoId = extractYouTubeId(link);
         if (videoId) {
-          // Pour l'instant, on ne peut pas extraire l'audio automatiquement
-          setAudioUrl(null);
-          console.warn('Lien YouTube détecté, extraction audio non implémentée:', link);
+          // Appeler notre API pour convertir YouTube en MP3
+          fetch(`/api/youtube-audio/${videoId}`)
+            .then(response => response.json())
+            .then(data => {
+              if (data.success && data.audioUrl) {
+                setAudioUrl(data.audioUrl);
+                console.log('Audio YouTube converti en MP3:', data.audioUrl);
+              } else {
+                setAudioUrl(null);
+                console.warn('Conversion YouTube échouée:', data.message);
+              }
+            })
+            .catch(error => {
+              console.error('Erreur conversion YouTube:', error);
+              setAudioUrl(null);
+            });
         }
       } else {
         setAudioUrl(link);
@@ -88,52 +101,24 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                   textAlign: 'center'
                 }}>
                   <div style={{ color: '#ffd700', marginBottom: '15px', fontSize: '1.1rem' }}>
-                    🎵 Lecteur Audio YouTube
+                    🎵 Conversion YouTube en cours...
                   </div>
                   <div style={{ marginBottom: '15px', fontSize: '0.9rem', opacity: 0.9 }}>
-                    <strong>Vidéo masquée - Audio uniquement</strong>
+                    <strong>Conversion automatique en MP3</strong>
                   </div>
                   <div style={{ 
-                    position: 'relative',
-                    width: '100%',
-                    height: '200px',
-                    background: 'rgba(0,0,0,0.8)',
+                    padding: '20px',
+                    background: 'rgba(255, 255, 255, 0.05)',
                     borderRadius: '10px',
-                    overflow: 'hidden'
+                    marginBottom: '15px'
                   }}>
-                    <iframe
-                      src={`https://www.youtube.com/embed/${extractYouTubeId(gameData.musicLinks[currentQuestion])}?autoplay=0&controls=1&showinfo=0&rel=0&modestbranding=1&fs=0&cc_load_policy=0&iv_load_policy=3&disablekb=1&start=0&end=0`}
-                      style={{
-                        position: 'absolute',
-                        top: '-200px', // Masquer la vidéo en la décalant vers le haut
-                        left: '0',
-                        width: '100%',
-                        height: '400px', // Plus grand pour avoir les contrôles
-                        border: 'none'
-                      }}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '0',
-                      left: '0',
-                      right: '0',
-                      height: '50px',
-                      background: 'linear-gradient(45deg, #667eea, #764ba2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      fontSize: '1rem',
-                      fontWeight: 'bold',
-                      borderRadius: '0 0 10px 10px'
-                    }}>
-                      🎧 Contrôles audio YouTube (vidéo cachée)
+                    <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏳</div>
+                    <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+                      Conversion de la vidéo YouTube en fichier audio...
                     </div>
                   </div>
-                  <div style={{ marginTop: '15px', fontSize: '0.8rem', opacity: 0.8 }}>
-                    💡 La vidéo est cachée, seul l'audio est disponible pour garder la réponse secrète
+                  <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                    💡 Si la conversion échoue, vous pourrez utiliser le lecteur YouTube intégré
                   </div>
                 </div>
               )}
@@ -172,9 +157,11 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
               <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>
                 🔍 Phase de correction
               </h3>
-              <p style={{ textAlign: 'center', marginBottom: '20px', opacity: 0.8 }}>
-                Corrigez les réponses des autres joueurs :
-              </p>
+              {gameData.players && gameData.players[0] && gameData.players[0].id === player.id ? (
+                <>
+                  <p style={{ textAlign: 'center', marginBottom: '20px', opacity: 0.8 }}>
+                    En tant que chef, corrigez les réponses des autres joueurs :
+                  </p>
               
               <div style={{ maxWidth: '600px', margin: '0 auto' }}>
                 {gameData.players && gameData.players.map(p => (
@@ -203,15 +190,26 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                 ))}
               </div>
 
-              <div style={{ textAlign: 'center', marginTop: '30px' }}>
-                <button 
-                  onClick={handleSubmitCorrection}
-                  className="btn btn-success"
-                  disabled={Object.keys(corrections).length !== ((gameData.players || []).length - 1)}
-                >
-                  Finaliser les corrections
-                </button>
-              </div>
+                  <div style={{ textAlign: 'center', marginTop: '30px' }}>
+                    <button 
+                      onClick={handleSubmitCorrection}
+                      className="btn btn-success"
+                      disabled={Object.keys(corrections).length !== ((gameData.players || []).length - 1)}
+                    >
+                      Finaliser les corrections
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <div style={{ fontSize: '1.2rem', marginBottom: '10px', color: '#ffd700' }}>
+                    ⏳ En attente du chef...
+                  </div>
+                  <div style={{ opacity: 0.8 }}>
+                    Seul le chef peut corriger les réponses
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
