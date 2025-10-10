@@ -16,9 +16,17 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
   }, [gameData]);
 
   useEffect(() => {
-    // Simuler la récupération de l'URL audio
+    // Récupérer l'URL audio et la convertir si nécessaire
     if (gameData && gameData.musicLinks && gameData.musicLinks[currentQuestion]) {
-      setAudioUrl(gameData.musicLinks[currentQuestion]);
+      const link = gameData.musicLinks[currentQuestion];
+      
+      // Si c'est un lien YouTube, afficher un message
+      if (link.includes('youtube.com') || link.includes('youtu.be')) {
+        setAudioUrl(null); // Pas d'URL audio directe
+        console.warn('Lien YouTube détecté, conversion nécessaire:', link);
+      } else {
+        setAudioUrl(link);
+      }
     }
   }, [currentQuestion, gameData]);
 
@@ -54,13 +62,39 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
             Question {currentQuestion + 1} / {gameData.totalQuestions}
           </div>
           
-          {audioUrl && (
+          {gameData && gameData.musicLinks && gameData.musicLinks[currentQuestion] && (
             <div className="audio-player">
-              <audio controls>
-                <source src={audioUrl} type="audio/mpeg" />
-                <source src={audioUrl} type="audio/ogg" />
-                Votre navigateur ne supporte pas la lecture audio.
-              </audio>
+              {audioUrl ? (
+                <audio controls>
+                  <source src={audioUrl} type="audio/mpeg" />
+                  <source src={audioUrl} type="audio/ogg" />
+                  Votre navigateur ne supporte pas la lecture audio.
+                </audio>
+              ) : (
+                <div style={{ 
+                  background: 'rgba(255, 255, 255, 0.1)', 
+                  padding: '20px', 
+                  borderRadius: '10px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ color: '#ffd700', marginBottom: '10px' }}>
+                    🎵 Lien YouTube détecté
+                  </div>
+                  <div style={{ marginBottom: '15px' }}>
+                    <a 
+                      href={gameData.musicLinks[currentQuestion]} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ color: '#51cf66', textDecoration: 'underline' }}
+                    >
+                      Ouvrir la vidéo YouTube
+                    </a>
+                  </div>
+                  <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+                    Pour une meilleure expérience, utilisez des liens audio directs (.mp3, .wav)
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -131,7 +165,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                 <button 
                   onClick={handleSubmitCorrection}
                   className="btn btn-success"
-                  disabled={Object.keys(corrections).length !== (gameData.players.length - 1)}
+                  disabled={Object.keys(corrections).length !== ((gameData.players || []).length - 1)}
                 >
                   Finaliser les corrections
                 </button>
