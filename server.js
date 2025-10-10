@@ -43,7 +43,10 @@ mongoose.connect(mongoUri)
 const RoomSchema = new mongoose.Schema({
   name: String,
   description: String,
-  musicLinks: [String],
+  musicLinks: [{
+    url: String,
+    answer: String
+  }],
   isActive: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
@@ -420,13 +423,18 @@ io.on('connection', (socket) => {
 function calculateFinalScores(players, questionIndex, chefCorrections) {
   const scores = {};
   
-  // Tous les joueurs gagnent 1 point par bonne réponse selon le chef
+  // Calculer les points selon les corrections du chef
   players.forEach(player => {
-    // Vérifier si ce joueur a une bonne réponse selon le chef
     if (chefCorrections && chefCorrections[player.id]) {
-      scores[player.id] = 1; // 1 point pour une bonne réponse
+      if (chefCorrections[player.id] === true) {
+        scores[player.id] = 1; // 1 point pour une bonne réponse
+      } else if (chefCorrections[player.id] === 'bonus') {
+        scores[player.id] = 2; // 2 points pour une réponse bonus
+      } else {
+        scores[player.id] = 0; // 0 points pour incorrect
+      }
     } else {
-      scores[player.id] = 0; // 0 points pour une mauvaise réponse
+      scores[player.id] = 0; // 0 points si pas de correction
     }
   });
   

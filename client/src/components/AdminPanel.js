@@ -5,7 +5,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [newRoom, setNewRoom] = useState({ name: '', description: '', musicLinks: [] });
-  const [newLink, setNewLink] = useState('');
+  const [newLink, setNewLink] = useState({ url: '', answer: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -48,17 +48,17 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
   };
 
   const addMusicLink = (roomId) => {
-    if (!newLink.trim()) return;
+    if (!newLink.url.trim()) return;
 
     const room = rooms.find(r => r._id === roomId);
     if (room) {
       const updatedRoom = {
         ...room,
-        musicLinks: [...room.musicLinks, newLink.trim()]
+        musicLinks: [...room.musicLinks, { url: newLink.url.trim(), answer: newLink.answer.trim() }]
       };
       
       setRooms(rooms.map(r => r._id === roomId ? updatedRoom : r));
-      setNewLink('');
+      setNewLink({ url: '', answer: '' });
     }
   };
 
@@ -202,36 +202,63 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                   {selectedRoom === room._id && (
                     <div>
                       {/* Ajouter un nouveau lien */}
-                      <div className="music-link">
+                      <div style={{ marginBottom: '15px' }}>
                         <input
                           type="url"
-                          placeholder="Coller un lien YouTube ou audio ici..."
-                          value={newLink}
-                          onChange={(e) => setNewLink(e.target.value)}
+                          placeholder="Lien YouTube ou audio..."
+                          value={newLink.url}
+                          onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
                           className="input"
-                          style={{ margin: '0' }}
+                          style={{ marginBottom: '10px' }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Réponse (titre de la musique, artiste, etc.)"
+                          value={newLink.answer}
+                          onChange={(e) => setNewLink({ ...newLink, answer: e.target.value })}
+                          className="input"
+                          style={{ marginBottom: '10px' }}
                         />
                         <button
                           onClick={() => addMusicLink(room._id)}
                           className="btn btn-success"
-                          style={{ padding: '10px 15px' }}
+                          style={{ padding: '10px 15px', width: '100%' }}
                         >
-                          Ajouter
+                          ➕ Ajouter cette musique
                         </button>
                       </div>
 
                       {/* Liste des liens existants */}
                       {room.musicLinks.map((link, index) => (
-                        <div key={index} className="music-link">
-                          <span style={{ flex: 1, wordBreak: 'break-all' }}>
-                            {link}
-                          </span>
+                        <div key={index} style={{ 
+                          background: 'rgba(255,255,255,0.05)', 
+                          padding: '15px', 
+                          borderRadius: '10px', 
+                          marginBottom: '10px'
+                        }}>
+                          <div style={{ marginBottom: '10px' }}>
+                            <strong style={{ color: '#ffd700' }}>Musique {index + 1}</strong>
+                          </div>
+                          <div style={{ marginBottom: '8px' }}>
+                            <span style={{ opacity: 0.8, fontSize: '0.9rem' }}>Lien: </span>
+                            <span style={{ wordBreak: 'break-all', fontSize: '0.9rem' }}>
+                              {typeof link === 'string' ? link : link.url}
+                            </span>
+                          </div>
+                          {(typeof link === 'object' && link.answer) && (
+                            <div style={{ marginBottom: '10px' }}>
+                              <span style={{ opacity: 0.8, fontSize: '0.9rem' }}>Réponse: </span>
+                              <span style={{ color: '#51cf66', fontSize: '0.9rem' }}>
+                                {link.answer}
+                              </span>
+                            </div>
+                          )}
                           <button
                             onClick={() => removeMusicLink(room._id, index)}
                             className="btn btn-danger"
-                            style={{ padding: '5px 10px', fontSize: '0.8rem' }}
+                            style={{ padding: '5px 10px', fontSize: '0.8rem', width: '100%' }}
                           >
-                            Supprimer
+                            🗑️ Supprimer
                           </button>
                         </div>
                       ))}
