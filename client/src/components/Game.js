@@ -109,50 +109,104 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                     <strong>Vidéo masquée - Audio uniquement</strong>
                   </div>
                   
-                  {/* Lecteur YouTube avec vidéo masquée */}
+                  {/* Lecteur YouTube complètement masqué avec contrôles audio */}
                   <div style={{ 
                     position: 'relative',
                     width: '100%',
-                    height: '120px',
-                    background: 'rgba(0,0,0,0.8)',
+                    height: '80px',
+                    background: 'rgba(0,0,0,0.9)',
                     borderRadius: '10px',
                     overflow: 'hidden'
                   }}>
+                    {/* Iframe YouTube complètement masquée */}
                     <iframe
                       title="Lecteur audio YouTube masqué"
-                      src={`https://www.youtube.com/embed/${extractYouTubeId(gameData.musicLinks[currentQuestion])}?autoplay=0&controls=1&showinfo=0&rel=0&modestbranding=1&fs=0&cc_load_policy=0&iv_load_policy=3&disablekb=1&enablejsapi=1`}
+                      src={`https://www.youtube.com/embed/${extractYouTubeId(gameData.musicLinks[currentQuestion])}?autoplay=0&controls=1&showinfo=0&rel=0&modestbranding=1&fs=0&cc_load_policy=0&iv_load_policy=3&disablekb=1&enablejsapi=1&start=0`}
                       style={{
                         position: 'absolute',
-                        top: '-40px', // Masquer moins la partie vidéo pour avoir les contrôles
+                        top: '-200px', // Complètement masquer la vidéo
                         left: '0',
                         width: '100%',
-                        height: '200px', // Plus grand pour avoir les contrôles
+                        height: '400px', // Très grand pour avoir les contrôles
                         border: 'none',
-                        borderRadius: '10px'
+                        opacity: '0.01' // Presque invisible mais fonctionnel
                       }}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
+                    
+                    {/* Interface audio personnalisée */}
                     <div style={{
                       position: 'absolute',
-                      bottom: '0',
+                      top: '0',
                       left: '0',
                       right: '0',
-                      height: '120px',
-                      background: 'rgba(0,0,0,0.7)',
+                      bottom: '0',
+                      background: 'linear-gradient(45deg, #667eea, #764ba2)',
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      justifyContent: 'center',
+                      justifyContent: 'space-between',
                       color: 'white',
-                      fontSize: '0.9rem',
-                      borderRadius: '0 0 10px 10px',
-                      padding: '10px'
+                      padding: '0 20px',
+                      borderRadius: '10px'
                     }}>
-                      <div style={{ marginBottom: '5px', fontSize: '1.1rem' }}>🎧</div>
-                      <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>Lecteur YouTube</div>
-                      <div style={{ fontSize: '0.8rem', opacity: 0.8, textAlign: 'center' }}>
-                        Utilisez les contrôles ci-dessus<br/>pour jouer l'audio
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ fontSize: '1.5rem', marginRight: '15px' }}>🎵</div>
+                        <div>
+                          <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>Audio YouTube</div>
+                          <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Vidéo masquée</div>
+                        </div>
+                      </div>
+                      
+                      {/* Contrôles audio personnalisés */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <button
+                          onClick={() => {
+                            // Trouver l'iframe et déclencher play
+                            const iframe = document.querySelector('iframe[title="Lecteur audio YouTube masqué"]');
+                            if (iframe && iframe.contentWindow) {
+                              iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+                            }
+                          }}
+                          style={{
+                            background: 'rgba(255,255,255,0.2)',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            color: 'white',
+                            fontSize: '1.2rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          ▶️
+                        </button>
+                        <button
+                          onClick={() => {
+                            const iframe = document.querySelector('iframe[title="Lecteur audio YouTube masqué"]');
+                            if (iframe && iframe.contentWindow) {
+                              iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+                            }
+                          }}
+                          style={{
+                            background: 'rgba(255,255,255,0.2)',
+                            border: 'none',
+                            borderRadius: '50%',
+                            width: '40px',
+                            height: '40px',
+                            color: 'white',
+                            fontSize: '1.2rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          ⏸️
+                        </button>
                       </div>
                     </div>
                   </div>

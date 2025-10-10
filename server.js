@@ -136,39 +136,54 @@ app.get('/api/youtube-audio/:videoId', async (req, res) => {
   try {
     const { videoId } = req.params;
     
-    // Utiliser une API publique pour convertir YouTube en MP3
-    // API gratuite : youtube-mp3-api
-    const apiUrl = `https://api.vevioz.com/api/button/mp3/${videoId}`;
+    // Essayer plusieurs APIs de conversion YouTube
+    const apis = [
+      `https://api.vevioz.com/api/button/mp3/${videoId}`,
+      `https://youtube-to-mp3-api.herokuapp.com/api/convert?video_id=${videoId}`,
+      `https://api.yt-dlp.org/info?url=https://www.youtube.com/watch?v=${videoId}`
+    ];
     
-    try {
-      const response = await axios.get(apiUrl);
-      
-      // Si l'API retourne une URL MP3 directe
-      if (response.data && response.data.url) {
-        res.json({ 
-          success: true,
-          audioUrl: response.data.url,
-          videoId: videoId
-        });
-      } else {
-        // Fallback : utiliser une autre API
-        const fallbackUrl = `https://www.youtube.com/watch?v=${videoId}`;
-        res.json({ 
-          success: false,
-          videoId: videoId,
-          originalUrl: fallbackUrl,
-          message: 'Conversion automatique non disponible, utilisation du lecteur intégré'
-        });
+    for (const apiUrl of apis) {
+      try {
+        console.log('Tentative API:', apiUrl);
+        const response = await axios.get(apiUrl, { timeout: 10000 });
+        
+        if (response.data) {
+          // Vérifier différents formats de réponse
+          let audioUrl = null;
+          
+          if (response.data.url) {
+            audioUrl = response.data.url;
+          } else if (response.data.download_url) {
+            audioUrl = response.data.download_url;
+          } else if (response.data.audio_url) {
+            audioUrl = response.data.audio_url;
+          }
+          
+          if (audioUrl && audioUrl.includes('http')) {
+            console.log('URL audio trouvée:', audioUrl);
+            return res.json({ 
+              success: true,
+              audioUrl: audioUrl,
+              videoId: videoId
+            });
+          }
+        }
+      } catch (apiError) {
+        console.log('API échouée:', apiUrl, apiError.message);
+        continue; // Essayer l'API suivante
       }
-    } catch (apiError) {
-      console.error('Erreur API YouTube:', apiError.message);
-      res.json({ 
-        success: false,
-        videoId: videoId,
-        message: 'Conversion automatique non disponible, utilisation du lecteur intégré'
-      });
     }
+    
+    // Aucune API n'a fonctionné
+    res.json({ 
+      success: false,
+      videoId: videoId,
+      message: 'Conversion automatique non disponible, utilisation du lecteur intégré'
+    });
+    
   } catch (error) {
+    console.error('Erreur générale YouTube:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
