@@ -6,6 +6,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [newRoom, setNewRoom] = useState({ name: '', description: '', musicLinks: [] });
   const [newLink, setNewLink] = useState({ url: '', answer: '' });
+  const [editingRoom, setEditingRoom] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -74,15 +75,45 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
     }
   };
 
+  const handleRoomNameChange = (roomId, newName) => {
+    setEditingRoom(prev => ({ ...prev, [roomId]: { ...prev[roomId], name: newName } }));
+  };
+
+  const handleRoomDescriptionChange = (roomId, newDescription) => {
+    setEditingRoom(prev => ({ ...prev, [roomId]: { ...prev[roomId], description: newDescription } }));
+  };
+
   const saveRoom = async (roomId) => {
     const room = rooms.find(r => r._id === roomId);
     if (!room) return;
 
     try {
       setLoading(true);
-      await axios.put(`/api/rooms/${roomId}`, { musicLinks: room.musicLinks });
+      const updates = {
+        musicLinks: room.musicLinks
+      };
+      
+      // Ajouter les modifications de nom et description si elles existent
+      if (editingRoom[roomId]?.name !== undefined) {
+        updates.name = editingRoom[roomId].name;
+      }
+      if (editingRoom[roomId]?.description !== undefined) {
+        updates.description = editingRoom[roomId].description;
+      }
+      
+      await axios.put(`/api/rooms/${roomId}`, updates);
       setSuccess('Salle mise à jour avec succès !');
       setError('');
+      
+      // Recharger les salles pour afficher les modifications
+      await fetchRooms();
+      
+      // Nettoyer l'état d'édition pour cette salle
+      setEditingRoom(prev => {
+        const newState = { ...prev };
+        delete newState[roomId];
+        return newState;
+      });
     } catch (error) {
       setError('Erreur lors de la sauvegarde');
     } finally {
@@ -130,18 +161,18 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
           className="btn" 
           style={{ 
             marginBottom: '20px',
-            background: 'linear-gradient(135deg, #ffd93d, #ff9800)',
-            border: '2px solid rgba(255, 217, 61, 0.5)',
-            boxShadow: '0 4px 15px rgba(255, 152, 0, 0.3)',
+            background: 'linear-gradient(135deg, #ff6b6b, #c92a2a)',
+            border: '2px solid rgba(255, 107, 107, 0.5)',
+            boxShadow: '0 4px 15px rgba(201, 42, 42, 0.3)',
             transition: 'all 0.3s ease'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'scale(1.05)';
-            e.currentTarget.style.boxShadow = '0 6px 20px rgba(255, 152, 0, 0.5)';
+            e.currentTarget.style.boxShadow = '0 6px 20px rgba(201, 42, 42, 0.5)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 152, 0, 0.3)';
+            e.currentTarget.style.boxShadow = '0 4px 15px rgba(201, 42, 42, 0.3)';
           }}
         >
           ← Retour au menu
@@ -185,11 +216,34 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                   borderRadius: '15px',
                   border: selectedRoom === room._id ? '2px solid #667eea' : '1px solid rgba(255, 255, 255, 0.2)'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <div>
-                      <h4 style={{ margin: '0 0 5px 0' }}>{room.name}</h4>
-                      {room.description && (
-                        <p style={{ margin: '0', opacity: 0.8, fontSize: '0.9rem' }}>{room.description}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+                    <div style={{ flex: 1 }}>
+                      {selectedRoom === room._id ? (
+                        <>
+                          <input
+                            type="text"
+                            value={editingRoom[room._id]?.name !== undefined ? editingRoom[room._id].name : room.name}
+                            onChange={(e) => handleRoomNameChange(room._id, e.target.value)}
+                            className="input"
+                            style={{ marginBottom: '10px', fontSize: '1rem', fontWeight: 'bold' }}
+                            placeholder="Nom de la salle"
+                          />
+                          <input
+                            type="text"
+                            value={editingRoom[room._id]?.description !== undefined ? editingRoom[room._id].description : (room.description || '')}
+                            onChange={(e) => handleRoomDescriptionChange(room._id, e.target.value)}
+                            className="input"
+                            style={{ marginBottom: '10px', fontSize: '0.9rem' }}
+                            placeholder="Description (optionnel)"
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <h4 style={{ margin: '0 0 5px 0' }}>{room.name}</h4>
+                          {room.description && (
+                            <p style={{ margin: '0', opacity: 0.8, fontSize: '0.9rem' }}>{room.description}</p>
+                          )}
+                        </>
                       )}
                       <p style={{ margin: '5px 0 0 0', fontSize: '0.8rem', color: '#ffd700' }}>
                         ID: {room._id}

@@ -117,8 +117,14 @@ app.post('/api/rooms', async (req, res) => {
 
 app.put('/api/rooms/:id', async (req, res) => {
   try {
-    const { musicLinks } = req.body;
-    const room = await Room.findByIdAndUpdate(req.params.id, { musicLinks }, { new: true });
+    const { musicLinks, name, description } = req.body;
+    const updates = {};
+    
+    if (musicLinks !== undefined) updates.musicLinks = musicLinks;
+    if (name !== undefined) updates.name = name;
+    if (description !== undefined) updates.description = description;
+    
+    const room = await Room.findByIdAndUpdate(req.params.id, updates, { new: true });
     res.json(room);
   } catch (error) {
     res.status(500).json({ error: error.message });
