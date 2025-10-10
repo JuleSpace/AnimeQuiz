@@ -25,7 +25,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Connexion MongoDB
-const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URL || 'mongodb://localhost:27017/animequiz';
+const mongoUri = process.env.MONGO_URL || process.env.MONGODB_URI || 'mongodb://localhost:27017/animequiz';
 console.log('🔗 Tentative de connexion MongoDB:', mongoUri.replace(/\/\/.*@/, '//***:***@')); // Masquer les credentials
 
 mongoose.connect(mongoUri)
@@ -361,8 +361,8 @@ console.log('🔧 Variables d\'environnement:');
 console.log('- NODE_ENV:', process.env.NODE_ENV || 'non définie');
 console.log('- PORT:', process.env.PORT || 'non définie');
 console.log('- CLIENT_URL:', process.env.CLIENT_URL || 'non définie');
-console.log('- MONGODB_URI:', process.env.MONGODB_URI ? 'définie' : 'non définie');
 console.log('- MONGO_URL:', process.env.MONGO_URL ? 'définie' : 'non définie');
+console.log('- MONGODB_URI:', process.env.MONGODB_URI ? 'définie' : 'non définie');
 
 // Vérifier que le dossier build existe en production
 if (process.env.NODE_ENV === 'production') {
