@@ -64,6 +64,12 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
     return (match && match[2].length === 11) ? match[2] : null;
   };
 
+  const extractYouTubeTimestamp = (url) => {
+    // Extraire le timestamp (t=236, start=236, etc.)
+    const timestampMatch = url.match(/[?&](?:t|start)=(\d+)/);
+    return timestampMatch ? parseInt(timestampMatch[1]) : 0;
+  };
+
   const extractSpotifyId = (url) => {
     // Support pour différents formats Spotify :
     // https://open.spotify.com/track/1EUGo3QcDXQSv0XKF8GIZK
@@ -165,29 +171,80 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                       borderRadius: '10px 10px 0 0'
                     }}></div>
                     
-                    {/* Interface audio personnalisée */}
-                    <div style={{
-                      position: 'absolute',
-                      bottom: '0',
-                      left: '0',
-                      right: '0',
-                      height: '80px',
-                      background: 'linear-gradient(45deg, #1db954, #1ed760)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'white',
-                      padding: '0 20px',
-                      borderRadius: '0 0 10px 10px'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <div style={{ fontSize: '1.5rem', marginRight: '15px' }}>🎵</div>
-                        <div>
-                          <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>Audio Spotify</div>
-                          <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Utilisez les contrôles ci-dessus</div>
-                        </div>
-                      </div>
-                    </div>
+                     {/* Interface audio personnalisée */}
+                     <div style={{
+                       position: 'absolute',
+                       bottom: '0',
+                       left: '0',
+                       right: '0',
+                       height: '80px',
+                       background: 'linear-gradient(45deg, #1db954, #1ed760)',
+                       display: 'flex',
+                       alignItems: 'center',
+                       justifyContent: 'space-between',
+                       color: 'white',
+                       padding: '0 20px',
+                       borderRadius: '0 0 10px 10px'
+                     }}>
+                       <div style={{ display: 'flex', alignItems: 'center' }}>
+                         <div style={{ fontSize: '1.5rem', marginRight: '15px' }}>🎵</div>
+                         <div>
+                           <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>Audio Spotify</div>
+                           <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Informations masquées</div>
+                         </div>
+                       </div>
+                       
+                       {/* Contrôles audio personnalisés */}
+                       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                         <button
+                           onClick={() => {
+                             // Trouver l'iframe Spotify et déclencher play
+                             const iframe = document.querySelector('iframe[title="Lecteur Spotify"]');
+                             if (iframe && iframe.contentWindow) {
+                               iframe.contentWindow.postMessage('{"event":"command","func":"togglePlay"}', '*');
+                             }
+                           }}
+                           style={{
+                             background: 'rgba(255,255,255,0.2)',
+                             border: 'none',
+                             borderRadius: '50%',
+                             width: '40px',
+                             height: '40px',
+                             color: 'white',
+                             fontSize: '1.2rem',
+                             cursor: 'pointer',
+                             display: 'flex',
+                             alignItems: 'center',
+                             justifyContent: 'center'
+                           }}
+                         >
+                           ▶️
+                         </button>
+                         <button
+                           onClick={() => {
+                             const iframe = document.querySelector('iframe[title="Lecteur Spotify"]');
+                             if (iframe && iframe.contentWindow) {
+                               iframe.contentWindow.postMessage('{"event":"command","func":"togglePause"}', '*');
+                             }
+                           }}
+                           style={{
+                             background: 'rgba(255,255,255,0.2)',
+                             border: 'none',
+                             borderRadius: '50%',
+                             width: '40px',
+                             height: '40px',
+                             color: 'white',
+                             fontSize: '1.2rem',
+                             cursor: 'pointer',
+                             display: 'flex',
+                             alignItems: 'center',
+                             justifyContent: 'center'
+                           }}
+                         >
+                           ⏸️
+                         </button>
+                       </div>
+                     </div>
                   </div>
                   
                   <div style={{ marginTop: '15px', fontSize: '0.8rem', opacity: 0.8 }}>
@@ -218,9 +275,9 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                     overflow: 'hidden'
                   }}>
                     {/* Iframe YouTube complètement masquée */}
-                    <iframe
-                      title="Lecteur audio YouTube masqué"
-                      src={`https://www.youtube.com/embed/${extractYouTubeId(gameData.musicLinks[currentQuestion])}?autoplay=0&controls=1&showinfo=0&rel=0&modestbranding=1&fs=0&cc_load_policy=0&iv_load_policy=3&disablekb=1&enablejsapi=1&start=0`}
+                     <iframe
+                       title="Lecteur audio YouTube masqué"
+                       src={`https://www.youtube.com/embed/${extractYouTubeId(gameData.musicLinks[currentQuestion])}?autoplay=0&controls=1&showinfo=0&rel=0&modestbranding=1&fs=0&cc_load_policy=0&iv_load_policy=3&disablekb=1&enablejsapi=1&start=${extractYouTubeTimestamp(gameData.musicLinks[currentQuestion])}`}
                       style={{
                         position: 'absolute',
                         top: '-200px', // Complètement masquer la vidéo

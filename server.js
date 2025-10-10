@@ -290,10 +290,13 @@ io.on('connection', (socket) => {
     });
     await gameSession.save();
 
+    // Mélanger l'ordre des musiques pour cette partie
+    const shuffledMusicLinks = [...room.musicLinks].sort(() => Math.random() - 0.5);
+    
     io.to(roomId).emit('game-started', {
-      totalQuestions: room.musicLinks.length,
+      totalQuestions: shuffledMusicLinks.length,
       currentQuestion: 0,
-      musicLinks: room.musicLinks,
+      musicLinks: shuffledMusicLinks,
       players: lobby.players
     });
 
