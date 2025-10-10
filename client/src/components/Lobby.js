@@ -1,10 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Lobby = ({ lobby, player, onStartGame, onLeave }) => {
+  const [numberOfSongs, setNumberOfSongs] = useState(10);
+  const [maxSongs, setMaxSongs] = useState(10);
+
+  useEffect(() => {
+    // Récupérer le nombre total de musiques dans la salle
+    if (lobby && lobby.totalSongs) {
+      setMaxSongs(lobby.totalSongs);
+      setNumberOfSongs(Math.min(10, lobby.totalSongs));
+    }
+  }, [lobby]);
+
   if (!lobby || !player) return null;
 
   const isLeader = lobby.players[0]?.id === player.id;
   const canStartGame = lobby.players.length >= 2 && isLeader && !lobby.isGameStarted;
+
+  const handleStartGame = () => {
+    onStartGame(numberOfSongs);
+  };
 
   return (
     <div className="container">
@@ -33,8 +48,38 @@ const Lobby = ({ lobby, player, onStartGame, onLeave }) => {
             </div>
           )}
 
+          {isLeader && lobby.players.length >= 2 && (
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ marginBottom: '10px', fontSize: '1rem' }}>
+                🎵 Nombre de musiques à jouer :
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
+                <input
+                  type="number"
+                  min="1"
+                  max={maxSongs}
+                  value={numberOfSongs}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (value >= 1 && value <= maxSongs) {
+                      setNumberOfSongs(value);
+                    }
+                  }}
+                  className="input"
+                  style={{ 
+                    width: '100px', 
+                    textAlign: 'center',
+                    fontSize: '1.2rem',
+                    padding: '10px'
+                  }}
+                />
+                <span style={{ opacity: 0.8 }}>/ {maxSongs} disponibles</span>
+              </div>
+            </div>
+          )}
+
           {canStartGame && (
-            <button onClick={onStartGame} className="btn btn-success">
+            <button onClick={handleStartGame} className="btn btn-success">
               🚀 Démarrer la Partie
             </button>
           )}

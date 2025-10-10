@@ -227,15 +227,24 @@ io.on('connection', (socket) => {
   socket.on('join-lobby', async (data) => {
     const { username, roomId } = data;
     
+    // Récupérer les informations de la salle pour connaître le nombre de musiques
+    const room = await Room.findById(roomId);
+    if (!room) {
+      socket.emit('join-error', { message: 'Salle introuvable' });
+      return;
+    }
+    
     if (!lobbies.has(roomId)) {
       lobbies.set(roomId, {
         players: [],
         isGameStarted: false,
-        roomId
+        roomId,
+        totalSongs: room.musicLinks.length
       });
     }
 
     const lobby = lobbies.get(roomId);
+    lobby.totalSongs = room.musicLinks.length; // Mettre à jour au cas où
     
     // Vérifier si le joueur existe déjà
     const existingPlayer = lobby.players.find(p => p.username === username);
@@ -264,7 +273,7 @@ io.on('connection', (socket) => {
 
   // Démarrer le jeu (seulement le premier joueur)
   socket.on('start-game', async (data) => {
-    const { roomId } = data;
+    const { roomId, numberOfSongs } = data;
     const lobby = lobbies.get(roomId);
     const player = players.get(socket.id);
 
@@ -300,7 +309,13 @@ io.on('connection', (socket) => {
     await gameSession.save();
 
     // Mélanger l'ordre des musiques pour cette partie
-    const shuffledMusicLinks = [...room.musicLinks].sort(() => Math.random() - 0.5);
+    let shuffledMusicLinks = [...room.musicLinks].sort(() => Math.random() - 0.5);
+    
+    // Limiter le nombre de musiques si spécifié
+    if (numberOfSongs && numberOfSongs > 0 && numberOfSongs < shuffledMusicLinks.length) {
+      shuffledMusicLinks = shuffledMusicLinks.slice(0, numberOfSongs);
+      console.log(`Partie démarrée avec ${numberOfSongs} musiques sur ${room.musicLinks.length} disponibles`);
+    }
     
     io.to(roomId).emit('game-started', {
       totalQuestions: shuffledMusicLinks.length,

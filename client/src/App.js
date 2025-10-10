@@ -124,9 +124,9 @@ function App() {
     }
   };
 
-  const handleStartGame = () => {
+  const handleStartGame = (numberOfSongs) => {
     if (lobby && player) {
-      socket.emit('start-game', { roomId: player.roomId });
+      socket.emit('start-game', { roomId: player.roomId, numberOfSongs });
     }
   };
 
