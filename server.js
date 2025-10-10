@@ -347,8 +347,12 @@ io.on('connection', (socket) => {
     player.corrections[questionIndex] = corrections;
 
     // Le chef a corrigé, on peut passer à la suite
+    console.log('🔍 Corrections du chef:', corrections);
+    console.log('👥 Joueurs dans le lobby:', lobby.players.map(p => ({ id: p.id, username: p.username })));
+    
     // Calculer les scores finaux pour cette question
     const finalScores = calculateFinalScores(lobby.players, questionIndex, corrections);
+    console.log('📊 Scores calculés:', finalScores);
       
     // Mettre à jour les scores
     lobby.players.forEach(p => {
@@ -413,19 +417,13 @@ io.on('connection', (socket) => {
 function calculateFinalScores(players, questionIndex, chefCorrections) {
   const scores = {};
   
-  // Le chef ne gagne pas de points en corrigeant
-  // Les autres joueurs gagnent des points selon les corrections du chef
+  // Tous les joueurs gagnent 1 point par bonne réponse selon le chef
   players.forEach(player => {
-    if (player.id === players[0].id) {
-      // Le chef (premier joueur) ne gagne pas de points
-      scores[player.id] = 0;
+    // Vérifier si ce joueur a une bonne réponse selon le chef
+    if (chefCorrections && chefCorrections[player.id]) {
+      scores[player.id] = 1; // 1 point pour une bonne réponse
     } else {
-      // Vérifier si ce joueur a une bonne réponse selon le chef
-      if (chefCorrections && chefCorrections[player.id]) {
-        scores[player.id] = 10; // 10 points pour une bonne réponse
-      } else {
-        scores[player.id] = 0; // 0 points pour une mauvaise réponse
-      }
+      scores[player.id] = 0; // 0 points pour une mauvaise réponse
     }
   });
   

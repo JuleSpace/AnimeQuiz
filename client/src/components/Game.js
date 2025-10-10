@@ -214,7 +214,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                           ⏸️
                         </button>
                         
-                        {/* Contrôle de volume */}
+                        {/* Contrôle de volume via audio context */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '1rem' }}>🔊</span>
                           <input
@@ -223,10 +223,17 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                             max="100"
                             defaultValue="50"
                             onChange={(e) => {
+                              const volume = parseInt(e.target.value) / 100;
+                              // Créer ou récupérer l'audio context pour contrôler le volume
+                              const audioElements = document.querySelectorAll('audio, video');
+                              audioElements.forEach(audio => {
+                                audio.volume = volume;
+                              });
+                              
+                              // Essayer de contrôler l'iframe YouTube via CSS
                               const iframe = document.querySelector('iframe[title="Lecteur audio YouTube masqué"]');
-                              if (iframe && iframe.contentWindow) {
-                                const volume = parseInt(e.target.value);
-                                iframe.contentWindow.postMessage(`{"event":"command","func":"setVolume","args":"${volume}"}`, '*');
+                              if (iframe) {
+                                iframe.style.opacity = volume > 0 ? '0.01' : '0';
                               }
                             }}
                             style={{
