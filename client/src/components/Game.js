@@ -149,7 +149,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                   <source src={audioUrl} type="audio/ogg" />
                   Votre navigateur ne supporte pas la lecture audio.
                 </audio>
-              ) : gameData.musicLinks[currentQuestion].includes('spotify.com') ? (
+              ) : getMusicUrl(gameData.musicLinks[currentQuestion]).includes('spotify.com') ? (
                 <div style={{ 
                   background: 'rgba(255, 255, 255, 0.1)', 
                   padding: '20px', 
@@ -174,7 +174,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                    }}>
                      <iframe
                        title="Lecteur Spotify"
-                       src={`https://open.spotify.com/embed/track/${extractSpotifyId(gameData.musicLinks[currentQuestion])}?utm_source=generator&theme=0`}
+                       src={`https://open.spotify.com/embed/track/${extractSpotifyId(getMusicUrl(gameData.musicLinks[currentQuestion]))}?utm_source=generator&theme=0`}
                        style={{
                          position: 'absolute',
                          top: '-40px', // Masquer les informations en haut
