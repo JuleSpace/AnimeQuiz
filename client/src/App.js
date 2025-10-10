@@ -50,9 +50,6 @@ function App() {
         totalQuestions: data.totalQuestions,
         isCorrectionPhase: false
       }));
-      // Réinitialiser les états pour permettre aux joueurs de rejouer
-      setHasAnswered(false);
-      setAnswer('');
     });
 
     socket.on('start-correction', (data) => {
