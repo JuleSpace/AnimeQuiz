@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const AdminPanel = ({ onBack }) => {
+const AdminPanel = ({ onBack, onRoomUpdate }) => {
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [newRoom, setNewRoom] = useState({ name: '', description: '', musicLinks: [] });
@@ -39,6 +39,7 @@ const AdminPanel = ({ onBack }) => {
       setNewRoom({ name: '', description: '', musicLinks: [] });
       setSuccess('Salle créée avec succès !');
       setError('');
+      if (onRoomUpdate) onRoomUpdate(); // Notifier le parent
     } catch (error) {
       setError('Erreur lors de la création de la salle');
     } finally {
@@ -98,6 +99,7 @@ const AdminPanel = ({ onBack }) => {
       setRooms(rooms.filter(r => r._id !== roomId));
       setSuccess('Salle supprimée avec succès !');
       setError('');
+      if (onRoomUpdate) onRoomUpdate(); // Notifier le parent
     } catch (error) {
       setError('Erreur lors de la suppression');
     } finally {
