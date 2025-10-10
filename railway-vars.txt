@@ -1,8 +1,8 @@
 # Variables d'environnement pour Railway
 # Copier ces variables dans l'onglet "Variables" de votre service web Railway
 
-MONGO_URL=mongodb://mongo:IbeSxXaAWBaHYfYprRddXQiXaKntEJOj@mongodb.railway.internal:27017
-CLIENT_URL=https://votre-app.railway.app
+MONGO_URL=mongodb://mongo:IbeSxXaAWBaHYfYprRddXQiXaKntEJOj@shuttle.proxy.rlwy.net:56670
+CLIENT_URL=https://amq-maisparmoiwesh.up.railway.app
 NODE_ENV=production
 PORT=5000
 
