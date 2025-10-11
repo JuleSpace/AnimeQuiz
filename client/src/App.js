@@ -9,8 +9,9 @@ import './index.css';
 const socket = io(process.env.REACT_APP_SERVER_URL || window.location.origin);
 
 function App() {
-  const [currentView, setCurrentView] = useState('menu');
+  const [currentView, setCurrentView] = useState('login');
   const [username, setUsername] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [lobby, setLobby] = useState(null);
   const [player, setPlayer] = useState(null);
@@ -20,6 +21,16 @@ function App() {
   const [rooms, setRooms] = useState([]);
   const [adminAuth, setAdminAuth] = useState({ username: '', password: '' });
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+
+  // Vérifier si un utilisateur est déjà connecté au chargement
+  useEffect(() => {
+    const savedUsername = localStorage.getItem('animeQuizUsername');
+    if (savedUsername) {
+      setUsername(savedUsername);
+      setIsLoggedIn(true);
+      setCurrentView('menu');
+    }
+  }, []);
 
   useEffect(() => {
     // Charger les salles disponibles
@@ -112,6 +123,33 @@ function App() {
     }
   };
 
+  const handleLogin = () => {
+    if (!username.trim()) {
+      setError('Veuillez entrer un pseudo');
+      return;
+    }
+    
+    // Sauvegarder le pseudo dans localStorage
+    localStorage.setItem('animeQuizUsername', username.trim());
+    setIsLoggedIn(true);
+    setCurrentView('menu');
+    setError('');
+    setSuccess(`Bienvenue ${username.trim()} ! 🎮`);
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('animeQuizUsername');
+    setUsername('');
+    setIsLoggedIn(false);
+    setCurrentView('login');
+    setLobby(null);
+    setPlayer(null);
+    setGameData(null);
+    setSuccess('Déconnexion réussie ! 👋');
+    setTimeout(() => setSuccess(''), 3000);
+  };
+
   const handleJoinLobby = (roomId) => {
     if (!username.trim()) {
       setError('Veuillez entrer un nom d\'utilisateur');
@@ -150,8 +188,12 @@ function App() {
   };
 
   const resetGame = () => {
-    setCurrentView('menu');
-    setUsername('');
+    // Retourner au menu si l'utilisateur est connecté, sinon à la page de connexion
+    if (isLoggedIn && username) {
+      setCurrentView('menu');
+    } else {
+      setCurrentView('login');
+    }
     setSelectedRoom(null);
     setLobby(null);
     setPlayer(null);
@@ -165,6 +207,126 @@ function App() {
 
   const renderCurrentView = () => {
     switch (currentView) {
+      case 'login':
+        return (
+          <div className="container">
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '20px' }}>
+                <img 
+                  src="https://media.tenor.com/PxudDH41WKcAAAAj/pepe-music-pepe-listening-to-music.gif" 
+                  alt="Pepe Music"
+                  style={{ width: '60px', height: '60px', borderRadius: '10px' }}
+                />
+                <h1 style={{ fontSize: '2.5rem', margin: 0 }}>
+                  Music Quiz
+                </h1>
+                <img 
+                  src="https://media.tenor.com/-oEgnxYtci4AAAAj/kirby-dancing-bop.gif" 
+                  alt="Kirby Dancing"
+                  style={{ width: '60px', height: '60px', borderRadius: '10px' }}
+                />
+              </div>
+              
+              <p style={{ textAlign: 'center', marginBottom: '15px', fontSize: '1.2rem', opacity: 0.9 }}>
+                Fais toi bully par tes potes avec un maximum de plaisir toujours :)
+              </p>
+              
+              <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                <img 
+                  src="https://media1.tenor.com/m/8o5zzcKRkRAAAAAC/bully-soccer.gif" 
+                  alt="Bully"
+                  style={{ width: '80px', height: '64px', borderRadius: '10px' }}
+                />
+              </div>
+
+              <div style={{ maxWidth: '400px', margin: '0 auto', padding: '30px' }}>
+                <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#667eea' }}>
+                  🎮 Connexion
+                </h2>
+                
+                <p style={{ textAlign: 'center', marginBottom: '20px', opacity: 0.8 }}>
+                  Choisis ton pseudo pour commencer à jouer !
+                </p>
+
+                <input
+                  type="text"
+                  placeholder="Entre ton pseudo"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  className="input"
+                  style={{ 
+                    marginBottom: '20px',
+                    fontSize: '1.1rem',
+                    padding: '15px',
+                    textAlign: 'center'
+                  }}
+                />
+                
+                <button 
+                  onClick={handleLogin}
+                  className="button"
+                  style={{
+                    width: '100%',
+                    padding: '15px',
+                    fontSize: '1.1rem',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    border: 'none',
+                    borderRadius: '10px',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.6)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+                  }}
+                >
+                  🎵 Commencer à jouer
+                </button>
+
+                <div style={{ 
+                  marginTop: '30px', 
+                  paddingTop: '20px', 
+                  borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                  textAlign: 'center'
+                }}>
+                  <button 
+                    onClick={() => setCurrentView('admin')}
+                    style={{
+                      background: 'linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%)',
+                      color: 'white',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: 'bold',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 4px 12px rgba(255, 107, 107, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    🔐 Connexion Admin
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
       case 'menu':
         return (
           <div className="container">
@@ -196,14 +358,47 @@ function App() {
             </div>
               
               <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-                <input
-                  type="text"
-                  placeholder="Nom d'utilisateur"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="input"
-                  style={{ marginBottom: '20px' }}
-                />
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginBottom: '20px',
+                  padding: '15px',
+                  background: 'rgba(102, 126, 234, 0.1)',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(102, 126, 234, 0.3)'
+                }}>
+                  <div>
+                    <span style={{ opacity: 0.7, fontSize: '0.9rem' }}>Connecté en tant que :</span>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#667eea', marginTop: '5px' }}>
+                      🎮 {username}
+                    </div>
+                  </div>
+                  <button 
+                    onClick={handleLogout}
+                    style={{
+                      background: 'linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%)',
+                      color: 'white',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: 'bold',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 4px 12px rgba(255, 107, 107, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = 'none';
+                    }}
+                  >
+                    🚪 Déconnexion
+                  </button>
+                </div>
                 
                 <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>📋 Quiz disponibles :</h3>
                 
@@ -299,30 +494,6 @@ function App() {
                     ))}
                   </div>
                 )}
-
-                <div style={{ textAlign: 'center' }}>
-                  <button 
-                    onClick={() => setCurrentView('admin-login')} 
-                    className="btn"
-                    style={{ 
-                      marginTop: '20px',
-                      background: 'linear-gradient(135deg, #ff6b6b, #c92a2a)',
-                      border: '2px solid rgba(255, 107, 107, 0.5)',
-                      boxShadow: '0 4px 15px rgba(201, 42, 42, 0.3)',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(201, 42, 42, 0.5)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.boxShadow = '0 4px 15px rgba(201, 42, 42, 0.3)';
-                    }}
-                  >
-                    🔐 Connexion Admin
-                  </button>
-                </div>
               </div>
             </div>
           </div>
