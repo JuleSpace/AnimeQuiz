@@ -526,11 +526,14 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
               <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>
                 🔍 Phase de correction
               </h3>
-              {gameData.players && gameData.players[0] && gameData.players[0].id === player.id ? (
-                <>
-                  <p style={{ textAlign: 'center', marginBottom: '20px', opacity: 0.8 }}>
-                    En tant que chef, corrigez les réponses des autres joueurs :
-                  </p>
+              
+              {/* Affichage des réponses pour tous les joueurs */}
+              <p style={{ textAlign: 'center', marginBottom: '20px', opacity: 0.8 }}>
+                {gameData.players && gameData.players[0] && gameData.players[0].id === player.id 
+                  ? 'En tant que chef, corrigez les réponses des autres joueurs :'
+                  : 'Voici les réponses soumises par tous les joueurs :'
+                }
+              </p>
               
               <div style={{ maxWidth: '600px', margin: '0 auto' }}>
                 {gameData.players && gameData.players.map(p => (
@@ -539,49 +542,58 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                       <strong>{p.username}:</strong>
                       <div style={{ opacity: 0.8 }}>{p.answers && p.answers[currentQuestion]}</div>
                     </div>
-                         <div style={{ display: 'flex', gap: '10px' }}>
-                           <button
-                             onClick={() => toggleCorrection(p.id, true)}
-                             className={`btn ${corrections[p.id] === true ? 'btn-success' : ''}`}
-                             style={{ padding: '5px 15px', fontSize: '0.9rem' }}
-                           >
-                             ✅ Correct
-                           </button>
-                           <button
-                             onClick={() => toggleCorrection(p.id, false)}
-                             className={`btn ${corrections[p.id] === false ? 'btn-danger' : ''}`}
-                             style={{ padding: '5px 15px', fontSize: '0.9rem' }}
-                           >
-                             ❌ Incorrect
-                           </button>
-                           <button
-                             onClick={() => toggleCorrection(p.id, 'bonus')}
-                             className={`btn ${corrections[p.id] === 'bonus' ? 'btn-warning' : ''}`}
-                             style={{ 
-                               padding: '5px 15px', 
-                               fontSize: '0.9rem',
-                               background: corrections[p.id] === 'bonus' ? '#ffd700' : 'rgba(255, 215, 0, 0.2)',
-                               color: corrections[p.id] === 'bonus' ? '#000' : '#ffd700'
-                             }}
-                           >
-                             ⭐ +1 Bonus
-                           </button>
-                         </div>
+                    
+                    {/* Boutons de correction uniquement pour le chef */}
+                    {gameData.players[0] && gameData.players[0].id === player.id && (
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button
+                          onClick={() => toggleCorrection(p.id, true)}
+                          className={`btn ${corrections[p.id] === true ? 'btn-success' : ''}`}
+                          style={{ padding: '5px 15px', fontSize: '0.9rem' }}
+                        >
+                          ✅ Correct
+                        </button>
+                        <button
+                          onClick={() => toggleCorrection(p.id, false)}
+                          className={`btn ${corrections[p.id] === false ? 'btn-danger' : ''}`}
+                          style={{ padding: '5px 15px', fontSize: '0.9rem' }}
+                        >
+                          ❌ Incorrect
+                        </button>
+                        <button
+                          onClick={() => toggleCorrection(p.id, 'bonus')}
+                          className={`btn ${corrections[p.id] === 'bonus' ? 'btn-warning' : ''}`}
+                          style={{ 
+                            padding: '5px 15px', 
+                            fontSize: '0.9rem',
+                            background: corrections[p.id] === 'bonus' ? '#ffd700' : 'rgba(255, 215, 0, 0.2)',
+                            color: corrections[p.id] === 'bonus' ? '#000' : '#ffd700'
+                          }}
+                        >
+                          ⭐ +1 Bonus
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
 
-                  <div style={{ textAlign: 'center', marginTop: '30px' }}>
-                    <button 
-                      onClick={handleSubmitCorrection}
-                      className="btn btn-success"
-                      disabled={Object.keys(corrections).length === 0}
-                    >
-                      Finaliser les corrections ({Object.keys(corrections).length}/{gameData.players ? gameData.players.length - 1 : 0})
-                    </button>
-                  </div>
-                </>
-              ) : (
+              
+              {/* Bouton de finalisation uniquement pour le chef */}
+              {gameData.players && gameData.players[0] && gameData.players[0].id === player.id && (
+                <div style={{ textAlign: 'center', marginTop: '30px' }}>
+                  <button 
+                    onClick={handleSubmitCorrection}
+                    className="btn btn-success"
+                    disabled={Object.keys(corrections).length === 0}
+                  >
+                    Finaliser les corrections ({Object.keys(corrections).length}/{gameData.players ? gameData.players.length - 1 : 0})
+                  </button>
+                </div>
+              )}
+              
+              {/* Message pour les non-chefs */}
+              {gameData.players && (!gameData.players[0] || gameData.players[0].id !== player.id) && (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
                   <div style={{ fontSize: '1.2rem', marginBottom: '10px', color: '#ffd700' }}>
                     ⏳ En attente du chef...
