@@ -277,8 +277,8 @@ io.on('connection', (socket) => {
     const lobby = lobbies.get(roomId);
     const player = players.get(socket.id);
 
-    if (!lobby || !player || lobby.players.length < 2) {
-      socket.emit('start-error', { message: 'Il faut au moins 2 joueurs pour commencer' });
+    if (!lobby || !player || lobby.players.length < 1) {
+      socket.emit('start-error', { message: 'Impossible de démarrer la partie' });
       return;
     }
 

@@ -15,7 +15,7 @@ const Lobby = ({ lobby, player, onStartGame, onLeave }) => {
   if (!lobby || !player) return null;
 
   const isLeader = lobby.players[0]?.id === player.id;
-  const canStartGame = lobby.players.length >= 2 && isLeader && !lobby.isGameStarted;
+  const canStartGame = lobby.players.length >= 1 && isLeader && !lobby.isGameStarted;
 
   const handleStartGame = () => {
     onStartGame(numberOfSongs);
@@ -42,13 +42,19 @@ const Lobby = ({ lobby, player, onStartGame, onLeave }) => {
             Joueurs connectés: {lobby.players.length}/∞
           </div>
           
-          {lobby.players.length < 2 && (
+          {lobby.players.length < 2 && !isLeader && (
             <div style={{ color: '#ffd700', marginBottom: '20px' }}>
               ⏳ En attente d'un autre joueur...
             </div>
           )}
+          
+          {lobby.players.length === 1 && isLeader && (
+            <div style={{ color: '#51cf66', marginBottom: '20px' }}>
+              ✅ Mode solo activé - Vous pouvez démarrer !
+            </div>
+          )}
 
-          {isLeader && lobby.players.length >= 2 && (
+          {isLeader && lobby.players.length >= 1 && (
             <div style={{ marginBottom: '20px' }}>
               <div style={{ marginBottom: '10px', fontSize: '1rem' }}>
                 🎵 Nombre de musiques à jouer :

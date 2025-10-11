@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -7,6 +7,11 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
   const [isCorrectionPhase, setIsCorrectionPhase] = useState(false);
   const [corrections, setCorrections] = useState({});
   const [audioUrl, setAudioUrl] = useState('');
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
+  const youtubeIframeRef = useRef(null);
 
   useEffect(() => {
     if (gameData) {
@@ -112,6 +117,14 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
     }));
   };
 
+  // Fonction pour formater le temps en mm:ss
+  const formatTime = (seconds) => {
+    if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   if (!gameData) return <div className="loading">Chargement...</div>;
 
   return (
@@ -144,11 +157,87 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
           {gameData && gameData.musicLinks && gameData.musicLinks[currentQuestion] && (
             <div className="audio-player">
               {audioUrl ? (
-                <audio controls>
-                  <source src={audioUrl} type="audio/mpeg" />
-                  <source src={audioUrl} type="audio/ogg" />
-                  Votre navigateur ne supporte pas la lecture audio.
-                </audio>
+                <div style={{ width: '100%' }}>
+                  <audio 
+                    ref={audioRef}
+                    onTimeUpdate={(e) => setCurrentTime(e.target.currentTime)}
+                    onLoadedMetadata={(e) => setDuration(e.target.duration)}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                  >
+                    <source src={audioUrl} type="audio/mpeg" />
+                    <source src={audioUrl} type="audio/ogg" />
+                    Votre navigateur ne supporte pas la lecture audio.
+                  </audio>
+                  
+                  {/* Contrôles personnalisés */}
+                  <div style={{ 
+                    background: 'rgba(255, 255, 255, 0.1)', 
+                    padding: '20px', 
+                    borderRadius: '10px',
+                    marginTop: '10px'
+                  }}>
+                    {/* Boutons Play/Pause */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', marginBottom: '15px' }}>
+                      <button
+                        onClick={() => {
+                          if (audioRef.current) {
+                            if (isPlaying) {
+                              audioRef.current.pause();
+                            } else {
+                              audioRef.current.play();
+                            }
+                          }
+                        }}
+                        style={{
+                          background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '50px',
+                          height: '50px',
+                          color: 'white',
+                          fontSize: '1.5rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        {isPlaying ? '⏸️' : '▶️'}
+                      </button>
+                    </div>
+                    
+                    {/* Barre de progression */}
+                    <div style={{ marginBottom: '10px' }}>
+                      <input
+                        type="range"
+                        min="0"
+                        max={duration || 100}
+                        value={currentTime}
+                        onChange={(e) => {
+                          const time = parseFloat(e.target.value);
+                          setCurrentTime(time);
+                          if (audioRef.current) {
+                            audioRef.current.currentTime = time;
+                          }
+                        }}
+                        style={{
+                          width: '100%',
+                          height: '8px',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          accentColor: '#667eea'
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Temps */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', opacity: 0.8 }}>
+                      <span>{formatTime(currentTime)}</span>
+                      <span>{formatTime(duration)}</span>
+                    </div>
+                  </div>
+                </div>
               ) : getMusicUrl(gameData.musicLinks[currentQuestion]).includes('spotify.com') ? (
                 <div style={{ 
                   background: 'rgba(255, 255, 255, 0.1)', 
