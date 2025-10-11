@@ -71,6 +71,13 @@ function App() {
       }));
     });
 
+    socket.on('corrections-updated', (data) => {
+      setGameData(prev => ({
+        ...prev,
+        currentCorrections: data.corrections
+      }));
+    });
+
     socket.on('game-ended', (data) => {
       setGameData(prev => ({ ...prev, results: data.results }));
       setCurrentView('results');
@@ -136,6 +143,10 @@ function App() {
 
   const handleSubmitCorrection = (questionIndex, corrections) => {
     socket.emit('submit-correction', { questionIndex, corrections });
+  };
+
+  const handleUpdateCorrections = (questionIndex, corrections) => {
+    socket.emit('update-corrections', { questionIndex, corrections });
   };
 
   const resetGame = () => {
@@ -329,12 +340,13 @@ function App() {
 
       case 'game':
         return (
-          <Game
-            gameData={gameData}
-            player={player}
-            onSubmitAnswer={handleSubmitAnswer}
-            onSubmitCorrection={handleSubmitCorrection}
-          />
+            <Game 
+              gameData={gameData} 
+              player={player} 
+              onSubmitAnswer={handleSubmitAnswer}
+              onSubmitCorrection={handleSubmitCorrection}
+              onUpdateCorrections={handleUpdateCorrections}
+            />
         );
 
       case 'results':

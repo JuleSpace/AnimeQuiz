@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
+const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCorrections }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answer, setAnswer] = useState('');
   const [hasAnswered, setHasAnswered] = useState(false);
@@ -18,13 +18,36 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
       setCurrentQuestion(gameData.currentQuestion || 0);
       setIsCorrectionPhase(gameData.isCorrectionPhase || false);
       
+      // Synchroniser les corrections reçues du serveur
+      if (gameData.currentCorrections) {
+        setCorrections(gameData.currentCorrections);
+      }
+      
       // Réinitialiser hasAnswered quand on passe à une nouvelle question
       if (gameData.currentQuestion !== currentQuestion) {
         setHasAnswered(false);
         setAnswer('');
+        setCorrections({}); // Réinitialiser les corrections pour la nouvelle question
       }
     }
   }, [gameData, currentQuestion]);
+
+  // Prévenir le rafraîchissement de page (F5) pendant le jeu
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (gameData && !gameData.isGameFinished) {
+        e.preventDefault();
+        e.returnValue = 'Êtes-vous sûr de vouloir quitter la partie ? Votre progression sera perdue.';
+        return 'Êtes-vous sûr de vouloir quitter la partie ? Votre progression sera perdue.';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [gameData]);
 
   useEffect(() => {
     // Récupérer l'URL audio et la convertir si nécessaire
@@ -111,10 +134,16 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
   };
 
   const toggleCorrection = (playerId, isCorrect) => {
-    setCorrections(prev => ({
-      ...prev,
+    const newCorrections = {
+      ...corrections,
       [playerId]: isCorrect
-    }));
+    };
+    setCorrections(newCorrections);
+    
+    // Envoyer les corrections en temps réel au serveur
+    if (onUpdateCorrections) {
+      onUpdateCorrections(currentQuestion, newCorrections);
+    }
   };
 
   // Fonction pour formater le temps en mm:ss
@@ -486,9 +515,11 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                     </div>
                   )}
                   
-                  <div style={{ marginTop: '15px', fontSize: '0.8rem', opacity: 0.8 }}>
-                    💡 La vidéo est masquée, seul l'audio est disponible pour garder la réponse secrète
-                  </div>
+                  {!isCorrectionPhase && (
+                    <div style={{ marginTop: '15px', fontSize: '0.8rem', opacity: 0.8 }}>
+                      💡 La vidéo est masquée, seul l'audio est disponible pour garder la réponse secrète
+                    </div>
+                  )}
                 </div>
               )}
             </div>

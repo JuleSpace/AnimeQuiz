@@ -353,6 +353,28 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Synchronisation des corrections en temps réel
+  socket.on('update-corrections', (data) => {
+    const { questionIndex, corrections } = data;
+    const player = players.get(socket.id);
+    
+    if (!player) return;
+
+    const lobby = lobbies.get(player.roomId);
+    if (!lobby) return;
+
+    // Vérifier que c'est le chef qui met à jour les corrections
+    if (lobby.players[0].id !== socket.id) {
+      return;
+    }
+
+    // Diffuser les corrections à tous les joueurs de la salle
+    io.to(player.roomId).emit('corrections-updated', {
+      questionIndex,
+      corrections
+    });
+  });
+
   // Système de correction automatique
   socket.on('submit-correction', async (data) => {
     const { questionIndex, corrections } = data;
