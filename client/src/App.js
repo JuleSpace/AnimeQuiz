@@ -79,46 +79,44 @@ function App() {
     }
   }, [player, lobby, gameData, currentView, username, isLoggedIn]);
 
-  // Tenter de rejoindre une partie en cours après chargement (une seule fois)
+  // Système de reconnexion simple
   const [hasAttemptedRejoin, setHasAttemptedRejoin] = useState(false);
   
   useEffect(() => {
-    // Attendre que le socket soit connecté
-    if (!socket.connected) return;
-    
-    // Vérifier si on a une partie sauvegardée et qu'on n'a pas encore tenté de rejoindre
+    // Détecter si on vient de faire F5 et qu'il y a une partie en cours
     const savedGameState = localStorage.getItem('animeQuizGameState');
     if (savedGameState && !hasAttemptedRejoin) {
       try {
         const gameState = JSON.parse(savedGameState);
-        if (gameState.player && gameState.lobby && gameState.timestamp > Date.now() - 180000) { // 3 minutes max
-          console.log('🔄 F5 détecté - Tentative de reconnexion à la partie en cours...');
+        if (gameState.player && gameState.lobby && Date.now() - gameState.timestamp < 3600000) { // 1 heure max
+          console.log('🔄 Reconnexion détectée - Tentative de rejoindre la partie...');
           setHasAttemptedRejoin(true);
           
-          // Restaurer l'état immédiatement
+          // Restaurer l'état
           setPlayer(gameState.player);
           setLobby(gameState.lobby);
           setGameData(gameState.gameData);
           setCurrentView(gameState.view || 'game');
           
-          // Tenter de rejoindre côté serveur
-          socket.emit('rejoin-game', { 
-            playerId: gameState.player.id, 
-            roomId: gameState.player.roomId,
-            username: gameState.player.username
-          });
+          // Attendre que le socket soit connecté puis émettre
+          if (socket.connected) {
+            socket.emit('rejoin-game', { 
+              playerId: gameState.player.id, 
+              roomId: gameState.player.roomId,
+              username: gameState.player.username
+            });
+          }
         } else {
-          console.log('🗑️ Partie trop ancienne ou invalide après F5');
           localStorage.removeItem('animeQuizGameState');
           setHasAttemptedRejoin(true);
         }
       } catch (error) {
-        console.error('Erreur lors de la reconnexion après F5:', error);
+        console.error('Erreur reconnexion:', error);
         localStorage.removeItem('animeQuizGameState');
         setHasAttemptedRejoin(true);
       }
     }
-  }, [socket.connected, hasAttemptedRejoin]);
+  }, [hasAttemptedRejoin]);
 
   useEffect(() => {
     // Charger les salles disponibles
@@ -193,16 +191,10 @@ function App() {
     });
 
     socket.on('game-rejoined', (data) => {
-      console.log('✅ Partie rejoint avec succès côté serveur', data);
-      // Mettre à jour l'ID socket du joueur (important après reconnexion)
-      setPlayer(prev => ({ ...prev, id: data.player.id }));
-      // S'assurer que les données sont à jour
-      if (data.gameData) {
-        setGameData(data.gameData);
-      }
-      if (data.lobby) {
-        setLobby(data.lobby);
-      }
+      console.log('✅ Partie rejoint avec succès', data);
+      setPlayer(data.player);
+      setGameData(data.gameData);
+      setLobby(data.lobby);
       setSuccess('Reconnecté à la partie en cours ! 🎮');
       setTimeout(() => setSuccess(''), 3000);
     });
@@ -215,11 +207,9 @@ function App() {
       setHasAttemptedRejoin(true);
     });
 
-    // Détecter la connexion du socket pour tenter la reconnexion
+    // Détecter la connexion du socket
     socket.on('connect', () => {
       console.log('🔌 Socket connecté');
-      // Réinitialiser le flag pour permettre une nouvelle tentative
-      setHasAttemptedRejoin(false);
     });
 
     return () => {
@@ -252,9 +242,34 @@ function App() {
     // Sauvegarder le pseudo dans localStorage
     localStorage.setItem('animeQuizUsername', username.trim());
     setIsLoggedIn(true);
-    setCurrentView('menu');
     setError('');
-    setSuccess(`Bienvenue ${username.trim()} ! 🎮`);
+    
+    // Vérifier s'il y a une partie en cours pour ce pseudo
+    const savedGameState = localStorage.getItem('animeQuizGameState');
+    if (savedGameState) {
+      try {
+        const gameState = JSON.parse(savedGameState);
+        if (gameState.username === username.trim() && gameState.timestamp > Date.now() - 3600000) {
+          console.log('🔄 Partie détectée pour ce pseudo - tentative de reconnexion...');
+          setPlayer(gameState.player);
+          setLobby(gameState.lobby);
+          setGameData(gameState.gameData);
+          setCurrentView(gameState.view || 'game');
+          setSuccess(`Reconnexion à la partie en cours pour ${username.trim()} ! 🎮`);
+        } else {
+          setCurrentView('menu');
+          setSuccess(`Bienvenue ${username.trim()} ! 🎮`);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la vérification de partie:', error);
+        setCurrentView('menu');
+        setSuccess(`Bienvenue ${username.trim()} ! 🎮`);
+      }
+    } else {
+      setCurrentView('menu');
+      setSuccess(`Bienvenue ${username.trim()} ! 🎮`);
+    }
+    
     setTimeout(() => setSuccess(''), 3000);
   };
 
