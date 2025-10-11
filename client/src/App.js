@@ -31,31 +31,32 @@ function App() {
       setUsername(savedUsername);
       setIsLoggedIn(true);
       
-      // Vérifier s'il y a une partie en cours sauvegardée
-      if (savedGameState) {
-        try {
-          const gameState = JSON.parse(savedGameState);
-          // Vérifier que l'état n'est pas trop ancien (max 2 heures)
-          if (Date.now() - gameState.timestamp < 7200000) {
-            console.log('🔄 Tentative de reconnexion à une partie en cours...');
-            setPlayer(gameState.player);
-            setLobby(gameState.lobby);
-            
-            // S'assurer que totalQuestions est défini
-            const gameData = gameState.gameData || {};
-            if (gameData.musicLinks && !gameData.totalQuestions) {
-              gameData.totalQuestions = gameData.musicLinks.length;
-            }
-            setGameData(gameData);
-            setCurrentView(gameState.view || 'game');
-          } else {
-            localStorage.removeItem('animeQuizGameState');
-          }
-        } catch (error) {
-          console.error('Erreur lors de la restauration de l\'état:', error);
-          localStorage.removeItem('animeQuizGameState');
-        }
-      }
+       // Vérifier s'il y a une partie en cours sauvegardée
+       if (savedGameState) {
+         try {
+           const gameState = JSON.parse(savedGameState);
+           // Vérifier que l'état n'est pas trop ancien (max 1 heure pour éviter les problèmes)
+           if (Date.now() - gameState.timestamp < 3600000) {
+             console.log('🔄 Tentative de reconnexion à une partie en cours...');
+             setPlayer(gameState.player);
+             setLobby(gameState.lobby);
+             
+             // S'assurer que totalQuestions est défini
+             const gameData = gameState.gameData || {};
+             if (gameData.musicLinks && !gameData.totalQuestions) {
+               gameData.totalQuestions = gameData.musicLinks.length;
+             }
+             setGameData(gameData);
+             setCurrentView(gameState.view || 'game');
+           } else {
+             console.log('🗑️ État de partie trop ancien, nettoyage...');
+             localStorage.removeItem('animeQuizGameState');
+           }
+         } catch (error) {
+           console.error('Erreur lors de la restauration de l\'état:', error);
+           localStorage.removeItem('animeQuizGameState');
+         }
+       }
       
       if (!savedGameState) {
         setCurrentView('menu');
@@ -78,16 +79,19 @@ function App() {
     }
   }, [player, lobby, gameData, currentView, username, isLoggedIn]);
 
-  // Tenter de rejoindre une partie en cours après chargement
+  // Tenter de rejoindre une partie en cours après chargement (une seule fois)
+  const [hasAttemptedRejoin, setHasAttemptedRejoin] = useState(false);
+  
   useEffect(() => {
-    if (player && lobby && socket.connected) {
+    if (player && lobby && socket.connected && !hasAttemptedRejoin) {
       // Vérifier si on vient de charger et qu'on a une partie en cours
       const savedGameState = localStorage.getItem('animeQuizGameState');
       if (savedGameState) {
         try {
           const gameState = JSON.parse(savedGameState);
-          if (gameState.player && gameState.lobby && gameState.timestamp > Date.now() - 300000) { // 5 minutes max
+          if (gameState.player && gameState.lobby && gameState.timestamp > Date.now() - 180000) { // 3 minutes max
             console.log('🔄 Tentative de rejoindre la partie en cours...');
+            setHasAttemptedRejoin(true);
             socket.emit('rejoin-game', { 
               playerId: player.id, 
               roomId: player.roomId,
@@ -96,10 +100,13 @@ function App() {
           }
         } catch (error) {
           console.error('Erreur lors de la tentative de reconnexion:', error);
+          setHasAttemptedRejoin(true);
         }
+      } else {
+        setHasAttemptedRejoin(true);
       }
     }
-  }, [player, lobby, socket.connected]);
+  }, [player, lobby, socket.connected, hasAttemptedRejoin]);
 
   useEffect(() => {
     // Charger les salles disponibles
@@ -235,6 +242,7 @@ function App() {
     setLobby(null);
     setPlayer(null);
     setGameData(null);
+    setHasAttemptedRejoin(false);
     setSuccess('Déconnexion réussie ! 👋');
     setTimeout(() => setSuccess(''), 3000);
   };
@@ -293,6 +301,7 @@ function App() {
     
     // Nettoyer le localStorage
     localStorage.removeItem('animeQuizGameState');
+    setHasAttemptedRejoin(false);
     
     // Retourner au menu si l'utilisateur est connecté, sinon à la page de connexion
     if (isLoggedIn && username) {
