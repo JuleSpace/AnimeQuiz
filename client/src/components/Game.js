@@ -531,7 +531,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
               <p style={{ textAlign: 'center', marginBottom: '20px', opacity: 0.8 }}>
                 {gameData.players && gameData.players[0] && gameData.players[0].id === player.id 
                   ? 'En tant que chef, corrigez les réponses des autres joueurs :'
-                  : 'Voici les réponses soumises par tous les joueurs :'
+                  : 'Voici les réponses soumises par tous les joueurs. Les sélections du chef apparaîtront en temps réel :'
                 }
               </p>
               
@@ -543,37 +543,53 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection }) => {
                       <div style={{ opacity: 0.8 }}>{p.answers && p.answers[currentQuestion]}</div>
                     </div>
                     
-                    {/* Boutons de correction uniquement pour le chef */}
-                    {gameData.players[0] && gameData.players[0].id === player.id && (
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button
-                          onClick={() => toggleCorrection(p.id, true)}
-                          className={`btn ${corrections[p.id] === true ? 'btn-success' : ''}`}
-                          style={{ padding: '5px 15px', fontSize: '0.9rem' }}
-                        >
-                          ✅ Correct
-                        </button>
-                        <button
-                          onClick={() => toggleCorrection(p.id, false)}
-                          className={`btn ${corrections[p.id] === false ? 'btn-danger' : ''}`}
-                          style={{ padding: '5px 15px', fontSize: '0.9rem' }}
-                        >
-                          ❌ Incorrect
-                        </button>
-                        <button
-                          onClick={() => toggleCorrection(p.id, 'bonus')}
-                          className={`btn ${corrections[p.id] === 'bonus' ? 'btn-warning' : ''}`}
-                          style={{ 
-                            padding: '5px 15px', 
-                            fontSize: '0.9rem',
-                            background: corrections[p.id] === 'bonus' ? '#ffd700' : 'rgba(255, 215, 0, 0.2)',
-                            color: corrections[p.id] === 'bonus' ? '#000' : '#ffd700'
-                          }}
-                        >
-                          ⭐ +1 Bonus
-                        </button>
-                      </div>
-                    )}
+                    {/* Boutons de correction visibles pour tous, mais cliquables seulement pour le chef */}
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        onClick={gameData.players[0] && gameData.players[0].id === player.id ? () => toggleCorrection(p.id, true) : undefined}
+                        className={`btn ${corrections[p.id] === true ? 'btn-success' : ''}`}
+                        style={{ 
+                          padding: '5px 15px', 
+                          fontSize: '0.9rem',
+                          cursor: gameData.players[0] && gameData.players[0].id === player.id ? 'pointer' : 'default',
+                          opacity: gameData.players[0] && gameData.players[0].id === player.id ? 1 : 0.7,
+                          filter: gameData.players[0] && gameData.players[0].id === player.id ? 'none' : 'grayscale(20%)'
+                        }}
+                        disabled={!(gameData.players[0] && gameData.players[0].id === player.id)}
+                      >
+                        ✅ Correct
+                      </button>
+                      <button
+                        onClick={gameData.players[0] && gameData.players[0].id === player.id ? () => toggleCorrection(p.id, false) : undefined}
+                        className={`btn ${corrections[p.id] === false ? 'btn-danger' : ''}`}
+                        style={{ 
+                          padding: '5px 15px', 
+                          fontSize: '0.9rem',
+                          cursor: gameData.players[0] && gameData.players[0].id === player.id ? 'pointer' : 'default',
+                          opacity: gameData.players[0] && gameData.players[0].id === player.id ? 1 : 0.7,
+                          filter: gameData.players[0] && gameData.players[0].id === player.id ? 'none' : 'grayscale(20%)'
+                        }}
+                        disabled={!(gameData.players[0] && gameData.players[0].id === player.id)}
+                      >
+                        ❌ Incorrect
+                      </button>
+                      <button
+                        onClick={gameData.players[0] && gameData.players[0].id === player.id ? () => toggleCorrection(p.id, 'bonus') : undefined}
+                        className={`btn ${corrections[p.id] === 'bonus' ? 'btn-warning' : ''}`}
+                        style={{ 
+                          padding: '5px 15px', 
+                          fontSize: '0.9rem',
+                          background: corrections[p.id] === 'bonus' ? '#ffd700' : 'rgba(255, 215, 0, 0.2)',
+                          color: corrections[p.id] === 'bonus' ? '#000' : '#ffd700',
+                          cursor: gameData.players[0] && gameData.players[0].id === player.id ? 'pointer' : 'default',
+                          opacity: gameData.players[0] && gameData.players[0].id === player.id ? 1 : 0.7,
+                          filter: gameData.players[0] && gameData.players[0].id === player.id ? 'none' : 'grayscale(20%)'
+                        }}
+                        disabled={!(gameData.players[0] && gameData.players[0].id === player.id)}
+                      >
+                        ⭐ +1 Bonus
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
