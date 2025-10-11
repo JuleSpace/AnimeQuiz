@@ -40,7 +40,13 @@ function App() {
             console.log('🔄 Tentative de reconnexion à une partie en cours...');
             setPlayer(gameState.player);
             setLobby(gameState.lobby);
-            setGameData(gameState.gameData);
+            
+            // S'assurer que totalQuestions est défini
+            const gameData = gameState.gameData || {};
+            if (gameData.musicLinks && !gameData.totalQuestions) {
+              gameData.totalQuestions = gameData.musicLinks.length;
+            }
+            setGameData(gameData);
             setCurrentView(gameState.view || 'game');
           } else {
             localStorage.removeItem('animeQuizGameState');
@@ -720,6 +726,45 @@ function App() {
 
   return (
     <div className="App">
+      {/* Bouton de déconnexion global */}
+      {isLoggedIn && username && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          zIndex: 10000
+        }}>
+          <button
+            onClick={handleLogout}
+            style={{
+              background: 'linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%)',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '25px',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 'bold',
+              boxShadow: '0 4px 15px rgba(255, 107, 107, 0.4)',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 6px 20px rgba(255, 107, 107, 0.6)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 15px rgba(255, 107, 107, 0.4)';
+            }}
+          >
+            🚪 Déconnexion ({username})
+          </button>
+        </div>
+      )}
+
       {error && (
         <div className="error" style={{ margin: '20px auto', maxWidth: '600px' }}>
           {error}

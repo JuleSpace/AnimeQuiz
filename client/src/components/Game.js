@@ -189,7 +189,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
       <div className="card">
         <div className="question-container">
           <div className="question-number">
-            Question {currentQuestion + 1} / {gameData.totalQuestions}
+            Question {currentQuestion + 1} / {gameData.totalQuestions || (gameData.musicLinks ? gameData.musicLinks.length : 0)}
           </div>
           
           {/* Afficher la réponse pendant la correction */}
