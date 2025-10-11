@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const Lobby = ({ lobby, player, onStartGame, onLeave }) => {
+const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership }) => {
   const [numberOfSongs, setNumberOfSongs] = useState(10);
   const [maxSongs, setMaxSongs] = useState(10);
 
@@ -30,9 +30,39 @@ const Lobby = ({ lobby, player, onStartGame, onLeave }) => {
         
         <div className="player-list">
           {lobby.players.map((p, index) => (
-            <div key={p.id} className={`player-card ${index === 0 ? 'leader' : ''}`}>
+            <div 
+              key={p.id} 
+              className={`player-card ${index === 0 ? 'leader' : ''}`}
+              onClick={() => {
+                // Si je suis le chef et que je clique sur un autre joueur, lui transférer le leadership
+                if (isLeader && p.id !== player.id && onTransferLeadership) {
+                  onTransferLeadership(p.id);
+                }
+              }}
+              style={{
+                cursor: isLeader && p.id !== player.id ? 'pointer' : 'default',
+                transition: 'all 0.3s ease'
+              }}
+              onMouseEnter={(e) => {
+                if (isLeader && p.id !== player.id) {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 215, 0, 0.4)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (isLeader && p.id !== player.id) {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }
+              }}
+            >
               <div style={{ fontWeight: 'bold' }}>{p.username}</div>
               {index === 0 && <div style={{ fontSize: '0.8rem', color: '#ffd700' }}>👑 Chef</div>}
+              {isLeader && p.id !== player.id && (
+                <div style={{ fontSize: '0.7rem', color: '#ffd700', marginTop: '5px', opacity: 0.8 }}>
+                  Cliquer pour transmettre
+                </div>
+              )}
             </div>
           ))}
         </div>

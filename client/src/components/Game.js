@@ -10,6 +10,9 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [youtubeCurrentTime, setYoutubeCurrentTime] = useState(0);
+  const [youtubeDuration, setYoutubeDuration] = useState(0);
+  const [youtubeIsPlaying, setYoutubeIsPlaying] = useState(false);
   const audioRef = useRef(null);
   const youtubeIframeRef = useRef(null);
 
@@ -48,6 +51,31 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [gameData]);
+
+  // Écouter les messages de l'iframe YouTube
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.origin !== 'https://www.youtube.com') return;
+      
+      try {
+        const data = JSON.parse(event.data);
+        if (data.event === 'video-progress') {
+          setYoutubeCurrentTime(data.info.currentTime || 0);
+          setYoutubeDuration(data.info.duration || 0);
+        } else if (data.event === 'video-play-progress') {
+          setYoutubeIsPlaying(data.info.playerState === 1);
+          setYoutubeCurrentTime(data.info.currentTime || 0);
+        } else if (data.event === 'video-pause') {
+          setYoutubeIsPlaying(false);
+        }
+      } catch (e) {
+        // Ignorer les messages non-JSON
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   useEffect(() => {
     // Récupérer l'URL audio et la convertir si nécessaire
@@ -332,11 +360,33 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
                        padding: '0 20px',
                        borderRadius: '0 0 10px 10px'
                      }}>
-                       <div style={{ display: 'flex', alignItems: 'center' }}>
+                       <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
                          <div style={{ fontSize: '1.5rem', marginRight: '15px' }}>🎵</div>
-                         <div>
+                         <div style={{ flex: 1 }}>
                            <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>Audio Spotify</div>
-                           <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>Utilisez les contrôles ci-dessus</div>
+                           <div style={{ fontSize: '0.8rem', opacity: 0.8, marginBottom: '8px' }}>Utilisez les contrôles ci-dessus</div>
+                           
+                           {/* Barre de progression simulée pour Spotify */}
+                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                             <span style={{ fontSize: '0.7rem', minWidth: '30px', opacity: 0.7 }}>0:00</span>
+                             <input
+                               type="range"
+                               min="0"
+                               max="100"
+                               defaultValue="0"
+                               style={{
+                                 flex: 1,
+                                 height: '4px',
+                                 background: 'rgba(255,255,255,0.3)',
+                                 outline: 'none',
+                                 borderRadius: '2px',
+                                 cursor: 'not-allowed',
+                                 opacity: 0.5
+                               }}
+                               disabled
+                             />
+                             <span style={{ fontSize: '0.7rem', minWidth: '30px', opacity: 0.7 }}>?:??</span>
+                           </div>
                          </div>
                        </div>
                      </div>
@@ -485,6 +535,38 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
                           >
                             ⏸️
                           </button>
+                          
+                          {/* Barre de progression YouTube */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                            <span style={{ fontSize: '0.8rem', minWidth: '35px' }}>
+                              {Math.floor(youtubeCurrentTime / 60)}:{(youtubeCurrentTime % 60).toFixed(0).padStart(2, '0')}
+                            </span>
+                            <input
+                              type="range"
+                              min="0"
+                              max={youtubeDuration || 100}
+                              value={youtubeCurrentTime}
+                              onChange={(e) => {
+                                const time = parseFloat(e.target.value);
+                                setYoutubeCurrentTime(time);
+                                const iframe = document.querySelector('iframe[title="Lecteur audio YouTube masqué"]');
+                                if (iframe && iframe.contentWindow) {
+                                  iframe.contentWindow.postMessage(`{"event":"command","func":"seekTo","args":["${time}",true]}`, '*');
+                                }
+                              }}
+                              style={{
+                                flex: 1,
+                                height: '6px',
+                                background: 'rgba(255,255,255,0.3)',
+                                outline: 'none',
+                                borderRadius: '3px',
+                                cursor: 'pointer'
+                              }}
+                            />
+                            <span style={{ fontSize: '0.8rem', minWidth: '35px' }}>
+                              {Math.floor((youtubeDuration || 0) / 60)}:{((youtubeDuration || 0) % 60).toFixed(0).padStart(2, '0')}
+                            </span>
+                          </div>
                           
                           {/* Contrôle de volume */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

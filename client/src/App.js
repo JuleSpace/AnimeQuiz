@@ -187,6 +187,15 @@ function App() {
     socket.emit('update-corrections', { questionIndex, corrections });
   };
 
+  const handleTransferLeadership = (newLeaderId) => {
+    if (lobby && player) {
+      socket.emit('transfer-leadership', { 
+        roomId: player.roomId, 
+        newLeaderId 
+      });
+    }
+  };
+
   const resetGame = () => {
     // Émettre l'événement pour quitter le lobby proprement côté serveur
     if (player && lobby) {
@@ -511,6 +520,7 @@ function App() {
             player={player}
             onStartGame={handleStartGame}
             onLeave={resetGame}
+            onTransferLeadership={handleTransferLeadership}
           />
         );
 

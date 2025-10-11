@@ -402,6 +402,40 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Transmission du leadership
+  socket.on('transfer-leadership', (data) => {
+    const { roomId, newLeaderId } = data;
+    const player = players.get(socket.id);
+    
+    if (!player) return;
+    
+    const lobby = lobbies.get(roomId);
+    if (!lobby) return;
+    
+    // Vérifier que c'est bien le chef actuel qui demande la transmission
+    if (lobby.players[0].id !== socket.id) {
+      socket.emit('transfer-error', { message: 'Seul le chef peut transmettre le leadership' });
+      return;
+    }
+    
+    // Trouver le nouveau chef dans la liste
+    const newLeaderIndex = lobby.players.findIndex(p => p.id === newLeaderId);
+    if (newLeaderIndex === -1) {
+      socket.emit('transfer-error', { message: 'Joueur introuvable' });
+      return;
+    }
+    
+    // Réorganiser la liste pour mettre le nouveau chef en première position
+    const newLeader = lobby.players[newLeaderIndex];
+    lobby.players = lobby.players.filter(p => p.id !== newLeaderId);
+    lobby.players.unshift(newLeader);
+    
+    // Notifier tous les joueurs
+    io.to(roomId).emit('lobby-updated', lobby);
+    
+    console.log(`👑 Leadership transféré de ${player.username} à ${newLeader.username} dans ${roomId}`);
+  });
+
   // Système de correction automatique
   socket.on('submit-correction', async (data) => {
     const { questionIndex, corrections } = data;
