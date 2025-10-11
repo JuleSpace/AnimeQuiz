@@ -295,9 +295,18 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Mélanger l'ordre des musiques pour cette partie
+    let shuffledMusicLinks = [...room.musicLinks].sort(() => Math.random() - 0.5);
+    
+    // Limiter le nombre de musiques si spécifié
+    if (numberOfSongs && numberOfSongs > 0 && numberOfSongs < shuffledMusicLinks.length) {
+      shuffledMusicLinks = shuffledMusicLinks.slice(0, numberOfSongs);
+      console.log(`Partie démarrée avec ${numberOfSongs} musiques sur ${room.musicLinks.length} disponibles`);
+    }
+
     lobby.isGameStarted = true;
     lobby.currentQuestion = 0;
-    lobby.musicLinks = room.musicLinks;
+    lobby.musicLinks = shuffledMusicLinks; // Utiliser les musiques mélangées et limitées
 
     // Créer une session de jeu
     const gameSession = new GameSession({
@@ -307,15 +316,6 @@ io.on('connection', (socket) => {
       isActive: true
     });
     await gameSession.save();
-
-    // Mélanger l'ordre des musiques pour cette partie
-    let shuffledMusicLinks = [...room.musicLinks].sort(() => Math.random() - 0.5);
-    
-    // Limiter le nombre de musiques si spécifié
-    if (numberOfSongs && numberOfSongs > 0 && numberOfSongs < shuffledMusicLinks.length) {
-      shuffledMusicLinks = shuffledMusicLinks.slice(0, numberOfSongs);
-      console.log(`Partie démarrée avec ${numberOfSongs} musiques sur ${room.musicLinks.length} disponibles`);
-    }
     
     io.to(roomId).emit('game-started', {
       totalQuestions: shuffledMusicLinks.length,
