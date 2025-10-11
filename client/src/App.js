@@ -22,15 +22,78 @@ function App() {
   const [adminAuth, setAdminAuth] = useState({ username: '', password: '' });
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
-  // Vérifier si un utilisateur est déjà connecté au chargement
+  // Vérifier si un utilisateur est déjà connecté au chargement et s'il y a une partie en cours
   useEffect(() => {
     const savedUsername = localStorage.getItem('animeQuizUsername');
+    const savedGameState = localStorage.getItem('animeQuizGameState');
+    
     if (savedUsername) {
       setUsername(savedUsername);
       setIsLoggedIn(true);
-      setCurrentView('menu');
+      
+      // Vérifier s'il y a une partie en cours sauvegardée
+      if (savedGameState) {
+        try {
+          const gameState = JSON.parse(savedGameState);
+          // Vérifier que l'état n'est pas trop ancien (max 2 heures)
+          if (Date.now() - gameState.timestamp < 7200000) {
+            console.log('🔄 Tentative de reconnexion à une partie en cours...');
+            setPlayer(gameState.player);
+            setLobby(gameState.lobby);
+            setGameData(gameState.gameData);
+            setCurrentView(gameState.view || 'game');
+          } else {
+            localStorage.removeItem('animeQuizGameState');
+          }
+        } catch (error) {
+          console.error('Erreur lors de la restauration de l\'état:', error);
+          localStorage.removeItem('animeQuizGameState');
+        }
+      }
+      
+      if (!savedGameState) {
+        setCurrentView('menu');
+      }
     }
   }, []);
+
+  // Sauvegarder l'état de la partie dans le localStorage
+  useEffect(() => {
+    if (isLoggedIn && username && (lobby || gameData)) {
+      const gameState = {
+        player,
+        lobby,
+        gameData,
+        currentView,
+        username,
+        timestamp: Date.now()
+      };
+      localStorage.setItem('animeQuizGameState', JSON.stringify(gameState));
+    }
+  }, [player, lobby, gameData, currentView, username, isLoggedIn]);
+
+  // Tenter de rejoindre une partie en cours après chargement
+  useEffect(() => {
+    if (player && lobby && socket.connected) {
+      // Vérifier si on vient de charger et qu'on a une partie en cours
+      const savedGameState = localStorage.getItem('animeQuizGameState');
+      if (savedGameState) {
+        try {
+          const gameState = JSON.parse(savedGameState);
+          if (gameState.player && gameState.lobby && gameState.timestamp > Date.now() - 300000) { // 5 minutes max
+            console.log('🔄 Tentative de rejoindre la partie en cours...');
+            socket.emit('rejoin-game', { 
+              playerId: player.id, 
+              roomId: player.roomId,
+              username: player.username
+            });
+          }
+        } catch (error) {
+          console.error('Erreur lors de la tentative de reconnexion:', error);
+        }
+      }
+    }
+  }, [player, lobby, socket.connected]);
 
   useEffect(() => {
     // Charger les salles disponibles
@@ -92,6 +155,8 @@ function App() {
     socket.on('game-ended', (data) => {
       setGameData(prev => ({ ...prev, results: data.results }));
       setCurrentView('results');
+      // Nettoyer le localStorage car la partie est terminée
+      localStorage.removeItem('animeQuizGameState');
     });
 
     socket.on('join-error', (data) => {
@@ -100,6 +165,23 @@ function App() {
 
     socket.on('start-error', (data) => {
       setError(data.message);
+    });
+
+    socket.on('game-rejoined', (data) => {
+      console.log('✅ Partie rejoint avec succès', data);
+      setPlayer(data.player);
+      setGameData(data.gameData);
+      setLobby(data.lobby);
+      setCurrentView(data.gameData.isGameStarted ? 'game' : 'lobby');
+      setSuccess('Reconnecté à la partie en cours ! 🎮');
+      setTimeout(() => setSuccess(''), 3000);
+    });
+
+    socket.on('rejoin-error', (data) => {
+      console.error('❌ Erreur lors de la reconnexion:', data.message);
+      setError(data.message);
+      setCurrentView('menu');
+      localStorage.removeItem('animeQuizGameState');
     });
 
     return () => {
@@ -140,6 +222,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('animeQuizUsername');
+    localStorage.removeItem('animeQuizGameState');
     setUsername('');
     setIsLoggedIn(false);
     setCurrentView('login');
@@ -201,6 +284,9 @@ function App() {
     if (player && lobby) {
       socket.emit('leave-lobby');
     }
+    
+    // Nettoyer le localStorage
+    localStorage.removeItem('animeQuizGameState');
     
     // Retourner au menu si l'utilisateur est connecté, sinon à la page de connexion
     if (isLoggedIn && username) {

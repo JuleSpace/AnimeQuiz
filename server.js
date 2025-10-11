@@ -436,6 +436,60 @@ io.on('connection', (socket) => {
     console.log(`👑 Leadership transféré de ${player.username} à ${newLeader.username} dans ${roomId}`);
   });
 
+  // Rejoindre une partie en cours après reconnexion (F5, etc.)
+  socket.on('rejoin-game', async (data) => {
+    const { playerId, roomId, username } = data;
+    const lobby = lobbies.get(roomId);
+    
+    console.log(`🔄 Tentative de rejoin: roomId=${roomId}, username=${username}, playerId=${playerId}`);
+    
+    if (!lobby) {
+      socket.emit('rejoin-error', { message: 'Cette partie n\'existe plus. Veuillez créer une nouvelle partie.' });
+      return;
+    }
+
+    // Chercher le joueur dans le lobby par username (l'ancien ID n'est plus valide)
+    const existingPlayerIndex = lobby.players.findIndex(p => p.username === username);
+    
+    if (existingPlayerIndex === -1) {
+      socket.emit('rejoin-error', { message: 'Joueur introuvable dans cette partie.' });
+      return;
+    }
+
+    // Mettre à jour l'ID socket du joueur
+    const existingPlayer = lobby.players[existingPlayerIndex];
+    const oldSocketId = existingPlayer.id;
+    existingPlayer.id = socket.id;
+
+    // Mettre à jour dans la Map des joueurs
+    players.delete(oldSocketId);
+    players.set(socket.id, existingPlayer);
+
+    // Rejoindre la room socket
+    socket.join(roomId);
+
+    // Construire les données de jeu actuelles
+    const gameData = {
+      currentQuestion: lobby.currentQuestion || 0,
+      musicLinks: lobby.musicLinks,
+      totalQuestions: lobby.musicLinks ? lobby.musicLinks.length : 0,
+      isCorrectionPhase: lobby.isCorrectionPhase || false,
+      players: lobby.players,
+      isGameStarted: lobby.isGameStarted || false
+    };
+
+    socket.emit('game-rejoined', { 
+      player: existingPlayer, 
+      gameData,
+      lobby 
+    });
+
+    // Notifier les autres joueurs
+    io.to(roomId).emit('lobby-updated', lobby);
+
+    console.log(`✅ ${username} a rejoint la partie en cours (${roomId})`);
+  });
+
   // Système de correction automatique
   socket.on('submit-correction', async (data) => {
     const { questionIndex, corrections } = data;
