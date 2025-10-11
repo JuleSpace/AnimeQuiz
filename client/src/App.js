@@ -188,6 +188,11 @@ function App() {
   };
 
   const resetGame = () => {
+    // Émettre l'événement pour quitter le lobby proprement côté serveur
+    if (player && lobby) {
+      socket.emit('leave-lobby');
+    }
+    
     // Retourner au menu si l'utilisateur est connecté, sinon à la page de connexion
     if (isLoggedIn && username) {
       setCurrentView('menu');
@@ -240,7 +245,7 @@ function App() {
               </div>
 
               <div style={{ maxWidth: '400px', margin: '0 auto', padding: '30px' }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#667eea' }}>
+                <h2 style={{ textAlign: 'center', marginBottom: '30px', color: 'white' }}>
                   🎮 Connexion
                 </h2>
                 
@@ -270,22 +275,22 @@ function App() {
                     width: '100%',
                     padding: '15px',
                     fontSize: '1.1rem',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    border: 'none',
+                    background: 'linear-gradient(135deg, #00d4ff, #1e3a8a)',
+                    border: '2px solid rgba(0, 212, 255, 0.5)',
                     borderRadius: '10px',
                     color: 'white',
                     fontWeight: 'bold',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+                    boxShadow: '0 2px 10px rgba(0, 212, 255, 0.3)'
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.6)';
+                    e.target.style.boxShadow = '0 4px 15px rgba(0, 212, 255, 0.5)';
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+                    e.target.style.boxShadow = '0 2px 10px rgba(0, 212, 255, 0.3)';
                   }}
                 >
                   🎵 Commencer à jouer
@@ -370,7 +375,7 @@ function App() {
                 }}>
                   <div>
                     <span style={{ opacity: 0.7, fontSize: '0.9rem' }}>Connecté en tant que :</span>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#667eea', marginTop: '5px' }}>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white', marginTop: '5px' }}>
                       🎮 {username}
                     </div>
                   </div>

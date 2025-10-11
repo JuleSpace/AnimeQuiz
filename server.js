@@ -375,6 +375,33 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Quitter un lobby volontairement
+  socket.on('leave-lobby', () => {
+    const player = players.get(socket.id);
+    if (player) {
+      const lobby = lobbies.get(player.roomId);
+      if (lobby) {
+        // Retirer le joueur du lobby
+        lobby.players = lobby.players.filter(p => p.id !== socket.id);
+        
+        // Notifier tous les autres joueurs
+        io.to(player.roomId).emit('lobby-updated', lobby);
+        
+        // Si le lobby est vide, le supprimer
+        if (lobby.players.length === 0) {
+          lobbies.delete(player.roomId);
+          console.log(`🗑️ Lobby ${player.roomId} supprimé (plus de joueurs)`);
+        }
+        
+        console.log(`${player.username} a quitté le lobby ${player.roomId}`);
+      }
+      
+      // Nettoyer les données du joueur
+      players.delete(socket.id);
+      socket.leave(player.roomId);
+    }
+  });
+
   // Système de correction automatique
   socket.on('submit-correction', async (data) => {
     const { questionIndex, corrections } = data;
