@@ -716,7 +716,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
                     className="btn btn-success"
                     disabled={Object.keys(corrections).length === 0}
                   >
-                    Finaliser les corrections ({Object.keys(corrections).length}/{gameData.players ? gameData.players.length - 1 : 0})
+                    Finaliser les corrections
                   </button>
                 </div>
               )}
