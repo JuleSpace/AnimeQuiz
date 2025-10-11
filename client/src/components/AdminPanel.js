@@ -277,7 +277,10 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                     transition: 'all 0.3s ease',
                     boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
                     position: 'relative',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%' // Même hauteur pour toutes les cartes
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-5px)';
@@ -311,29 +314,42 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                     color: '#ffd700', 
                     fontSize: '1.3rem',
                     fontWeight: 'bold',
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                    minHeight: '40px' // Hauteur fixe pour éviter le décalage
                   }}>
                     {room.name}
                   </h4>
                   
-                  {room.description && (
-                    <p style={{ 
-                      margin: '0 0 20px 0', 
-                      opacity: 0.9,
-                      fontSize: '0.9rem',
-                      lineHeight: '1.4',
-                      textAlign: 'center'
-                    }}>
-                      {room.description}
-                    </p>
-                  )}
+                  <div style={{ 
+                    minHeight: '60px', // Hauteur fixe pour la description
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '20px'
+                  }}>
+                    {room.description && (
+                      <p style={{ 
+                        margin: 0, 
+                        opacity: 0.9,
+                        fontSize: '0.9rem',
+                        lineHeight: '1.4',
+                        textAlign: 'center',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3, // Limite à 3 lignes
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                      }}>
+                        {room.description}
+                      </p>
+                    )}
+                  </div>
 
                   {/* Boutons d'action */}
                   <div style={{ 
                     display: 'flex', 
                     gap: '10px',
                     justifyContent: 'center',
-                    marginTop: '20px'
+                    marginTop: 'auto' // Pousse les boutons vers le bas
                   }}>
                     <button
                       onClick={() => setShowPopup(room)}
@@ -341,21 +357,21 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                       style={{ 
                         padding: '8px 16px', 
                         fontSize: '0.9rem',
-                        background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                        border: '2px solid rgba(102, 126, 234, 0.5)',
-                        boxShadow: '0 2px 10px rgba(102, 126, 234, 0.3)',
+                        background: 'linear-gradient(135deg, #00d4ff, #1e3a8a)',
+                        border: '2px solid rgba(0, 212, 255, 0.5)',
+                        boxShadow: '0 2px 10px rgba(0, 212, 255, 0.3)',
                         transition: 'all 0.3s ease'
                       }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.5)';
+                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 212, 255, 0.5)';
                       }}
                       onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 2px 10px rgba(102, 126, 234, 0.3)';
+                        e.currentTarget.style.boxShadow = '0 2px 10px rgba(0, 212, 255, 0.3)';
                       }}
                     >
-                      👁️ Voir Détails
+                      Voir Détails
                     </button>
                     
                     <button
@@ -410,16 +426,10 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
           )}
         </div>
 
-        {/* Section d'édition (si une salle est sélectionnée) */}
+        {/* Section d'édition avec système de cartes */}
         {selectedRoom && rooms.find(r => r._id === selectedRoom) && (
-          <div style={{ 
-            background: 'rgba(255, 255, 255, 0.1)', 
-            padding: '25px', 
-            borderRadius: '20px',
-            border: '2px solid rgba(255, 217, 61, 0.3)',
-            marginBottom: '30px'
-          }}>
-            <h3 style={{ color: '#ffd700', marginBottom: '20px' }}>
+          <div style={{ marginBottom: '30px' }}>
+            <h3 style={{ textAlign: 'center', color: '#ffd700', marginBottom: '25px' }}>
               ✏️ Modification de la salle
             </h3>
             
@@ -427,14 +437,23 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
               const room = rooms.find(r => r._id === selectedRoom);
               return (
                 <div>
-                  {/* Modification du nom et description */}
-                  <div style={{ marginBottom: '20px' }}>
+                  {/* Carte pour modifier les infos de base */}
+                  <div style={{ 
+                    background: 'linear-gradient(135deg, rgba(255, 217, 61, 0.2), rgba(255, 152, 0, 0.2))',
+                    padding: '25px', 
+                    borderRadius: '20px',
+                    border: '2px solid rgba(255, 217, 61, 0.3)',
+                    marginBottom: '20px'
+                  }}>
+                    <h4 style={{ color: '#ffd700', marginBottom: '20px', textAlign: 'center' }}>
+                      📝 Informations de base
+                    </h4>
                     <input
                       type="text"
                       value={editingRoom[room._id]?.name !== undefined ? editingRoom[room._id].name : room.name}
                       onChange={(e) => handleRoomNameChange(room._id, e.target.value)}
                       className="input"
-                      style={{ marginBottom: '10px' }}
+                      style={{ marginBottom: '15px' }}
                       placeholder="Nom de la salle"
                     />
                     <input
@@ -442,21 +461,29 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                       value={editingRoom[room._id]?.description !== undefined ? editingRoom[room._id].description : (room.description || '')}
                       onChange={(e) => handleRoomDescriptionChange(room._id, e.target.value)}
                       className="input"
-                      style={{ marginBottom: '15px' }}
+                      style={{ marginBottom: '20px' }}
                       placeholder="Description (optionnel)"
                     />
                   </div>
 
-                  {/* Ajouter un nouveau lien */}
-                  <div style={{ marginBottom: '20px' }}>
-                    <h4 style={{ color: '#ffd700', marginBottom: '15px' }}>➕ Ajouter une musique</h4>
+                  {/* Carte pour ajouter une musique */}
+                  <div style={{ 
+                    background: 'linear-gradient(135deg, rgba(81, 207, 102, 0.2), rgba(64, 192, 87, 0.2))',
+                    padding: '25px', 
+                    borderRadius: '20px',
+                    border: '2px solid rgba(81, 207, 102, 0.3)',
+                    marginBottom: '20px'
+                  }}>
+                    <h4 style={{ color: '#51cf66', marginBottom: '20px', textAlign: 'center' }}>
+                      ➕ Ajouter une nouvelle musique
+                    </h4>
                     <input
                       type="url"
                       placeholder="Lien YouTube ou audio..."
                       value={newLink.url}
                       onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
                       className="input"
-                      style={{ marginBottom: '10px' }}
+                      style={{ marginBottom: '15px' }}
                     />
                     <input
                       type="text"
@@ -464,53 +491,119 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                       value={newLink.answer}
                       onChange={(e) => setNewLink({ ...newLink, answer: e.target.value })}
                       className="input"
-                      style={{ marginBottom: '15px' }}
+                      style={{ marginBottom: '20px' }}
                     />
                     <button
                       onClick={() => addMusicLink(room._id)}
                       className="btn btn-success"
-                      style={{ padding: '10px 15px', width: '100%' }}
+                      style={{ padding: '12px 20px', width: '100%' }}
                     >
                       ➕ Ajouter cette musique
                     </button>
                   </div>
 
-                  {/* Liste des musiques existantes */}
+                  {/* Grille des musiques existantes */}
                   {room.musicLinks.length > 0 && (
-                    <div style={{ marginBottom: '20px' }}>
-                      <h4 style={{ color: '#ffd700', marginBottom: '15px' }}>
+                    <div>
+                      <h4 style={{ color: '#ffd700', marginBottom: '20px', textAlign: 'center' }}>
                         🎵 Musiques existantes ({room.musicLinks.length})
                       </h4>
-                      <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                      <div style={{ 
+                        display: 'grid', 
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
+                        gap: '15px',
+                        marginBottom: '20px'
+                      }}>
                         {room.musicLinks.map((link, index) => (
                           <div key={index} style={{ 
-                            background: 'rgba(255,255,255,0.05)', 
-                            padding: '15px', 
-                            borderRadius: '10px', 
-                            marginBottom: '10px',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
+                            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15))',
+                            padding: '20px', 
+                            borderRadius: '15px',
+                            border: '2px solid rgba(255, 255, 255, 0.1)',
+                            transition: 'all 0.3s ease',
+                            position: 'relative'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-3px)';
+                            e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.4)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
                           }}>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontWeight: 'bold', color: '#ffd700', marginBottom: '5px' }}>
-                                Musique {index + 1}
-                              </div>
-                              {(typeof link === 'object' && link.answer) && (
-                                <div style={{ color: '#51cf66', fontSize: '0.9rem', marginBottom: '5px' }}>
-                                  {link.answer}
+                            {/* Badge du numéro */}
+                            <div style={{
+                              position: 'absolute',
+                              top: '10px',
+                              right: '10px',
+                              background: 'rgba(255, 215, 0, 0.9)',
+                              color: '#000',
+                              padding: '4px 8px',
+                              borderRadius: '15px',
+                              fontSize: '0.7rem',
+                              fontWeight: 'bold'
+                            }}>
+                              #{index + 1}
+                            </div>
+
+                            <div style={{ marginBottom: '15px' }}>
+                              {(typeof link === 'object' && link.answer) ? (
+                                <div>
+                                  <div style={{ 
+                                    fontWeight: 'bold', 
+                                    color: '#ffd700', 
+                                    marginBottom: '8px',
+                                    fontSize: '1rem'
+                                  }}>
+                                    {link.answer}
+                                  </div>
+                                  <div style={{ 
+                                    fontSize: '0.8rem', 
+                                    opacity: 0.7, 
+                                    wordBreak: 'break-all',
+                                    background: 'rgba(255, 255, 255, 0.1)',
+                                    padding: '8px',
+                                    borderRadius: '8px'
+                                  }}>
+                                    {link.url}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div style={{ 
+                                  fontSize: '0.8rem', 
+                                  opacity: 0.7, 
+                                  wordBreak: 'break-all',
+                                  background: 'rgba(255, 255, 255, 0.1)',
+                                  padding: '8px',
+                                  borderRadius: '8px'
+                                }}>
+                                  {typeof link === 'string' ? link : link.url}
                                 </div>
                               )}
-                              <div style={{ fontSize: '0.8rem', opacity: 0.7, wordBreak: 'break-all' }}>
-                                {typeof link === 'string' ? link : link.url}
-                              </div>
                             </div>
+                            
                             <button
                               onClick={() => removeMusicLink(room._id, index)}
                               className="btn btn-danger"
-                              style={{ padding: '5px 10px', fontSize: '0.8rem' }}
+                              style={{ 
+                                padding: '8px 12px', 
+                                fontSize: '0.8rem',
+                                width: '100%',
+                                background: 'linear-gradient(135deg, #ff6b6b, #c92a2a)',
+                                border: '2px solid rgba(255, 107, 107, 0.5)',
+                                boxShadow: '0 2px 8px rgba(201, 42, 42, 0.3)',
+                                transition: 'all 0.3s ease'
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'scale(1.02)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 42, 42, 0.5)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(201, 42, 42, 0.3)';
+                              }}
                             >
-                              🗑️
+                              🗑️ Supprimer
                             </button>
                           </div>
                         ))}
@@ -519,18 +612,53 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                   )}
 
                   {/* Boutons de sauvegarde */}
-                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '15px', 
+                    justifyContent: 'center',
+                    padding: '20px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: '15px'
+                  }}>
                     <button
                       onClick={() => saveRoom(room._id)}
                       className="btn btn-success"
-                      style={{ padding: '12px 24px' }}
+                      style={{ 
+                        padding: '12px 24px',
+                        background: 'linear-gradient(135deg, #51cf66, #40c057)',
+                        border: '2px solid rgba(81, 207, 102, 0.5)',
+                        boxShadow: '0 4px 15px rgba(81, 207, 102, 0.3)',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(81, 207, 102, 0.5)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(81, 207, 102, 0.3)';
+                      }}
                     >
                       💾 Sauvegarder
                     </button>
                     <button
                       onClick={() => setSelectedRoom(null)}
                       className="btn btn-danger"
-                      style={{ padding: '12px 24px' }}
+                      style={{ 
+                        padding: '12px 24px',
+                        background: 'linear-gradient(135deg, #ff6b6b, #c92a2a)',
+                        border: '2px solid rgba(255, 107, 107, 0.5)',
+                        boxShadow: '0 4px 15px rgba(201, 42, 42, 0.3)',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(201, 42, 42, 0.5)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(201, 42, 42, 0.3)';
+                      }}
                     >
                       ❌ Annuler
                     </button>
