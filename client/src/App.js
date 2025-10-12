@@ -335,7 +335,7 @@ function App() {
                   textAlign: 'center'
                 }}>
                   <button 
-                    onClick={() => setCurrentView('admin')}
+                    onClick={() => setCurrentView('admin-login')}
                     style={{
                       background: 'linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%)',
                       color: 'white',
@@ -614,7 +614,7 @@ function App() {
                   Se connecter
                 </button>
                 <button 
-                  onClick={() => setCurrentView('menu')} 
+                  onClick={() => setCurrentView('login')} 
                   className="btn"
                   style={{ 
                     background: 'linear-gradient(135deg, #ff6b6b, #c92a2a)',
