@@ -33,6 +33,21 @@ function App() {
     }
   }, []);
 
+  // Gérer la fermeture/rafraîchissement de la page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (player && lobby) {
+        // Émettre un événement pour quitter le lobby proprement
+        socket.emit('leave-lobby');
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [player, lobby]);
 
   useEffect(() => {
     // Charger les salles disponibles
@@ -142,6 +157,11 @@ function App() {
   };
 
   const handleLogout = () => {
+    // Émettre l'événement pour quitter le lobby proprement côté serveur si on est dans un lobby
+    if (player && lobby) {
+      socket.emit('leave-lobby');
+    }
+    
     localStorage.removeItem('animeQuizUsername');
     setUsername('');
     setIsLoggedIn(false);
