@@ -642,9 +642,10 @@ function App() {
         return (
           <AdminPanel 
             onBack={() => {
-              setCurrentView('menu');
+              // Réinitialiser l'authentification admin et retourner à la page de connexion
               setIsAdminAuthenticated(false);
               setAdminAuth({ username: '', password: '' });
+              setCurrentView('login');
             }}
             onRoomUpdate={fetchRooms}
           />
