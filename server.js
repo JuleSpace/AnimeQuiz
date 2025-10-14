@@ -337,15 +337,28 @@ io.on('connection', (socket) => {
     const lobby = lobbies.get(player.roomId);
     if (!lobby || !lobby.isGameStarted) return;
 
+    // Initialiser answers si nécessaire
+    if (!player.answers) {
+      player.answers = [];
+    }
+
     // Stocker la réponse
     player.answers[questionIndex] = answer;
+
+    console.log(`📝 Réponse reçue de ${player.username} pour la question ${questionIndex}: "${answer}"`);
+    console.log(`👥 Joueurs dans le lobby:`, lobby.players.map(p => ({ 
+      username: p.username, 
+      hasAnswered: p.answers && p.answers[questionIndex] 
+    })));
 
     // Vérifier si tous les joueurs ont répondu
     const allAnswered = lobby.players.every(p => p.answers && p.answers[questionIndex]);
     
+    console.log(`✅ Tous les joueurs ont-ils répondu ?`, allAnswered);
+    
     if (allAnswered) {
       // Déclencher la correction avec les informations des joueurs
-      const lobby = lobbies.get(player.roomId);
+      console.log(`🔍 Passage à la phase de correction pour la question ${questionIndex}`);
       io.to(player.roomId).emit('start-correction', { 
         questionIndex,
         players: lobby.players 
