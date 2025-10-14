@@ -78,6 +78,15 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
   }, []);
 
   useEffect(() => {
+    // Nettoyer l'audio précédent avant de charger le nouveau
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+    }
+    
     // Récupérer l'URL audio et la convertir si nécessaire
     if (gameData && gameData.musicLinks && gameData.musicLinks[currentQuestion]) {
       const musicLink = gameData.musicLinks[currentQuestion];
@@ -94,6 +103,10 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
               if (data.success && data.audioUrl) {
                 setAudioUrl(data.audioUrl);
                 console.log('Audio YouTube converti en MP3:', data.audioUrl);
+                // Forcer le rechargement de l'audio
+                if (audioRef.current) {
+                  audioRef.current.load();
+                }
               } else {
                 setAudioUrl(null);
                 console.warn('Conversion YouTube échouée:', data.message);
@@ -111,6 +124,10 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
       } else {
         // Lien audio direct (MP3, WAV, etc.)
         setAudioUrl(link);
+        // Forcer le rechargement de l'audio
+        if (audioRef.current) {
+          audioRef.current.load();
+        }
       }
     }
   }, [currentQuestion, gameData]);
