@@ -22,6 +22,8 @@ git push -u origin master
 
 ### 4. ⚙️ Configurer les variables
 Dans le service web (pas MongoDB), ajouter :
+
+
 ```
 MONGODB_URI=<copier MONGO_URL du service MongoDB>
 CLIENT_URL=https://ton-app.railway.app
