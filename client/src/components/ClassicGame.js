@@ -1,0 +1,460 @@
+import React, { useEffect, useState } from 'react';
+import BlindMusicPlayer from './BlindMusicPlayer';
+import { extractYouTubeId } from '../utils/media';
+
+const CHOICE_COLORS = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#8e44ad', '#e67e22'];
+const CHOICE_SHAPES = ['▲', '◆', '●', '■', '★', '✚'];
+
+const QuestionMedia = ({ imageUrl, videoUrl }) => {
+  const [imageFailed, setImageFailed] = useState(false);
+  const youtubeId = extractYouTubeId(videoUrl);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [imageUrl]);
+
+  if (!imageUrl && !videoUrl) return null;
+
+  return (
+    <div style={{ margin: '16px auto', maxWidth: '720px' }}>
+      {imageUrl && !imageFailed && (
+        <img
+          src={imageUrl}
+          alt=""
+          onError={() => setImageFailed(true)}
+          style={{ maxWidth: '100%', maxHeight: '360px', borderRadius: '12px', objectFit: 'contain', background: 'rgba(0,0,0,0.25)' }}
+        />
+      )}
+      {videoUrl && (
+        youtubeId ? (
+          <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', marginTop: imageUrl ? 12 : 0, borderRadius: '12px', overflow: 'hidden' }}>
+            <iframe
+              title="Vidéo de la question"
+              src={`https://www.youtube.com/embed/${youtubeId}?rel=0`}
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        ) : (
+          <video
+            key={videoUrl}
+            src={videoUrl}
+            controls
+            style={{ width: '100%', maxHeight: '360px', borderRadius: '12px', marginTop: imageUrl ? 12 : 0 }}
+          />
+        )
+      )}
+    </div>
+  );
+};
+
+const ClassicGame = ({
+  gameData,
+  player,
+  onSubmitAnswer,
+  onForceClose,
+  onUpdateCorrections,
+  onSubmitCorrection,
+  onNext
+}) => {
+  const [textAnswer, setTextAnswer] = useState('');
+  const [blankAnswers, setBlankAnswers] = useState([]);
+  const [selected, setSelected] = useState([]);
+  const [locked, setLocked] = useState(false);
+  const [now, setNow] = useState(Date.now());
+
+  const question = gameData?.question;
+  const phase = gameData?.phase || 'answering';
+
+  useEffect(() => {
+    setTextAnswer('');
+    setBlankAnswers(Array(question?.blankCount || 0).fill(''));
+    setSelected([]);
+    setLocked(false);
+  }, [gameData?.questionIndex, question?.blankCount]);
+
+  useEffect(() => {
+    if (phase !== 'answering' || !gameData?.deadline) return undefined;
+    const timer = setInterval(() => setNow(Date.now()), 200);
+    return () => clearInterval(timer);
+  }, [phase, gameData?.deadline, gameData?.questionIndex]);
+
+  if (!gameData || !question || !player) {
+    return <div className="loading">Chargement de la question...</div>;
+  }
+
+  const isHost = gameData.hostId === player.id;
+  const corrections = gameData.corrections || {};
+  const reveal = gameData.reveal;
+  const players = gameData.players || [];
+  const remaining = gameData.deadline ? Math.max(0, Math.ceil((gameData.deadline - now) / 1000)) : null;
+  const ratio = question.timeLimit && gameData.deadline
+    ? Math.max(0, Math.min(1, (gameData.deadline - now) / (question.timeLimit * 1000)))
+    : 0;
+
+  const send = (answer) => {
+    if (locked || phase !== 'answering') return;
+    setLocked(true);
+    onSubmitAnswer(answer);
+  };
+
+  const promptParts = (question.prompt || '').split(/_{3,}/);
+  while (promptParts.length < (question.blankCount || 0) + 1) promptParts.push('');
+
+  const renderAnswering = () => {
+    if (locked) {
+      return (
+        <div style={{ textAlign: 'center', padding: '18px' }}>
+          <div style={{ fontSize: '1.2rem', marginBottom: 8 }}>Réponse envoyée</div>
+          <div style={{ opacity: 0.8 }}>
+            {gameData.answered || 0}/{gameData.totalPlayers || players.length} joueurs ont répondu
+          </div>
+        </div>
+      );
+    }
+
+    if (question.type === 'qcm') {
+      return (
+        <div className="choice-grid">
+          {question.options.map((option, index) => {
+            const isSelected = selected.includes(index);
+            return (
+              <button
+                key={option + index}
+                type="button"
+                className="choice-btn"
+                style={{
+                  background: CHOICE_COLORS[index % CHOICE_COLORS.length],
+                  outline: isSelected ? '3px solid white' : 'none'
+                }}
+                onClick={() => {
+                  if (question.multiple) {
+                    setSelected((current) => (
+                      current.includes(index)
+                        ? current.filter((value) => value !== index)
+                        : [...current, index]
+                    ));
+                    return;
+                  }
+                  send(index);
+                }}
+              >
+                <span style={{ opacity: 0.85, marginRight: 8 }}>{CHOICE_SHAPES[index % CHOICE_SHAPES.length]}</span>
+                {option}
+              </button>
+            );
+          })}
+          {question.multiple && (
+            <button
+              type="button"
+              className="btn btn-success"
+              style={{ gridColumn: '1 / -1' }}
+              disabled={selected.length === 0}
+              onClick={() => send([...selected].sort((a, b) => a - b))}
+            >
+              Valider la sélection
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    if (question.type === 'boolean') {
+      return (
+        <div className="choice-grid">
+          <button type="button" className="choice-btn" style={{ background: '#26890c' }} onClick={() => send(true)}>
+            Vrai
+          </button>
+          <button type="button" className="choice-btn" style={{ background: '#e21b3c' }} onClick={() => send(false)}>
+            Faux
+          </button>
+        </div>
+      );
+    }
+
+    if (question.type === 'blank') {
+      return (
+        <div style={{ maxWidth: '760px', margin: '0 auto', textAlign: 'left' }}>
+          <div style={{ fontSize: '1.25rem', lineHeight: 2.2 }}>
+            {promptParts.map((part, index) => (
+              <span key={`${part}-${index}`}>
+                {part}
+                {index < question.blankCount && (
+                  <input
+                    className="input"
+                    style={{ width: '150px', display: 'inline-block', margin: '0 8px', textAlign: 'center' }}
+                    value={blankAnswers[index] || ''}
+                    onChange={(event) => {
+                      const next = [...blankAnswers];
+                      next[index] = event.target.value;
+                      setBlankAnswers(next);
+                    }}
+                  />
+                )}
+              </span>
+            ))}
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <button type="button" className="btn btn-success" onClick={() => send(blankAnswers)}>
+              Valider
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="answer-input">
+        <input
+          type="text"
+          className="input"
+          placeholder={question.type === 'music' ? 'Titre, artiste, anime...' : 'Ta réponse'}
+          value={textAnswer}
+          onChange={(event) => setTextAnswer(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && textAnswer.trim()) send(textAnswer.trim());
+          }}
+        />
+        <button
+          type="button"
+          className="btn btn-success"
+          disabled={!textAnswer.trim()}
+          onClick={() => send(textAnswer.trim())}
+        >
+          Envoyer
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="container">
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div className="question-number" style={{ margin: 0 }}>
+            {gameData.quizName ? `${gameData.quizName} · ` : ''}
+            Question {gameData.questionIndex + 1} / {gameData.totalQuestions}
+          </div>
+          <div style={{ fontWeight: 'bold' }}>{question.points} pt{question.points > 1 ? 's' : ''}</div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', margin: '14px 0' }}>
+          {[...players].sort((a, b) => (b.score || 0) - (a.score || 0)).map((entry) => (
+            <span key={entry.id} style={{
+              padding: '6px 10px',
+              borderRadius: '999px',
+              background: entry.id === player.id ? 'rgba(255,215,0,0.25)' : 'rgba(255,255,255,0.12)',
+              border: '1px solid rgba(255,255,255,0.2)'
+            }}>
+              {entry.username} · {entry.score || 0}
+            </span>
+          ))}
+        </div>
+
+        {phase === 'answering' && question.timeLimit > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ textAlign: 'center', fontSize: '1.4rem', fontWeight: 'bold', marginBottom: 6 }}>
+              {remaining}s
+            </div>
+            <div className="timer-bar">
+              <div style={{ width: `${ratio * 100}%` }} />
+            </div>
+          </div>
+        )}
+
+        {question.type !== 'blank' && question.prompt && (
+          <h2 style={{ textAlign: 'center', fontSize: '1.6rem', margin: '10px 0 6px', whiteSpace: 'pre-wrap' }}>
+            {question.prompt}
+          </h2>
+        )}
+
+        {question.type === 'music' ? (
+          <BlindMusicPlayer
+            key={`${question.musicUrl}-${phase}`}
+            url={question.musicUrl}
+            revealed={phase !== 'answering'}
+          />
+        ) : (
+          <QuestionMedia imageUrl={question.imageUrl} videoUrl={question.videoUrl} />
+        )}
+        {question.type === 'music' && question.imageUrl && (
+          <QuestionMedia imageUrl={question.imageUrl} videoUrl="" />
+        )}
+
+        {phase === 'answering' && renderAnswering()}
+
+        {phase === 'answering' && (
+          <div style={{ textAlign: 'center', marginTop: 8 }}>
+            {!locked && (
+              <div style={{ opacity: 0.75, marginBottom: 8 }}>
+                {gameData.answered || 0}/{gameData.totalPlayers || players.length} ont répondu
+              </div>
+            )}
+            {isHost && (
+              <button type="button" className="btn" onClick={onForceClose}>
+                Révéler maintenant
+              </button>
+            )}
+          </div>
+        )}
+
+        {phase === 'correction' && (
+          <div className="correction-section">
+            <h3 style={{ textAlign: 'center' }}>Le chef distribue les points</h3>
+            <div style={{
+              textAlign: 'center',
+              margin: '12px 0 18px',
+              padding: '12px',
+              borderRadius: '10px',
+              background: 'rgba(255,215,0,0.15)',
+              border: '1px solid rgba(255,215,0,0.45)'
+            }}>
+              Réponse prévue : <strong>{gameData.expectedAnswer || '—'}</strong>
+              <div style={{ marginTop: 6, fontSize: '0.9rem', opacity: 0.85 }}>
+                Rien n'est validé tout seul. Une bonne réponse vaut {gameData.suggestedPoints || question.points || 1} pt, et +1 peut servir pour une blague.
+              </div>
+            </div>
+            {players.map((entry) => {
+              const given = Number(corrections[entry.id]) || 0;
+              const suggested = gameData.suggestedPoints || question.points || 1;
+              return (
+                <div key={entry.id} className="correction-item">
+                  <div>
+                    <strong>{entry.username}</strong>
+                    <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
+                  </div>
+                  {isHost ? (
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        className="btn btn-success"
+                        onClick={() => onUpdateCorrections({ ...corrections, [entry.id]: suggested })}
+                      >
+                        Valider ({suggested})
+                      </button>
+                      <button
+                        type="button"
+                        className="btn"
+                        style={{ background: 'rgba(255,215,0,0.25)', color: '#ffd700' }}
+                        onClick={() => onUpdateCorrections({ ...corrections, [entry.id]: Math.min(99, given + 1) })}
+                      >
+                        +1
+                      </button>
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => onUpdateCorrections({ ...corrections, [entry.id]: Math.max(0, given - 1) })}
+                      >
+                        −1
+                      </button>
+                      <input
+                        type="number"
+                        min="0"
+                        max="99"
+                        className="input"
+                        style={{ width: '80px', margin: 0, textAlign: 'center' }}
+                        value={given}
+                        onChange={(event) => {
+                          const next = Math.max(0, Math.min(99, Math.round(Number(event.target.value) || 0)));
+                          onUpdateCorrections({ ...corrections, [entry.id]: next });
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ fontWeight: 'bold', color: given > 0 ? '#51cf66' : 'white' }}>
+                      +{given}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {isHost ? (
+              <div style={{ textAlign: 'center' }}>
+                <button type="button" className="btn btn-success" onClick={() => onSubmitCorrection(corrections)}>
+                  Valider les points
+                </button>
+              </div>
+            ) : (
+              <p style={{ textAlign: 'center', color: '#ffd700' }}>Le chef choisit les points...</p>
+            )}
+          </div>
+        )}
+
+        {phase === 'reveal' && reveal && (
+          <div style={{ marginTop: 18 }}>
+            <div style={{
+              textAlign: 'center',
+              padding: '16px',
+              borderRadius: '12px',
+              background: 'rgba(81,207,102,0.18)',
+              border: '1px solid rgba(81,207,102,0.45)',
+              marginBottom: 16
+            }}>
+              <div style={{ opacity: 0.8, marginBottom: 6 }}>Réponse prévue</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>{reveal.correctAnswer}</div>
+            </div>
+
+            {question.type === 'boolean' && (
+              <div className="choice-grid">
+                <div className="choice-btn" style={{ background: reveal.correctBoolean ? '#26890c' : 'rgba(255,255,255,0.12)', opacity: reveal.correctBoolean ? 1 : 0.45 }}>
+                  Vrai
+                </div>
+                <div className="choice-btn" style={{ background: reveal.correctBoolean === false ? '#e21b3c' : 'rgba(255,255,255,0.12)', opacity: reveal.correctBoolean === false ? 1 : 0.45 }}>
+                  Faux
+                </div>
+              </div>
+            )}
+
+            {question.type === 'qcm' && (
+              <div className="choice-grid">
+                {question.options.map((option, index) => {
+                  const isCorrect = (reveal.correctIndexes || []).includes(index);
+                  return (
+                    <div
+                      key={option + index}
+                      className="choice-btn"
+                      style={{
+                        background: isCorrect ? '#26890c' : 'rgba(255,255,255,0.12)',
+                        opacity: isCorrect ? 1 : 0.55,
+                        cursor: 'default'
+                      }}
+                    >
+                      {option}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div style={{ marginTop: 16 }}>
+              {reveal.players.map((entry) => (
+                <div key={entry.id} className="correction-item">
+                  <div>
+                    <strong>{entry.username}</strong>
+                    <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
+                  </div>
+                  <div style={{ fontWeight: 'bold', color: entry.pointsThisRound > 0 ? '#51cf66' : '#ff6b6b' }}>
+                    +{entry.pointsThisRound || 0}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ textAlign: 'center', marginTop: 16 }}>
+              {isHost ? (
+                <button type="button" className="btn btn-success" onClick={onNext}>
+                  {gameData.questionIndex + 1 >= gameData.totalQuestions ? 'Voir les résultats' : 'Question suivante'}
+                </button>
+              ) : (
+                <p style={{ color: '#ffd700' }}>En attente du chef...</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ClassicGame;

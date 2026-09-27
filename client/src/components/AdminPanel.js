@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import QuizAdmin from './QuizAdmin';
 
 const AdminPanel = ({ onBack, onRoomUpdate }) => {
   const [rooms, setRooms] = useState([]);
@@ -12,6 +13,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
   const [success, setSuccess] = useState('');
   const [showPopup, setShowPopup] = useState(null); // Pour les popups de détails
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [section, setSection] = useState('music');
 
   useEffect(() => {
     fetchRooms();
@@ -140,12 +142,42 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
     }
   };
 
+  const sectionTabs = (
+    <div className="admin-tabs">
+      <button type="button" className={`btn ${section === 'music' ? 'tab-active' : ''}`} onClick={() => setSection('music')}>
+        🎵 Music Quiz
+      </button>
+      <button type="button" className={`btn ${section === 'quiz' ? 'tab-active' : ''}`} onClick={() => setSection('quiz')}>
+        📝 Quiz
+      </button>
+    </div>
+  );
+
+  if (section === 'quiz') {
+    return (
+      <div className="container">
+        <div className="admin-panel">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <button onClick={onBack} className="btn btn-danger">← Retour</button>
+            <h2 style={{ margin: 0 }}>🛠️ Panneau Administrateur</h2>
+            <div style={{ width: 110 }} />
+          </div>
+          {sectionTabs}
+          <QuizAdmin />
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="container">
-        <div className="loading">
-          <div className="spinner"></div>
-          <div>Chargement...</div>
+        <div className="admin-panel">
+          {sectionTabs}
+          <div className="loading">
+            <div className="spinner"></div>
+            <div>Chargement...</div>
+          </div>
         </div>
       </div>
     );
@@ -202,6 +234,8 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
             ➕ Nouvelle Salle
           </button>
         </div>
+
+        {sectionTabs}
 
         {/* Formulaire de création de salle */}
         {showCreateForm && (

@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 
-const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership }) => {
+const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, variant = 'music' }) => {
   const [numberOfSongs, setNumberOfSongs] = useState(10);
   const [maxSongs, setMaxSongs] = useState(10);
+  const isQuiz = variant === 'quiz';
 
   useEffect(() => {
-    // Récupérer le nombre total de musiques dans la salle
-    if (lobby && lobby.totalSongs) {
-      setMaxSongs(lobby.totalSongs);
-      setNumberOfSongs(Math.min(10, lobby.totalSongs));
+    const pool = lobby?.totalQuestions || lobby?.totalSongs;
+    if (pool) {
+      setMaxSongs(pool);
+      setNumberOfSongs(isQuiz ? pool : Math.min(10, pool));
     }
-  }, [lobby]);
+  }, [lobby, isQuiz]);
 
   if (!lobby || !player) return null;
 
@@ -25,7 +26,7 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership }) =>
     <div className="container">
       <div className="card">
         <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>
-          🎮 Lobby - Salle {player.roomId}
+          {isQuiz ? `🎮 Lobby — ${lobby.quizName || 'Quiz'}` : `🎮 Lobby - Salle ${player.roomId}`}
         </h2>
         
         <div className="player-list">
@@ -87,7 +88,7 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership }) =>
           {isLeader && lobby.players.length >= 1 && (
             <div style={{ marginBottom: '20px' }}>
               <div style={{ marginBottom: '10px', fontSize: '1rem' }}>
-                🎵 Nombre de musiques à jouer :
+                {isQuiz ? '📝 Nombre de questions :' : '🎵 Nombre de musiques à jouer :'}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
                 <input
@@ -141,13 +142,23 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership }) =>
 
         <div style={{ marginTop: '30px', padding: '20px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '15px' }}>
           <h3 style={{ marginBottom: '15px' }}>📋 Règles du jeu :</h3>
-          <ul style={{ textAlign: 'left', lineHeight: '1.6' }}>
-            <li>Écoutez les extraits musicaux</li>
-            <li>Écrivez votre réponse dans le champ</li>
-            <li>Après chaque question, corrigez les réponses des autres joueurs</li>
-            <li>Les points sont calculés automatiquement</li>
-            <li>Le joueur avec le plus de points gagne !</li>
-          </ul>
+          {isQuiz ? (
+            <ul style={{ textAlign: 'left', lineHeight: '1.6' }}>
+              <li>Le chef lance la partie et passe à la question suivante</li>
+              <li>Choix multiple, vrai/faux, texte libre, texte à trous ou blind test</li>
+              <li>Rien n'est corrigé tout seul : le chef valide chaque réponse</li>
+              <li>Il choisit les points, et peut ajouter +1 pour une blague</li>
+              <li>Le joueur avec le plus de points gagne</li>
+            </ul>
+          ) : (
+            <ul style={{ textAlign: 'left', lineHeight: '1.6' }}>
+              <li>Écoutez les extraits musicaux</li>
+              <li>Écrivez votre réponse dans le champ</li>
+              <li>Après chaque question, corrigez les réponses des autres joueurs</li>
+              <li>Les points sont calculés automatiquement</li>
+              <li>Le joueur avec le plus de points gagne !</li>
+            </ul>
+          )}
         </div>
       </div>
     </div>

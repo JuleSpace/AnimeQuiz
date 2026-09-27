@@ -5,6 +5,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
 const axios = require('axios');
+const { attachQuiz } = require('./quiz');
 require('dotenv').config();
 
 const app = express();
@@ -18,7 +19,7 @@ const io = socketIo(server, {
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // Servir les fichiers statiques du frontend en production
 if (process.env.NODE_ENV === 'production') {
@@ -196,6 +197,8 @@ app.get('/api/youtube-audio/:videoId', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+attachQuiz(app, io);
 
 // Route de test pour vérifier que l'app fonctionne
 app.get('/', (req, res) => {
