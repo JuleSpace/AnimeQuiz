@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 
 const TYPE_OPTIONS = [
@@ -59,6 +59,17 @@ const withoutBlanks = (quiz) => ({
   ...quiz,
   questions: (quiz.questions || []).filter((question) => question.type !== 'blank')
 });
+
+let questionKeySeq = 1;
+const stampQuestions = (quiz) => {
+  const cleaned = withoutBlanks(quiz);
+  return {
+    ...cleaned,
+    questions: cleaned.questions.map((question) => (
+      question.clientKey ? question : { ...question, clientKey: `q${questionKeySeq += 1}` }
+    ))
+  };
+};
 
 const errorMessage = (error, fallback) => error.response?.data?.error || fallback;
 
@@ -297,6 +308,32 @@ const QuizAdmin = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [dragIndex, setDragIndex] = useState(null);
+  const quizRef = useRef(null);
+  const dragIndexRef = useRef(null);
+  const dragSnapshotRef = useRef(null);
+  quizRef.current = quiz;
+
+  const shiftDraftIndex = (current, from, to) => {
+    if (current == null) return current;
+    if (current === from) return to;
+    if (from < current && to >= current) return current - 1;
+    if (from > current && to <= current) return current + 1;
+    return current;
+  };
+
+  const applyQuestionMove = (from, to, save) => {
+    const current = quizRef.current;
+    if (!current || from === to || from < 0 || to < 0 || to >= current.questions.length) return;
+    const questions = [...current.questions];
+    const [item] = questions.splice(from, 1);
+    questions.splice(to, 0, item);
+    const next = { ...current, questions };
+    quizRef.current = next;
+    setQuiz(next);
+    setDraftIndex((draftAt) => shiftDraftIndex(draftAt, from, to));
+    if (save) persist(next);
+  };
 
   const loadQuizzes = async () => {
     const response = await axios.get('/api/quizzes?edit=1');
@@ -316,9 +353,9 @@ const QuizAdmin = () => {
         name: next.name,
         description: next.description,
         shuffle: Boolean(next.shuffle),
-        questions: next.questions
+        questions: (next.questions || []).map(({ clientKey, ...question }) => question)
       });
-      setQuiz(withoutBlanks(response.data));
+      setQuiz(stampQuestions(response.data));
       setSuccess('Quiz enregistré');
       await loadQuizzes();
       return true;
@@ -340,7 +377,7 @@ const QuizAdmin = () => {
     try {
       const response = await axios.post('/api/quizzes', newQuiz);
       setNewQuiz({ name: '', description: '' });
-      setQuiz(withoutBlanks(response.data));
+      setQuiz(stampQuestions(response.data));
       setDraft(emptyDraft());
       setDraftIndex(null);
       await loadQuizzes();
@@ -370,7 +407,7 @@ const QuizAdmin = () => {
     setError('');
     try {
       const response = await axios.get(`/api/quizzes/${quizId}?edit=1`);
-      setQuiz(withoutBlanks(response.data));
+      setQuiz(stampQuestions(response.data));
       setDraft(null);
       setDraftIndex(null);
     } catch (requestError) {
@@ -393,13 +430,40 @@ const QuizAdmin = () => {
     }
   };
 
-  const moveQuestion = async (index, direction) => {
-    const target = index + direction;
-    if (!quiz || target < 0 || target >= quiz.questions.length) return;
-    const questions = [...quiz.questions];
-    const [item] = questions.splice(index, 1);
-    questions.splice(target, 0, item);
-    await persist({ ...quiz, questions });
+  const moveQuestion = (index, direction) => {
+    applyQuestionMove(index, index + direction, true);
+  };
+
+  const startQuestionDrag = (event, index) => {
+    if (event.target.closest('button')) {
+      event.preventDefault();
+      return;
+    }
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(index));
+    dragIndexRef.current = index;
+    dragSnapshotRef.current = quizRef.current?.questions || null;
+    setDragIndex(index);
+  };
+
+  const hoverQuestion = (event, index) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const from = dragIndexRef.current;
+    if (from == null || from === index) return;
+    applyQuestionMove(from, index, false);
+    dragIndexRef.current = index;
+    setDragIndex(index);
+  };
+
+  const finishQuestionDrag = () => {
+    const started = dragSnapshotRef.current;
+    const latest = quizRef.current;
+    const moved = started && latest && latest.questions !== started;
+    dragIndexRef.current = null;
+    dragSnapshotRef.current = null;
+    setDragIndex(null);
+    if (moved) persist(latest);
   };
 
   const deleteQuestion = async (index) => {
@@ -494,18 +558,31 @@ const QuizAdmin = () => {
       </button>
 
       <h3 style={{ marginTop: 28 }}>Questions</h3>
+      <p style={{ opacity: 0.75, marginTop: 0 }}>Glisse une question pour la déplacer.</p>
       {(quiz.questions || []).map((question, index) => (
-        <div key={`${question.prompt}-${index}`} className="correction-item" style={{ alignItems: 'flex-start' }}>
-          <div>
-            <strong>{index + 1}. {typeLabel(question.type)}</strong>
-            <div style={{ opacity: 0.85 }}>{question.prompt || question.musicUrl || 'Sans énoncé'}</div>
-            <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>
-              {question.points || 1} pt · {question.timeLimit ? `${question.timeLimit}s` : 'temps libre'}
+        <div
+          key={question.clientKey || index}
+          className={`correction-item question-row${dragIndex === index ? ' is-dragging' : ''}`}
+          style={{ alignItems: 'flex-start' }}
+          draggable={!loading}
+          onDragStart={(event) => startQuestionDrag(event, index)}
+          onDragOver={(event) => hoverQuestion(event, index)}
+          onDrop={(event) => event.preventDefault()}
+          onDragEnd={finishQuestionDrag}
+        >
+          <div className="question-row-body">
+            <span className="drag-handle" aria-hidden="true">⋮⋮</span>
+            <div>
+              <strong>{index + 1}. {typeLabel(question.type)}</strong>
+              <div style={{ opacity: 0.85 }}>{question.prompt || question.musicUrl || 'Sans énoncé'}</div>
+              <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>
+                {question.points || 1} pt · {question.timeLimit ? `${question.timeLimit}s` : 'temps libre'}
+              </div>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            <button type="button" className="btn" onClick={() => moveQuestion(index, -1)}>↑</button>
-            <button type="button" className="btn" onClick={() => moveQuestion(index, 1)}>↓</button>
+            <button type="button" className="btn" onClick={() => moveQuestion(index, -1)} disabled={index === 0}>↑</button>
+            <button type="button" className="btn" onClick={() => moveQuestion(index, 1)} disabled={index === quiz.questions.length - 1}>↓</button>
             <button type="button" className="btn" onClick={() => { setDraft(questionFromApi(question)); setDraftIndex(index); }}>
               Modifier
             </button>

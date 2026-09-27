@@ -157,6 +157,36 @@ body {
   border-radius: 10px;
 }
 
+.question-row {
+  cursor: grab;
+  gap: 12px;
+}
+
+.question-row.is-dragging {
+  opacity: 0.55;
+  outline: 2px dashed #ffd700;
+  cursor: grabbing;
+}
+
+.question-row-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.drag-handle {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+  letter-spacing: -2px;
+  padding-top: 2px;
+  user-select: none;
+}
+
+.question-row button {
+  cursor: pointer;
+}
+
 .results-container {
   text-align: center;
 }
