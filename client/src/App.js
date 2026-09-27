@@ -432,7 +432,7 @@ function App() {
                   style={{ width: '100%', marginBottom: '12px' }}
                 >
                   <span className="mode-card-title">📝 Quiz</span>
-                  <span>Questions, images, vidéos, textes à trous et blind tests</span>
+                  <span>Questions, images, vidéos et blind tests</span>
                 </button>
 
                 <button
@@ -491,7 +491,7 @@ function App() {
               <div className="mode-grid">
                 <button type="button" className="mode-card" onClick={() => chooseMode('quiz')}>
                   <span className="mode-card-title">📝 Quiz</span>
-                  <span>Questions à choix, vrai/faux, texte libre, images, vidéos, textes à trous, et quelques blind tests.</span>
+                  <span>Questions à choix, vrai/faux, texte libre, images, vidéos, et quelques blind tests.</span>
                 </button>
                 <button type="button" className="mode-card" onClick={() => chooseMode('music')}>
                   <span className="mode-card-title">🎵 Music Quiz</span>

@@ -107,7 +107,9 @@ body {
 
 .audio-player {
   width: 100%;
-  margin: 20px 0;
+  max-width: 720px;
+  margin: 20px auto;
+  text-align: center;
 }
 
 .audio-player audio {
@@ -131,6 +133,11 @@ body {
   width: 100%;
   max-width: 500px;
   margin: 20px auto;
+  text-align: center;
+}
+
+.answer-input .input {
+  text-align: center;
 }
 
 .correction-section {
@@ -174,14 +181,24 @@ body {
 }
 
 .choice-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 12px;
   margin: 18px auto;
   max-width: 760px;
 }
 
+.choice-grid > .choice-btn {
+  flex: 1 1 240px;
+  max-width: 360px;
+}
+
 .choice-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   border: none;
   border-radius: 14px;
   color: white;

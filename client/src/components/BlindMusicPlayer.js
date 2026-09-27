@@ -158,7 +158,7 @@ const BlindMusicPlayer = ({ url, revealed = false }) => {
             </div>
           </div>
         </div>
-        <p style={{ marginTop: 8, fontSize: '0.85rem', opacity: 0.75 }}>
+        <p style={{ marginTop: 8, fontSize: '0.85rem', opacity: 0.75, textAlign: 'center' }}>
           La vidéo reste masquée le temps de répondre.
         </p>
       </div>
@@ -178,7 +178,8 @@ const BlindMusicPlayer = ({ url, revealed = false }) => {
       <div style={{
         background: 'rgba(255,255,255,0.1)',
         borderRadius: '12px',
-        padding: '16px'
+        padding: '16px',
+        textAlign: 'center'
       }}>
         <button
           type="button"

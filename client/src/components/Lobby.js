@@ -145,7 +145,7 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
           {isQuiz ? (
             <ul style={{ textAlign: 'left', lineHeight: '1.6' }}>
               <li>Le chef lance la partie et passe à la question suivante</li>
-              <li>Choix multiple, vrai/faux, texte libre, texte à trous ou blind test</li>
+              <li>Choix multiple, vrai/faux, texte libre ou blind test</li>
               <li>Rien n'est corrigé tout seul : le chef valide chaque réponse</li>
               <li>Il choisit les points, et peut ajouter +1 pour une blague</li>
               <li>Le joueur avec le plus de points gagne</li>

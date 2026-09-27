@@ -5,7 +5,6 @@ const TYPE_OPTIONS = [
   { id: 'qcm', label: 'Choix multiple' },
   { id: 'boolean', label: 'Vrai / Faux' },
   { id: 'text', label: 'Réponse libre' },
-  { id: 'blank', label: 'Texte à trous' },
   { id: 'music', label: 'Blind test' }
 ];
 
@@ -20,7 +19,6 @@ const emptyDraft = () => ({
   multiple: false,
   correctBoolean: true,
   acceptedText: '',
-  blanksText: '',
   points: 1,
   timeLimit: 20
 });
@@ -36,7 +34,6 @@ const questionToApi = (draft) => ({
   multiple: Boolean(draft.multiple),
   correctBoolean: draft.correctBoolean,
   acceptedAnswers: draft.acceptedText.split('\n').map((line) => line.trim()).filter(Boolean),
-  blanks: draft.blanksText.split('\n').map((line) => line.trim()).filter(Boolean),
   points: Number(draft.points) || 1,
   timeLimit: draft.timeLimit === '' ? 0 : Number(draft.timeLimit) || 0
 });
@@ -52,17 +49,20 @@ const questionFromApi = (question) => ({
   multiple: (question.correctIndexes || []).length > 1,
   correctBoolean: question.correctBoolean !== false,
   acceptedText: (question.acceptedAnswers || []).join('\n'),
-  blanksText: (question.blanks || []).join('\n'),
   points: question.points || 1,
   timeLimit: question.timeLimit ?? 0
 });
 
 const typeLabel = (type) => TYPE_OPTIONS.find((option) => option.id === type)?.label || type;
 
+const withoutBlanks = (quiz) => ({
+  ...quiz,
+  questions: (quiz.questions || []).filter((question) => question.type !== 'blank')
+});
+
 const errorMessage = (error, fallback) => error.response?.data?.error || fallback;
 
 const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }) => {
-  const holes = (draft.prompt.match(/_{3,}/g) || []).length;
   const toggleCorrect = (index) => {
     setDraft((current) => {
       if (!current.multiple) return { ...current, correctIndexes: [index] };
@@ -104,37 +104,13 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         ))}
       </div>
 
-      {draft.type !== 'blank' && (
-        <textarea
-          className="input"
-          rows={3}
-          placeholder={draft.type === 'music' ? 'Consigne (optionnel), ex. Quel est ce générique ?' : 'Énoncé de la question'}
-          value={draft.prompt}
-          onChange={(event) => setDraft({ ...draft, prompt: event.target.value })}
-        />
-      )}
-
-      {draft.type === 'blank' && (
-        <>
-          <textarea
-            className="input"
-            rows={3}
-            placeholder="Le héros de ___ s'appelle ___."
-            value={draft.prompt}
-            onChange={(event) => setDraft({ ...draft, prompt: event.target.value })}
-          />
-          <p style={{ opacity: 0.8, margin: '4px 0 8px' }}>
-            {holes} trou{holes > 1 ? 's' : ''} détecté{holes > 1 ? 's' : ''}. Une réponse par ligne, variantes séparées par |. Pour donner 1 point par trou, mets autant de points que de trous.
-          </p>
-          <textarea
-            className="input"
-            rows={Math.max(2, holes)}
-            placeholder={'One Piece\nLuffy|Monkey D. Luffy'}
-            value={draft.blanksText}
-            onChange={(event) => setDraft({ ...draft, blanksText: event.target.value })}
-          />
-        </>
-      )}
+      <textarea
+        className="input"
+        rows={3}
+        placeholder={draft.type === 'music' ? 'Consigne (optionnel), ex. Quel est ce générique ?' : 'Énoncé de la question'}
+        value={draft.prompt}
+        onChange={(event) => setDraft({ ...draft, prompt: event.target.value })}
+      />
 
       {draft.type === 'qcm' && (
         <div>
@@ -342,7 +318,7 @@ const QuizAdmin = () => {
         shuffle: Boolean(next.shuffle),
         questions: next.questions
       });
-      setQuiz(response.data);
+      setQuiz(withoutBlanks(response.data));
       setSuccess('Quiz enregistré');
       await loadQuizzes();
       return true;
@@ -364,7 +340,7 @@ const QuizAdmin = () => {
     try {
       const response = await axios.post('/api/quizzes', newQuiz);
       setNewQuiz({ name: '', description: '' });
-      setQuiz(response.data);
+      setQuiz(withoutBlanks(response.data));
       setDraft(emptyDraft());
       setDraftIndex(null);
       await loadQuizzes();
@@ -394,7 +370,7 @@ const QuizAdmin = () => {
     setError('');
     try {
       const response = await axios.get(`/api/quizzes/${quizId}?edit=1`);
-      setQuiz(response.data);
+      setQuiz(withoutBlanks(response.data));
       setDraft(null);
       setDraftIndex(null);
     } catch (requestError) {

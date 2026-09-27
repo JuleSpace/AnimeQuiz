@@ -63,6 +63,10 @@ function matchesAny(value, accepted) {
   return acceptedList(accepted).some((candidate) => normalizeAnswer(candidate) === normalized);
 }
 
+function playableQuestions(questions) {
+  return (questions || []).filter((question) => question.type !== 'blank');
+}
+
 function blankSlots(prompt) {
   const matches = String(prompt || '').match(/_{3,}/g);
   return matches ? matches.length : 0;
@@ -421,7 +425,7 @@ function attachQuiz(app, io) {
         _id: quiz._id,
         name: quiz.name,
         description: quiz.description,
-        questionCount: quiz.questions.length,
+        questionCount: playableQuestions(quiz.questions).length,
         createdAt: quiz.createdAt
       })));
     } catch (error) {
@@ -441,7 +445,7 @@ function attachQuiz(app, io) {
           _id: quiz._id,
           name: quiz.name,
           description: quiz.description,
-          questionCount: quiz.questions.length
+          questionCount: playableQuestions(quiz.questions).length
         });
         return;
       }
@@ -479,7 +483,9 @@ function attachQuiz(app, io) {
         return;
       }
 
-      const questions = (req.body.questions || []).map(sanitizeQuestion);
+      const questions = (req.body.questions || [])
+        .filter((question) => question.type !== 'blank')
+        .map(sanitizeQuestion);
       for (let index = 0; index < questions.length; index += 1) {
         const error = validateQuestion(questions[index], index + 1);
         if (error) {
@@ -533,7 +539,8 @@ function attachQuiz(app, io) {
           socket.emit('join-error', { message: 'Quiz introuvable' });
           return;
         }
-        if (!quiz.questions.length) {
+        const playable = playableQuestions(quiz.questions);
+        if (!playable.length) {
           socket.emit('join-error', { message: 'Ce quiz ne contient aucune question' });
           return;
         }
@@ -544,7 +551,7 @@ function attachQuiz(app, io) {
             quizName: quiz.name,
             players: [],
             isGameStarted: false,
-            totalQuestions: quiz.questions.length,
+            totalQuestions: playable.length,
             questions: [],
             currentQuestion: 0,
             phase: 'lobby'
@@ -571,7 +578,7 @@ function attachQuiz(app, io) {
         };
 
         lobby.players.push(player);
-        lobby.totalQuestions = quiz.questions.length;
+        lobby.totalQuestions = playable.length;
         lobby.quizName = quiz.name;
         quizPlayers.set(socket.id, player);
         socket.join(quizId);
@@ -594,12 +601,17 @@ function attachQuiz(app, io) {
         }
 
         const quiz = await Quiz.findById(quizId);
-        if (!quiz || !quiz.questions.length) {
+        if (!quiz) {
+          socket.emit('start-error', { message: 'Quiz introuvable' });
+          return;
+        }
+        const playable = playableQuestions(quiz.questions);
+        if (!playable.length) {
           socket.emit('start-error', { message: 'Aucune question dans ce quiz' });
           return;
         }
 
-        let questions = quiz.questions.map((question) => question.toObject());
+        let questions = playable.map((question) => question.toObject());
         if (quiz.shuffle) {
           questions = questions.sort(() => Math.random() - 0.5);
         }

@@ -16,13 +16,13 @@ const QuestionMedia = ({ imageUrl, videoUrl }) => {
   if (!imageUrl && !videoUrl) return null;
 
   return (
-    <div style={{ margin: '16px auto', maxWidth: '720px' }}>
+    <div style={{ margin: '16px auto', maxWidth: '720px', textAlign: 'center' }}>
       {imageUrl && !imageFailed && (
         <img
           src={imageUrl}
           alt=""
           onError={() => setImageFailed(true)}
-          style={{ maxWidth: '100%', maxHeight: '360px', borderRadius: '12px', objectFit: 'contain', background: 'rgba(0,0,0,0.25)' }}
+          style={{ display: 'block', margin: '0 auto', maxWidth: '100%', maxHeight: '360px', borderRadius: '12px', objectFit: 'contain', background: 'rgba(0,0,0,0.25)' }}
         />
       )}
       {videoUrl && (
@@ -41,7 +41,7 @@ const QuestionMedia = ({ imageUrl, videoUrl }) => {
             key={videoUrl}
             src={videoUrl}
             controls
-            style={{ width: '100%', maxHeight: '360px', borderRadius: '12px', marginTop: imageUrl ? 12 : 0 }}
+            style={{ width: '100%', maxWidth: '720px', maxHeight: '360px', borderRadius: '12px', margin: imageUrl ? '12px auto 0' : '0 auto', display: 'block' }}
           />
         )
       )}
@@ -59,7 +59,6 @@ const ClassicGame = ({
   onNext
 }) => {
   const [textAnswer, setTextAnswer] = useState('');
-  const [blankAnswers, setBlankAnswers] = useState([]);
   const [selected, setSelected] = useState([]);
   const [locked, setLocked] = useState(false);
   const [now, setNow] = useState(Date.now());
@@ -69,10 +68,9 @@ const ClassicGame = ({
 
   useEffect(() => {
     setTextAnswer('');
-    setBlankAnswers(Array(question?.blankCount || 0).fill(''));
     setSelected([]);
     setLocked(false);
-  }, [gameData?.questionIndex, question?.blankCount]);
+  }, [gameData?.questionIndex]);
 
   useEffect(() => {
     if (phase !== 'answering' || !gameData?.deadline) return undefined;
@@ -98,9 +96,6 @@ const ClassicGame = ({
     setLocked(true);
     onSubmitAnswer(answer);
   };
-
-  const promptParts = (question.prompt || '').split(/_{3,}/);
-  while (promptParts.length < (question.blankCount || 0) + 1) promptParts.push('');
 
   const renderAnswering = () => {
     if (locked) {
@@ -149,7 +144,7 @@ const ClassicGame = ({
             <button
               type="button"
               className="btn btn-success"
-              style={{ gridColumn: '1 / -1' }}
+              style={{ flex: '1 1 100%', maxWidth: '520px' }}
               disabled={selected.length === 0}
               onClick={() => send([...selected].sort((a, b) => a - b))}
             >
@@ -169,37 +164,6 @@ const ClassicGame = ({
           <button type="button" className="choice-btn" style={{ background: '#e21b3c' }} onClick={() => send(false)}>
             Faux
           </button>
-        </div>
-      );
-    }
-
-    if (question.type === 'blank') {
-      return (
-        <div style={{ maxWidth: '760px', margin: '0 auto', textAlign: 'left' }}>
-          <div style={{ fontSize: '1.25rem', lineHeight: 2.2 }}>
-            {promptParts.map((part, index) => (
-              <span key={`${part}-${index}`}>
-                {part}
-                {index < question.blankCount && (
-                  <input
-                    className="input"
-                    style={{ width: '150px', display: 'inline-block', margin: '0 8px', textAlign: 'center' }}
-                    value={blankAnswers[index] || ''}
-                    onChange={(event) => {
-                      const next = [...blankAnswers];
-                      next[index] = event.target.value;
-                      setBlankAnswers(next);
-                    }}
-                  />
-                )}
-              </span>
-            ))}
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <button type="button" className="btn btn-success" onClick={() => send(blankAnswers)}>
-              Valider
-            </button>
-          </div>
         </div>
       );
     }
@@ -231,8 +195,8 @@ const ClassicGame = ({
   return (
     <div className="container">
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div className="question-number" style={{ margin: 0 }}>
+        <div style={{ textAlign: 'center', marginBottom: 8 }}>
+          <div className="question-number" style={{ marginBottom: 6 }}>
             {gameData.quizName ? `${gameData.quizName} · ` : ''}
             Question {gameData.questionIndex + 1} / {gameData.totalQuestions}
           </div>
@@ -263,8 +227,8 @@ const ClassicGame = ({
           </div>
         )}
 
-        {question.type !== 'blank' && question.prompt && (
-          <h2 style={{ textAlign: 'center', fontSize: '1.6rem', margin: '10px 0 6px', whiteSpace: 'pre-wrap' }}>
+        {question.prompt && (
+          <h2 style={{ textAlign: 'center', fontSize: '1.6rem', margin: '10px auto 6px', maxWidth: '760px', whiteSpace: 'pre-wrap' }}>
             {question.prompt}
           </h2>
         )}
@@ -319,13 +283,13 @@ const ClassicGame = ({
               const given = Number(corrections[entry.id]) || 0;
               const suggested = gameData.suggestedPoints || question.points || 1;
               return (
-                <div key={entry.id} className="correction-item">
+                <div key={entry.id} className="correction-item" style={{ flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 10 }}>
                   <div>
                     <strong>{entry.username}</strong>
                     <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
                   </div>
                   {isHost ? (
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
                       <button
                         type="button"
                         className="btn btn-success"
@@ -429,7 +393,7 @@ const ClassicGame = ({
 
             <div style={{ marginTop: 16 }}>
               {reveal.players.map((entry) => (
-                <div key={entry.id} className="correction-item">
+                <div key={entry.id} className="correction-item" style={{ flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 6 }}>
                   <div>
                     <strong>{entry.username}</strong>
                     <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
