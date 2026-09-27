@@ -15,8 +15,10 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
 
   if (!lobby || !player) return null;
 
-  const isLeader = lobby.players[0]?.id === player.id;
-  const canStartGame = lobby.players.length >= 1 && isLeader && !lobby.isGameStarted;
+  const isLeader = isQuiz ? lobby.hostId === player.id : lobby.players[0]?.id === player.id;
+  const canStartGame = isQuiz
+    ? isLeader && lobby.players.length >= 1 && !lobby.isGameStarted
+    : lobby.players.length >= 1 && isLeader && !lobby.isGameStarted;
 
   const handleStartGame = () => {
     onStartGame(numberOfSongs);
@@ -29,37 +31,42 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
           {isQuiz ? `🎮 Lobby — ${lobby.quizName || 'Quiz'}` : `🎮 Lobby - Salle ${player.roomId}`}
         </h2>
         
-        <div className="player-list">
+        <div className="player-list" style={{ justifyContent: 'center' }}>
+          {isQuiz && lobby.hostName && (
+            <div className="player-card leader">
+              <div style={{ fontWeight: 'bold' }}>{lobby.hostName}</div>
+              <div style={{ fontSize: '0.8rem', color: '#ffd700' }}>👑 Chef · ne joue pas</div>
+            </div>
+          )}
           {lobby.players.map((p, index) => (
             <div 
               key={p.id} 
-              className={`player-card ${index === 0 ? 'leader' : ''}`}
+              className={`player-card ${!isQuiz && index === 0 ? 'leader' : ''}`}
               onClick={() => {
-                // Si je suis le chef et que je clique sur un autre joueur, lui transférer le leadership
-                if (isLeader && p.id !== player.id && onTransferLeadership) {
+                if (!isQuiz && isLeader && p.id !== player.id && onTransferLeadership) {
                   onTransferLeadership(p.id);
                 }
               }}
               style={{
-                cursor: isLeader && p.id !== player.id ? 'pointer' : 'default',
+                cursor: !isQuiz && isLeader && p.id !== player.id ? 'pointer' : 'default',
                 transition: 'all 0.3s ease'
               }}
               onMouseEnter={(e) => {
-                if (isLeader && p.id !== player.id) {
+                if (!isQuiz && isLeader && p.id !== player.id) {
                   e.currentTarget.style.transform = 'scale(1.05)';
                   e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 215, 0, 0.4)';
                 }
               }}
               onMouseLeave={(e) => {
-                if (isLeader && p.id !== player.id) {
+                if (!isQuiz && isLeader && p.id !== player.id) {
                   e.currentTarget.style.transform = 'scale(1)';
                   e.currentTarget.style.boxShadow = 'none';
                 }
               }}
             >
               <div style={{ fontWeight: 'bold' }}>{p.username}</div>
-              {index === 0 && <div style={{ fontSize: '0.8rem', color: '#ffd700' }}>👑 Chef</div>}
-              {isLeader && p.id !== player.id && (
+              {!isQuiz && index === 0 && <div style={{ fontSize: '0.8rem', color: '#ffd700' }}>👑 Chef</div>}
+              {!isQuiz && isLeader && p.id !== player.id && (
                 <div style={{ fontSize: '0.7rem', color: '#ffd700', marginTop: '5px', opacity: 0.8 }}>
                   Cliquer pour transmettre
                 </div>
@@ -73,13 +80,25 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
             Joueurs connectés: {lobby.players.length}/∞
           </div>
           
-          {lobby.players.length < 2 && !isLeader && (
+          {isQuiz && isLeader && lobby.players.length === 0 && (
+            <div style={{ color: '#ffd700', marginBottom: '20px' }}>
+              En attente d'au moins un joueur. Le chef ne répond pas.
+            </div>
+          )}
+
+          {isQuiz && !isLeader && !lobby.isGameStarted && (
+            <div style={{ color: '#ffd700', marginBottom: '20px' }}>
+              En attente que le chef démarre la partie...
+            </div>
+          )}
+
+          {!isQuiz && lobby.players.length < 2 && !isLeader && (
             <div style={{ color: '#ffd700', marginBottom: '20px' }}>
               ⏳ En attente d'un autre joueur...
             </div>
           )}
           
-          {lobby.players.length === 1 && isLeader && (
+          {!isQuiz && lobby.players.length === 1 && isLeader && (
             <div style={{ color: '#51cf66', marginBottom: '20px' }}>
               ✅ Mode solo activé - Vous pouvez démarrer !
             </div>
@@ -121,13 +140,13 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
             </button>
           )}
 
-          {!canStartGame && lobby.players.length >= 2 && !isLeader && (
+          {!isQuiz && !canStartGame && lobby.players.length >= 2 && !isLeader && (
             <div style={{ color: '#ffd700' }}>
               ⏳ En attente que le chef démarre la partie...
             </div>
           )}
 
-          {!canStartGame && lobby.players.length >= 2 && isLeader && (
+          {!isQuiz && !canStartGame && lobby.players.length >= 2 && isLeader && (
             <div style={{ color: '#51cf66' }}>
               ✅ Prêt à démarrer !
             </div>
@@ -144,10 +163,11 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
           <h3 style={{ marginBottom: '15px' }}>📋 Règles du jeu :</h3>
           {isQuiz ? (
             <ul style={{ textAlign: 'left', lineHeight: '1.6' }}>
-              <li>Le chef lance la partie et passe à la question suivante</li>
+              <li>Le chef ne joue pas : il lance la partie et passe à la question suivante</li>
               <li>Choix multiple, vrai/faux, texte libre ou blind test</li>
               <li>Rien n'est corrigé tout seul : le chef valide chaque réponse</li>
               <li>Il choisit les points, et peut ajouter +1 pour une blague</li>
+              <li>Un joueur peut demander un indice : cela lui retire 1 point, et le chef lui envoie un ou plusieurs mots</li>
               <li>Le joueur avec le plus de points gagne</li>
             </ul>
           ) : (

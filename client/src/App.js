@@ -132,6 +132,7 @@ function App() {
         mode: 'quiz',
         quizName: data.quizName,
         hostId: data.hostId,
+        hostName: data.hostName || '',
         question: data.question,
         questionIndex: data.questionIndex,
         totalQuestions: data.totalQuestions,
@@ -142,7 +143,11 @@ function App() {
         phase: 'answering',
         reveal: null,
         corrections: null,
-        expectedAnswer: ''
+        expectedAnswer: '',
+        hostAnswer: '',
+        hints: [],
+        hintRequests: [],
+        locked: Boolean(data.locked)
       });
       setCurrentView('quiz-game');
       setError('');
@@ -189,6 +194,43 @@ function App() {
       setCurrentView('results');
     });
 
+    socket.on('quiz-scores', (data) => {
+      setGameData((prev) => {
+        if (!prev || prev.mode !== 'quiz') return prev;
+        const scores = new Map((data.players || []).map((entry) => [entry.id, entry.score]));
+        return {
+          ...prev,
+          players: (prev.players || []).map((entry) => (
+            scores.has(entry.id) ? { ...entry, score: scores.get(entry.id) } : entry
+          ))
+        };
+      });
+    });
+
+    socket.on('quiz-hint', (data) => {
+      setGameData((prev) => (
+        prev && prev.questionIndex === data.questionIndex
+          ? { ...prev, hints: data.hints || [] }
+          : prev
+      ));
+    });
+
+    socket.on('quiz-hint-requests', (data) => {
+      setGameData((prev) => (prev ? { ...prev, hintRequests: data.requests || [] } : prev));
+    });
+
+    socket.on('quiz-host-answer', (data) => {
+      setGameData((prev) => (
+        prev && prev.questionIndex === data.questionIndex
+          ? { ...prev, hostAnswer: data.expectedAnswer || '' }
+          : prev
+      ));
+    });
+
+    socket.on('quiz-error', (data) => {
+      setError(data.message || 'Action impossible');
+    });
+
     socket.on('join-error', (data) => {
       setError(data.message);
     });
@@ -213,6 +255,11 @@ function App() {
       socket.off('quiz-corrections-updated');
       socket.off('quiz-reveal');
       socket.off('quiz-ended');
+      socket.off('quiz-scores');
+      socket.off('quiz-hint');
+      socket.off('quiz-hint-requests');
+      socket.off('quiz-host-answer');
+      socket.off('quiz-error');
     };
   }, []);
 
@@ -750,6 +797,8 @@ function App() {
             onUpdateCorrections={(corrections) => socket.emit('update-quiz-corrections', { corrections })}
             onSubmitCorrection={(corrections) => socket.emit('submit-quiz-correction', { corrections })}
             onNext={() => socket.emit('quiz-next')}
+            onRequestHint={() => socket.emit('quiz-request-hint')}
+            onSendHint={(playerId, words) => socket.emit('quiz-send-hint', { playerId, words })}
           />
         );
 

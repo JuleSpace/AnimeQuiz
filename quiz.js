@@ -134,8 +134,9 @@ function correctLabel(question) {
 function formatPlayerAnswer(question, answer) {
   if (answer == null || answer === '') return 'Pas de réponse';
   if (question.type === 'qcm') {
+    const options = question.options || [];
     const indexes = Array.isArray(answer) ? answer : [answer];
-    return indexes.map((index) => question.options[index] || '?').join(', ');
+    return indexes.map((index) => options[index] || '?').join(', ');
   }
   if (question.type === 'boolean') return answer ? 'Vrai' : 'Faux';
   if (question.type === 'blank') {
@@ -261,12 +262,17 @@ function publicLobby(lobby) {
     roomId: lobby.quizId,
     quizName: lobby.quizName,
     mode: 'quiz',
-    hostId: lobby.players[0]?.id || null,
+    hostId: lobby.host?.id || null,
+    hostName: lobby.host?.username || lobby.hostName || '',
     players: playerSnapshot(lobby),
     isGameStarted: lobby.isGameStarted,
     totalQuestions: total,
     totalSongs: total
   };
+}
+
+function isHostSocket(lobby, socketId) {
+  return Boolean(lobby?.host && lobby.host.id === socketId);
 }
 
 function clearTimer(quizId) {
@@ -307,12 +313,12 @@ function applyScores(lobby, index, corrections) {
 }
 
 function emitReveal(io, lobby, question, index) {
-  lobby.phase = 'reveal';
-  io.to(lobby.quizId).emit('quiz-reveal', {
+  if (!question) return;
+  const payload = {
     questionIndex: index,
-    hostId: lobby.players[0]?.id || null,
+    hostId: lobby.host?.id || null,
     correctAnswer: correctLabel(question),
-    correctIndexes: question.type === 'qcm' ? question.correctIndexes : [],
+    correctIndexes: question.type === 'qcm' ? (question.correctIndexes || []) : [],
     correctBoolean: question.type === 'boolean' ? Boolean(question.correctBoolean) : null,
     players: lobby.players.map((player) => ({
       id: player.id,
@@ -322,7 +328,9 @@ function emitReveal(io, lobby, question, index) {
       correct: Boolean(player.lastCorrect),
       pointsThisRound: player.lastGain || 0
     }))
-  });
+  };
+  lobby.phase = 'reveal';
+  io.to(lobby.quizId).emit('quiz-reveal', payload);
 }
 
 function closeQuestion(io, quizId) {
@@ -349,7 +357,7 @@ function closeQuestion(io, quizId) {
   lobby.pendingCorrections = corrections;
   io.to(quizId).emit('quiz-correction', {
     questionIndex: index,
-    hostId: lobby.players[0]?.id || null,
+    hostId: lobby.host?.id || null,
     expectedAnswer: correctLabel(question),
     suggestedPoints: question.points || 1,
     corrections,
@@ -362,23 +370,48 @@ function closeQuestion(io, quizId) {
   });
 }
 
-function sendQuestion(io, lobby) {
+function questionPayload(lobby) {
   const question = lobby.questions[lobby.currentQuestion];
-  lobby.phase = 'answering';
-  const timeLimit = question.timeLimit || 0;
-  lobby.deadline = timeLimit ? Date.now() + timeLimit * 1000 : null;
-
-  io.to(lobby.quizId).emit('quiz-question', {
+  const index = lobby.currentQuestion;
+  return {
     quizName: lobby.quizName,
-    hostId: lobby.players[0]?.id || null,
-    question: publicQuestion(question, lobby.currentQuestion, lobby.questions.length),
-    questionIndex: lobby.currentQuestion,
+    hostId: lobby.host?.id || null,
+    hostName: lobby.host?.username || lobby.hostName || '',
+    question: publicQuestion(question, index, lobby.questions.length),
+    questionIndex: index,
     totalQuestions: lobby.questions.length,
     players: playerSnapshot(lobby),
     deadline: lobby.deadline,
-    answered: 0,
+    answered: lobby.players.filter((entry) => entry.answered?.[index]).length,
     totalPlayers: lobby.players.length
-  });
+  };
+}
+
+function sendQuestion(io, lobby) {
+  const question = lobby.questions[lobby.currentQuestion];
+  if (!question) return false;
+
+  const timeLimit = question.timeLimit || 0;
+  lobby.deadline = timeLimit ? Date.now() + timeLimit * 1000 : null;
+  lobby.hintRequests = [];
+
+  let payload;
+  let expectedAnswer = '';
+  try {
+    expectedAnswer = correctLabel(question);
+    payload = questionPayload(lobby);
+  } catch (error) {
+    return false;
+  }
+
+  lobby.phase = 'answering';
+  io.to(lobby.quizId).emit('quiz-question', payload);
+  if (lobby.host?.id) {
+    io.to(lobby.host.id).emit('quiz-host-answer', {
+      questionIndex: lobby.currentQuestion,
+      expectedAnswer
+    });
+  }
 
   clearTimer(lobby.quizId);
   if (timeLimit) {
@@ -387,24 +420,74 @@ function sendQuestion(io, lobby) {
       setTimeout(() => closeQuestion(io, lobby.quizId), timeLimit * 1000)
     );
   }
+  return true;
+}
+
+function syncQuizSocket(io, socket, lobby) {
+  if (!lobby.isGameStarted || lobby.phase === 'lobby' || lobby.phase === 'ended') return;
+  const question = lobby.questions[lobby.currentQuestion];
+  if (!question) return;
+
+  const person = quizPlayers.get(socket.id);
+  socket.emit('quiz-question', {
+    ...questionPayload(lobby),
+    locked: Boolean(person && !person.isHost && person.answered?.[lobby.currentQuestion])
+  });
+
+  if (isHostSocket(lobby, socket.id)) {
+    socket.emit('quiz-host-answer', {
+      questionIndex: lobby.currentQuestion,
+      expectedAnswer: correctLabel(question)
+    });
+    socket.emit('quiz-hint-requests', { requests: lobby.hintRequests || [] });
+  } else if (person?.hints?.[lobby.currentQuestion]?.length) {
+    const hints = person.hints[lobby.currentQuestion];
+    socket.emit('quiz-hint', {
+      questionIndex: lobby.currentQuestion,
+      words: hints[hints.length - 1],
+      hints
+    });
+  }
+
+  if (lobby.phase === 'correction') {
+    socket.emit('quiz-correction', {
+      questionIndex: lobby.currentQuestion,
+      hostId: lobby.host?.id || null,
+      expectedAnswer: correctLabel(question),
+      suggestedPoints: question.points || 1,
+      corrections: lobby.pendingCorrections || {},
+      players: lobby.players.map((entry) => ({
+        id: entry.id,
+        username: entry.username,
+        score: entry.score || 0,
+        answerText: formatPlayerAnswer(question, entry.answers[lobby.currentQuestion])
+      }))
+    });
+  }
+
+  if (lobby.phase === 'reveal') {
+    emitReveal(io, lobby, question, lobby.currentQuestion);
+  }
 }
 
 function removeQuizPlayer(io, socket) {
-  const player = quizPlayers.get(socket.id);
-  if (!player) return;
+  const person = quizPlayers.get(socket.id);
+  if (!person) return;
 
-  const lobby = quizLobbies.get(player.roomId);
+  const lobby = quizLobbies.get(person.roomId);
   if (lobby) {
+    const wasHost = isHostSocket(lobby, socket.id);
+    if (wasHost) lobby.host = null;
     lobby.players = lobby.players.filter((entry) => entry.id !== socket.id);
-    socket.leave(player.roomId);
+    socket.leave(person.roomId);
 
-    if (lobby.players.length === 0) {
+    if (!lobby.host && lobby.players.length === 0) {
       clearTimer(lobby.quizId);
-      quizLobbies.delete(player.roomId);
+      quizLobbies.delete(person.roomId);
     } else {
-      io.to(player.roomId).emit('lobby-updated', publicLobby(lobby));
+      io.to(person.roomId).emit('lobby-updated', publicLobby(lobby));
       const index = lobby.currentQuestion;
-      if (lobby.phase === 'answering' && lobby.players.every((entry) => entry.answered[index])) {
+      if (!wasHost && lobby.phase === 'answering' && lobby.players.length > 0 && lobby.players.every((entry) => entry.answered[index])) {
         closeQuestion(io, lobby.quizId);
       }
     }
@@ -554,17 +637,60 @@ function attachQuiz(app, io) {
             totalQuestions: playable.length,
             questions: [],
             currentQuestion: 0,
-            phase: 'lobby'
+            phase: 'lobby',
+            host: null,
+            hostName: ''
           });
         }
 
         const lobby = quizLobbies.get(quizId);
-        if (lobby.isGameStarted) {
+        const knownHost = lobby.hostName === username;
+        const existingPlayer = lobby.players.find((entry) => entry.username === username);
+
+        if (lobby.isGameStarted && !knownHost && !existingPlayer) {
           socket.emit('join-error', { message: 'La partie a déjà commencé' });
           return;
         }
-        if (lobby.players.some((player) => player.username === username)) {
+        if (!lobby.isGameStarted && (existingPlayer || (knownHost && lobby.host))) {
           socket.emit('join-error', { message: 'Ce pseudo est déjà pris' });
+          return;
+        }
+
+        const becomeHost = !lobby.host && (knownHost || (!lobby.hostName && lobby.players.length === 0));
+        if (becomeHost || (knownHost && !lobby.host)) {
+          lobby.hostName = username;
+          lobby.host = { id: socket.id, username };
+          const host = {
+            id: socket.id,
+            username,
+            roomId: quizId,
+            isHost: true,
+            score: 0,
+            answers: {},
+            answered: {}
+          };
+          quizPlayers.set(socket.id, host);
+          socket.join(quizId);
+          socket.emit('joined-lobby', {
+            lobby: publicLobby(lobby),
+            player: { ...host, role: 'host' }
+          });
+          io.to(quizId).emit('lobby-updated', publicLobby(lobby));
+          syncQuizSocket(io, socket, lobby);
+          return;
+        }
+
+        if (existingPlayer && lobby.isGameStarted) {
+          quizPlayers.delete(existingPlayer.id);
+          existingPlayer.id = socket.id;
+          quizPlayers.set(socket.id, existingPlayer);
+          socket.join(quizId);
+          socket.emit('joined-lobby', {
+            lobby: publicLobby(lobby),
+            player: { ...existingPlayer, role: 'player' }
+          });
+          io.to(quizId).emit('lobby-updated', publicLobby(lobby));
+          syncQuizSocket(io, socket, lobby);
           return;
         }
 
@@ -572,9 +698,11 @@ function attachQuiz(app, io) {
           id: socket.id,
           username,
           roomId: quizId,
+          isHost: false,
           score: 0,
           answers: {},
-          answered: {}
+          answered: {},
+          hints: {}
         };
 
         lobby.players.push(player);
@@ -582,7 +710,10 @@ function attachQuiz(app, io) {
         lobby.quizName = quiz.name;
         quizPlayers.set(socket.id, player);
         socket.join(quizId);
-        socket.emit('joined-lobby', { lobby: publicLobby(lobby), player });
+        socket.emit('joined-lobby', {
+          lobby: publicLobby(lobby),
+          player: { ...player, role: 'player' }
+        });
         io.to(quizId).emit('lobby-updated', publicLobby(lobby));
       } catch (error) {
         socket.emit('join-error', { message: 'Impossible de rejoindre ce quiz' });
@@ -595,8 +726,12 @@ function attachQuiz(app, io) {
         const lobby = quizLobbies.get(quizId);
         const player = quizPlayers.get(socket.id);
 
-        if (!lobby || !player || lobby.players[0].id !== socket.id) {
+        if (!lobby || !player || !isHostSocket(lobby, socket.id)) {
           socket.emit('start-error', { message: 'Seul le chef peut lancer la partie' });
+          return;
+        }
+        if (!lobby.players.length) {
+          socket.emit('start-error', { message: 'Il faut au moins un joueur en plus du chef' });
           return;
         }
 
@@ -641,7 +776,7 @@ function attachQuiz(app, io) {
 
     socket.on('submit-quiz-answer', (data) => {
       const player = quizPlayers.get(socket.id);
-      if (!player) return;
+      if (!player || player.isHost) return;
       const lobby = quizLobbies.get(player.roomId);
       if (!lobby || lobby.phase !== 'answering') return;
 
@@ -666,7 +801,7 @@ function attachQuiz(app, io) {
       const player = quizPlayers.get(socket.id);
       if (!player) return;
       const lobby = quizLobbies.get(player.roomId);
-      if (!lobby || lobby.players[0].id !== socket.id) return;
+      if (!lobby || !isHostSocket(lobby, socket.id)) return;
       closeQuestion(io, lobby.quizId);
     });
 
@@ -674,7 +809,7 @@ function attachQuiz(app, io) {
       const player = quizPlayers.get(socket.id);
       if (!player) return;
       const lobby = quizLobbies.get(player.roomId);
-      if (!lobby || lobby.phase !== 'correction' || lobby.players[0].id !== socket.id) return;
+      if (!lobby || lobby.phase !== 'correction' || !isHostSocket(lobby, socket.id)) return;
 
       const sanitized = {};
       Object.entries(data.corrections || {}).forEach(([id, value]) => {
@@ -690,10 +825,18 @@ function attachQuiz(app, io) {
       const player = quizPlayers.get(socket.id);
       if (!player) return;
       const lobby = quizLobbies.get(player.roomId);
-      if (!lobby || lobby.phase !== 'correction' || lobby.players[0].id !== socket.id) return;
+      if (!lobby || !isHostSocket(lobby, socket.id)) return;
 
       const index = lobby.currentQuestion;
       const question = lobby.questions[index];
+      if (!question) return;
+
+      if (lobby.phase === 'reveal') {
+        emitReveal(io, lobby, question, index);
+        return;
+      }
+      if (lobby.phase !== 'correction') return;
+
       const corrections = data.corrections || lobby.pendingCorrections || {};
       applyScores(lobby, index, corrections);
       emitReveal(io, lobby, question, index);
@@ -703,10 +846,34 @@ function attachQuiz(app, io) {
       const player = quizPlayers.get(socket.id);
       if (!player) return;
       const lobby = quizLobbies.get(player.roomId);
-      if (!lobby || lobby.phase !== 'reveal' || lobby.players[0].id !== socket.id) return;
+      if (!lobby || !isHostSocket(lobby, socket.id)) {
+        socket.emit('quiz-error', { message: 'Seul le chef peut passer à la question suivante' });
+        return;
+      }
 
-      lobby.currentQuestion += 1;
-      if (lobby.currentQuestion >= lobby.questions.length) {
+      if (lobby.phase === 'answering') {
+        try {
+          const question = lobby.questions[lobby.currentQuestion];
+          io.to(lobby.quizId).emit('quiz-question', questionPayload(lobby));
+          if (lobby.host?.id && question) {
+            io.to(lobby.host.id).emit('quiz-host-answer', {
+              questionIndex: lobby.currentQuestion,
+              expectedAnswer: correctLabel(question)
+            });
+          }
+        } catch (error) {
+          socket.emit('quiz-error', { message: 'Impossible d\'afficher la question' });
+        }
+        return;
+      }
+
+      if (lobby.phase !== 'reveal') {
+        socket.emit('quiz-error', { message: 'Valide d\'abord les points de cette question' });
+        return;
+      }
+
+      const nextIndex = (lobby.currentQuestion || 0) + 1;
+      if (nextIndex >= (lobby.questions || []).length) {
         const results = lobby.players
           .map((entry) => ({
             username: entry.username,
@@ -719,19 +886,58 @@ function attachQuiz(app, io) {
         return;
       }
 
-      sendQuestion(io, lobby);
+      const previousIndex = lobby.currentQuestion;
+      lobby.currentQuestion = nextIndex;
+      if (!sendQuestion(io, lobby)) {
+        lobby.currentQuestion = previousIndex;
+        socket.emit('quiz-error', { message: 'Impossible d\'afficher la question suivante' });
+      }
     });
 
-    socket.on('transfer-leadership', (data) => {
-      const lobby = quizLobbies.get(String(data.roomId || ''));
-      if (!lobby || lobby.players[0]?.id !== socket.id) return;
+    socket.on('quiz-request-hint', () => {
+      const player = quizPlayers.get(socket.id);
+      if (!player || player.isHost) return;
+      const lobby = quizLobbies.get(player.roomId);
+      if (!lobby || lobby.phase !== 'answering') return;
 
-      const index = lobby.players.findIndex((entry) => entry.id === data.newLeaderId);
-      if (index <= 0) return;
+      player.score = (player.score || 0) - 1;
+      if (!lobby.hintRequests) lobby.hintRequests = [];
+      lobby.hintRequests.push({
+        id: `${player.id}-${Date.now()}`,
+        playerId: player.id,
+        username: player.username,
+        questionIndex: lobby.currentQuestion
+      });
+      io.to(lobby.quizId).emit('quiz-scores', { players: playerSnapshot(lobby) });
+      if (lobby.host?.id) {
+        io.to(lobby.host.id).emit('quiz-hint-requests', { requests: lobby.hintRequests });
+      }
+    });
 
-      const [nextLeader] = lobby.players.splice(index, 1);
-      lobby.players.unshift(nextLeader);
-      io.to(lobby.quizId).emit('lobby-updated', publicLobby(lobby));
+    socket.on('quiz-send-hint', (data) => {
+      const host = quizPlayers.get(socket.id);
+      if (!host) return;
+      const lobby = quizLobbies.get(host.roomId);
+      if (!lobby || !isHostSocket(lobby, socket.id) || lobby.phase !== 'answering') return;
+
+      const words = String(data.words || '').trim();
+      if (!words) return;
+      const target = lobby.players.find((entry) => entry.id === data.playerId);
+      if (!target) return;
+
+      const index = lobby.currentQuestion;
+      if (!target.hints) target.hints = {};
+      if (!target.hints[index]) target.hints[index] = [];
+      target.hints[index].push(words);
+      io.to(target.id).emit('quiz-hint', {
+        questionIndex: index,
+        words,
+        hints: target.hints[index]
+      });
+    });
+
+    socket.on('transfer-leadership', () => {
+      // Le chef d'un quiz ne joue pas et ne se transmet pas comme au Music Quiz.
     });
 
     socket.on('leave-lobby', () => {

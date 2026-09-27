@@ -16,13 +16,12 @@ const QuestionMedia = ({ imageUrl, videoUrl }) => {
   if (!imageUrl && !videoUrl) return null;
 
   return (
-    <div style={{ margin: '16px auto', maxWidth: '720px', textAlign: 'center' }}>
+    <div className="quiz-media">
       {imageUrl && !imageFailed && (
         <img
           src={imageUrl}
           alt=""
           onError={() => setImageFailed(true)}
-          style={{ display: 'block', margin: '0 auto', maxWidth: '100%', maxHeight: '360px', borderRadius: '12px', objectFit: 'contain', background: 'rgba(0,0,0,0.25)' }}
         />
       )}
       {videoUrl && (
@@ -49,6 +48,36 @@ const QuestionMedia = ({ imageUrl, videoUrl }) => {
   );
 };
 
+const HintComposer = ({ request, onSend }) => {
+  const [words, setWords] = useState('');
+
+  return (
+    <form
+      className="quiz-hint-box"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const text = words.trim();
+        if (!text) return;
+        onSend(request.playerId, text);
+        setWords('');
+      }}
+    >
+      <div><strong>{request.username}</strong> demande un indice</div>
+      <div className="quiz-hint-send">
+        <input
+          className="input"
+          placeholder="Un ou plusieurs mots"
+          value={words}
+          onChange={(event) => setWords(event.target.value)}
+        />
+        <button type="submit" className="btn btn-success" disabled={!words.trim()}>
+          Envoyer
+        </button>
+      </div>
+    </form>
+  );
+};
+
 const ClassicGame = ({
   gameData,
   player,
@@ -56,12 +85,15 @@ const ClassicGame = ({
   onForceClose,
   onUpdateCorrections,
   onSubmitCorrection,
-  onNext
+  onNext,
+  onRequestHint,
+  onSendHint
 }) => {
   const [textAnswer, setTextAnswer] = useState('');
   const [selected, setSelected] = useState([]);
   const [locked, setLocked] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [hintCooldown, setHintCooldown] = useState(false);
 
   const question = gameData?.question;
   const phase = gameData?.phase || 'answering';
@@ -69,8 +101,9 @@ const ClassicGame = ({
   useEffect(() => {
     setTextAnswer('');
     setSelected([]);
-    setLocked(false);
-  }, [gameData?.questionIndex]);
+    setLocked(Boolean(gameData?.locked));
+    setHintCooldown(false);
+  }, [gameData?.questionIndex, gameData?.locked]);
 
   useEffect(() => {
     if (phase !== 'answering' || !gameData?.deadline) return undefined;
@@ -192,18 +225,30 @@ const ClassicGame = ({
     );
   };
 
+  const requestHint = () => {
+    if (hintCooldown || phase !== 'answering' || isHost) return;
+    setHintCooldown(true);
+    onRequestHint();
+    setTimeout(() => setHintCooldown(false), 600);
+  };
+
+  const hints = gameData.hints || [];
+  const hintRequests = gameData.hintRequests || [];
+
   return (
     <div className="container">
       <div className="card">
-        <div style={{ textAlign: 'center', marginBottom: 8 }}>
-          <div className="question-number" style={{ marginBottom: 6 }}>
-            {gameData.quizName ? `${gameData.quizName} · ` : ''}
-            Question {gameData.questionIndex + 1} / {gameData.totalQuestions}
-          </div>
-          <div style={{ fontWeight: 'bold' }}>{question.points} pt{question.points > 1 ? 's' : ''}</div>
+        <div className="quiz-stage">
+        <div className="question-number" style={{ marginBottom: 6 }}>
+          {gameData.quizName ? `${gameData.quizName} · ` : ''}
+          Question {gameData.questionIndex + 1} / {gameData.totalQuestions}
+        </div>
+        <div style={{ fontWeight: 'bold', marginBottom: 8 }}>
+          {question.points} pt{question.points > 1 ? 's' : ''}
+          {gameData.hostName ? ` · Chef ${gameData.hostName}` : ''}
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', margin: '14px 0' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', margin: '14px 0', width: '100%' }}>
           {[...players].sort((a, b) => (b.score || 0) - (a.score || 0)).map((entry) => (
             <span key={entry.id} style={{
               padding: '6px 10px',
@@ -217,7 +262,7 @@ const ClassicGame = ({
         </div>
 
         {phase === 'answering' && question.timeLimit > 0 && (
-          <div style={{ marginBottom: 16 }}>
+          <div style={{ width: '100%', maxWidth: '640px', marginBottom: 16 }}>
             <div style={{ textAlign: 'center', fontSize: '1.4rem', fontWeight: 'bold', marginBottom: 6 }}>
               {remaining}s
             </div>
@@ -246,21 +291,48 @@ const ClassicGame = ({
           <QuestionMedia imageUrl={question.imageUrl} videoUrl="" />
         )}
 
-        {phase === 'answering' && renderAnswering()}
-
-        {phase === 'answering' && (
-          <div style={{ textAlign: 'center', marginTop: 8 }}>
-            {!locked && (
-              <div style={{ opacity: 0.75, marginBottom: 8 }}>
-                {gameData.answered || 0}/{gameData.totalPlayers || players.length} ont répondu
+        {phase === 'answering' && isHost && (
+          <div className="quiz-host-panel">
+            <div style={{ marginBottom: 8 }}>Tu es le chef : tu ne réponds pas.</div>
+            {gameData.hostAnswer && (
+              <div style={{ marginBottom: 8 }}>
+                Réponse prévue : <strong>{gameData.hostAnswer}</strong>
               </div>
             )}
-            {isHost && (
-              <button type="button" className="btn" onClick={onForceClose}>
-                Révéler maintenant
+            <div style={{ opacity: 0.8, marginBottom: 8 }}>
+              {gameData.answered || 0}/{gameData.totalPlayers || players.length} ont répondu
+            </div>
+            {hintRequests.length === 0 && (
+              <div style={{ opacity: 0.75 }}>Aucun indice demandé.</div>
+            )}
+            {hintRequests.map((request) => (
+              <HintComposer key={request.id} request={request} onSend={onSendHint} />
+            ))}
+            <button type="button" className="btn" onClick={onForceClose}>
+              Révéler maintenant
+            </button>
+          </div>
+        )}
+
+        {phase === 'answering' && !isHost && (
+          <>
+            {renderAnswering()}
+            {hints.length > 0 && (
+              <div className="quiz-hint-list">
+                {hints.map((words, index) => (
+                  <div key={`${words}-${index}`} className="quiz-hint">{words}</div>
+                ))}
+              </div>
+            )}
+            {!locked && (
+              <button type="button" className="btn" onClick={requestHint} disabled={hintCooldown}>
+                Indice (−1 pt)
               </button>
             )}
-          </div>
+            <div style={{ opacity: 0.75, marginTop: 8 }}>
+              {gameData.answered || 0}/{gameData.totalPlayers || players.length} ont répondu
+            </div>
+          </>
         )}
 
         {phase === 'correction' && (
@@ -283,13 +355,13 @@ const ClassicGame = ({
               const given = Number(corrections[entry.id]) || 0;
               const suggested = gameData.suggestedPoints || question.points || 1;
               return (
-                <div key={entry.id} className="correction-item" style={{ flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 10 }}>
+                <div key={entry.id} className="quiz-score-row">
                   <div>
                     <strong>{entry.username}</strong>
                     <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
                   </div>
                   {isHost ? (
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+                    <div className="quiz-score-actions">
                       <button
                         type="button"
                         className="btn btn-success"
@@ -372,7 +444,7 @@ const ClassicGame = ({
 
             {question.type === 'qcm' && (
               <div className="choice-grid">
-                {question.options.map((option, index) => {
+                {(question.options || []).map((option, index) => {
                   const isCorrect = (reveal.correctIndexes || []).includes(index);
                   return (
                     <div
@@ -391,9 +463,9 @@ const ClassicGame = ({
               </div>
             )}
 
-            <div style={{ marginTop: 16 }}>
-              {reveal.players.map((entry) => (
-                <div key={entry.id} className="correction-item" style={{ flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 6 }}>
+            <div style={{ marginTop: 16, width: '100%' }}>
+              {(reveal.players || []).map((entry) => (
+                <div key={entry.id} className="quiz-score-row">
                   <div>
                     <strong>{entry.username}</strong>
                     <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
@@ -416,6 +488,13 @@ const ClassicGame = ({
             </div>
           </div>
         )}
+
+        {phase === 'reveal' && !reveal && isHost && (
+          <button type="button" className="btn btn-success" onClick={onNext}>
+            Question suivante
+          </button>
+        )}
+        </div>
       </div>
     </div>
   );
