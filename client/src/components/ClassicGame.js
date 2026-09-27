@@ -348,7 +348,7 @@ const ClassicGame = ({
             }}>
               Réponse prévue : <strong>{gameData.expectedAnswer || '—'}</strong>
               <div style={{ marginTop: 6, fontSize: '0.9rem', opacity: 0.85 }}>
-                Rien n'est validé tout seul. Une bonne réponse vaut {gameData.suggestedPoints || question.points || 1} pt, et +1 peut servir pour une blague.
+                Rien n'est validé tout seul. Une bonne réponse vaut {gameData.suggestedPoints || question.points || 1} pt.
               </div>
             </div>
             {players.map((entry) => {
