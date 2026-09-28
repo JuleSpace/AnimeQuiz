@@ -431,7 +431,8 @@ function syncQuizSocket(io, socket, lobby) {
   const person = quizPlayers.get(socket.id);
   socket.emit('quiz-question', {
     ...questionPayload(lobby),
-    locked: Boolean(person && !person.isHost && person.answered?.[lobby.currentQuestion])
+    locked: Boolean(person && !person.isHost && person.answered?.[lobby.currentQuestion]),
+    hintUsed: Boolean(person && !person.isHost && person.hintAsked?.[lobby.currentQuestion])
   });
 
   if (isHostSocket(lobby, socket.id)) {
@@ -900,13 +901,18 @@ function attachQuiz(app, io) {
       const lobby = quizLobbies.get(player.roomId);
       if (!lobby || lobby.phase !== 'answering') return;
 
+      const index = lobby.currentQuestion;
+      if (!player.hintAsked) player.hintAsked = {};
+      if (player.hintAsked[index]) return;
+      player.hintAsked[index] = true;
+
       player.score = (player.score || 0) - 1;
       if (!lobby.hintRequests) lobby.hintRequests = [];
       lobby.hintRequests.push({
-        id: `${player.id}-${Date.now()}`,
+        id: `${player.id}-${index}`,
         playerId: player.id,
         username: player.username,
-        questionIndex: lobby.currentQuestion
+        questionIndex: index
       });
       io.to(lobby.quizId).emit('quiz-scores', { players: playerSnapshot(lobby) });
       if (lobby.host?.id) {

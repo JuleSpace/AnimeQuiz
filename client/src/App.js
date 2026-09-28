@@ -147,7 +147,8 @@ function App() {
         hostAnswer: '',
         hints: [],
         hintRequests: [],
-        locked: Boolean(data.locked)
+        locked: Boolean(data.locked),
+        hintUsed: Boolean(data.hintUsed)
       });
       setCurrentView('quiz-game');
       setError('');

@@ -167,7 +167,7 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
               <li>Choix multiple, vrai/faux, texte libre ou blind test</li>
               <li>Rien n'est corrigé tout seul : le chef valide chaque réponse</li>
               <li>Il choisit les points, et peut ajouter +1 pour une blague</li>
-              <li>Un joueur peut demander un indice : cela lui retire 1 point, et le chef lui envoie un ou plusieurs mots</li>
+              <li>Un seul indice par question : −1 pt. Le chef peut envoyer plusieurs messages à ce joueur</li>
               <li>Le joueur avec le plus de points gagne</li>
             </ul>
           ) : (

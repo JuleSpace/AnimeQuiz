@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import BlindMusicPlayer from './BlindMusicPlayer';
 import { extractYouTubeId } from '../utils/media';
 
@@ -93,7 +93,8 @@ const ClassicGame = ({
   const [selected, setSelected] = useState([]);
   const [locked, setLocked] = useState(false);
   const [now, setNow] = useState(Date.now());
-  const [hintCooldown, setHintCooldown] = useState(false);
+  const [hintAsked, setHintAsked] = useState(false);
+  const hintAskedFor = useRef(null);
 
   const question = gameData?.question;
   const phase = gameData?.phase || 'answering';
@@ -102,8 +103,15 @@ const ClassicGame = ({
     setTextAnswer('');
     setSelected([]);
     setLocked(Boolean(gameData?.locked));
-    setHintCooldown(false);
-  }, [gameData?.questionIndex, gameData?.locked]);
+    if (gameData?.hintUsed) {
+      hintAskedFor.current = gameData.questionIndex;
+      setHintAsked(true);
+      return;
+    }
+    if (hintAskedFor.current !== gameData?.questionIndex) {
+      setHintAsked(false);
+    }
+  }, [gameData?.questionIndex, gameData?.locked, gameData?.hintUsed]);
 
   useEffect(() => {
     if (phase !== 'answering' || !gameData?.deadline) return undefined;
@@ -226,10 +234,10 @@ const ClassicGame = ({
   };
 
   const requestHint = () => {
-    if (hintCooldown || phase !== 'answering' || isHost) return;
-    setHintCooldown(true);
+    if (hintAsked || phase !== 'answering' || isHost) return;
+    hintAskedFor.current = gameData.questionIndex;
+    setHintAsked(true);
     onRequestHint();
-    setTimeout(() => setHintCooldown(false), 600);
   };
 
   const hints = gameData.hints || [];
@@ -325,8 +333,8 @@ const ClassicGame = ({
               </div>
             )}
             {!locked && (
-              <button type="button" className="btn" onClick={requestHint} disabled={hintCooldown}>
-                Indice (−1 pt)
+              <button type="button" className="btn" onClick={requestHint} disabled={hintAsked}>
+                {hintAsked ? 'Indice demandé' : 'Indice (−1 pt)'}
               </button>
             )}
             <div style={{ opacity: 0.75, marginTop: 8 }}>
