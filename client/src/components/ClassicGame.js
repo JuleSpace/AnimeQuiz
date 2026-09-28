@@ -273,7 +273,7 @@ const ClassicGame = ({
         )}
 
         {question.prompt && (
-          <h2 style={{ textAlign: 'center', fontSize: '1.6rem', margin: '10px auto 6px', maxWidth: '760px', whiteSpace: 'pre-wrap' }}>
+          <h2 className="quiz-answer" style={{ fontSize: '1.6rem', margin: '10px auto 6px', maxWidth: '760px' }}>
             {question.prompt}
           </h2>
         )}
@@ -346,7 +346,7 @@ const ClassicGame = ({
               background: 'rgba(255,215,0,0.15)',
               border: '1px solid rgba(255,215,0,0.45)'
             }}>
-              Réponse prévue : <strong>{gameData.expectedAnswer || '—'}</strong>
+              Réponse prévue : <strong className="quiz-answer">{gameData.expectedAnswer || '—'}</strong>
               <div style={{ marginTop: 6, fontSize: '0.9rem', opacity: 0.85 }}>
                 Rien n'est validé tout seul. Une bonne réponse vaut {gameData.suggestedPoints || question.points || 1} pt.
               </div>
@@ -356,7 +356,7 @@ const ClassicGame = ({
               const suggested = gameData.suggestedPoints || question.points || 1;
               return (
                 <div key={entry.id} className="quiz-score-row">
-                  <div>
+                  <div className="quiz-answer">
                     <strong>{entry.username}</strong>
                     <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
                   </div>
@@ -428,7 +428,7 @@ const ClassicGame = ({
               marginBottom: 16
             }}>
               <div style={{ opacity: 0.8, marginBottom: 6 }}>Réponse prévue</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }}>{reveal.correctAnswer}</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }} className="quiz-answer">{reveal.correctAnswer}</div>
             </div>
 
             {question.type === 'boolean' && (
@@ -466,7 +466,7 @@ const ClassicGame = ({
             <div style={{ marginTop: 16, width: '100%' }}>
               {(reveal.players || []).map((entry) => (
                 <div key={entry.id} className="quiz-score-row">
-                  <div>
+                  <div className="quiz-answer">
                     <strong>{entry.username}</strong>
                     <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
                   </div>

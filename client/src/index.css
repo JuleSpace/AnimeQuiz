@@ -117,6 +117,112 @@ body {
   border-radius: 10px;
 }
 
+.blind-player {
+  position: relative;
+  max-width: 640px;
+}
+
+.blind-controls {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.blind-play {
+  align-self: center;
+  min-width: 110px;
+  height: 44px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.blind-range {
+  width: 100%;
+  height: 28px;
+  accent-color: #ffd700;
+  cursor: pointer;
+}
+
+.blind-times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.blind-volume {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.blind-volume span {
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
+.blind-volume .blind-range {
+  flex: 1;
+}
+
+.blind-hint {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.blind-youtube-hidden {
+  position: absolute;
+  width: 320px;
+  height: 180px;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
+  border: none;
+}
+
+.blind-spotify {
+  position: relative;
+  width: 100%;
+  height: 152px;
+  margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #111;
+}
+
+.blind-spotify iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 152px;
+  border: none;
+}
+
+.blind-spotify-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% - 76px);
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  font-weight: 700;
+  pointer-events: auto;
+}
+
 .question-container {
   text-align: center;
   margin: 30px 0;
@@ -221,6 +327,8 @@ body {
 .quiz-stage > .correction-section,
 .quiz-stage > .audio-player {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .quiz-media {
@@ -247,12 +355,24 @@ body {
   align-items: center;
   gap: 10px;
   width: 100%;
-  max-width: 560px;
+  max-width: min(560px, 100%);
+  min-width: 0;
   margin: 10px auto;
   padding: 14px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.quiz-answer {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
 }
 
 .quiz-score-actions {
