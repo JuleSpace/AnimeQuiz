@@ -298,6 +298,9 @@ const ClassicGame = ({
         {question.type === 'music' && question.imageUrl && (
           <QuestionMedia imageUrl={question.imageUrl} videoUrl="" />
         )}
+        {phase !== 'answering' && (
+          <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} />
+        )}
 
         {phase === 'answering' && isHost && (
           <div className="quiz-host-panel">

@@ -9,6 +9,8 @@ const QuizQuestionSchema = new mongoose.Schema({
   prompt: { type: String, default: '' },
   imageUrl: { type: String, default: '' },
   videoUrl: { type: String, default: '' },
+  answerImageUrl: { type: String, default: '' },
+  answerVideoUrl: { type: String, default: '' },
   musicUrl: { type: String, default: '' },
   options: { type: [String], default: [] },
   correctIndexes: { type: [Number], default: [] },
@@ -193,6 +195,8 @@ function sanitizeQuestion(raw) {
     prompt: String(raw.prompt || '').trim(),
     imageUrl: String(raw.imageUrl || '').trim(),
     videoUrl: type === 'music' ? '' : String(raw.videoUrl || '').trim(),
+    answerImageUrl: String(raw.answerImageUrl || '').trim(),
+    answerVideoUrl: String(raw.answerVideoUrl || '').trim(),
     musicUrl: type === 'music' ? String(raw.musicUrl || '').trim() : '',
     options: type === 'qcm' ? options : [],
     correctIndexes: type === 'qcm' ? correctIndexes : [],
@@ -209,7 +213,7 @@ function validateQuestion(question, position) {
   const types = ['qcm', 'boolean', 'text', 'blank', 'music'];
   if (!types.includes(question.type)) return `${label} : type invalide`;
 
-  const urlError = ['imageUrl', 'videoUrl', 'musicUrl'].map((field) => {
+  const urlError = ['imageUrl', 'videoUrl', 'answerImageUrl', 'answerVideoUrl', 'musicUrl'].map((field) => {
     const value = question[field];
     if (value && !isHttpUrl(value)) {
       return `${label} : le lien doit commencer par http:// ou https://`;
@@ -318,6 +322,8 @@ function emitReveal(io, lobby, question, index) {
     questionIndex: index,
     hostId: lobby.host?.id || null,
     correctAnswer: correctLabel(question),
+    answerImageUrl: question.answerImageUrl || '',
+    answerVideoUrl: question.answerVideoUrl || '',
     correctIndexes: question.type === 'qcm' ? (question.correctIndexes || []) : [],
     correctBoolean: question.type === 'boolean' ? Boolean(question.correctBoolean) : null,
     players: lobby.players.map((player) => ({
@@ -359,6 +365,8 @@ function closeQuestion(io, quizId) {
     questionIndex: index,
     hostId: lobby.host?.id || null,
     expectedAnswer: correctLabel(question),
+    answerImageUrl: question.answerImageUrl || '',
+    answerVideoUrl: question.answerVideoUrl || '',
     suggestedPoints: question.points || 1,
     corrections,
     players: lobby.players.map((player) => ({
@@ -455,6 +463,8 @@ function syncQuizSocket(io, socket, lobby) {
       questionIndex: lobby.currentQuestion,
       hostId: lobby.host?.id || null,
       expectedAnswer: correctLabel(question),
+      answerImageUrl: question.answerImageUrl || '',
+      answerVideoUrl: question.answerVideoUrl || '',
       suggestedPoints: question.points || 1,
       corrections: lobby.pendingCorrections || {},
       players: lobby.players.map((entry) => ({

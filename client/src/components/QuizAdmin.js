@@ -13,6 +13,8 @@ const emptyDraft = () => ({
   prompt: '',
   imageUrl: '',
   videoUrl: '',
+  answerImageUrl: '',
+  answerVideoUrl: '',
   musicUrl: '',
   options: ['', '', '', ''],
   correctIndexes: [0],
@@ -28,6 +30,8 @@ const questionToApi = (draft) => ({
   prompt: draft.prompt,
   imageUrl: draft.imageUrl,
   videoUrl: draft.type === 'music' ? '' : draft.videoUrl,
+  answerImageUrl: draft.answerImageUrl,
+  answerVideoUrl: draft.answerVideoUrl,
   musicUrl: draft.type === 'music' ? draft.musicUrl : '',
   options: draft.options,
   correctIndexes: draft.multiple ? draft.correctIndexes : draft.correctIndexes.slice(0, 1),
@@ -43,6 +47,8 @@ const questionFromApi = (question) => ({
   prompt: question.prompt || '',
   imageUrl: question.imageUrl || '',
   videoUrl: question.videoUrl || '',
+  answerImageUrl: question.answerImageUrl || '',
+  answerVideoUrl: question.answerVideoUrl || '',
   musicUrl: question.musicUrl || '',
   options: question.options?.length ? [...question.options] : ['', ''],
   correctIndexes: question.correctIndexes?.length ? [...question.correctIndexes] : [0],
@@ -265,6 +271,19 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
           onChange={(event) => setDraft({ ...draft, imageUrl: event.target.value })}
         />
       )}
+
+      <input
+        className="input"
+        placeholder="Image de la réponse, visible seulement à la correction"
+        value={draft.answerImageUrl}
+        onChange={(event) => setDraft({ ...draft, answerImageUrl: event.target.value })}
+      />
+      <input
+        className="input"
+        placeholder="Vidéo de la réponse, visible seulement à la correction"
+        value={draft.answerVideoUrl}
+        onChange={(event) => setDraft({ ...draft, answerVideoUrl: event.target.value })}
+      />
 
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
         <label style={{ flex: 1 }}>

@@ -144,6 +144,8 @@ function App() {
         reveal: null,
         corrections: null,
         expectedAnswer: '',
+        answerImageUrl: '',
+        answerVideoUrl: '',
         hostAnswer: '',
         hints: [],
         hintRequests: [],
@@ -167,6 +169,8 @@ function App() {
           phase: 'correction',
           hostId: data.hostId,
           expectedAnswer: data.expectedAnswer,
+          answerImageUrl: data.answerImageUrl || '',
+          answerVideoUrl: data.answerVideoUrl || '',
           suggestedPoints: data.suggestedPoints || 1,
           corrections: data.corrections,
           players: data.players
@@ -184,6 +188,8 @@ function App() {
           ...prev,
           phase: 'reveal',
           reveal: data,
+          answerImageUrl: data.answerImageUrl || prev.answerImageUrl || '',
+          answerVideoUrl: data.answerVideoUrl || prev.answerVideoUrl || '',
           players: data.players,
           hostId: data.hostId || prev.hostId
         } : prev
