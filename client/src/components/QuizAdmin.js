@@ -1,11 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
+import { ItemEditor, PlaceBoard } from './InteractQuestion';
 
 const TYPE_OPTIONS = [
   { id: 'qcm', label: 'Choix multiple' },
   { id: 'boolean', label: 'Vrai / Faux' },
   { id: 'text', label: 'Réponse libre' },
-  { id: 'music', label: 'Blind test' }
+  { id: 'music', label: 'Blind test' },
+  { id: 'order', label: 'Classer' },
+  { id: 'layout', label: 'Frise / schéma' }
 ];
 
 const emptyDraft = () => ({
@@ -22,7 +25,10 @@ const emptyDraft = () => ({
   correctBoolean: true,
   acceptedText: '',
   points: 1,
-  timeLimit: 20
+  timeLimit: 20,
+  items: [],
+  layoutMode: 'timeline',
+  layoutImageUrl: ''
 });
 
 const questionToApi = (draft) => ({
@@ -39,7 +45,10 @@ const questionToApi = (draft) => ({
   correctBoolean: draft.correctBoolean,
   acceptedAnswers: draft.acceptedText.split('\n').map((line) => line.trim()).filter(Boolean),
   points: Number(draft.points) || 1,
-  timeLimit: draft.timeLimit === '' ? 0 : Number(draft.timeLimit) || 0
+  timeLimit: draft.timeLimit === '' ? 0 : Number(draft.timeLimit) || 0,
+  items: draft.items || [],
+  layoutMode: draft.layoutMode === 'schema' ? 'schema' : 'timeline',
+  layoutImageUrl: draft.layoutImageUrl || ''
 });
 
 const questionFromApi = (question) => ({
@@ -56,7 +65,16 @@ const questionFromApi = (question) => ({
   correctBoolean: question.correctBoolean !== false,
   acceptedText: (question.acceptedAnswers || []).join('\n'),
   points: question.points || 1,
-  timeLimit: question.timeLimit ?? 0
+  timeLimit: question.timeLimit ?? 0,
+  items: (question.items || []).map((item) => ({
+    id: item.id,
+    text: item.text || '',
+    imageUrl: item.imageUrl || '',
+    x: Number.isFinite(Number(item.x)) ? Number(item.x) : 50,
+    y: Number.isFinite(Number(item.y)) ? Number(item.y) : 50
+  })),
+  layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
+  layoutImageUrl: question.layoutImageUrl || ''
 });
 
 const typeLabel = (type) => TYPE_OPTIONS.find((option) => option.id === type)?.label || type;
@@ -124,7 +142,15 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
       <textarea
         className="input"
         rows={3}
-        placeholder={draft.type === 'music' ? 'Consigne (optionnel), ex. Quel est ce générique ?' : 'Énoncé de la question'}
+        placeholder={
+          draft.type === 'music'
+            ? 'Consigne (optionnel), ex. Quel est ce générique ?'
+            : draft.type === 'order'
+              ? 'Consigne, ex. Classe ces images de ta préférée à la moins aimée'
+              : draft.type === 'layout'
+                ? 'Consigne, ex. Place ces événements sur la frise'
+                : 'Énoncé de la question'
+        }
         value={draft.prompt}
         onChange={(event) => setDraft({ ...draft, prompt: event.target.value })}
       />
@@ -224,6 +250,63 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         />
       )}
 
+      {draft.type === 'order' && (
+        <div>
+          <p className="blind-hint">L'ordre des lignes est la bonne réponse. Les joueurs devront le retrouver.</p>
+          <ItemEditor items={draft.items || []} onChange={(items) => setDraft({ ...draft, items })} />
+        </div>
+      )}
+
+      {draft.type === 'layout' && (
+        <div>
+          <div style={{ display: 'flex', gap: '8px', margin: '8px 0' }}>
+            <button
+              type="button"
+              className="btn"
+              style={{ margin: 0, opacity: draft.layoutMode !== 'schema' ? 1 : 0.55 }}
+              onClick={() => setDraft({ ...draft, layoutMode: 'timeline' })}
+            >
+              Frise chronologique
+            </button>
+            <button
+              type="button"
+              className="btn"
+              style={{ margin: 0, opacity: draft.layoutMode === 'schema' ? 1 : 0.55 }}
+              onClick={() => setDraft({ ...draft, layoutMode: 'schema' })}
+            >
+              Schéma
+            </button>
+          </div>
+          {draft.layoutMode === 'schema' && (
+            <input
+              className="input"
+              placeholder="Image du schéma"
+              value={draft.layoutImageUrl || ''}
+              onChange={(event) => setDraft({ ...draft, layoutImageUrl: event.target.value })}
+            />
+          )}
+          <ItemEditor items={draft.items || []} onChange={(items) => setDraft({ ...draft, items })} />
+          <p className="blind-hint">Place les éléments : c'est l'emplacement attendu.</p>
+          <PlaceBoard
+            mode={draft.layoutMode === 'schema' ? 'schema' : 'timeline'}
+            imageUrl={draft.layoutImageUrl || ''}
+            items={draft.items || []}
+            places={(draft.items || []).map((item) => ({ id: item.id, x: item.x ?? 50, y: item.y ?? 50 }))}
+            onChange={(places) => {
+              const positions = new Map(places.map((place) => [place.id, place]));
+              setDraft({
+                ...draft,
+                items: (draft.items || []).map((item) => (
+                  positions.has(item.id)
+                    ? { ...item, x: positions.get(item.id).x, y: positions.get(item.id).y }
+                    : item
+                ))
+              });
+            }}
+          />
+        </div>
+      )}
+
       {draft.type === 'music' && (
         <>
           <input
@@ -246,7 +329,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         </>
       )}
 
-      {draft.type !== 'music' && (
+      {draft.type !== 'music' && draft.type !== 'order' && draft.type !== 'layout' && (
         <>
           <input
             className="input"

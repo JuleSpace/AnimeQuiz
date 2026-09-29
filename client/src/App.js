@@ -146,7 +146,11 @@ function App() {
         expectedAnswer: '',
         answerImageUrl: '',
         answerVideoUrl: '',
+        solutionItems: [],
+        layoutMode: 'timeline',
+        layoutImageUrl: '',
         hostAnswer: '',
+        hostSolution: null,
         hints: [],
         hintRequests: [],
         locked: Boolean(data.locked),
@@ -171,6 +175,9 @@ function App() {
           expectedAnswer: data.expectedAnswer,
           answerImageUrl: data.answerImageUrl || '',
           answerVideoUrl: data.answerVideoUrl || '',
+          solutionItems: data.solutionItems || [],
+          layoutMode: data.layoutMode || 'timeline',
+          layoutImageUrl: data.layoutImageUrl || '',
           suggestedPoints: data.suggestedPoints || 1,
           corrections: data.corrections,
           players: data.players
@@ -190,6 +197,9 @@ function App() {
           reveal: data,
           answerImageUrl: data.answerImageUrl || prev.answerImageUrl || '',
           answerVideoUrl: data.answerVideoUrl || prev.answerVideoUrl || '',
+          solutionItems: data.solutionItems || prev.solutionItems || [],
+          layoutMode: data.layoutMode || prev.layoutMode || 'timeline',
+          layoutImageUrl: data.layoutImageUrl || prev.layoutImageUrl || '',
           players: data.players,
           hostId: data.hostId || prev.hostId
         } : prev
@@ -229,7 +239,7 @@ function App() {
     socket.on('quiz-host-answer', (data) => {
       setGameData((prev) => (
         prev && prev.questionIndex === data.questionIndex
-          ? { ...prev, hostAnswer: data.expectedAnswer || '' }
+          ? { ...prev, hostAnswer: data.expectedAnswer || '', hostSolution: data.solution || null }
           : prev
       ));
     });

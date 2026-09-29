@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const QuizQuestionSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['qcm', 'boolean', 'text', 'blank', 'music'],
+    enum: ['qcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout'],
     required: true
   },
   prompt: { type: String, default: '' },
@@ -18,7 +18,19 @@ const QuizQuestionSchema = new mongoose.Schema({
   acceptedAnswers: { type: [String], default: [] },
   blanks: { type: [String], default: [] },
   points: { type: Number, default: 1 },
-  timeLimit: { type: Number, default: 20 }
+  timeLimit: { type: Number, default: 20 },
+  layoutMode: { type: String, enum: ['timeline', 'schema'], default: 'timeline' },
+  layoutImageUrl: { type: String, default: '' },
+  items: {
+    type: [{
+      id: { type: String, default: '' },
+      text: { type: String, default: '' },
+      imageUrl: { type: String, default: '' },
+      x: { type: Number, default: 50 },
+      y: { type: Number, default: 50 }
+    }],
+    default: []
+  }
 }, { _id: false });
 
 const QuizSchema = new mongoose.Schema({
@@ -130,6 +142,14 @@ function correctLabel(question) {
       return value;
     });
   }
+  if (question.type === 'order') {
+    return (question.items || [])
+      .map((item, index) => `${index + 1}. ${item.text || 'Image'}`)
+      .join(' · ');
+  }
+  if (question.type === 'layout') {
+    return question.layoutMode === 'schema' ? 'Placement sur le schéma' : 'Placement sur la frise';
+  }
   return '';
 }
 
@@ -144,7 +164,92 @@ function formatPlayerAnswer(question, answer) {
   if (question.type === 'blank') {
     return (Array.isArray(answer) ? answer : []).map((value) => value || '…').join(' | ');
   }
+  if (question.type === 'order') {
+    const ids = Array.isArray(answer?.ids) ? answer.ids : [];
+    if (!ids.length) return 'Pas de réponse';
+    const catalog = new Map((question.items || []).map((item) => [item.id, item]));
+    return ids.map((id, index) => `${index + 1}. ${catalog.get(id)?.text || 'Image'}`).join(' · ');
+  }
+  if (question.type === 'layout') {
+    const places = Array.isArray(answer?.places) ? answer.places : [];
+    if (!places.length) return 'Pas de réponse';
+    const catalog = new Map((question.items || []).map((item) => [item.id, item]));
+    return places
+      .slice()
+      .sort((a, b) => a.x - b.x)
+      .map((place) => catalog.get(place.id)?.text || 'Élément')
+      .join(' → ');
+  }
   return String(answer);
+}
+
+function stableShuffle(items, seed) {
+  const list = [...items];
+  let state = (Number(seed) || 1) >>> 0;
+  const random = () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+  for (let index = list.length - 1; index > 0; index -= 1) {
+    const swap = Math.floor(random() * (index + 1));
+    [list[index], list[swap]] = [list[swap], list[index]];
+  }
+  return list;
+}
+
+function publicItems(question) {
+  const items = (question.items || []).map((item) => ({
+    id: item.id,
+    text: item.text || '',
+    imageUrl: item.imageUrl || ''
+  }));
+  if (question.type !== 'order' && question.type !== 'layout') return [];
+  const shuffled = stableShuffle(items, items.map((item) => item.id).join('|').length + 17);
+  const sameOrder = shuffled.every((item, index) => item.id === items[index]?.id);
+  if (sameOrder && shuffled.length > 1) {
+    const [first] = shuffled.splice(0, 1);
+    shuffled.push(first);
+  }
+  return shuffled;
+}
+
+function hostSolution(question) {
+  if (!question || (question.type !== 'order' && question.type !== 'layout')) return null;
+  return {
+    type: question.type,
+    items: solutionItems(question),
+    layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
+    layoutImageUrl: question.layoutImageUrl || ''
+  };
+}
+
+function solutionItems(question) {
+  return (question.items || []).map((item) => ({
+    id: item.id,
+    text: item.text || '',
+    imageUrl: item.imageUrl || '',
+    x: Number(item.x) || 0,
+    y: Number(item.y) || 0
+  }));
+}
+
+function sanitizeStoredAnswer(question, answer) {
+  if (!question || (question.type !== 'order' && question.type !== 'layout')) return answer;
+  const known = new Set((question.items || []).map((item) => item.id));
+  if (question.type === 'order') {
+    const ids = Array.isArray(answer?.ids) ? answer.ids.map((id) => String(id)) : [];
+    return { ids: ids.filter((id) => known.has(id)) };
+  }
+  const places = Array.isArray(answer?.places) ? answer.places : [];
+  return {
+    places: places
+      .filter((place) => known.has(String(place?.id)))
+      .map((place) => ({
+        id: String(place.id),
+        x: Math.max(0, Math.min(100, Number(place.x) || 0)),
+        y: Math.max(0, Math.min(100, Number(place.y) || 0))
+      }))
+  };
 }
 
 function publicQuestion(question, index, total) {
@@ -160,8 +265,31 @@ function publicQuestion(question, index, total) {
     multiple: question.type === 'qcm' && (question.correctIndexes || []).length > 1,
     blankCount: question.type === 'blank' ? (question.blanks || []).length : 0,
     points: question.points || 1,
-    timeLimit: question.timeLimit || 0
+    timeLimit: question.timeLimit || 0,
+    items: publicItems(question),
+    layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
+    layoutImageUrl: question.type === 'layout' && question.layoutMode === 'schema'
+      ? (question.layoutImageUrl || '')
+      : ''
   };
+}
+
+function cleanItems(rawItems) {
+  const used = new Set();
+  return (Array.isArray(rawItems) ? rawItems : []).slice(0, 8).map((item, index) => {
+    let id = String(item?.id || `item-${index + 1}`).trim().slice(0, 40);
+    if (!id || used.has(id)) id = `item-${index + 1}-${used.size + 1}`;
+    used.add(id);
+    const x = Number(item?.x);
+    const y = Number(item?.y);
+    return {
+      id,
+      text: String(item?.text || '').trim(),
+      imageUrl: String(item?.imageUrl || '').trim(),
+      x: Number.isFinite(x) ? Math.max(0, Math.min(100, x)) : 50,
+      y: Number.isFinite(y) ? Math.max(0, Math.min(100, y)) : 50
+    };
+  }).filter((item) => item.text || item.imageUrl);
 }
 
 function sanitizeQuestion(raw) {
@@ -204,16 +332,19 @@ function sanitizeQuestion(raw) {
     acceptedAnswers: (type === 'text' || type === 'music') ? acceptedAnswers : [],
     blanks: type === 'blank' ? blanks : [],
     points: Math.max(1, Number(raw.points) || 1),
-    timeLimit: Math.max(0, Number(raw.timeLimit) || 0)
+    timeLimit: Math.max(0, Number(raw.timeLimit) || 0),
+    layoutMode: raw.layoutMode === 'schema' ? 'schema' : 'timeline',
+    layoutImageUrl: String(raw.layoutImageUrl || '').trim(),
+    items: cleanItems(raw.items)
   };
 }
 
 function validateQuestion(question, position) {
   const label = `Question ${position}`;
-  const types = ['qcm', 'boolean', 'text', 'blank', 'music'];
+  const types = ['qcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout'];
   if (!types.includes(question.type)) return `${label} : type invalide`;
 
-  const urlError = ['imageUrl', 'videoUrl', 'answerImageUrl', 'answerVideoUrl', 'musicUrl'].map((field) => {
+  const urlError = ['imageUrl', 'videoUrl', 'answerImageUrl', 'answerVideoUrl', 'musicUrl', 'layoutImageUrl'].map((field) => {
     const value = question[field];
     if (value && !isHttpUrl(value)) {
       return `${label} : le lien doit commencer par http:// ou https://`;
@@ -224,7 +355,7 @@ function validateQuestion(question, position) {
 
   const hasPrompt = String(question.prompt || '').trim();
   const hasImage = String(question.imageUrl || '').trim();
-  if (!hasPrompt && !hasImage && question.type !== 'music') {
+  if (!hasPrompt && !hasImage && !['music', 'order', 'layout'].includes(question.type)) {
     return `${label} : ajoute un énoncé ou une image`;
   }
 
@@ -248,6 +379,20 @@ function validateQuestion(question, position) {
   if (question.type === 'music' && !String(question.musicUrl || '').trim()) {
     return `${label} : ajoute le lien du blind test`;
   }
+
+  if (question.type === 'order' && (question.items || []).length < 2) {
+    return `${label} : ajoute au moins 2 éléments à classer`;
+  }
+
+  if (question.type === 'layout') {
+    if ((question.items || []).length < 2) return `${label} : ajoute au moins 2 éléments à placer`;
+    if (question.layoutMode === 'schema' && !String(question.layoutImageUrl || '').trim()) {
+      return `${label} : ajoute l'image du schéma`;
+    }
+  }
+
+  const badItemImage = (question.items || []).find((item) => item.imageUrl && !isHttpUrl(item.imageUrl));
+  if (badItemImage) return `${label} : le lien d'image d'un élément doit commencer par http:// ou https://`;
 
   return null;
 }
@@ -324,6 +469,9 @@ function emitReveal(io, lobby, question, index) {
     correctAnswer: correctLabel(question),
     answerImageUrl: question.answerImageUrl || '',
     answerVideoUrl: question.answerVideoUrl || '',
+    solutionItems: solutionItems(question),
+    layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
+    layoutImageUrl: question.layoutImageUrl || '',
     correctIndexes: question.type === 'qcm' ? (question.correctIndexes || []) : [],
     correctBoolean: question.type === 'boolean' ? Boolean(question.correctBoolean) : null,
     players: lobby.players.map((player) => ({
@@ -331,6 +479,7 @@ function emitReveal(io, lobby, question, index) {
       username: player.username,
       score: player.score || 0,
       answerText: formatPlayerAnswer(question, player.answers[index]),
+      answer: (question.type === 'order' || question.type === 'layout') ? (player.answers[index] || null) : null,
       correct: Boolean(player.lastCorrect),
       pointsThisRound: player.lastGain || 0
     }))
@@ -367,13 +516,17 @@ function closeQuestion(io, quizId) {
     expectedAnswer: correctLabel(question),
     answerImageUrl: question.answerImageUrl || '',
     answerVideoUrl: question.answerVideoUrl || '',
+    solutionItems: solutionItems(question),
+    layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
+    layoutImageUrl: question.layoutImageUrl || '',
     suggestedPoints: question.points || 1,
     corrections,
     players: lobby.players.map((player) => ({
       id: player.id,
       username: player.username,
       score: player.score || 0,
-      answerText: formatPlayerAnswer(question, player.answers[index])
+      answerText: formatPlayerAnswer(question, player.answers[index]),
+      answer: (question.type === 'order' || question.type === 'layout') ? (player.answers[index] || null) : null
     }))
   });
 }
@@ -417,7 +570,8 @@ function sendQuestion(io, lobby) {
   if (lobby.host?.id) {
     io.to(lobby.host.id).emit('quiz-host-answer', {
       questionIndex: lobby.currentQuestion,
-      expectedAnswer
+      expectedAnswer,
+      solution: hostSolution(question)
     });
   }
 
@@ -446,7 +600,8 @@ function syncQuizSocket(io, socket, lobby) {
   if (isHostSocket(lobby, socket.id)) {
     socket.emit('quiz-host-answer', {
       questionIndex: lobby.currentQuestion,
-      expectedAnswer: correctLabel(question)
+      expectedAnswer: correctLabel(question),
+      solution: hostSolution(question)
     });
     socket.emit('quiz-hint-requests', { requests: lobby.hintRequests || [] });
   } else if (person?.hints?.[lobby.currentQuestion]?.length) {
@@ -465,13 +620,17 @@ function syncQuizSocket(io, socket, lobby) {
       expectedAnswer: correctLabel(question),
       answerImageUrl: question.answerImageUrl || '',
       answerVideoUrl: question.answerVideoUrl || '',
+      solutionItems: solutionItems(question),
+      layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
+      layoutImageUrl: question.layoutImageUrl || '',
       suggestedPoints: question.points || 1,
       corrections: lobby.pendingCorrections || {},
       players: lobby.players.map((entry) => ({
         id: entry.id,
         username: entry.username,
         score: entry.score || 0,
-        answerText: formatPlayerAnswer(question, entry.answers[lobby.currentQuestion])
+        answerText: formatPlayerAnswer(question, entry.answers[lobby.currentQuestion]),
+        answer: (question.type === 'order' || question.type === 'layout') ? (entry.answers[lobby.currentQuestion] || null) : null
       }))
     });
   }
@@ -794,7 +953,8 @@ function attachQuiz(app, io) {
       const index = lobby.currentQuestion;
       if (player.answered[index]) return;
 
-      player.answers[index] = data.answer;
+      const question = lobby.questions[index];
+      player.answers[index] = sanitizeStoredAnswer(question, data.answer);
       player.answered[index] = true;
 
       const answered = lobby.players.filter((entry) => entry.answered[index]).length;
@@ -869,7 +1029,8 @@ function attachQuiz(app, io) {
           if (lobby.host?.id && question) {
             io.to(lobby.host.id).emit('quiz-host-answer', {
               questionIndex: lobby.currentQuestion,
-              expectedAnswer: correctLabel(question)
+              expectedAnswer: correctLabel(question),
+              solution: hostSolution(question)
             });
           }
         } catch (error) {

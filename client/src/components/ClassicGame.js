@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BlindMusicPlayer from './BlindMusicPlayer';
+import { OrderAnswer, OrderReview, PlaceAnswer, PlaceBoard } from './InteractQuestion';
 import { extractYouTubeId } from '../utils/media';
 
 const CHOICE_COLORS = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#8e44ad', '#e67e22'];
@@ -196,6 +197,28 @@ const ClassicGame = ({
       );
     }
 
+    if (question.type === 'order') {
+      return (
+        <OrderAnswer
+          key={gameData.questionIndex}
+          items={question.items || []}
+          onSubmit={(ids) => send({ ids })}
+        />
+      );
+    }
+
+    if (question.type === 'layout') {
+      return (
+        <PlaceAnswer
+          key={gameData.questionIndex}
+          items={question.items || []}
+          mode={question.layoutMode === 'schema' ? 'schema' : 'timeline'}
+          imageUrl={question.layoutImageUrl || ''}
+          onSubmit={(places) => send({ places })}
+        />
+      );
+    }
+
     if (question.type === 'boolean') {
       return (
         <div className="choice-grid">
@@ -242,6 +265,39 @@ const ClassicGame = ({
 
   const hints = gameData.hints || [];
   const hintRequests = gameData.hintRequests || [];
+
+  const solutionCatalog = (gameData.solutionItems && gameData.solutionItems.length)
+    ? gameData.solutionItems
+    : ((gameData.reveal && gameData.reveal.solutionItems) || question.items || []);
+
+  const renderPlacement = (answer, expected = false) => {
+    if (question.type !== 'order' && question.type !== 'layout') return null;
+    const heading = expected ? (question.type === 'layout' ? 'Emplacement prévu' : 'Ordre prévu') : '';
+    if (question.type === 'order') {
+      return (
+        <OrderReview
+          title={heading}
+          items={solutionCatalog}
+          ids={expected ? undefined : (answer?.ids || [])}
+        />
+      );
+    }
+    const places = expected
+      ? solutionCatalog.map((item) => ({ id: item.id, x: item.x, y: item.y }))
+      : (answer?.places || []);
+    return (
+      <div className="order-review">
+        {heading && <div className="order-review-title">{heading}</div>}
+        <PlaceBoard
+          mode={(gameData.layoutMode || question.layoutMode) === 'schema' ? 'schema' : 'timeline'}
+          imageUrl={gameData.layoutImageUrl || question.layoutImageUrl || ''}
+          items={solutionCatalog}
+          places={places}
+          readOnly
+        />
+      </div>
+    );
+  };
 
   return (
     <div className="container">
@@ -307,8 +363,20 @@ const ClassicGame = ({
             <div style={{ marginBottom: 8 }}>Tu es le chef : tu ne réponds pas.</div>
             {gameData.hostAnswer && (
               <div style={{ marginBottom: 8 }}>
-                Réponse prévue : <strong>{gameData.hostAnswer}</strong>
+                Réponse prévue : <strong className="quiz-answer">{gameData.hostAnswer}</strong>
               </div>
+            )}
+            {gameData.hostSolution?.type === 'order' && (
+              <OrderReview items={gameData.hostSolution.items || []} />
+            )}
+            {gameData.hostSolution?.type === 'layout' && (
+              <PlaceBoard
+                mode={gameData.hostSolution.layoutMode === 'schema' ? 'schema' : 'timeline'}
+                imageUrl={gameData.hostSolution.layoutImageUrl || ''}
+                items={gameData.hostSolution.items || []}
+                places={(gameData.hostSolution.items || []).map((item) => ({ id: item.id, x: item.x, y: item.y }))}
+                readOnly
+              />
             )}
             <div style={{ opacity: 0.8, marginBottom: 8 }}>
               {gameData.answered || 0}/{gameData.totalPlayers || players.length} ont répondu
@@ -361,6 +429,7 @@ const ClassicGame = ({
               <div style={{ marginTop: 6, fontSize: '0.9rem', opacity: 0.85 }}>
                 Rien n'est validé tout seul. Une bonne réponse vaut {gameData.suggestedPoints || question.points || 1} pt.
               </div>
+              {renderPlacement(null, true)}
             </div>
             {players.map((entry) => {
               const given = Number(corrections[entry.id]) || 0;
@@ -370,6 +439,7 @@ const ClassicGame = ({
                   <div className="quiz-answer">
                     <strong>{entry.username}</strong>
                     <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
+                    {renderPlacement(entry.answer)}
                   </div>
                   {isHost ? (
                     <div className="quiz-score-actions">
@@ -440,6 +510,7 @@ const ClassicGame = ({
             }}>
               <div style={{ opacity: 0.8, marginBottom: 6 }}>Réponse prévue</div>
               <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }} className="quiz-answer">{reveal.correctAnswer}</div>
+              {renderPlacement(null, true)}
             </div>
 
             {question.type === 'boolean' && (
@@ -480,6 +551,7 @@ const ClassicGame = ({
                   <div className="quiz-answer">
                     <strong>{entry.username}</strong>
                     <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
+                    {renderPlacement(entry.answer)}
                   </div>
                   <div style={{ fontWeight: 'bold', color: entry.pointsThisRound > 0 ? '#51cf66' : '#ff6b6b' }}>
                     +{entry.pointsThisRound || 0}

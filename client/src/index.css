@@ -589,3 +589,167 @@ textarea.input {
   border-radius: 10px;
   margin: 20px 0;
 }
+
+.order-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.order-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.order-editor-row .input {
+  width: auto;
+  flex: 1 1 160px;
+  margin: 0;
+}
+
+.order-index {
+  min-width: 28px;
+  font-weight: bold;
+}
+
+.order-play,
+.order-review {
+  width: 100%;
+  max-width: 640px;
+  margin: 12px auto;
+  text-align: left;
+}
+
+.order-review-title {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  cursor: grab;
+  min-width: 0;
+}
+
+.order-card.review {
+  cursor: default;
+}
+
+.order-card img,
+.place-chip img {
+  width: 72px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex: 0 0 auto;
+}
+
+.order-card span,
+.place-chip span {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
+}
+
+.order-move {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.order-move button {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+}
+
+.place-wrap {
+  width: 100%;
+  margin: 8px 0 12px;
+}
+
+.place-board {
+  position: relative;
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  touch-action: none;
+}
+
+.place-board.timeline {
+  height: 140px;
+}
+
+.place-board.schema {
+  min-height: 320px;
+  height: 42vw;
+  max-height: 460px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: rgba(0, 0, 0, 0.35);
+}
+
+.place-line {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 50%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 215, 0, 0.85);
+  transform: translateY(-50%);
+}
+
+.place-chip {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 46%;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(20, 20, 30, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  z-index: 1;
+}
+
+.place-chip.tray {
+  position: static;
+  transform: none;
+  max-width: none;
+}
+
+.place-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 10px;
+}
