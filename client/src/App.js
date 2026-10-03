@@ -128,7 +128,7 @@ function App() {
 
     socket.on('quiz-question', (data) => {
       setPlayMode('quiz');
-      setGameData({
+      setGameData((prev) => ({
         mode: 'quiz',
         quizName: data.quizName,
         hostId: data.hostId,
@@ -143,6 +143,7 @@ function App() {
         phase: 'answering',
         reveal: null,
         corrections: null,
+        gainPreview: [],
         expectedAnswer: '',
         answerImageUrl: '',
         answerVideoUrl: '',
@@ -154,10 +155,86 @@ function App() {
         hints: [],
         hintRequests: [],
         locked: Boolean(data.locked),
-        hintUsed: Boolean(data.hintUsed)
-      });
+        hintUsed: Boolean(data.hintUsed),
+        myJoker: prev?.myJoker || null,
+        jokerRoster: prev?.jokerRoster || null,
+        copiedAnswer: null,
+        silenced: false,
+        roundNotes: [],
+        booster: null
+      }));
       setCurrentView('quiz-game');
       setError('');
+    });
+
+    socket.on('quiz-booster-start', (data) => {
+      setPlayMode('quiz');
+      setGameData((prev) => ({
+        ...(prev || {}),
+        mode: 'quiz',
+        phase: 'booster',
+        quizName: data.quizName,
+        hostId: data.hostId,
+        hostName: data.hostName || '',
+        question: null,
+        questionIndex: data.questionIndex,
+        totalQuestions: data.totalQuestions,
+        players: data.players,
+        booster: { validFrom: data.validFrom, validTo: data.validTo },
+        reveal: null,
+        copiedAnswer: null,
+        silenced: false,
+        roundNotes: [],
+        expectedAnswer: '',
+        myJoker: prev?.myJoker && prev.phase === 'booster' ? prev.myJoker : null,
+        jokerRoster: prev?.jokerRoster || null
+      }));
+      setCurrentView('quiz-game');
+      setError('');
+    });
+
+    socket.on('quiz-own-joker', (data) => {
+      setGameData((prev) => (prev ? { ...prev, myJoker: data.joker } : prev));
+    });
+
+    socket.on('quiz-jokers', (data) => {
+      setGameData((prev) => (prev ? { ...prev, jokerRoster: data.players || [] } : prev));
+    });
+
+    socket.on('quiz-hold', (data) => {
+      setGameData((prev) => (
+        prev ? {
+          ...prev,
+          phase: 'hold',
+          questionIndex: data.questionIndex,
+          hostId: data.hostId || prev.hostId,
+          players: data.players,
+          expectedAnswer: data.full ? (data.expectedAnswer || '') : '',
+          hostAnswer: data.full ? (data.expectedAnswer || '') : '',
+          answerImageUrl: data.full ? (data.answerImageUrl || '') : '',
+          answerVideoUrl: data.full ? (data.answerVideoUrl || '') : '',
+          solutionItems: data.full ? (data.solutionItems || []) : [],
+          layoutMode: data.layoutMode || prev.layoutMode || 'timeline',
+          layoutImageUrl: data.full ? (data.layoutImageUrl || '') : '',
+          suggestedPoints: data.suggestedPoints || prev.suggestedPoints
+        } : prev
+      ));
+    });
+
+    socket.on('quiz-copied-answer', (data) => {
+      setGameData((prev) => (prev ? { ...prev, copiedAnswer: data } : prev));
+    });
+
+    socket.on('quiz-silenced', (data) => {
+      setGameData((prev) => (
+        prev && prev.questionIndex === data.questionIndex ? { ...prev, silenced: true } : prev
+      ));
+    });
+
+    socket.on('quiz-round-note', (data) => {
+      setGameData((prev) => (
+        prev ? { ...prev, roundNotes: data.notes || [] } : prev
+      ));
     });
 
     socket.on('quiz-progress', (data) => {
@@ -172,21 +249,24 @@ function App() {
           ...prev,
           phase: 'correction',
           hostId: data.hostId,
-          expectedAnswer: data.expectedAnswer,
-          answerImageUrl: data.answerImageUrl || '',
-          answerVideoUrl: data.answerVideoUrl || '',
-          solutionItems: data.solutionItems || [],
-          layoutMode: data.layoutMode || 'timeline',
-          layoutImageUrl: data.layoutImageUrl || '',
-          suggestedPoints: data.suggestedPoints || 1,
-          corrections: data.corrections,
-          players: data.players
+          layoutMode: data.layoutMode || prev.layoutMode || 'timeline',
+          suggestedPoints: data.suggestedPoints || prev.suggestedPoints || 1,
+          corrections: data.full ? (data.corrections || {}) : {},
+          gainPreview: data.full ? (data.preview || []) : [],
+          players: data.players,
+          expectedAnswer: data.full ? (data.expectedAnswer || '') : '',
+          answerImageUrl: data.full ? (data.answerImageUrl || '') : '',
+          answerVideoUrl: data.full ? (data.answerVideoUrl || '') : '',
+          solutionItems: data.full ? (data.solutionItems || []) : [],
+          layoutImageUrl: data.full ? (data.layoutImageUrl || '') : ''
         } : prev
       ));
     });
 
     socket.on('quiz-corrections-updated', (data) => {
-      setGameData((prev) => (prev ? { ...prev, corrections: data.corrections } : prev));
+      setGameData((prev) => (
+        prev ? { ...prev, corrections: data.corrections, gainPreview: data.preview || [] } : prev
+      ));
     });
 
     socket.on('quiz-reveal', (data) => {
@@ -267,6 +347,13 @@ function App() {
       socket.off('join-error');
       socket.off('start-error');
       socket.off('quiz-question');
+      socket.off('quiz-booster-start');
+      socket.off('quiz-own-joker');
+      socket.off('quiz-jokers');
+      socket.off('quiz-hold');
+      socket.off('quiz-copied-answer');
+      socket.off('quiz-silenced');
+      socket.off('quiz-round-note');
       socket.off('quiz-progress');
       socket.off('quiz-correction');
       socket.off('quiz-corrections-updated');
@@ -816,6 +903,9 @@ function App() {
             onNext={() => socket.emit('quiz-next')}
             onRequestHint={() => socket.emit('quiz-request-hint')}
             onSendHint={(playerId, words) => socket.emit('quiz-send-hint', { playerId, words })}
+            onPlayJoker={(payload) => socket.emit('play-joker', payload)}
+            onBeginScoring={() => socket.emit('quiz-begin-scoring')}
+            onStartQuestion={() => socket.emit('quiz-booster-done')}
           />
         );
 

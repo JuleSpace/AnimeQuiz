@@ -753,3 +753,337 @@ textarea.input {
   justify-content: center;
   margin-top: 10px;
 }
+
+.booster-stage {
+  overflow: hidden;
+}
+
+.booster-scene {
+  position: relative;
+  min-height: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  perspective: 1200px;
+}
+
+.booster-pack {
+  width: 210px;
+  height: 300px;
+  border-radius: 18px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 28px;
+  color: #ffd700;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255, 215, 0, 0.55), transparent 36%),
+    linear-gradient(160deg, #8ea2ff 0%, #667eea 28%, #4c2f86 68%, #24143f 100%);
+  border: 2px solid rgba(255, 215, 0, 0.85);
+  box-shadow: 0 22px 50px rgba(20, 10, 40, 0.45), inset 0 0 30px rgba(255, 215, 0, 0.18);
+  position: relative;
+  z-index: 2;
+}
+
+.booster-pack::before {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(255, 215, 0, 0.45);
+  border-radius: 12px;
+}
+
+.stage-drop .booster-pack {
+  animation: booster-drop 0.65s ease both;
+}
+
+.stage-shake .booster-pack {
+  animation: booster-shake 0.45s linear infinite;
+}
+
+.stage-burst .booster-pack,
+.stage-flip .booster-pack,
+.stage-show .booster-pack {
+  animation: booster-away 0.55s ease forwards;
+}
+
+.booster-burst {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.85), rgba(102, 126, 234, 0.15) 45%, transparent 70%);
+  opacity: 0;
+  transform: scale(0.4);
+}
+
+.stage-burst .booster-burst,
+.stage-flip .booster-burst {
+  animation: booster-flash 0.7s ease forwards;
+}
+
+.booster-flip {
+  position: absolute;
+  top: 18px;
+  opacity: 0;
+  transform: rotateY(90deg) scale(0.86);
+  transform-style: preserve-3d;
+}
+
+.stage-flip .booster-flip {
+  animation: card-flip 1s ease forwards;
+}
+
+.stage-show .booster-flip {
+  opacity: 1;
+  transform: none;
+}
+
+.booster-caption {
+  margin-top: 18px;
+  text-align: center;
+  min-height: 48px;
+  max-width: 420px;
+}
+
+.tcg-card {
+  --tcg-accent: #ffd700;
+  position: relative;
+  width: 260px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #1a1030;
+  border: 2px solid var(--tcg-accent);
+  box-shadow: 0 16px 40px rgba(20, 10, 40, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  text-align: left;
+}
+
+.tcg-card.tcg-hand {
+  width: 168px;
+}
+
+.tcg-card.tcg-mini {
+  width: 112px;
+}
+
+.tcg-art {
+  position: relative;
+  height: 280px;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 215, 0, 0.28), transparent 42%),
+    linear-gradient(160deg, #667eea, #3a2268);
+}
+
+.tcg-hand .tcg-art {
+  height: 150px;
+}
+
+.tcg-mini .tcg-art {
+  height: 96px;
+}
+
+.tcg-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tcg-foil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.28) 46%, transparent 62%);
+  mix-blend-mode: screen;
+  animation: foil-slide 3.4s linear infinite;
+  pointer-events: none;
+}
+
+.tcg-plate {
+  padding: 10px 12px 12px;
+  background: linear-gradient(180deg, rgba(26, 16, 48, 0.2), #1a1030 28%);
+  margin-top: -28px;
+  position: relative;
+}
+
+.tcg-mini .tcg-plate {
+  margin-top: -18px;
+  padding: 8px;
+}
+
+.tcg-kicker {
+  color: var(--tcg-accent);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.tcg-plate h3 {
+  margin: 2px 0 4px;
+  font-size: 1.05rem;
+  color: white;
+}
+
+.tcg-mini .tcg-plate h3 {
+  font-size: 0.78rem;
+  margin: 0;
+}
+
+.tcg-plate p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.tcg-card.is-used {
+  filter: saturate(0.72);
+}
+
+.tcg-stamp {
+  position: absolute;
+  top: 18px;
+  right: -28px;
+  transform: rotate(18deg);
+  background: rgba(255, 107, 107, 0.92);
+  color: white;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 4px 34px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.host-jokers {
+  width: 100%;
+  margin: 8px 0 16px;
+}
+
+.host-jokers-title {
+  font-weight: 800;
+  color: #ffd700;
+  margin-bottom: 8px;
+}
+
+.host-jokers-empty {
+  opacity: 0.75;
+}
+
+.host-jokers-row {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  justify-content: center;
+}
+
+.host-joker-slot {
+  flex: 0 0 auto;
+  width: 112px;
+  text-align: center;
+}
+
+.host-joker-meta {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.host-joker-meta span {
+  opacity: 0.85;
+}
+
+.tcg-empty {
+  height: 148px;
+  border-radius: 14px;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+}
+
+.player-joker {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 8px auto 16px;
+  max-width: 640px;
+}
+
+.player-joker-body {
+  text-align: left;
+  max-width: 320px;
+}
+
+.player-joker-body p {
+  margin: 4px 0 8px;
+  opacity: 0.9;
+}
+
+.player-joker-target {
+  margin-top: 6px;
+  color: #ffd700;
+}
+
+.joker-targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.copied-banner {
+  margin: 0 auto 12px;
+  max-width: 640px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(177, 151, 252, 0.2);
+  border: 1px solid rgba(177, 151, 252, 0.55);
+}
+
+@keyframes booster-drop {
+  from { transform: translateY(-40px) scale(0.92); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+@keyframes booster-shake {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+@keyframes booster-away {
+  to { transform: scale(1.08); opacity: 0; }
+}
+
+@keyframes booster-flash {
+  0% { opacity: 0; transform: scale(0.3); }
+  40% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.6); }
+}
+
+@keyframes card-flip {
+  0% { opacity: 0; transform: rotateY(90deg) scale(0.86); }
+  40% { opacity: 1; }
+  100% { opacity: 1; transform: rotateY(0deg) scale(1); }
+}
+
+@keyframes foil-slide {
+  0% { transform: translateX(-60%); }
+  100% { transform: translateX(60%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tcg-foil,
+  .booster-pack,
+  .booster-flip,
+  .booster-burst {
+    animation: none !important;
+  }
+}

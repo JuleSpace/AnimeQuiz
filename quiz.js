@@ -1,4 +1,14 @@
 const mongoose = require('mongoose');
+const {
+  PACK_EVERY,
+  JOKER_IDS,
+  TARGET_JOKERS,
+  drawJoker,
+  freshJoker,
+  pointsFromChef,
+  jokerPlayed,
+  resolveGains
+} = require('./jokers');
 
 const QuizQuestionSchema = new mongoose.Schema({
   type: {
@@ -446,19 +456,16 @@ function scoreAnswer(question, answer) {
   return { gained: correct ? points : 0, correct };
 }
 
-function pointsFromChef(value) {
-  const points = Math.round(Number(value));
-  if (!Number.isFinite(points) || points < 0) return 0;
-  return Math.min(99, points);
-}
-
 function applyScores(lobby, index, corrections) {
+  const resolved = resolveGains(lobby.players, lobby.questions[index], index, corrections);
   lobby.players.forEach((player) => {
-    const gained = pointsFromChef(corrections ? corrections[player.id] : 0);
-    player.score = (player.score || 0) + gained;
-    player.lastGain = gained;
-    player.lastCorrect = gained > 0;
+    const info = resolved[player.id] || { gain: 0, notes: [] };
+    player.score = (player.score || 0) + info.gain;
+    player.lastGain = info.gain;
+    player.lastCorrect = info.gain > 0;
+    player.lastNotes = info.notes || [];
   });
+  return resolved;
 }
 
 function emitReveal(io, lobby, question, index) {
@@ -504,31 +511,12 @@ function closeQuestion(io, quizId) {
     }
   });
 
-  lobby.phase = 'correction';
   const corrections = {};
   lobby.players.forEach((player) => {
     corrections[player.id] = 0;
   });
   lobby.pendingCorrections = corrections;
-  io.to(quizId).emit('quiz-correction', {
-    questionIndex: index,
-    hostId: lobby.host?.id || null,
-    expectedAnswer: correctLabel(question),
-    answerImageUrl: question.answerImageUrl || '',
-    answerVideoUrl: question.answerVideoUrl || '',
-    solutionItems: solutionItems(question),
-    layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
-    layoutImageUrl: question.layoutImageUrl || '',
-    suggestedPoints: question.points || 1,
-    corrections,
-    players: lobby.players.map((player) => ({
-      id: player.id,
-      username: player.username,
-      score: player.score || 0,
-      answerText: formatPlayerAnswer(question, player.answers[index]),
-      answer: (question.type === 'order' || question.type === 'layout') ? (player.answers[index] || null) : null
-    }))
-  });
+  emitHold(io, lobby);
 }
 
 function questionPayload(lobby) {
@@ -566,6 +554,7 @@ function sendQuestion(io, lobby) {
   }
 
   lobby.phase = 'answering';
+  lobby.io = io;
   io.to(lobby.quizId).emit('quiz-question', payload);
   if (lobby.host?.id) {
     io.to(lobby.host.id).emit('quiz-host-answer', {
@@ -585,12 +574,228 @@ function sendQuestion(io, lobby) {
   return true;
 }
 
+function answeredPlayers(lobby, index, withAnswers) {
+  const question = lobby.questions[index];
+  return lobby.players.map((player) => {
+    const row = {
+      id: player.id,
+      username: player.username,
+      score: player.score || 0
+    };
+    if (!withAnswers || !question) return row;
+    return {
+      ...row,
+      answerText: formatPlayerAnswer(question, player.answers[index]),
+      answer: (question.type === 'order' || question.type === 'layout') ? (player.answers[index] || null) : null
+    };
+  });
+}
+
+function privateAnswerFields(lobby) {
+  const index = lobby.currentQuestion;
+  const question = lobby.questions[index];
+  if (!question) return {};
+  return {
+    expectedAnswer: correctLabel(question),
+    answerImageUrl: question.answerImageUrl || '',
+    answerVideoUrl: question.answerVideoUrl || '',
+    solutionItems: solutionItems(question),
+    layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
+    layoutImageUrl: question.layoutImageUrl || '',
+    suggestedPoints: question.points || 1
+  };
+}
+
+function holdPayload(lobby, full) {
+  const index = lobby.currentQuestion;
+  return {
+    questionIndex: index,
+    hostId: lobby.host?.id || null,
+    full: Boolean(full),
+    players: answeredPlayers(lobby, index, full),
+    ...(full ? privateAnswerFields(lobby) : {})
+  };
+}
+
+function previewList(lobby, index) {
+  const resolved = resolveGains(
+    lobby.players,
+    lobby.questions[index],
+    index,
+    lobby.pendingCorrections || {}
+  );
+  return lobby.players.map((player) => ({
+    id: player.id,
+    gain: resolved[player.id]?.gain || 0,
+    tags: resolved[player.id]?.tags || []
+  }));
+}
+
+function correctionPayload(lobby, full) {
+  const index = lobby.currentQuestion;
+  const payload = {
+    questionIndex: index,
+    hostId: lobby.host?.id || null,
+    full: Boolean(full),
+    players: answeredPlayers(lobby, index, full)
+  };
+  if (!full) return payload;
+  return {
+    ...payload,
+    ...privateAnswerFields(lobby),
+    corrections: lobby.pendingCorrections || {},
+    preview: previewList(lobby, index)
+  };
+}
+
+function ownJokerPayload(joker) {
+  if (!joker) return null;
+  return {
+    card: joker.card,
+    used: Boolean(joker.used),
+    usedOn: joker.usedOn,
+    targetId: joker.targetId || null,
+    targetName: joker.targetName || '',
+    note: joker.note || (joker.used ? 'Jouée' : 'En main'),
+    redoSpent: Boolean(joker.redoSpent),
+    seenText: joker.seenText || '',
+    seenName: joker.seenName || ''
+  };
+}
+
+function rosterJoker(joker) {
+  const view = ownJokerPayload(joker);
+  if (!view) return null;
+  delete view.seenText;
+  delete view.seenName;
+  return view;
+}
+
+function jokerRoster(lobby) {
+  return lobby.players.map((player) => ({
+    id: player.id,
+    username: player.username,
+    joker: rosterJoker(player.joker)
+  }));
+}
+
+function emitJokerRoster(io, lobby) {
+  if (!lobby.host?.id) return;
+  io.to(lobby.host.id).emit('quiz-jokers', { players: jokerRoster(lobby) });
+}
+
+function boosterPayload(lobby) {
+  const from = lobby.currentQuestion + 1;
+  const to = Math.min(lobby.questions.length, lobby.currentQuestion + PACK_EVERY);
+  return {
+    quizName: lobby.quizName,
+    hostId: lobby.host?.id || null,
+    hostName: lobby.host?.username || lobby.hostName || '',
+    questionIndex: lobby.currentQuestion,
+    totalQuestions: lobby.questions.length,
+    players: playerSnapshot(lobby),
+    validFrom: from,
+    validTo: to
+  };
+}
+
+function dealBoosters(io, lobby) {
+  clearTimer(lobby.quizId);
+  lobby.phase = 'booster';
+  lobby.io = io;
+  lobby.players.forEach((player) => {
+    player.joker = freshJoker(drawJoker());
+  });
+  io.to(lobby.quizId).emit('quiz-booster-start', boosterPayload(lobby));
+  lobby.players.forEach((player) => {
+    io.to(player.id).emit('quiz-own-joker', { joker: ownJokerPayload(player.joker) });
+  });
+  emitJokerRoster(io, lobby);
+}
+
+function openRound(io, lobby) {
+  lobby.io = io;
+  if (lobby.currentQuestion % PACK_EVERY === 0) {
+    dealBoosters(io, lobby);
+    return true;
+  }
+  return sendQuestion(io, lobby);
+}
+
+function emitHold(io, lobby) {
+  lobby.phase = 'hold';
+  lobby.io = io;
+  lobby.players.forEach((player) => {
+    io.to(player.id).emit('quiz-hold', holdPayload(lobby, false));
+  });
+  if (lobby.host?.id) {
+    io.to(lobby.host.id).emit('quiz-hold', holdPayload(lobby, true));
+  }
+}
+
+function emitCorrection(io, lobby) {
+  lobby.phase = 'correction';
+  lobby.io = io;
+  lobby.players.forEach((player) => {
+    io.to(player.id).emit('quiz-correction', correctionPayload(lobby, false));
+  });
+  if (lobby.host?.id) {
+    io.to(lobby.host.id).emit('quiz-correction', correctionPayload(lobby, true));
+  }
+}
+
+function publishCopies(io, lobby, source) {
+  const index = lobby.currentQuestion;
+  const question = lobby.questions[index];
+  if (!question) return;
+  let changed = false;
+  lobby.players.forEach((watcher) => {
+    if (!jokerPlayed(watcher, index, 'copie')) return;
+    if (watcher.joker.targetId !== source.id) return;
+    if (watcher.answered[index]) return;
+    const text = formatPlayerAnswer(question, source.answers[index]);
+    watcher.joker.seenText = text;
+    watcher.joker.seenName = source.username;
+    watcher.joker.note = `A vu ${source.username}`;
+    changed = true;
+    io.to(watcher.id).emit('quiz-copied-answer', {
+      questionIndex: index,
+      username: source.username,
+      text
+    });
+    io.to(watcher.id).emit('quiz-own-joker', { joker: ownJokerPayload(watcher.joker) });
+  });
+  if (changed) emitJokerRoster(io, lobby);
+}
+
+function maybeCloseIfComplete(io, lobby) {
+  const index = lobby.currentQuestion;
+  if (lobby.phase !== 'answering') return;
+  if (lobby.players.length > 0 && lobby.players.every((entry) => entry.answered[index])) {
+    closeQuestion(io, lobby.quizId);
+  }
+}
+
 function syncQuizSocket(io, socket, lobby) {
   if (!lobby.isGameStarted || lobby.phase === 'lobby' || lobby.phase === 'ended') return;
+  lobby.io = io;
+
+  const person = quizPlayers.get(socket.id);
+
+  if (lobby.phase === 'booster') {
+    socket.emit('quiz-booster-start', boosterPayload(lobby));
+    if (person && !person.isHost) {
+      socket.emit('quiz-own-joker', { joker: ownJokerPayload(person.joker) });
+    }
+    if (isHostSocket(lobby, socket.id)) {
+      socket.emit('quiz-jokers', { players: jokerRoster(lobby) });
+    }
+    return;
+  }
+
   const question = lobby.questions[lobby.currentQuestion];
   if (!question) return;
 
-  const person = quizPlayers.get(socket.id);
   socket.emit('quiz-question', {
     ...questionPayload(lobby),
     locked: Boolean(person && !person.isHost && person.answered?.[lobby.currentQuestion]),
@@ -613,30 +818,41 @@ function syncQuizSocket(io, socket, lobby) {
     });
   }
 
-  if (lobby.phase === 'correction') {
-    socket.emit('quiz-correction', {
+  if (person && !person.isHost && person.silencedOn === lobby.currentQuestion && lobby.phase === 'answering') {
+    socket.emit('quiz-silenced', { questionIndex: lobby.currentQuestion });
+  }
+
+  if (
+    person
+    && !person.isHost
+    && person.joker?.seenText
+    && person.joker.usedOn === lobby.currentQuestion
+    && !person.answered?.[lobby.currentQuestion]
+  ) {
+    socket.emit('quiz-copied-answer', {
       questionIndex: lobby.currentQuestion,
-      hostId: lobby.host?.id || null,
-      expectedAnswer: correctLabel(question),
-      answerImageUrl: question.answerImageUrl || '',
-      answerVideoUrl: question.answerVideoUrl || '',
-      solutionItems: solutionItems(question),
-      layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
-      layoutImageUrl: question.layoutImageUrl || '',
-      suggestedPoints: question.points || 1,
-      corrections: lobby.pendingCorrections || {},
-      players: lobby.players.map((entry) => ({
-        id: entry.id,
-        username: entry.username,
-        score: entry.score || 0,
-        answerText: formatPlayerAnswer(question, entry.answers[lobby.currentQuestion]),
-        answer: (question.type === 'order' || question.type === 'layout') ? (entry.answers[lobby.currentQuestion] || null) : null
-      }))
+      username: person.joker.seenName,
+      text: person.joker.seenText
     });
+  }
+
+  if (lobby.phase === 'hold') {
+    socket.emit('quiz-hold', holdPayload(lobby, isHostSocket(lobby, socket.id)));
+  }
+
+  if (lobby.phase === 'correction') {
+    socket.emit('quiz-correction', correctionPayload(lobby, isHostSocket(lobby, socket.id)));
   }
 
   if (lobby.phase === 'reveal') {
     emitReveal(io, lobby, question, lobby.currentQuestion);
+  }
+
+  if (person && !person.isHost) {
+    socket.emit('quiz-own-joker', { joker: ownJokerPayload(person.joker) });
+  }
+  if (isHostSocket(lobby, socket.id)) {
+    socket.emit('quiz-jokers', { players: jokerRoster(lobby) });
   }
 }
 
@@ -656,6 +872,7 @@ function removeQuizPlayer(io, socket) {
       quizLobbies.delete(person.roomId);
     } else {
       io.to(person.roomId).emit('lobby-updated', publicLobby(lobby));
+      emitJokerRoster(io, lobby);
       const index = lobby.currentQuestion;
       if (!wasHost && lobby.phase === 'answering' && lobby.players.length > 0 && lobby.players.every((entry) => entry.answered[index])) {
         closeQuestion(io, lobby.quizId);
@@ -872,7 +1089,10 @@ function attachQuiz(app, io) {
           score: 0,
           answers: {},
           answered: {},
-          hints: {}
+          hints: {},
+          hintAsked: {},
+          joker: null,
+          silencedOn: null
         };
 
         lobby.players.push(player);
@@ -934,11 +1154,16 @@ function attachQuiz(app, io) {
           entry.score = 0;
           entry.answers = {};
           entry.answered = {};
+          entry.hints = {};
+          entry.hintAsked = {};
+          entry.joker = null;
+          entry.silencedOn = null;
           entry.lastGain = 0;
           entry.lastCorrect = false;
+          entry.lastNotes = [];
         });
 
-        sendQuestion(io, lobby);
+        openRound(io, lobby);
       } catch (error) {
         socket.emit('start-error', { message: 'Impossible de démarrer la partie' });
       }
@@ -951,11 +1176,27 @@ function attachQuiz(app, io) {
       if (!lobby || lobby.phase !== 'answering') return;
 
       const index = lobby.currentQuestion;
-      if (player.answered[index]) return;
+      if (player.silencedOn === index) {
+        socket.emit('quiz-error', { message: 'Tu es réduit au silence' });
+        return;
+      }
+
+      const canRedo = player.answered[index]
+        && jokerPlayed(player, index, 'seconde')
+        && !player.joker.redoSpent;
+      if (player.answered[index] && !canRedo) return;
 
       const question = lobby.questions[index];
+      if (canRedo) {
+        player.joker.redoSpent = true;
+        player.joker.note = 'Réponse modifiée';
+        io.to(player.id).emit('quiz-own-joker', { joker: ownJokerPayload(player.joker) });
+        emitJokerRoster(io, lobby);
+      }
+
       player.answers[index] = sanitizeStoredAnswer(question, data.answer);
       player.answered[index] = true;
+      publishCopies(io, lobby, player);
 
       const answered = lobby.players.filter((entry) => entry.answered[index]).length;
       io.to(lobby.quizId).emit('quiz-progress', {
@@ -987,8 +1228,9 @@ function attachQuiz(app, io) {
         sanitized[id] = pointsFromChef(value);
       });
       lobby.pendingCorrections = sanitized;
-      io.to(lobby.quizId).emit('quiz-corrections-updated', {
-        corrections: lobby.pendingCorrections
+      io.to(lobby.host.id).emit('quiz-corrections-updated', {
+        corrections: lobby.pendingCorrections,
+        preview: previewList(lobby, lobby.currentQuestion)
       });
     });
 
@@ -1010,6 +1252,12 @@ function attachQuiz(app, io) {
 
       const corrections = data.corrections || lobby.pendingCorrections || {};
       applyScores(lobby, index, corrections);
+      lobby.players.forEach((entry) => {
+        const notes = entry.lastNotes || [];
+        if (notes.length) {
+          io.to(entry.id).emit('quiz-round-note', { questionIndex: index, notes });
+        }
+      });
       emitReveal(io, lobby, question, index);
     });
 
@@ -1060,7 +1308,7 @@ function attachQuiz(app, io) {
 
       const previousIndex = lobby.currentQuestion;
       lobby.currentQuestion = nextIndex;
-      if (!sendQuestion(io, lobby)) {
+      if (!openRound(io, lobby)) {
         lobby.currentQuestion = previousIndex;
         socket.emit('quiz-error', { message: 'Impossible d\'afficher la question suivante' });
       }
@@ -1083,7 +1331,8 @@ function attachQuiz(app, io) {
         id: `${player.id}-${index}`,
         playerId: player.id,
         username: player.username,
-        questionIndex: index
+        questionIndex: index,
+        free: false
       });
       io.to(lobby.quizId).emit('quiz-scores', { players: playerSnapshot(lobby) });
       if (lobby.host?.id) {
@@ -1111,6 +1360,139 @@ function attachQuiz(app, io) {
         words,
         hints: target.hints[index]
       });
+    });
+
+    socket.on('quiz-booster-done', () => {
+      const player = quizPlayers.get(socket.id);
+      if (!player) return;
+      const lobby = quizLobbies.get(player.roomId);
+      if (!lobby || !isHostSocket(lobby, socket.id) || lobby.phase !== 'booster') return;
+      if (!sendQuestion(io, lobby)) {
+        socket.emit('quiz-error', { message: 'Impossible d\'afficher la question' });
+      }
+    });
+
+    socket.on('quiz-begin-scoring', () => {
+      const player = quizPlayers.get(socket.id);
+      if (!player) return;
+      const lobby = quizLobbies.get(player.roomId);
+      if (!lobby || !isHostSocket(lobby, socket.id) || lobby.phase !== 'hold') return;
+      emitCorrection(io, lobby);
+    });
+
+    socket.on('play-joker', (data) => {
+      const player = quizPlayers.get(socket.id);
+      if (!player || player.isHost) return;
+      const lobby = quizLobbies.get(player.roomId);
+      if (!lobby) return;
+
+      const index = lobby.currentQuestion;
+      const card = String(data?.card || '');
+      const joker = player.joker;
+      if (!joker || !JOKER_IDS.includes(card) || joker.card !== card || joker.used) {
+        socket.emit('quiz-error', { message: 'Cette carte n\'est pas jouable' });
+        return;
+      }
+
+      if (card === 'vol') {
+        if (lobby.phase !== 'hold') {
+          socket.emit('quiz-error', { message: 'Vol se joue juste avant les points du chef' });
+          return;
+        }
+      } else if (lobby.phase !== 'answering' || player.answered[index]) {
+        socket.emit('quiz-error', { message: 'Joue la carte avant de répondre' });
+        return;
+      }
+
+      let target = null;
+      if (TARGET_JOKERS.has(card)) {
+        target = lobby.players.find((entry) => entry.id === data.targetId);
+        if (!target || target.id === player.id) {
+          socket.emit('quiz-error', { message: 'Choisis un autre joueur' });
+          return;
+        }
+        if (
+          card === 'vol'
+          && lobby.players.some((entry) => (
+            entry.id !== player.id
+            && jokerPlayed(entry, index, 'vol')
+            && entry.joker.targetId === target.id
+          ))
+        ) {
+          socket.emit('quiz-error', { message: 'Cette cible est déjà visée' });
+          return;
+        }
+        joker.targetId = target.id;
+        joker.targetName = target.username;
+      }
+
+      joker.used = true;
+      joker.usedOn = index;
+      joker.redoSpent = false;
+
+      if (card === 'double') joker.note = 'Points doublés';
+      if (card === 'filet') joker.note = 'Filet si 0';
+      if (card === 'seconde') joker.note = 'Peut modifier sa réponse';
+      if (card === 'copie') joker.note = `Copie ${joker.targetName}`;
+      if (card === 'silence') joker.note = `Silence sur ${joker.targetName}`;
+      if (card === 'vol') joker.note = `Vol sur ${joker.targetName}`;
+      if (card === 'indice') joker.note = 'Indice gratuit';
+
+      if (card === 'indice') {
+        if (!player.hintAsked) player.hintAsked = {};
+        if (player.hintAsked[index]) {
+          joker.used = false;
+          joker.usedOn = null;
+          joker.note = 'En main';
+          socket.emit('quiz-error', { message: 'Indice déjà demandé' });
+          return;
+        }
+        player.hintAsked[index] = true;
+        if (!lobby.hintRequests) lobby.hintRequests = [];
+        lobby.hintRequests.push({
+          id: `${player.id}-${index}`,
+          playerId: player.id,
+          username: player.username,
+          questionIndex: index,
+          free: true
+        });
+        if (lobby.host?.id) {
+          io.to(lobby.host.id).emit('quiz-hint-requests', { requests: lobby.hintRequests });
+        }
+      }
+
+      if (card === 'silence' && target) {
+        target.silencedOn = index;
+        target.answers[index] = null;
+        target.answered[index] = true;
+        io.to(target.id).emit('quiz-silenced', { questionIndex: index });
+        publishCopies(io, lobby, target);
+      }
+
+      if (card === 'copie' && target && target.answered[index]) {
+        const question = lobby.questions[index];
+        const text = formatPlayerAnswer(question, target.answers[index]);
+        joker.seenText = text;
+        joker.seenName = target.username;
+        joker.note = `A vu ${target.username}`;
+        io.to(player.id).emit('quiz-copied-answer', {
+          questionIndex: index,
+          username: target.username,
+          text
+        });
+      }
+
+      io.to(player.id).emit('quiz-own-joker', { joker: ownJokerPayload(joker) });
+      emitJokerRoster(io, lobby);
+
+      if (card === 'silence') {
+        const answered = lobby.players.filter((entry) => entry.answered[index]).length;
+        io.to(lobby.quizId).emit('quiz-progress', {
+          answered,
+          totalPlayers: lobby.players.length
+        });
+        maybeCloseIfComplete(io, lobby);
+      }
     });
 
     socket.on('transfer-leadership', () => {

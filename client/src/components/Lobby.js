@@ -167,7 +167,9 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
               <li>Choix multiple, vrai/faux, texte libre, blind test, classement ou placement sur une frise et un schéma</li>
               <li>Rien n'est corrigé tout seul : le chef valide chaque réponse</li>
               <li>Il choisit les points, et peut ajouter +1 pour une blague</li>
-              <li>Un seul indice par question : −1 pt. Le chef peut envoyer plusieurs messages à ce joueur</li>
+              <li>Un seul indice par question : −1 pt, sauf avec la carte Indice gratuit. Le chef peut envoyer plusieurs messages à ce joueur</li>
+              <li>À la première question, puis toutes les 15 questions, chaque joueur ouvre un booster et pioche un joker secret</li>
+              <li>Le chef voit les cartes, si elles sont jouées, et qui est visé. Les autres joueurs non</li>
               <li>Le joueur avec le plus de points gagne</li>
             </ul>
           ) : (

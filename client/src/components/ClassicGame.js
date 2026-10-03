@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import BlindMusicPlayer from './BlindMusicPlayer';
 import { OrderAnswer, OrderReview, PlaceAnswer, PlaceBoard } from './InteractQuestion';
 import { extractYouTubeId } from '../utils/media';
+import { BoosterOpening, HostJokerBoard, PlayerJokerBar } from './JokerCards';
 
 const CHOICE_COLORS = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#8e44ad', '#e67e22'];
 const CHOICE_SHAPES = ['▲', '◆', '●', '■', '★', '✚'];
@@ -63,7 +64,9 @@ const HintComposer = ({ request, onSend }) => {
         setWords('');
       }}
     >
-      <div><strong>{request.username}</strong> demande un indice</div>
+      <div>
+        <strong>{request.username}</strong> demande un indice{request.free ? ' gratuit' : ''}
+      </div>
       <div className="quiz-hint-send">
         <input
           className="input"
@@ -88,13 +91,17 @@ const ClassicGame = ({
   onSubmitCorrection,
   onNext,
   onRequestHint,
-  onSendHint
+  onSendHint,
+  onPlayJoker,
+  onBeginScoring,
+  onStartQuestion
 }) => {
   const [textAnswer, setTextAnswer] = useState('');
   const [selected, setSelected] = useState([]);
   const [locked, setLocked] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [hintAsked, setHintAsked] = useState(false);
+  const [redoTick, setRedoTick] = useState(0);
   const hintAskedFor = useRef(null);
 
   const question = gameData?.question;
@@ -103,6 +110,7 @@ const ClassicGame = ({
   useEffect(() => {
     setTextAnswer('');
     setSelected([]);
+    setRedoTick(0);
     setLocked(Boolean(gameData?.locked));
     if (gameData?.hintUsed) {
       hintAskedFor.current = gameData.questionIndex;
@@ -120,7 +128,46 @@ const ClassicGame = ({
     return () => clearInterval(timer);
   }, [phase, gameData?.deadline, gameData?.questionIndex]);
 
-  if (!gameData || !question || !player) {
+  useEffect(() => {
+    const joker = gameData?.myJoker;
+    if (joker?.card === 'indice' && joker.used && joker.usedOn === gameData?.questionIndex) {
+      hintAskedFor.current = gameData.questionIndex;
+      setHintAsked(true);
+    }
+  }, [gameData?.myJoker, gameData?.questionIndex]);
+
+  if (!gameData || !player) {
+    return <div className="loading">Chargement de la question...</div>;
+  }
+
+  if (phase === 'booster') {
+    const hostOpening = gameData.hostId === player.id;
+    return (
+      <div className="container">
+        <div className="card booster-stage">
+          <h2 style={{ textAlign: 'center' }}>Booster</h2>
+          <p style={{ textAlign: 'center', opacity: 0.85 }}>
+            Question {(gameData.questionIndex || 0) + 1} / {gameData.totalQuestions}
+            {gameData.booster ? ` · joker pour les questions ${gameData.booster.validFrom} à ${gameData.booster.validTo}` : ''}
+          </p>
+          {hostOpening ? (
+            <>
+              <HostJokerBoard players={gameData.jokerRoster || []} />
+              <div style={{ textAlign: 'center' }}>
+                <button type="button" className="btn btn-success" onClick={onStartQuestion}>
+                  Lancer la question
+                </button>
+              </div>
+            </>
+          ) : (
+            <BoosterOpening cardId={gameData.myJoker?.card} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!question) {
     return <div className="loading">Chargement de la question...</div>;
   }
 
@@ -134,12 +181,30 @@ const ClassicGame = ({
     : 0;
 
   const send = (answer) => {
-    if (locked || phase !== 'answering') return;
+    if (gameData.silenced || locked || phase !== 'answering') return;
     setLocked(true);
     onSubmitAnswer(answer);
   };
 
+  const myJoker = gameData.myJoker;
+  const canRedo = phase === 'answering'
+    && !gameData.silenced
+    && locked
+    && myJoker?.card === 'seconde'
+    && myJoker.used
+    && myJoker.usedOn === gameData.questionIndex
+    && !myJoker.redoSpent;
+
   const renderAnswering = () => {
+    if (gameData.silenced) {
+      return (
+        <div style={{ textAlign: 'center', padding: '18px' }}>
+          <div style={{ fontSize: '1.2rem', marginBottom: 8 }}>Tu es réduit au silence</div>
+          <div style={{ opacity: 0.8 }}>Ta réponse ne comptera pas sur cette question.</div>
+        </div>
+      );
+    }
+
     if (locked) {
       return (
         <div style={{ textAlign: 'center', padding: '18px' }}>
@@ -200,7 +265,7 @@ const ClassicGame = ({
     if (question.type === 'order') {
       return (
         <OrderAnswer
-          key={gameData.questionIndex}
+          key={`${gameData.questionIndex}-${redoTick}`}
           items={question.items || []}
           onSubmit={(ids) => send({ ids })}
         />
@@ -210,7 +275,7 @@ const ClassicGame = ({
     if (question.type === 'layout') {
       return (
         <PlaceAnswer
-          key={gameData.questionIndex}
+          key={`${gameData.questionIndex}-${redoTick}`}
           items={question.items || []}
           mode={question.layoutMode === 'schema' ? 'schema' : 'timeline'}
           imageUrl={question.layoutImageUrl || ''}
@@ -325,6 +390,27 @@ const ClassicGame = ({
           ))}
         </div>
 
+        {isHost && (
+          <HostJokerBoard players={gameData.jokerRoster || []} />
+        )}
+        {!isHost && (
+          <PlayerJokerBar
+            joker={myJoker}
+            phase={phase}
+            questionIndex={gameData.questionIndex}
+            locked={locked}
+            players={players}
+            selfId={player.id}
+            silenced={Boolean(gameData.silenced)}
+            canRedo={canRedo}
+            onPlay={onPlayJoker}
+            onRedo={() => {
+              setLocked(false);
+              setRedoTick((value) => value + 1);
+            }}
+          />
+        )}
+
         {phase === 'answering' && question.timeLimit > 0 && (
           <div style={{ width: '100%', maxWidth: '640px', marginBottom: 16 }}>
             <div style={{ textAlign: 'center', fontSize: '1.4rem', fontWeight: 'bold', marginBottom: 6 }}>
@@ -346,7 +432,7 @@ const ClassicGame = ({
           <BlindMusicPlayer
             key={`${question.musicUrl}-${phase}`}
             url={question.musicUrl}
-            revealed={phase !== 'answering'}
+            revealed={phase === 'reveal' || (isHost && phase !== 'answering')}
           />
         ) : (
           <QuestionMedia imageUrl={question.imageUrl} videoUrl={question.videoUrl} />
@@ -354,7 +440,7 @@ const ClassicGame = ({
         {question.type === 'music' && question.imageUrl && (
           <QuestionMedia imageUrl={question.imageUrl} videoUrl="" />
         )}
-        {phase !== 'answering' && (
+        {phase === 'reveal' && (
           <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} />
         )}
 
@@ -388,13 +474,18 @@ const ClassicGame = ({
               <HintComposer key={request.id} request={request} onSend={onSendHint} />
             ))}
             <button type="button" className="btn" onClick={onForceClose}>
-              Révéler maintenant
+              Clore les réponses
             </button>
           </div>
         )}
 
         {phase === 'answering' && !isHost && (
           <>
+            {gameData.copiedAnswer && gameData.copiedAnswer.questionIndex === gameData.questionIndex && !gameData.silenced && (
+              <div className="copied-banner">
+                Réponse de {gameData.copiedAnswer.username} : {gameData.copiedAnswer.text}
+              </div>
+            )}
             {renderAnswering()}
             {hints.length > 0 && (
               <div className="quiz-hint-list">
@@ -403,7 +494,7 @@ const ClassicGame = ({
                 ))}
               </div>
             )}
-            {!locked && (
+            {!locked && !gameData.silenced && (
               <button type="button" className="btn" onClick={requestHint} disabled={hintAsked}>
                 {hintAsked ? 'Indice demandé' : 'Indice (−1 pt)'}
               </button>
@@ -414,9 +505,24 @@ const ClassicGame = ({
           </>
         )}
 
-        {phase === 'correction' && (
+        {(phase === 'hold' || phase === 'correction') && !isHost && (
           <div className="correction-section">
-            <h3 style={{ textAlign: 'center' }}>Le chef distribue les points</h3>
+            <h3 style={{ textAlign: 'center' }}>
+              {phase === 'hold' ? 'Réponses closes' : 'Le chef distribue les points'}
+            </h3>
+            <p style={{ textAlign: 'center', color: '#ffd700' }}>
+              {phase === 'hold'
+                ? 'La bonne réponse reste cachée, le temps que le chef prépare les points.'
+                : 'La bonne réponse s\'affichera quand les points seront validés.'}
+            </p>
+          </div>
+        )}
+
+        {(phase === 'hold' || phase === 'correction') && isHost && (
+          <div className="correction-section">
+            <h3 style={{ textAlign: 'center' }}>
+              {phase === 'hold' ? 'Prépare la correction' : 'Distribue les points'}
+            </h3>
             <div style={{
               textAlign: 'center',
               margin: '12px 0 18px',
@@ -427,9 +533,12 @@ const ClassicGame = ({
             }}>
               Réponse prévue : <strong className="quiz-answer">{gameData.expectedAnswer || '—'}</strong>
               <div style={{ marginTop: 6, fontSize: '0.9rem', opacity: 0.85 }}>
-                Rien n'est validé tout seul. Une bonne réponse vaut {gameData.suggestedPoints || question.points || 1} pt.
+                {phase === 'hold'
+                  ? 'Les joueurs ne voient pas encore cette réponse. Tu peux laisser le temps de jouer Vol.'
+                  : `Rien n'est validé tout seul. Une bonne réponse vaut ${gameData.suggestedPoints || question.points || 1} pt.`}
               </div>
               {renderPlacement(null, true)}
+              <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} />
             </div>
             {players.map((entry) => {
               const given = Number(corrections[entry.id]) || 0;
@@ -441,7 +550,7 @@ const ClassicGame = ({
                     <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
                     {renderPlacement(entry.answer)}
                   </div>
-                  {isHost ? (
+                  {phase === 'correction' ? (
                     <div className="quiz-score-actions">
                       <button
                         type="button"
@@ -478,23 +587,28 @@ const ClassicGame = ({
                         }}
                       />
                     </div>
-                  ) : (
-                    <div style={{ fontWeight: 'bold', color: given > 0 ? '#51cf66' : 'white' }}>
-                      +{given}
+                  ) : null}
+                  {phase === 'correction' && (gameData.gainPreview || []).some((row) => row.id === entry.id && (row.tags || []).length > 0) && (
+                    <div style={{ color: '#ffd700', fontSize: '0.9rem' }}>
+                      {((gameData.gainPreview || []).find((row) => row.id === entry.id)?.tags || []).join(' · ')}
+                      {' → '}
+                      {(gameData.gainPreview || []).find((row) => row.id === entry.id)?.gain || 0} pts au total
                     </div>
                   )}
                 </div>
               );
             })}
-            {isHost ? (
-              <div style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: 'center' }}>
+              {phase === 'hold' ? (
+                <button type="button" className="btn btn-success" onClick={onBeginScoring}>
+                  Distribuer les points
+                </button>
+              ) : (
                 <button type="button" className="btn btn-success" onClick={() => onSubmitCorrection(corrections)}>
                   Valider les points
                 </button>
-              </div>
-            ) : (
-              <p style={{ textAlign: 'center', color: '#ffd700' }}>Le chef choisit les points...</p>
-            )}
+              )}
+            </div>
           </div>
         )}
 
@@ -556,6 +670,9 @@ const ClassicGame = ({
                   <div style={{ fontWeight: 'bold', color: entry.pointsThisRound > 0 ? '#51cf66' : '#ff6b6b' }}>
                     +{entry.pointsThisRound || 0}
                   </div>
+                  {entry.id === player.id && (gameData.roundNotes || []).length > 0 && (
+                    <div style={{ color: '#ffd700', fontSize: '0.9rem' }}>{gameData.roundNotes.join(' ')}</div>
+                  )}
                 </div>
               ))}
             </div>
