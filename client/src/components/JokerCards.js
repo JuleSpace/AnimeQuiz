@@ -4,7 +4,7 @@ import Icon from './ArcadeIcon';
 export const JOKERS = {
   double: {
     name: 'Double mise',
-    rule: 'Les points du chef sont doublés.',
+    rule: 'Les points de l’orga sont doublés.',
     accent: '#ff2347',
     mate: '#1f6dff'
   },
@@ -16,7 +16,7 @@ export const JOKERS = {
   },
   seconde: {
     name: 'Seconde main',
-    rule: 'Change ta réponse une fois, tant que la question est ouverte.',
+    rule: 'Une deuxième réponse. La première reste.',
     accent: '#ff2347',
     mate: '#1f6dff'
   },
@@ -28,7 +28,7 @@ export const JOKERS = {
   },
   indice: {
     name: 'Indice gratuit',
-    rule: 'Un indice du chef, sans perdre de point.',
+    rule: 'Un indice de l’organisateur, sans perdre de point.',
     accent: '#ff2347',
     mate: '#1f6dff'
   },
@@ -248,7 +248,7 @@ export const PlayerJokerBar = ({
   else if (silenced && joker.card !== 'vol') hint = 'Tu es réduit au silence.';
   else if (joker.card === 'vol' && phase === 'answering') hint = 'Après les réponses, tu verras les copies.';
   else if (joker.card === 'vol' && phase !== 'hold') hint = 'Trop tard pour cette question.';
-  else if (joker.card === 'seconde' && phase === 'answering' && locked) hint = 'Tu peux encore changer ta réponse.';
+  else if (joker.card === 'seconde' && phase === 'answering' && locked) hint = 'Tu peux envoyer une deuxième réponse.';
   else if (joker.card !== 'vol' && phase === 'answering' && locked) hint = 'Il fallait la jouer avant de répondre.';
   else if (joker.card !== 'vol' && phase !== 'answering') hint = 'Trop tard pour cette question.';
 
@@ -274,7 +274,7 @@ export const PlayerJokerBar = ({
         )}
         {canRedo && (
           <button type="button" className="joker-chip joker-chip-alt" onClick={onRedo}>
-            <Icon name="pencil" />Modifier
+            <Icon name="pencil" />2e réponse
           </button>
         )}
         {onThisQuestion && joker.targetName && (

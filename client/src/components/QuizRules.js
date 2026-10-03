@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { JokerCard } from './JokerCards';
 import Icon from './ArcadeIcon';
 
@@ -7,8 +7,7 @@ const SLIDES = [
     kicker: 'Quiz classique',
     title: 'La partie',
     points: [
-      'Le chef ne joue pas. Il faut au moins un joueur en plus.',
-      'Il choisit le nombre de questions. « Mélanger » change l’ordre.',
+      'L’organisateur ne joue pas (pas illogique).',
       'Le plus haut score gagne. Un F5 garde la place deux minutes.'
     ]
   },
@@ -16,9 +15,9 @@ const SLIDES = [
     kicker: 'Une question',
     title: 'Le tour',
     points: [
-      'Booster aux questions 1, 16, 31, puis la question.',
-      'Temps limité, ou le chef ferme avec « Clore les réponses ».',
-      'Attente, puis le chef donne les points et valide. La salle voit alors la réponse.',
+      'Booster aux questions 1, 16, 31, en gros toutes les 15 questions.',
+      'Temps illimité, ou l’orga clos les réponses.',
+      'Attente, puis l’orga donne les points et valide. La salle voit alors la réponse.',
     ]
   },
   {
@@ -28,7 +27,7 @@ const SLIDES = [
       'Choix multiple, vrai/faux, texte libre, blind test masqué.',
       'Classement, ou placement sur une frise et un schéma.',
       'L’image et la vidéo de la réponse n’apparaissent qu’avec les points.',
-      'Rien n’est noté tout seul : le chef décide.'
+      'Rien n’est noté tout seul : l’orga décide.'
     ]
   },
   {
@@ -37,7 +36,7 @@ const SLIDES = [
     points: [
       'De 0 à 99. « Valider » propose les points de la question.',
       'Un indice coûte 1 point.',
-      'Le chef écrit l’indice, et peut envoyer plusieurs messages.'
+      'L’organisateur écrit l’indice, et peut envoyer plusieurs messages.'
     ]
   },
   {
@@ -45,8 +44,8 @@ const SLIDES = [
     kicker: 'Avant de répondre',
     title: 'Double mise',
     points: [
-      'Les points du chef sur cette question sont multipliés par deux.',
-      'S’il met 0, ça reste 0.'
+      'Les points de l’orga sur cette question sont multipliés par deux.',
+      'S’il met 0, ça reste 0 et oui coup dur.'
     ]
   },
   {
@@ -56,7 +55,7 @@ const SLIDES = [
     points: [
       'Tu prends la moyenne des autres. Tes points ne comptent pas dedans.',
       'Si tes points sont plus hauts, tu gardes les tiens.',
-      'La moyenne est arrondie.'
+      'La moyenne est arrondie. (Spoiler : y a un monde où elle foire mais normalement pas)'
     ]
   },
   {
@@ -64,8 +63,8 @@ const SLIDES = [
     kicker: 'Question ouverte',
     title: 'Seconde main',
     points: [
-      'Après une réponse, ou avant, tant que la question est ouverte.',
-      'Une seule modification.'
+      'Tu envoies une deuxième réponse. La première reste.',
+      'L’organisateur voit les deux pour noter.'
     ]
   },
   {
@@ -82,7 +81,7 @@ const SLIDES = [
     kicker: 'Avant de répondre',
     title: 'Indice gratuit',
     points: [
-      'Le chef écrit l’indice. La carte annule le −1.',
+      'L’orga écrit l’indice. La carte annule le −1.',
       'Si l’indice est déjà demandé, la carte reste en main.'
     ]
   },
@@ -108,14 +107,38 @@ const SLIDES = [
 ];
 
 const QuizRules = () => {
+  const stageRef = useRef(null);
   const [index, setIndex] = useState(0);
+  const [full, setFull] = useState(false);
   const slide = SLIDES[index];
 
+  useEffect(() => {
+    const sync = () => setFull(document.fullscreenElement === stageRef.current);
+    document.addEventListener('fullscreenchange', sync);
+    return () => document.removeEventListener('fullscreenchange', sync);
+  }, []);
+
+  const toggleFullscreen = () => {
+    const node = stageRef.current;
+    if (!node) return;
+    if (document.fullscreenElement === node) {
+      document.exitFullscreen();
+      return;
+    }
+    node.requestFullscreen().catch(() => {});
+  };
+
   return (
-    <div className="rules-stage" role="region" aria-label="Règles du quiz classique">
+    <div className="rules-stage" ref={stageRef} role="region" aria-label="Règles du quiz classique">
       <div className="rules-top">
         <div className="rules-kicker">{slide.kicker}</div>
-        <div className="rules-count">{index + 1} / {SLIDES.length}</div>
+        <div className="rules-tools">
+          <button type="button" className="btn" onClick={toggleFullscreen}>
+            <Icon name={full ? 'shrink' : 'expand'} />
+            {full ? 'Réduire' : 'Plein écran'}
+          </button>
+          <div className="rules-count">{index + 1} / {SLIDES.length}</div>
+        </div>
       </div>
       <div className="rules-stage-body">
         {slide.card && <JokerCard cardId={slide.card} size="full" />}

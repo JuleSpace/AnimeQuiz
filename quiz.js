@@ -163,6 +163,16 @@ function correctLabel(question) {
   return '';
 }
 
+function answerSnapshot(question, player, index) {
+  const current = player.answers ? player.answers[index] : null;
+  const hasPrior = Boolean(player.priorAnswers && Object.prototype.hasOwnProperty.call(player.priorAnswers, index));
+  return {
+    answerText: formatPlayerAnswer(question, current),
+    answer: (question.type === 'order' || question.type === 'layout') ? (current || null) : null,
+    ...(hasPrior ? { firstAnswerText: formatPlayerAnswer(question, player.priorAnswers[index]) } : {})
+  };
+}
+
 function formatPlayerAnswer(question, answer) {
   if (answer == null || answer === '') return 'Pas de réponse';
   if (question.type === 'qcm') {
@@ -485,8 +495,7 @@ function emitReveal(io, lobby, question, index) {
       id: player.id,
       username: player.username,
       score: player.score || 0,
-      answerText: formatPlayerAnswer(question, player.answers[index]),
-      answer: (question.type === 'order' || question.type === 'layout') ? (player.answers[index] || null) : null,
+      ...answerSnapshot(question, player, index),
       correct: Boolean(player.lastCorrect),
       pointsThisRound: player.lastGain || 0
     }))
@@ -585,8 +594,7 @@ function answeredPlayers(lobby, index, withAnswers) {
     if (!withAnswers || !question) return row;
     return {
       ...row,
-      answerText: formatPlayerAnswer(question, player.answers[index]),
-      answer: (question.type === 'order' || question.type === 'layout') ? (player.answers[index] || null) : null
+      ...answerSnapshot(question, player, index)
     };
   });
 }
@@ -1254,8 +1262,10 @@ function attachQuiz(app, io) {
 
       const question = lobby.questions[index];
       if (canRedo) {
+        if (!player.priorAnswers) player.priorAnswers = {};
+        player.priorAnswers[index] = player.answers[index];
         player.joker.redoSpent = true;
-        player.joker.note = 'Réponse modifiée';
+        player.joker.note = 'Deux réponses';
         io.to(player.id).emit('quiz-own-joker', { joker: ownJokerPayload(player.joker) });
         emitJokerRoster(io, lobby);
       }
@@ -1507,7 +1517,7 @@ function attachQuiz(app, io) {
 
       if (card === 'double') joker.note = 'Points doublés';
       if (card === 'filet') joker.note = 'Moyenne des autres';
-      if (card === 'seconde') joker.note = 'Peut modifier sa réponse';
+      if (card === 'seconde') joker.note = 'Peut envoyer une 2e réponse';
       if (card === 'copie') joker.note = `Copie ${joker.targetName}`;
       if (card === 'silence') joker.note = `Silence sur ${joker.targetName}`;
       if (card === 'vol') joker.note = `Vol sur ${joker.targetName}`;
@@ -1539,6 +1549,7 @@ function attachQuiz(app, io) {
       if (card === 'silence' && target) {
         target.silencedOn = index;
         target.answers[index] = null;
+        if (target.priorAnswers) delete target.priorAnswers[index];
         target.answered[index] = true;
         io.to(target.id).emit('quiz-silenced', { questionIndex: index });
         publishCopies(io, lobby, target);

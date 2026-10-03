@@ -144,6 +144,16 @@ const GLYPHS = {
       <circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" strokeWidth="2.4" />
       <path d="M16 9l5 7-5 7-5-7z" fill="currentColor" />
     </>
+  ),
+  expand: (
+    <>
+      <path {...line} strokeWidth="2.6" d="M6 13V6h7M26 13V6h-7M6 19v7h7M26 19v7h-7" />
+    </>
+  ),
+  shrink: (
+    <>
+      <path {...line} strokeWidth="2.6" d="M13 6v7H6M19 6v7h7M13 26v-7H6M19 26v-7h7" />
+    </>
   )
 };
 

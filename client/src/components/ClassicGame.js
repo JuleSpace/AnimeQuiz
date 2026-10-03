@@ -365,6 +365,20 @@ const ClassicGame = ({
     );
   };
 
+  const renderAnswer = (entry) => (
+    <>
+      {entry.firstAnswerText ? (
+        <>
+          <div style={{ opacity: 0.85 }}>1re : {entry.firstAnswerText}</div>
+          <div style={{ opacity: 0.85 }}>2e : {entry.answerText}</div>
+        </>
+      ) : (
+        <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
+      )}
+      {renderPlacement(entry.answer)}
+    </>
+  );
+
   return (
     <div className="container">
       <div className="card">
@@ -498,8 +512,7 @@ const ClassicGame = ({
                   <div key={entry.id} className="quiz-score-row">
                     <div className="quiz-answer">
                       <strong>{entry.username}</strong>
-                      <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
-                      {renderPlacement(entry.answer)}
+                      {renderAnswer(entry)}
                     </div>
                   </div>
                 ))}
@@ -543,8 +556,7 @@ const ClassicGame = ({
                 <div key={entry.id} className="quiz-score-row">
                   <div className="quiz-answer">
                     <strong>{entry.username}</strong>
-                    <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
-                    {renderPlacement(entry.answer)}
+                    {renderAnswer(entry)}
                   </div>
                   {phase === 'correction' ? (
                     <div className="quiz-score-actions">
@@ -660,8 +672,7 @@ const ClassicGame = ({
                 <div key={entry.id} className="quiz-score-row">
                   <div className="quiz-answer">
                     <strong>{entry.username}</strong>
-                    <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
-                    {renderPlacement(entry.answer)}
+                    {renderAnswer(entry)}
                   </div>
                   <div style={{ fontWeight: 'bold', color: entry.pointsThisRound > 0 ? '#51cf66' : '#ff6b6b' }}>
                     +{entry.pointsThisRound || 0}
