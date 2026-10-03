@@ -17,34 +17,33 @@ body::before,
 body::after {
   content: '';
   position: fixed;
-  inset: -40% -15%;
   pointer-events: none;
   z-index: 0;
 }
 
 body::before {
-  background: repeating-linear-gradient(
-    -16deg,
-    transparent 0 96px,
-    rgba(31, 109, 255, 0.7) 96px 98px,
-    transparent 98px 168px,
-    rgba(255, 35, 71, 0.65) 168px 170px,
-    transparent 170px 250px
-  );
-  animation: trail-a 8s linear infinite;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 55% 42% at 100% 0, rgba(255, 35, 71, 0.5), transparent 68%),
+    radial-gradient(ellipse 48% 40% at 0 100%, rgba(31, 109, 255, 0.42), transparent 70%);
 }
 
 body::after {
-  background:
-    radial-gradient(ellipse 55% 42% at 100% 0, rgba(255, 35, 71, 0.5), transparent 68%),
-    radial-gradient(ellipse 48% 40% at 0 100%, rgba(31, 109, 255, 0.42), transparent 70%),
-    repeating-linear-gradient(
-      -16deg,
-      transparent 0 180px,
-      rgba(255, 255, 255, 0.09) 180px 181px,
-      transparent 181px 280px
-    );
-  animation: trail-b 18s linear infinite;
+  top: -16px;
+  right: -90px;
+  bottom: -260px;
+  left: -16px;
+  background: repeating-linear-gradient(
+    -16deg,
+    transparent 0 92px,
+    rgba(31, 109, 255, 0.5) 92px 95px,
+    transparent 95px 164px,
+    rgba(255, 35, 71, 0.45) 164px 167px,
+    transparent 167px 250px
+  );
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  animation: trail-a 12s linear infinite;
 }
 
 .App {
@@ -53,11 +52,7 @@ body::after {
 }
 
 @keyframes trail-a {
-  to { background-position: -68.91px -240.32px; }
-}
-
-@keyframes trail-b {
-  to { background-position: 0 0, 0 0, -77.18px -269.15px; }
+  to { transform: translate3d(-68.91px, -240.32px, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
