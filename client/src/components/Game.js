@@ -27,23 +27,6 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
     }
   }, [gameData, currentQuestion]);
 
-  // Prévenir le rafraîchissement de page (F5) pendant le jeu
-  useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (gameData && !gameData.isGameFinished) {
-        e.preventDefault();
-        e.returnValue = 'Êtes-vous sûr de vouloir quitter la partie ? Votre progression sera perdue.';
-        return 'Êtes-vous sûr de vouloir quitter la partie ? Votre progression sera perdue.';
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [gameData]);
-
   const getMusicUrl = (musicLink) => {
     return typeof musicLink === 'string' ? musicLink : (musicLink?.url || '');
   };

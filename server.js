@@ -252,7 +252,30 @@ io.on('connection', (socket) => {
     // Vérifier si le joueur existe déjà
     const existingPlayer = lobby.players.find(p => p.username === username);
     if (existingPlayer) {
-      socket.emit('join-error', { message: 'Ce nom d\'utilisateur est déjà pris' });
+      const live = io.sockets.sockets.get(existingPlayer.id);
+      if (live && live.connected && existingPlayer.id !== socket.id) {
+        socket.emit('join-error', { message: 'Ce nom d\'utilisateur est déjà pris' });
+        return;
+      }
+      if (existingPlayer.dropTimer) {
+        clearTimeout(existingPlayer.dropTimer);
+        existingPlayer.dropTimer = null;
+      }
+      players.delete(existingPlayer.id);
+      existingPlayer.id = socket.id;
+      players.set(socket.id, existingPlayer);
+      socket.join(roomId);
+      socket.emit('joined-lobby', { lobby, player: existingPlayer });
+      io.to(roomId).emit('lobby-updated', lobby);
+      if (lobby.isGameStarted) {
+        socket.emit('game-started', {
+          totalQuestions: lobby.musicLinks ? lobby.musicLinks.length : (lobby.totalSongs || 0),
+          currentQuestion: lobby.currentQuestion || 0,
+          musicLinks: lobby.musicLinks || [],
+          players: lobby.players,
+          isCorrectionPhase: Boolean(lobby.isCorrectionPhase)
+        });
+      }
       return;
     }
 
@@ -362,6 +385,7 @@ io.on('connection', (socket) => {
     if (allAnswered) {
       // Déclencher la correction avec les informations des joueurs
       console.log(`🔍 Passage à la phase de correction pour la question ${questionIndex}`);
+      lobby.isCorrectionPhase = true;
       io.to(player.roomId).emit('start-correction', { 
         questionIndex,
         players: lobby.players 
@@ -394,6 +418,10 @@ io.on('connection', (socket) => {
   // Quitter un lobby volontairement
   socket.on('leave-lobby', () => {
     const player = players.get(socket.id);
+    if (player?.dropTimer) {
+      clearTimeout(player.dropTimer);
+      player.dropTimer = null;
+    }
     if (player) {
       const lobby = lobbies.get(player.roomId);
       if (lobby) {
@@ -553,6 +581,7 @@ io.on('connection', (socket) => {
     });
 
     // Passer à la question suivante ou terminer
+    lobby.isCorrectionPhase = false;
     lobby.currentQuestion++;
       
     if (lobby.currentQuestion >= lobby.musicLinks.length) {
@@ -574,21 +603,23 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Déconnexion
+  // Déconnexion : on garde la place deux minutes, le temps d'un F5
   socket.on('disconnect', () => {
     const player = players.get(socket.id);
-    if (player) {
-      const lobby = lobbies.get(player.roomId);
+    if (!player || player.id !== socket.id) return;
+    if (player.dropTimer) clearTimeout(player.dropTimer);
+    const socketId = socket.id;
+    player.dropTimer = setTimeout(() => {
+      const current = players.get(socketId);
+      if (!current || current.id !== socketId) return;
+      const lobby = lobbies.get(current.roomId);
       if (lobby) {
-        lobby.players = lobby.players.filter(p => p.id !== socket.id);
-        io.to(player.roomId).emit('lobby-updated', lobby);
-        
-        if (lobby.players.length === 0) {
-          lobbies.delete(player.roomId);
-        }
+        lobby.players = lobby.players.filter(p => p.id !== socketId);
+        io.to(current.roomId).emit('lobby-updated', lobby);
+        if (lobby.players.length === 0) lobbies.delete(current.roomId);
       }
-      players.delete(socket.id);
-    }
+      players.delete(socketId);
+    }, 120000);
     console.log('Joueur déconnecté:', socket.id);
   });
 });

@@ -8,6 +8,25 @@ import AdminPanel from './components/AdminPanel';
 import './index.css';
 
 const socket = io(process.env.REACT_APP_SERVER_URL || window.location.origin);
+const SEAT_KEY = 'animeQuizSeat';
+
+function readSeat() {
+  try {
+    const seat = JSON.parse(sessionStorage.getItem(SEAT_KEY) || 'null');
+    if (!seat?.id || !seat?.username) return null;
+    return seat;
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveSeat(seat) {
+  sessionStorage.setItem(SEAT_KEY, JSON.stringify(seat));
+}
+
+function clearSeat() {
+  sessionStorage.removeItem(SEAT_KEY);
+}
 
 function App() {
   const [currentView, setCurrentView] = useState('login');
@@ -28,7 +47,25 @@ function App() {
   // Vérifier si un utilisateur est déjà connecté au chargement
   useEffect(() => {
     const savedUsername = localStorage.getItem('animeQuizUsername');
-    
+    const seat = readSeat();
+
+    if (seat?.username && seat.id) {
+      setUsername(seat.username);
+      setIsLoggedIn(true);
+      setPlayMode(seat.mode === 'quiz' ? 'quiz' : 'music');
+      setCurrentView('rejoin');
+      const join = () => {
+        if (seat.mode === 'quiz') {
+          socket.emit('join-quiz-lobby', { username: seat.username, quizId: seat.id });
+        } else {
+          socket.emit('join-lobby', { username: seat.username, roomId: seat.id });
+        }
+      };
+      if (socket.connected) join();
+      else socket.once('connect', join);
+      return;
+    }
+
     if (savedUsername) {
       setUsername(savedUsername);
       setIsLoggedIn(true);
@@ -36,28 +73,20 @@ function App() {
     }
   }, []);
 
-  // Gérer la fermeture/rafraîchissement de la page
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (player && lobby) {
-        // Émettre un événement pour quitter le lobby proprement
-        socket.emit('leave-lobby');
-      }
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [player, lobby]);
-
   useEffect(() => {
     // Charger les salles disponibles
     fetchRooms();
 
     // Écouter les événements du socket
     socket.on('joined-lobby', (data) => {
+      const roomId = data.player?.roomId || data.lobby?.roomId;
+      if (roomId && data.player?.username) {
+        saveSeat({
+          mode: data.lobby?.mode === 'quiz' ? 'quiz' : 'music',
+          id: roomId,
+          username: data.player.username
+        });
+      }
       setLobby(data.lobby);
       setPlayer(data.player);
       setCurrentView('lobby');
@@ -329,7 +358,9 @@ function App() {
     });
 
     socket.on('join-error', (data) => {
+      clearSeat();
       setError(data.message);
+      setCurrentView((view) => (view === 'rejoin' ? 'modes' : view));
     });
 
     socket.on('start-error', (data) => {
@@ -420,6 +451,7 @@ function App() {
       socket.emit('leave-lobby');
     }
     
+    clearSeat();
     localStorage.removeItem('animeQuizUsername');
     setUsername('');
     setIsLoggedIn(false);
@@ -494,11 +526,11 @@ function App() {
   };
 
   const resetGame = () => {
-    // Émettre l'événement pour quitter le lobby proprement côté serveur
+    clearSeat();
     if (player && lobby) {
       socket.emit('leave-lobby');
     }
-    
+
     // Retourner au menu si l'utilisateur est connecté, sinon à la page de connexion
     if (isLoggedIn && username) {
       setCurrentView(playMode === 'quiz' ? 'quiz-menu' : 'menu');
@@ -519,6 +551,15 @@ function App() {
 
   const renderCurrentView = () => {
     switch (currentView) {
+      case 'rejoin':
+        return (
+          <div className="container">
+            <div className="card">
+              <h2 style={{ textAlign: 'center' }}>Reconnexion à la partie...</h2>
+            </div>
+          </div>
+        );
+
       case 'login':
         return (
           <div className="container">

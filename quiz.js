@@ -856,9 +856,22 @@ function syncQuizSocket(io, socket, lobby) {
   }
 }
 
+function isOnline(io, socketId) {
+  const live = socketId && io.sockets.sockets.get(socketId);
+  return Boolean(live && live.connected);
+}
+
+function clearDrop(person) {
+  if (person?.dropTimer) {
+    clearTimeout(person.dropTimer);
+    person.dropTimer = null;
+  }
+}
+
 function removeQuizPlayer(io, socket) {
   const person = quizPlayers.get(socket.id);
   if (!person) return;
+  clearDrop(person);
 
   const lobby = quizLobbies.get(person.roomId);
   if (lobby) {
@@ -1034,17 +1047,63 @@ function attachQuiz(app, io) {
         const knownHost = lobby.hostName === username;
         const existingPlayer = lobby.players.find((entry) => entry.username === username);
 
-        if (lobby.isGameStarted && !knownHost && !existingPlayer) {
-          socket.emit('join-error', { message: 'La partie a déjà commencé' });
-          return;
-        }
-        if (!lobby.isGameStarted && (existingPlayer || (knownHost && lobby.host))) {
-          socket.emit('join-error', { message: 'Ce pseudo est déjà pris' });
+        if (knownHost) {
+          const oldId = lobby.host?.id;
+          if (oldId && oldId !== socket.id && isOnline(io, oldId)) {
+            socket.emit('join-error', { message: 'Ce pseudo est déjà pris' });
+            return;
+          }
+          const previous = oldId && quizPlayers.get(oldId);
+          clearDrop(previous);
+          if (oldId) quizPlayers.delete(oldId);
+          lobby.hostName = username;
+          lobby.host = { id: socket.id, username };
+          const host = {
+            id: socket.id,
+            username,
+            roomId: quizId,
+            isHost: true,
+            score: 0,
+            answers: {},
+            answered: {}
+          };
+          quizPlayers.set(socket.id, host);
+          socket.join(quizId);
+          socket.emit('joined-lobby', {
+            lobby: publicLobby(lobby),
+            player: { ...host, role: 'host' }
+          });
+          io.to(quizId).emit('lobby-updated', publicLobby(lobby));
+          syncQuizSocket(io, socket, lobby);
           return;
         }
 
-        const becomeHost = !lobby.host && (knownHost || (!lobby.hostName && lobby.players.length === 0));
-        if (becomeHost || (knownHost && !lobby.host)) {
+        if (existingPlayer) {
+          if (existingPlayer.id !== socket.id && isOnline(io, existingPlayer.id)) {
+            socket.emit('join-error', { message: 'Ce pseudo est déjà pris' });
+            return;
+          }
+          clearDrop(existingPlayer);
+          quizPlayers.delete(existingPlayer.id);
+          existingPlayer.id = socket.id;
+          quizPlayers.set(socket.id, existingPlayer);
+          socket.join(quizId);
+          socket.emit('joined-lobby', {
+            lobby: publicLobby(lobby),
+            player: { ...existingPlayer, role: 'player' }
+          });
+          io.to(quizId).emit('lobby-updated', publicLobby(lobby));
+          if (lobby.isGameStarted) syncQuizSocket(io, socket, lobby);
+          return;
+        }
+
+        if (lobby.isGameStarted) {
+          socket.emit('join-error', { message: 'La partie a déjà commencé' });
+          return;
+        }
+
+        const becomeHost = !lobby.host && !lobby.hostName && lobby.players.length === 0;
+        if (becomeHost) {
           lobby.hostName = username;
           lobby.host = { id: socket.id, username };
           const host = {
@@ -1504,7 +1563,14 @@ function attachQuiz(app, io) {
     });
 
     socket.on('disconnect', () => {
-      removeQuizPlayer(io, socket);
+      const person = quizPlayers.get(socket.id);
+      if (!person || person.id !== socket.id) return;
+      clearDrop(person);
+      const socketId = socket.id;
+      person.dropTimer = setTimeout(() => {
+        const current = quizPlayers.get(socketId);
+        if (current && current.id === socketId) removeQuizPlayer(io, socket);
+      }, 120000);
     });
   });
 }

@@ -393,23 +393,6 @@ const ClassicGame = ({
         {isHost && (
           <HostJokerBoard players={gameData.jokerRoster || []} />
         )}
-        {!isHost && (
-          <PlayerJokerBar
-            joker={myJoker}
-            phase={phase}
-            questionIndex={gameData.questionIndex}
-            locked={locked}
-            players={players}
-            selfId={player.id}
-            silenced={Boolean(gameData.silenced)}
-            canRedo={canRedo}
-            onPlay={onPlayJoker}
-            onRedo={() => {
-              setLocked(false);
-              setRedoTick((value) => value + 1);
-            }}
-          />
-        )}
 
         {phase === 'answering' && question.timeLimit > 0 && (
           <div style={{ width: '100%', maxWidth: '640px', marginBottom: 16 }}>
@@ -493,11 +476,6 @@ const ClassicGame = ({
                   <div key={`${words}-${index}`} className="quiz-hint">{words}</div>
                 ))}
               </div>
-            )}
-            {!locked && !gameData.silenced && (
-              <button type="button" className="btn" onClick={requestHint} disabled={hintAsked}>
-                {hintAsked ? 'Indice demandé' : 'Indice (−1 pt)'}
-              </button>
             )}
             <div style={{ opacity: 0.75, marginTop: 8 }}>
               {gameData.answered || 0}/{gameData.totalPlayers || players.length} ont répondu
@@ -693,6 +671,31 @@ const ClassicGame = ({
           <button type="button" className="btn btn-success" onClick={onNext}>
             Question suivante
           </button>
+        )}
+
+        {!isHost && (
+          <div className="player-dock">
+            <PlayerJokerBar
+              joker={myJoker}
+              phase={phase}
+              questionIndex={gameData.questionIndex}
+              locked={locked}
+              players={players}
+              selfId={player.id}
+              silenced={Boolean(gameData.silenced)}
+              canRedo={canRedo}
+              onPlay={onPlayJoker}
+              onRedo={() => {
+                setLocked(false);
+                setRedoTick((value) => value + 1);
+              }}
+            />
+            {phase === 'answering' && !locked && !gameData.silenced && (
+              <button type="button" className="hint-chip" onClick={requestHint} disabled={hintAsked}>
+                {hintAsked ? 'Indice demandé' : 'Indice −1'}
+              </button>
+            )}
+          </div>
         )}
         </div>
       </div>
