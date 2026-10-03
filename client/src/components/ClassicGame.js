@@ -488,11 +488,28 @@ const ClassicGame = ({
             <h3 style={{ textAlign: 'center' }}>
               {phase === 'hold' ? 'Réponses closes' : 'Le chef distribue les points'}
             </h3>
-            <p style={{ textAlign: 'center', color: '#ffd700' }}>
-              {phase === 'hold'
-                ? 'La bonne réponse reste cachée, le temps que le chef prépare les points.'
-                : 'La bonne réponse s\'affichera quand les points seront validés.'}
-            </p>
+            {phase === 'hold' && gameData.answersVisible ? (
+              <>
+                <p style={{ textAlign: 'center', color: '#ffd700' }}>
+                  Tu as Vol. Les réponses sont là, la bonne reste cachée.
+                </p>
+                {players.map((entry) => (
+                  <div key={entry.id} className="quiz-score-row">
+                    <div className="quiz-answer">
+                      <strong>{entry.username}</strong>
+                      <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
+                      {renderPlacement(entry.answer)}
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <p style={{ textAlign: 'center', color: '#ffd700' }}>
+                {phase === 'hold'
+                  ? 'La bonne réponse reste cachée, le temps que le chef prépare les points.'
+                  : 'La bonne réponse s\'affichera quand les points seront validés.'}
+              </p>
+            )}
           </div>
         )}
 
@@ -512,7 +529,7 @@ const ClassicGame = ({
               Réponse prévue : <strong className="quiz-answer">{gameData.expectedAnswer || '—'}</strong>
               <div style={{ marginTop: 6, fontSize: '0.9rem', opacity: 0.85 }}>
                 {phase === 'hold'
-                  ? 'Les joueurs ne voient pas encore cette réponse. Tu peux laisser le temps de jouer Vol.'
+                  ? 'La réponse prévue reste cachée. Celui qui a Vol voit les réponses des autres.'
                   : `Rien n'est validé tout seul. Une bonne réponse vaut ${gameData.suggestedPoints || question.points || 1} pt.`}
               </div>
               {renderPlacement(null, true)}

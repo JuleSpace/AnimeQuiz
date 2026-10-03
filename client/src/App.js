@@ -238,6 +238,7 @@ function App() {
           questionIndex: data.questionIndex,
           hostId: data.hostId || prev.hostId,
           players: data.players,
+          answersVisible: Boolean(data.answersVisible),
           expectedAnswer: data.full ? (data.expectedAnswer || '') : '',
           hostAnswer: data.full ? (data.expectedAnswer || '') : '',
           answerImageUrl: data.full ? (data.answerImageUrl || '') : '',
@@ -277,6 +278,7 @@ function App() {
         prev ? {
           ...prev,
           phase: 'correction',
+          answersVisible: false,
           hostId: data.hostId,
           layoutMode: data.layoutMode || prev.layoutMode || 'timeline',
           suggestedPoints: data.suggestedPoints || prev.suggestedPoints || 1,

@@ -606,13 +606,19 @@ function privateAnswerFields(lobby) {
   };
 }
 
-function holdPayload(lobby, full) {
+function holdsVol(player) {
+  return Boolean(player && !player.isHost && player.joker && player.joker.card === 'vol');
+}
+
+function holdPayload(lobby, full, withAnswers) {
   const index = lobby.currentQuestion;
+  const showAnswers = Boolean(full || withAnswers);
   return {
     questionIndex: index,
     hostId: lobby.host?.id || null,
     full: Boolean(full),
-    players: answeredPlayers(lobby, index, full),
+    answersVisible: Boolean(withAnswers) && !full,
+    players: answeredPlayers(lobby, index, showAnswers),
     ...(full ? privateAnswerFields(lobby) : {})
   };
 }
@@ -726,7 +732,7 @@ function emitHold(io, lobby) {
   lobby.phase = 'hold';
   lobby.io = io;
   lobby.players.forEach((player) => {
-    io.to(player.id).emit('quiz-hold', holdPayload(lobby, false));
+    io.to(player.id).emit('quiz-hold', holdPayload(lobby, false, holdsVol(player)));
   });
   if (lobby.host?.id) {
     io.to(lobby.host.id).emit('quiz-hold', holdPayload(lobby, true));
@@ -837,7 +843,8 @@ function syncQuizSocket(io, socket, lobby) {
   }
 
   if (lobby.phase === 'hold') {
-    socket.emit('quiz-hold', holdPayload(lobby, isHostSocket(lobby, socket.id)));
+    const hostView = isHostSocket(lobby, socket.id);
+    socket.emit('quiz-hold', holdPayload(lobby, hostView, !hostView && holdsVol(person)));
   }
 
   if (lobby.phase === 'correction') {
@@ -1456,6 +1463,15 @@ function attachQuiz(app, io) {
       if (card === 'vol') {
         if (lobby.phase !== 'hold') {
           socket.emit('quiz-error', { message: 'Vol se joue juste avant les points du chef' });
+          return;
+        }
+      } else if (card === 'seconde') {
+        if (lobby.phase !== 'answering') {
+          socket.emit('quiz-error', { message: 'La question est déjà fermée' });
+          return;
+        }
+        if (player.silencedOn === index) {
+          socket.emit('quiz-error', { message: 'Tu es réduit au silence' });
           return;
         }
       } else if (lobby.phase !== 'answering' || player.answered[index]) {

@@ -17,7 +17,7 @@ export const JOKERS = {
   },
   seconde: {
     name: 'Seconde main',
-    rule: 'Modifie ta réponse une fois.',
+    rule: 'Change ta réponse une fois, tant que la question est ouverte.',
     accent: '#4dabf7',
     ink: '#0b4f8a',
     paper: '#d0ebff'
@@ -45,70 +45,113 @@ export const JOKERS = {
   },
   vol: {
     name: 'Vol',
-    rule: 'Prends les points d\'un joueur.',
+    rule: 'Vois les réponses, puis prends les points d\'un joueur.',
     accent: '#ff8787',
     ink: '#8a1c1c',
     paper: '#ffc9c9'
   }
 };
 
+const face = 'Impact, Haettenschweiler, Arial Black, sans-serif';
+
+const Lines = () => (
+  <g fill="none" stroke="#f4f6ff" strokeWidth="5" opacity="0.2" strokeLinecap="square">
+    <path d="M6 18h62" />
+    <path d="M6 34h40" />
+    <path d="M98 96h56" />
+    <path d="M118 110h36" />
+  </g>
+);
+
 const Mark = ({ cardId }) => {
-  const common = { viewBox: '0 0 80 64', 'aria-hidden': 'true' };
+  const common = { viewBox: '0 0 160 120', 'aria-hidden': 'true' };
   if (cardId === 'double') {
     return (
       <svg {...common}>
-        <text x="40" y="46" textAnchor="middle" fontSize="40" fontWeight="800" fill="#1a1030">×2</text>
+        <Lines />
+        <text x="34" y="86" fontSize="68" fontFamily={face} fill="#f4f6ff" stroke="#111318" strokeWidth="7" paintOrder="stroke">3</text>
+        <g transform="rotate(-12 108 58)">
+          <rect x="64" y="30" width="88" height="56" fill="#ffe14a" stroke="#111318" strokeWidth="5" />
+          <text x="108" y="72" textAnchor="middle" fontSize="42" fontFamily={face} fill="#111318">×2</text>
+        </g>
+        <text x="132" y="114" textAnchor="middle" fontSize="28" fontFamily={face} fill="#ffe14a" stroke="#111318" strokeWidth="4" paintOrder="stroke">6</text>
       </svg>
     );
   }
   if (cardId === 'filet') {
     return (
       <svg {...common}>
-        <text x="40" y="24" textAnchor="middle" fontSize="18" fontWeight="800" fill="#1a1030">0</text>
-        <path d="M14 34h52" stroke="#1a1030" strokeWidth="3" />
-        <path d="M18 34c6 16 38 16 44 0" fill="none" stroke="#1a1030" strokeWidth="3" />
-        <path d="M28 34c3 8 21 8 24 0" fill="none" stroke="#1a1030" strokeWidth="3" />
+        <Lines />
+        <text x="80" y="34" textAnchor="middle" fontSize="30" fontFamily={face} fill="#f4f6ff" stroke="#111318" strokeWidth="4" paintOrder="stroke">0</text>
+        <path d="M16 46h128" stroke="#111318" strokeWidth="5" />
+        <path d="M22 46c12 52 104 52 116 0" fill="none" stroke="#39f0a0" strokeWidth="6" />
+        <path d="M42 46c8 32 68 32 76 0" fill="none" stroke="#111318" strokeWidth="4" />
+        <path d="M62 46c4 16 32 16 36 0" fill="none" stroke="#39f0a0" strokeWidth="4" />
+        <text x="80" y="96" textAnchor="middle" fontSize="36" fontFamily={face} fill="#111318" stroke="#39f0a0" strokeWidth="7" paintOrder="stroke">½</text>
       </svg>
     );
   }
   if (cardId === 'seconde') {
     return (
       <svg {...common}>
-        <rect x="18" y="16" width="28" height="18" rx="3" fill="#fff" stroke="#1a1030" strokeWidth="3" />
-        <path d="M50 30h14M58 24l8 6-8 6" fill="none" stroke="#1a1030" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        <rect x="34" y="32" width="28" height="18" rx="3" fill="#d0ebff" stroke="#1a1030" strokeWidth="3" />
+        <Lines />
+        <rect x="8" y="22" width="58" height="42" fill="#f4f6ff" stroke="#111318" strokeWidth="5" />
+        <path d="M16 43h42" stroke="#ff4d6a" strokeWidth="6" />
+        <path d="M72 44h16" stroke="#111318" strokeWidth="6" />
+        <path d="M84 32l16 12-16 12z" fill="#3ecbff" stroke="#111318" strokeWidth="4" />
+        <rect x="104" y="48" width="48" height="46" fill="#3ecbff" stroke="#111318" strokeWidth="5" />
+        <path d="M114 64h28M114 76h18" stroke="#111318" strokeWidth="5" strokeLinecap="square" />
       </svg>
     );
   }
   if (cardId === 'copie') {
     return (
       <svg {...common}>
-        <rect x="10" y="14" width="26" height="22" rx="4" fill="#fff" stroke="#1a1030" strokeWidth="3" />
-        <path d="M40 25h8M44 21l6 4-6 4" fill="none" stroke="#1a1030" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        <rect x="48" y="28" width="26" height="22" rx="4" fill="#e5dbff" stroke="#1a1030" strokeWidth="3" />
+        <Lines />
+        <rect x="8" y="18" width="50" height="70" fill="#f4f6ff" stroke="#111318" strokeWidth="5" />
+        <path d="M18 38h30M18 52h30M18 66h20" stroke="#111318" strokeWidth="5" strokeLinecap="square" />
+        <path d="M64 52h14" stroke="#111318" strokeWidth="6" />
+        <path d="M74 40l16 12-16 12z" fill="#d7b4ff" stroke="#111318" strokeWidth="4" />
+        <rect x="96" y="32" width="54" height="70" fill="#d7b4ff" stroke="#111318" strokeWidth="5" />
+        <path d="M106 52h32M106 66h32M106 80h22" stroke="#3a1868" strokeWidth="5" strokeLinecap="square" />
       </svg>
     );
   }
   if (cardId === 'indice') {
     return (
       <svg {...common}>
-        <text x="40" y="46" textAnchor="middle" fontSize="42" fontWeight="800" fill="#1a1030">?</text>
+        <Lines />
+        <g transform="rotate(-10 50 52)">
+          <path d="M12 24h78l-10 20 10 18H12z" fill="#ffe14a" stroke="#111318" strokeWidth="5" />
+          <text x="46" y="58" textAnchor="middle" fontSize="26" fontFamily={face} fill="#111318">−1</text>
+          <path d="M20 62h52" stroke="#ff4d6a" strokeWidth="5" />
+        </g>
+        <text x="118" y="90" textAnchor="middle" fontSize="62" fontFamily={face} fill="#ffe14a" stroke="#111318" strokeWidth="6" paintOrder="stroke">?</text>
       </svg>
     );
   }
   if (cardId === 'silence') {
     return (
       <svg {...common}>
-        <path d="M16 40c0-12 10-20 24-20s24 8 24 20v4H16z" fill="#fff" stroke="#1a1030" strokeWidth="3" />
-        <path d="M22 18l36 28" stroke="#1a1030" strokeWidth="4" strokeLinecap="round" />
+        <Lines />
+        <path d="M16 26h108c10 0 16 8 16 16v6c0 22-28 40-62 40S16 74 16 52V26z" fill="#f4f6ff" stroke="#111318" strokeWidth="5" />
+        <path d="M78 22v82" stroke="#111318" strokeWidth="5" />
+        {[34, 48, 62, 76].map((y) => (
+          <path key={y} d={`M68 ${y}h20`} stroke="#111318" strokeWidth="4" />
+        ))}
+        <rect x="64" y="88" width="28" height="16" fill="#8eb6ff" stroke="#111318" strokeWidth="4" />
       </svg>
     );
   }
   return (
     <svg {...common}>
-      <circle cx="24" cy="32" r="10" fill="#fff" stroke="#1a1030" strokeWidth="3" />
-      <path d="M38 32h16M48 26l8 6-8 6" fill="none" stroke="#1a1030" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="62" cy="32" r="10" fill="#ffd0d0" stroke="#1a1030" strokeWidth="3" />
+      <Lines />
+      <circle cx="34" cy="62" r="24" fill="#f4f6ff" stroke="#111318" strokeWidth="5" />
+      <text x="34" y="72" textAnchor="middle" fontSize="28" fontFamily={face} fill="#111318">1</text>
+      <path d="M62 62h26" stroke="#111318" strokeWidth="6" strokeDasharray="7 6" />
+      <path d="M84 48l18 14-18 14z" fill="#ff5d6c" stroke="#111318" strokeWidth="4" />
+      <circle cx="126" cy="62" r="28" fill="#ff5d6c" stroke="#111318" strokeWidth="5" />
+      <text x="126" y="74" textAnchor="middle" fontSize="32" fontFamily={face} fill="#111318">1</text>
     </svg>
   );
 };
@@ -134,7 +177,7 @@ export const JokerCard = ({ cardId, used = false, size = 'full' }) => {
 
 const CardBack = () => (
   <div className="card-back" aria-hidden="true">
-    <div className="card-back-diamond" />
+    <span>J</span>
   </div>
 );
 
@@ -200,6 +243,31 @@ export const BoosterOpening = ({ cardId }) => {
   );
 };
 
+const JOKER_DRAW = Object.keys(JOKERS);
+
+export const BoosterPlayground = () => {
+  const [pack, setPack] = useState(() => ({
+    id: 1,
+    card: JOKER_DRAW[Math.floor(Math.random() * JOKER_DRAW.length)]
+  }));
+
+  const again = () => {
+    setPack((current) => ({
+      id: current.id + 1,
+      card: JOKER_DRAW[Math.floor(Math.random() * JOKER_DRAW.length)]
+    }));
+  };
+
+  return (
+    <div className="booster-play">
+      <div style={{ textAlign: 'center' }}>
+        <button type="button" className="btn" onClick={again}>Encore un booster</button>
+      </div>
+      <BoosterOpening key={pack.id} cardId={pack.card} />
+    </div>
+  );
+};
+
 export const HostJokerBoard = ({ players }) => {
   const rows = players || [];
 
@@ -258,7 +326,9 @@ export const PlayerJokerBar = ({
   const canPlay = !joker.used && (
     joker.card === 'vol'
       ? phase === 'hold'
-      : phase === 'answering' && !locked && !silenced
+      : joker.card === 'seconde'
+        ? phase === 'answering' && !silenced
+        : phase === 'answering' && !locked && !silenced
   );
 
   const play = (targetId) => {
@@ -269,8 +339,9 @@ export const PlayerJokerBar = ({
   let hint = card.rule;
   if (joker.used) hint = joker.note || 'Jouée';
   else if (silenced && joker.card !== 'vol') hint = 'Tu es réduit au silence.';
-  else if (joker.card === 'vol' && phase === 'answering') hint = 'Après les réponses, avant les points.';
+  else if (joker.card === 'vol' && phase === 'answering') hint = 'Après les réponses, tu verras les copies.';
   else if (joker.card === 'vol' && phase !== 'hold') hint = 'Trop tard pour cette question.';
+  else if (joker.card === 'seconde' && phase === 'answering' && locked) hint = 'Tu peux encore changer ta réponse.';
   else if (joker.card !== 'vol' && phase === 'answering' && locked) hint = 'Il fallait la jouer avant de répondre.';
   else if (joker.card !== 'vol' && phase !== 'answering') hint = 'Trop tard pour cette question.';
 

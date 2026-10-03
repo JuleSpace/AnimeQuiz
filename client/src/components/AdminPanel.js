@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import QuizAdmin from './QuizAdmin';
+import QuizRules from './QuizRules';
+import { BoosterPlayground } from './JokerCards';
 
 const AdminPanel = ({ onBack, onRoomUpdate }) => {
   const [rooms, setRooms] = useState([]);
@@ -150,8 +152,46 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
       <button type="button" className={`btn ${section === 'quiz' ? 'tab-active' : ''}`} onClick={() => setSection('quiz')}>
         📝 Quiz
       </button>
+      <button type="button" className={`btn ${section === 'rules' ? 'tab-active' : ''}`} onClick={() => setSection('rules')}>
+        Règles
+      </button>
+      <button type="button" className={`btn ${section === 'boosters' ? 'tab-active' : ''}`} onClick={() => setSection('boosters')}>
+        Boosters
+      </button>
     </div>
   );
+
+  if (section === 'boosters') {
+    return (
+      <div className="container">
+        <div className="admin-panel">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <button onClick={onBack} className="btn btn-danger">← Retour</button>
+            <h2 style={{ margin: 0 }}>🛠️ Panneau Administrateur</h2>
+            <div style={{ width: 110 }} />
+          </div>
+          {sectionTabs}
+          <BoosterPlayground />
+        </div>
+      </div>
+    );
+  }
+
+  if (section === 'rules') {
+    return (
+      <div className="container">
+        <div className="admin-panel">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <button onClick={onBack} className="btn btn-danger">← Retour</button>
+            <h2 style={{ margin: 0 }}>🛠️ Panneau Administrateur</h2>
+            <div style={{ width: 110 }} />
+          </div>
+          {sectionTabs}
+          <QuizRules />
+        </div>
+      </div>
+    );
+  }
 
   if (section === 'quiz') {
     return (
