@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import Icon from './ArcadeIcon';
 
 export const JOKERS = {
   double: {
@@ -261,7 +262,7 @@ export const BoosterPlayground = () => {
   return (
     <div className="booster-play">
       <div style={{ textAlign: 'center' }}>
-        <button type="button" className="btn" onClick={again}>Encore un booster</button>
+        <button type="button" className="btn" onClick={again}><Icon name="booster" />Encore un booster</button>
       </div>
       <BoosterOpening key={pack.id} cardId={pack.card} />
     </div>
@@ -352,7 +353,7 @@ export const PlayerJokerBar = ({
         {hint !== card.rule && <p>{hint}</p>}
         {canPlay && !needsTarget(joker.card) && (
           <button type="button" className="joker-chip" onClick={() => play(null)}>
-            Jouer
+            <Icon name="play" />Jouer
           </button>
         )}
         {canPlay && needsTarget(joker.card) && (
@@ -362,12 +363,12 @@ export const PlayerJokerBar = ({
             disabled={targets.length === 0}
             onClick={() => setPicking((open) => !open)}
           >
-            {targets.length === 0 ? 'Personne à viser' : (picking ? 'Annuler' : 'Choisir')}
+            {targets.length === 0 ? 'Personne à viser' : (picking ? <><Icon name="cross" />Annuler</> : <><Icon name="search" />Choisir</>)}
           </button>
         )}
         {canRedo && (
           <button type="button" className="joker-chip joker-chip-alt" onClick={onRedo}>
-            Modifier
+            <Icon name="pencil" />Modifier
           </button>
         )}
         {onThisQuestion && joker.targetName && (

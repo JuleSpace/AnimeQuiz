@@ -5,6 +5,7 @@ import Lobby from './components/Lobby';
 import Game from './components/Game';
 import ClassicGame from './components/ClassicGame';
 import AdminPanel from './components/AdminPanel';
+import Icon from './components/ArcadeIcon';
 import './index.css';
 
 const socket = io(process.env.REACT_APP_SERVER_URL || window.location.origin);
@@ -418,7 +419,7 @@ function App() {
     }
   };
 
-  const handleLogin = (mode) => {
+  const handleLogin = () => {
     if (!username.trim()) {
       setError('Veuillez entrer un pseudo');
       return;
@@ -428,8 +429,7 @@ function App() {
     localStorage.setItem('animeQuizUsername', cleanName);
     setUsername(cleanName);
     setIsLoggedIn(true);
-    setPlayMode(mode);
-    setCurrentView(mode === 'quiz' ? 'quiz-menu' : 'menu');
+    setCurrentView('modes');
     setError('');
     setSuccess(`Bienvenue ${cleanName} !`);
     setTimeout(() => setSuccess(''), 3000);
@@ -461,7 +461,7 @@ function App() {
     setLobby(null);
     setPlayer(null);
     setGameData(null);
-    setSuccess('Déconnexion réussie ! 👋');
+    setSuccess('Déconnexion réussie !');
     setTimeout(() => setSuccess(''), 3000);
   };
 
@@ -573,7 +573,7 @@ function App() {
                   style={{ width: '60px', height: '60px', borderRadius: '10px' }}
                 />
                 <h1 style={{ fontSize: '2.5rem', margin: 0 }}>
-                  Music Quiz
+                  Bully's Lair
                 </h1>
                 <img 
                   src="https://media.tenor.com/-oEgnxYtci4AAAAj/kirby-dancing-bop.gif" 
@@ -596,7 +596,7 @@ function App() {
 
               <div style={{ maxWidth: '400px', margin: '0 auto', padding: '30px' }}>
                 <h2 style={{ textAlign: 'center', marginBottom: '30px', color: 'white' }}>
-                  🎮 Connexion
+                  <Icon name="pad" tone="mark" />Connexion
                 </h2>
                 
                 <p style={{ textAlign: 'center', marginBottom: '20px', opacity: 0.8 }}>
@@ -609,7 +609,7 @@ function App() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') setError('Choisis Quiz ou Music Quiz');
+                    if (e.key === 'Enter') handleLogin();
                   }}
                   className="input"
                   style={{ 
@@ -621,21 +621,12 @@ function App() {
                 />
 
                 <button
-                  onClick={() => handleLogin('quiz')}
-                  className="button mode-card"
-                  style={{ width: '100%', marginBottom: '12px' }}
+                  type="button"
+                  onClick={handleLogin}
+                  className="btn btn-success"
+                  style={{ width: '100%', margin: 0 }}
                 >
-                  <span className="mode-card-title">📝 Quiz</span>
-                  <span>Questions, images, vidéos et blind tests</span>
-                </button>
-
-                <button
-                  onClick={() => handleLogin('music')}
-                  className="button mode-card"
-                  style={{ width: '100%' }}
-                >
-                  <span className="mode-card-title">🎵 Music Quiz</span>
-                  <span>Blind test musical, corrigé par le chef</span>
+                  <Icon name="go" />Entrer
                 </button>
 
                 <div style={{ 
@@ -644,29 +635,8 @@ function App() {
                   borderTop: '1px solid rgba(255, 255, 255, 0.1)',
                   textAlign: 'center'
                 }}>
-                  <button 
-                    onClick={() => setCurrentView('admin-login')}
-                    style={{
-                      background: 'linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%)',
-                      color: 'white',
-                      border: 'none',
-                      padding: '10px 20px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      fontWeight: 'bold',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = '0 4px 12px rgba(255, 107, 107, 0.4)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  >
-                    🔐 Connexion Admin
+                  <button type="button" className="btn btn-danger" onClick={() => setCurrentView('admin-login')}>
+                    <Icon name="lock" />Connexion Admin
                   </button>
                 </div>
               </div>
@@ -684,11 +654,11 @@ function App() {
               </p>
               <div className="mode-grid">
                 <button type="button" className="mode-card" onClick={() => chooseMode('quiz')}>
-                  <span className="mode-card-title">📝 Quiz</span>
+                  <span className="mode-card-title"><Icon name="quiz" tone="mark" />Quiz</span>
                   <span>Questions à choix, vrai/faux, texte libre, images, vidéos, et quelques blind tests.</span>
                 </button>
                 <button type="button" className="mode-card" onClick={() => chooseMode('music')}>
-                  <span className="mode-card-title">🎵 Music Quiz</span>
+                  <span className="mode-card-title"><Icon name="music" tone="cyan" />Music Quiz</span>
                   <span>Extraits masqués. Tout le monde écrit, le chef corrige.</span>
                 </button>
               </div>
@@ -700,17 +670,20 @@ function App() {
         return (
           <div className="container">
             <div className="card">
-              <h1 style={{ textAlign: 'center', marginBottom: '8px' }}>Quiz</h1>
+              <h1 style={{ textAlign: 'center', marginBottom: '8px' }}><Icon name="quiz" tone="mark" />Quiz</h1>
               <p style={{ textAlign: 'center', marginBottom: '16px', opacity: 0.85 }}>
                 Choisis un quiz, puis attends que le chef lance la partie.
               </p>
               <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 <button type="button" className="btn" onClick={() => setCurrentView('modes')}>
-                  ← Changer de mode
+                  <Icon name="back" />Changer de mode
                 </button>
               </div>
               {quizzes.length === 0 ? (
-                <p style={{ textAlign: 'center', opacity: 0.8 }}>Aucun quiz disponible pour le moment.</p>
+                <div style={{ textAlign: 'center', opacity: 0.8 }}>
+                  <Icon name="quiz" tone="hero" />
+                  <p>Aucun quiz disponible pour le moment.</p>
+                </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
                   {quizzes.map((quiz) => (
@@ -721,10 +694,11 @@ function App() {
                       onClick={() => quiz.questionCount && handleJoinQuiz(quiz._id)}
                       style={{
                         textAlign: 'left',
-                        background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2))',
+                        background: '#14141c',
                         color: 'white',
-                        border: '2px solid rgba(255,255,255,0.12)',
-                        borderRadius: '18px',
+                        border: '3px solid #ffe14a',
+                        borderRadius: '4px',
+                        boxShadow: '5px 5px 0 #3ecbff',
                         padding: '22px',
                         cursor: quiz.questionCount ? 'pointer' : 'not-allowed',
                         opacity: quiz.questionCount ? 1 : 0.55,
@@ -781,54 +755,34 @@ function App() {
                   alignItems: 'center',
                   marginBottom: '20px',
                   padding: '15px',
-                  background: 'rgba(102, 126, 234, 0.1)',
+                  background: '#14141c',
                   borderRadius: '10px',
-                  border: '1px solid rgba(102, 126, 234, 0.3)'
+                  border: '3px solid #3ecbff'
                 }}>
                   <div>
                     <span style={{ opacity: 0.7, fontSize: '0.9rem' }}>Connecté en tant que :</span>
                     <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white', marginTop: '5px' }}>
-                      🎮 {username}
+                      <Icon name="pad" tone="cyan" />{username}
                     </div>
                   </div>
-                  <button 
-                    onClick={handleLogout}
-                    style={{
-                      background: 'linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%)',
-                      color: 'white',
-                      border: 'none',
-                      padding: '10px 20px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      fontWeight: 'bold',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = '0 4px 12px rgba(255, 107, 107, 0.4)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  >
-                    🚪 Déconnexion
+                  <button type="button" className="btn btn-danger" onClick={handleLogout}>
+                    <Icon name="exit" />Déconnexion
                   </button>
                 </div>
                 
-                <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>📋 Quiz musicaux :</h3>
+                <h3 style={{ textAlign: 'center', marginBottom: '20px' }}><Icon name="list" tone="mark" />Quiz musicaux</h3>
                 
                 <div style={{ textAlign: 'center', marginBottom: '16px' }}>
                   <button type="button" className="btn" onClick={() => setCurrentView('modes')}>
-                    ← Changer de mode
+                    <Icon name="back" />Changer de mode
                   </button>
                 </div>
                 
                 {rooms.length === 0 ? (
-                  <p style={{ textAlign: 'center', opacity: 0.8, padding: '20px' }}>
-                    Aucun quiz disponible pour le moment
-                  </p>
+                  <div style={{ textAlign: 'center', opacity: 0.8, padding: '20px' }}>
+                    <Icon name="music" tone="hero" />
+                    <p>Aucun quiz disponible pour le moment</p>
+                  </div>
                 ) : (
                   <div style={{ 
                     display: 'grid', 
@@ -840,7 +794,7 @@ function App() {
                       <div 
                         key={room._id} 
                         style={{ 
-                          background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2))',
+                          background: '#14141c',
                           padding: '25px', 
                           borderRadius: '20px',
                           border: '2px solid rgba(255, 255, 255, 0.1)',
@@ -852,8 +806,8 @@ function App() {
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.transform = 'translateY(-5px)';
-                          e.currentTarget.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.4)';
-                          e.currentTarget.style.borderColor = 'rgba(102, 126, 234, 0.6)';
+                          e.currentTarget.style.boxShadow = '6px 6px 0 #ffe14a';
+                          e.currentTarget.style.borderColor = '#ffe14a';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.transform = 'translateY(0)';
@@ -874,7 +828,7 @@ function App() {
                           fontSize: '0.8rem',
                           fontWeight: 'bold'
                         }}>
-                          🎵 {room.musicLinks.length}
+                          <Icon name="music" bare /> {room.musicLinks.length}
                         </div>
 
                         <h4 style={{ 
@@ -910,7 +864,7 @@ function App() {
                             color: '#51cf66',
                             fontWeight: 'bold'
                           }}>
-                            ▶️ Cliquer pour rejoindre
+                            <Icon name="play" tone="cyan" />Cliquer pour rejoindre
                           </span>
                         </div>
                       </div>
@@ -968,7 +922,7 @@ function App() {
           <div className="container">
             <div className="card">
               <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>
-                🏆 Résultats Finaux 🏆
+                <Icon name="trophy" tone="mark" />Résultats finaux
               </h2>
               <div className="results-container">
                 <div className="score-board">
@@ -977,10 +931,10 @@ function App() {
                     .map((result, index) => (
                       <div key={result.username} className={`score-card ${index === 0 ? 'winner' : ''}`}>
                         <h3>{result.username}</h3>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: index === 0 ? '#ffd700' : 'white' }}>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: index === 0 ? '#111318' : 'white' }}>
                           {result.totalScore} pts
                         </div>
-                        {index === 0 && <div style={{ color: '#ffd700' }}>🏆 Gagnant !</div>}
+                        {index === 0 && <div><Icon name="crown" />Gagnant</div>}
                       </div>
                     ))}
                 </div>
@@ -997,7 +951,7 @@ function App() {
           <div className="container">
             <div className="card">
               <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>
-                🔐 Connexion Administrateur
+                <Icon name="lock" tone="mark" />Connexion administrateur
               </h2>
               
               <div style={{ maxWidth: '400px', margin: '0 auto' }}>
@@ -1062,7 +1016,7 @@ function App() {
   };
 
   return (
-    <div className="App">
+    <div className={isLoggedIn && username ? 'App has-logout' : 'App'}>
       {/* Bouton de déconnexion global */}
       {isLoggedIn && username && (
         <div style={{
@@ -1071,33 +1025,8 @@ function App() {
           right: '20px',
           zIndex: 10000
         }}>
-          <button
-            onClick={handleLogout}
-            style={{
-              background: 'linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%)',
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '25px',
-              cursor: 'pointer',
-              fontSize: '0.9rem',
-              fontWeight: 'bold',
-              boxShadow: '0 4px 15px rgba(255, 107, 107, 0.4)',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-2px)';
-              e.target.style.boxShadow = '0 6px 20px rgba(255, 107, 107, 0.6)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0)';
-              e.target.style.boxShadow = '0 4px 15px rgba(255, 107, 107, 0.4)';
-            }}
-          >
-            🚪 Déconnexion ({username})
+          <button type="button" className="btn btn-danger" onClick={handleLogout} style={{ margin: 0 }}>
+            <Icon name="exit" />Déconnexion ({username})
           </button>
         </div>
       )}

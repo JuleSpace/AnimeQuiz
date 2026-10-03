@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import BlindMusicPlayer from './BlindMusicPlayer';
+import Icon from './ArcadeIcon';
 
 const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCorrections }) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -84,7 +85,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
               textAlign: 'center'
             }}>
               <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#ffd700', marginBottom: '10px' }}>
-                ✅ Réponse correcte :
+                <Icon name="check" tone="mark" />Réponse correcte
               </div>
               <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
                 {getMusicAnswer(gameData.musicLinks[currentQuestion]) || 'Aucune réponse définie'}
@@ -111,7 +112,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
                 onKeyPress={(e) => e.key === 'Enter' && handleSubmitAnswer()}
               />
               <button onClick={handleSubmitAnswer} className="btn btn-success">
-                Envoyer la réponse
+                <Icon name="go" />Envoyer la réponse
               </button>
             </div>
           )}
@@ -119,7 +120,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
           {hasAnswered && !isCorrectionPhase && (
             <div style={{ textAlign: 'center', padding: '20px' }}>
               <div style={{ fontSize: '1.2rem', marginBottom: '10px' }}>
-                ✅ Réponse envoyée !
+                <Icon name="check" tone="cyan" />Réponse envoyée
               </div>
               <div style={{ opacity: 0.8 }}>
                 En attente des autres joueurs...
@@ -130,7 +131,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
           {isCorrectionPhase && (
             <div className="correction-section">
               <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>
-                🔍 Phase de correction
+                <Icon name="search" tone="mark" />Phase de correction
               </h3>
               
               {/* Affichage des réponses pour tous les joueurs */}
@@ -163,7 +164,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
                         }}
                         disabled={!(gameData.players[0] && gameData.players[0].id === player.id)}
                       >
-                        ✅ Correct
+                        <Icon name="check" />Correct
                       </button>
                       <button
                         onClick={gameData.players[0] && gameData.players[0].id === player.id ? () => toggleCorrection(p.id, false) : undefined}
@@ -177,7 +178,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
                         }}
                         disabled={!(gameData.players[0] && gameData.players[0].id === player.id)}
                       >
-                        ❌ Incorrect
+                        <Icon name="cross" />Incorrect
                       </button>
                       <button
                         onClick={gameData.players[0] && gameData.players[0].id === player.id ? () => toggleCorrection(p.id, 'bonus') : undefined}
@@ -193,7 +194,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
                         }}
                         disabled={!(gameData.players[0] && gameData.players[0].id === player.id)}
                       >
-                        ⭐ +1 Bonus
+                        <Icon name="star" />+1 Bonus
                       </button>
                     </div>
                   </div>
@@ -209,7 +210,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
                     className="btn btn-success"
                     disabled={Object.keys(corrections).length === 0}
                   >
-                    Finaliser les corrections
+                    <Icon name="check" />Finaliser les corrections
                   </button>
                 </div>
               )}
@@ -218,7 +219,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
               {gameData.players && (!gameData.players[0] || gameData.players[0].id !== player.id) && (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
                   <div style={{ fontSize: '1.2rem', marginBottom: '10px', color: '#ffd700' }}>
-                    ⏳ En attente du chef...
+                    <Icon name="clock" tone="mark" />En attente du chef...
                   </div>
                   <div style={{ opacity: 0.8 }}>
                     Seul le chef peut corriger les réponses

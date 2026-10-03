@@ -3,6 +3,7 @@ import BlindMusicPlayer from './BlindMusicPlayer';
 import { OrderAnswer, OrderReview, PlaceAnswer, PlaceBoard } from './InteractQuestion';
 import { extractYouTubeId } from '../utils/media';
 import { BoosterOpening, HostJokerBoard, PlayerJokerBar } from './JokerCards';
+import Icon from './ArcadeIcon';
 
 const CHOICE_COLORS = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#8e44ad', '#e67e22'];
 const CHOICE_SHAPES = ['▲', '◆', '●', '■', '★', '✚'];
@@ -75,7 +76,7 @@ const HintComposer = ({ request, onSend }) => {
           onChange={(event) => setWords(event.target.value)}
         />
         <button type="submit" className="btn btn-success" disabled={!words.trim()}>
-          Envoyer
+          <Icon name="go" />Envoyer
         </button>
       </div>
     </form>
@@ -145,7 +146,7 @@ const ClassicGame = ({
     return (
       <div className="container">
         <div className="card booster-stage">
-          <h2 style={{ textAlign: 'center' }}>Booster</h2>
+          <h2 style={{ textAlign: 'center' }}><Icon name="booster" tone="mark" />Booster</h2>
           <p style={{ textAlign: 'center', opacity: 0.85 }}>
             Question {(gameData.questionIndex || 0) + 1} / {gameData.totalQuestions}
             {gameData.booster ? ` · joker pour les questions ${gameData.booster.validFrom} à ${gameData.booster.validTo}` : ''}
@@ -155,7 +156,7 @@ const ClassicGame = ({
               <HostJokerBoard players={gameData.jokerRoster || []} />
               <div style={{ textAlign: 'center' }}>
                 <button type="button" className="btn btn-success" onClick={onStartQuestion}>
-                  Lancer la question
+                  <Icon name="go" />Lancer la question
                 </button>
               </div>
             </>
@@ -255,7 +256,7 @@ const ClassicGame = ({
               disabled={selected.length === 0}
               onClick={() => send([...selected].sort((a, b) => a - b))}
             >
-              Valider la sélection
+              <Icon name="check" />Valider la sélection
             </button>
           )}
         </div>
@@ -315,7 +316,7 @@ const ClassicGame = ({
           disabled={!textAnswer.trim()}
           onClick={() => send(textAnswer.trim())}
         >
-          Envoyer
+          <Icon name="go" />Envoyer
         </button>
       </div>
     );
@@ -457,7 +458,7 @@ const ClassicGame = ({
               <HintComposer key={request.id} request={request} onSend={onSendHint} />
             ))}
             <button type="button" className="btn" onClick={onForceClose}>
-              Clore les réponses
+              <Icon name="lock" />Clore les réponses
             </button>
           </div>
         )}
@@ -596,11 +597,11 @@ const ClassicGame = ({
             <div style={{ textAlign: 'center' }}>
               {phase === 'hold' ? (
                 <button type="button" className="btn btn-success" onClick={onBeginScoring}>
-                  Distribuer les points
+                  <Icon name="coin" />Distribuer les points
                 </button>
               ) : (
                 <button type="button" className="btn btn-success" onClick={() => onSubmitCorrection(corrections)}>
-                  Valider les points
+                  <Icon name="check" />Valider les points
                 </button>
               )}
             </div>
@@ -675,10 +676,10 @@ const ClassicGame = ({
             <div style={{ textAlign: 'center', marginTop: 16 }}>
               {isHost ? (
                 <button type="button" className="btn btn-success" onClick={onNext}>
-                  {gameData.questionIndex + 1 >= gameData.totalQuestions ? 'Voir les résultats' : 'Question suivante'}
+                  {gameData.questionIndex + 1 >= gameData.totalQuestions ? <><Icon name="trophy" />Voir les résultats</> : <><Icon name="go" />Question suivante</>}
                 </button>
               ) : (
-                <p style={{ color: '#ffd700' }}>En attente du chef...</p>
+                <p style={{ color: '#ffd700' }}><Icon name="clock" tone="mark" />En attente du chef...</p>
               )}
             </div>
           </div>
@@ -686,7 +687,7 @@ const ClassicGame = ({
 
         {phase === 'reveal' && !reveal && isHost && (
           <button type="button" className="btn btn-success" onClick={onNext}>
-            Question suivante
+            <Icon name="go" />Question suivante
           </button>
         )}
 
@@ -709,7 +710,7 @@ const ClassicGame = ({
             />
             {phase === 'answering' && !locked && !gameData.silenced && (
               <button type="button" className="hint-chip" onClick={requestHint} disabled={hintAsked}>
-                {hintAsked ? 'Indice demandé' : 'Indice −1'}
+                <Icon name="search" bare /> {hintAsked ? 'Indice demandé' : 'Indice −1'}
               </button>
             )}
           </div>

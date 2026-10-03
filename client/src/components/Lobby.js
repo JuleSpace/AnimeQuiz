@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Icon from './ArcadeIcon';
 
 const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, variant = 'music' }) => {
   const [numberOfSongs, setNumberOfSongs] = useState(10);
@@ -28,14 +29,15 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
     <div className="container">
       <div className="card">
         <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>
-          {isQuiz ? `🎮 Lobby — ${lobby.quizName || 'Quiz'}` : `🎮 Lobby - Salle ${player.roomId}`}
+          <Icon name="pad" tone="mark" />
+          {isQuiz ? `Lobby — ${lobby.quizName || 'Quiz'}` : `Lobby — Salle ${player.roomId}`}
         </h2>
         
         <div className="player-list" style={{ justifyContent: 'center' }}>
           {isQuiz && lobby.hostName && (
             <div className="player-card leader">
               <div style={{ fontWeight: 'bold' }}>{lobby.hostName}</div>
-              <div style={{ fontSize: '0.8rem', color: '#ffd700' }}>👑 Chef · ne joue pas</div>
+              <div style={{ fontSize: '0.8rem' }}><Icon name="crown" />Chef · ne joue pas</div>
             </div>
           )}
           {lobby.players.map((p, index) => (
@@ -65,7 +67,7 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
               }}
             >
               <div style={{ fontWeight: 'bold' }}>{p.username}</div>
-              {!isQuiz && index === 0 && <div style={{ fontSize: '0.8rem', color: '#ffd700' }}>👑 Chef</div>}
+              {!isQuiz && index === 0 && <div style={{ fontSize: '0.8rem' }}><Icon name="crown" />Chef</div>}
               {!isQuiz && isLeader && p.id !== player.id && (
                 <div style={{ fontSize: '0.7rem', color: '#ffd700', marginTop: '5px', opacity: 0.8 }}>
                   Cliquer pour transmettre
@@ -82,32 +84,32 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
           
           {isQuiz && isLeader && lobby.players.length === 0 && (
             <div style={{ color: '#ffd700', marginBottom: '20px' }}>
-              En attente d'au moins un joueur. Le chef ne répond pas.
+              <Icon name="clock" tone="mark" />En attente d'au moins un joueur. Le chef ne répond pas.
             </div>
           )}
 
           {isQuiz && !isLeader && !lobby.isGameStarted && (
             <div style={{ color: '#ffd700', marginBottom: '20px' }}>
-              En attente que le chef démarre la partie...
+              <Icon name="clock" tone="mark" />En attente que le chef démarre la partie...
             </div>
           )}
 
           {!isQuiz && lobby.players.length < 2 && !isLeader && (
             <div style={{ color: '#ffd700', marginBottom: '20px' }}>
-              ⏳ En attente d'un autre joueur...
+              <Icon name="clock" tone="mark" />En attente d'un autre joueur...
             </div>
           )}
           
           {!isQuiz && lobby.players.length === 1 && isLeader && (
             <div style={{ color: '#51cf66', marginBottom: '20px' }}>
-              ✅ Mode solo activé - Vous pouvez démarrer !
+              <Icon name="check" tone="cyan" />Mode solo activé — vous pouvez démarrer !
             </div>
           )}
 
           {isLeader && lobby.players.length >= 1 && (
             <div style={{ marginBottom: '20px' }}>
               <div style={{ marginBottom: '10px', fontSize: '1rem' }}>
-                {isQuiz ? '📝 Nombre de questions :' : '🎵 Nombre de musiques à jouer :'}
+                {isQuiz ? <><Icon name="quiz" tone="mark" />Nombre de questions</> : <><Icon name="music" tone="cyan" />Nombre de musiques à jouer</>}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
                 <input
@@ -136,31 +138,31 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
 
           {canStartGame && (
             <button onClick={handleStartGame} className="btn btn-success">
-              🚀 Démarrer la Partie
+              <Icon name="go" />Démarrer la partie
             </button>
           )}
 
           {!isQuiz && !canStartGame && lobby.players.length >= 2 && !isLeader && (
             <div style={{ color: '#ffd700' }}>
-              ⏳ En attente que le chef démarre la partie...
+              <Icon name="clock" tone="mark" />En attente que le chef démarre la partie...
             </div>
           )}
 
           {!isQuiz && !canStartGame && lobby.players.length >= 2 && isLeader && (
             <div style={{ color: '#51cf66' }}>
-              ✅ Prêt à démarrer !
+              <Icon name="check" tone="cyan" />Prêt à démarrer !
             </div>
           )}
         </div>
 
         <div style={{ textAlign: 'center' }}>
           <button onClick={onLeave} className="btn btn-danger">
-            Quitter le Lobby
+            <Icon name="exit" />Quitter le lobby
           </button>
         </div>
 
         <div style={{ marginTop: '30px', padding: '20px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '15px' }}>
-          <h3 style={{ marginBottom: '15px' }}>📋 Règles du jeu :</h3>
+          <h3 style={{ marginBottom: '15px' }}><Icon name="rules" tone="mark" />Règles du jeu</h3>
           {isQuiz ? (
             <ul style={{ textAlign: 'left', lineHeight: '1.6' }}>
               <li>Le chef ne joue pas : il lance la partie et passe à la question suivante</li>

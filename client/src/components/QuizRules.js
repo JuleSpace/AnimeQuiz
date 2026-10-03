@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { JokerCard } from './JokerCards';
+import Icon from './ArcadeIcon';
 
 const SLIDES = [
   {
@@ -137,7 +138,7 @@ const QuizRules = () => {
       </div>
       <div className="rules-nav">
         <button type="button" className="btn" onClick={() => setIndex((value) => Math.max(0, value - 1))} disabled={index === 0}>
-          Précédent
+          <Icon name="back" />Précédent
         </button>
         <button
           type="button"
@@ -145,7 +146,7 @@ const QuizRules = () => {
           onClick={() => setIndex((value) => Math.min(SLIDES.length - 1, value + 1))}
           disabled={index === SLIDES.length - 1}
         >
-          Suivant
+          <Icon name="go" />Suivant
         </button>
       </div>
     </div>

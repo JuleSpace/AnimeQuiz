@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { ItemEditor, PlaceBoard } from './InteractQuestion';
+import Icon from './ArcadeIcon';
 
 const TYPE_OPTIONS = [
   { id: 'qcm', label: 'Choix multiple' },
@@ -172,7 +173,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
           {draft.options.map((option, index) => (
             <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button type="button" className="btn" style={{ margin: 0, minWidth: 52 }} onClick={() => toggleCorrect(index)}>
-                {draft.correctIndexes.includes(index) ? '✅' : '⬜'}
+                {draft.correctIndexes.includes(index) ? <Icon name="check" bare /> : <Icon name="box" bare />}
               </button>
               <input
                 className="input"
@@ -202,7 +203,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
                     });
                   }}
                 >
-                  ✕
+                  <Icon name="cross" bare />
                 </button>
               )}
             </div>
@@ -606,7 +607,10 @@ const QuizAdmin = () => {
         </div>
 
         {quizzes.length === 0 ? (
-          <p style={{ textAlign: 'center', opacity: 0.8 }}>Aucun quiz pour l'instant.</p>
+          <div style={{ textAlign: 'center', opacity: 0.8 }}>
+            <Icon name="quiz" tone="hero" />
+            <p>Aucun quiz pour l'instant.</p>
+          </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
             {quizzes.map((item) => (
@@ -614,8 +618,8 @@ const QuizAdmin = () => {
                 <h3 style={{ color: '#ffd700' }}>{item.name}</h3>
                 <p style={{ minHeight: 40, opacity: 0.85 }}>{item.description}</p>
                 <div>{item.questions?.length || 0} questions</div>
-                <button type="button" className="btn" onClick={() => openQuiz(item._id)}>Modifier</button>
-                <button type="button" className="btn btn-danger" onClick={() => removeQuiz(item._id)}>Supprimer</button>
+                <button type="button" className="btn" onClick={() => openQuiz(item._id)}><Icon name="pencil" />Modifier</button>
+                <button type="button" className="btn btn-danger" onClick={() => removeQuiz(item._id)}><Icon name="trash" />Supprimer</button>
               </div>
             ))}
           </div>
@@ -629,7 +633,7 @@ const QuizAdmin = () => {
   return (
     <div>
       <button type="button" className="btn" onClick={() => { setQuiz(null); setDraft(null); }}>
-        ← Tous les quiz
+        <Icon name="back" />Tous les quiz
       </button>
       <input
         className="input"
