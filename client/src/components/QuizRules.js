@@ -54,8 +54,9 @@ const SLIDES = [
     kicker: 'Avant de répondre',
     title: 'Filet',
     points: [
-      'Si le chef met 0, le joueur prend la moitié des points de la question.',
-      'S’il a déjà des points, le filet ne change rien.'
+      'Tu prends la moyenne des autres. Tes points ne comptent pas dedans.',
+      'Si tes points sont plus hauts, tu gardes les tiens.',
+      'La moyenne est arrondie.'
     ]
   },
   {

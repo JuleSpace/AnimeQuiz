@@ -35,7 +35,6 @@ function jokerPlayed(player, index, card) {
 }
 
 function resolveGains(players, question, index, corrections) {
-  const points = question?.points || 1;
   const draft = {};
 
   players.forEach((player) => {
@@ -48,13 +47,29 @@ function resolveGains(players, question, index, corrections) {
       gain = raw * 2;
       tags.push('×2');
       notes.push('Double mise : tes points ont été doublés.');
-    } else if (jokerPlayed(player, index, 'filet') && raw === 0) {
-      gain = Math.floor(points / 2);
-      tags.push('Filet');
-      if (gain > 0) notes.push(`Filet : tu récupères ${gain} pt.`);
     }
 
     draft[player.id] = { gain, tags, notes };
+  });
+
+  const ids = Object.keys(draft);
+  const base = {};
+  ids.forEach((id) => { base[id] = draft[id].gain; });
+
+  players.forEach((player) => {
+    if (!jokerPlayed(player, index, 'filet')) return;
+    const own = base[player.id];
+    const others = ids.filter((id) => id !== player.id);
+    const average = others.length
+      ? Math.round(others.reduce((sum, id) => sum + base[id], 0) / others.length)
+      : 0;
+    draft[player.id].tags.push('Filet');
+    if (average > own) {
+      draft[player.id].gain = average;
+      draft[player.id].notes.push(`Filet : tu prends la moyenne des autres, ${average} pt.`);
+    } else {
+      draft[player.id].notes.push(`Filet : tu gardes tes ${own} pt (moyenne des autres : ${average}).`);
+    }
   });
 
   const claimed = new Set();

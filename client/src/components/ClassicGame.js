@@ -383,7 +383,7 @@ const ClassicGame = ({
             <span key={entry.id} style={{
               padding: '6px 10px',
               borderRadius: '999px',
-              background: entry.id === player.id ? 'rgba(255,215,0,0.25)' : 'rgba(255,255,255,0.12)',
+              background: entry.id === player.id ? 'rgba(255, 35, 71,0.25)' : 'rgba(255,255,255,0.12)',
               border: '1px solid rgba(255,255,255,0.2)'
             }}>
               {entry.username} · {entry.score || 0}
@@ -491,7 +491,7 @@ const ClassicGame = ({
             </h3>
             {phase === 'hold' && gameData.answersVisible ? (
               <>
-                <p style={{ textAlign: 'center', color: '#ffd700' }}>
+                <p style={{ textAlign: 'center', color: '#ff2347' }}>
                   Tu as Vol. Les réponses sont là, la bonne reste cachée.
                 </p>
                 {players.map((entry) => (
@@ -505,7 +505,7 @@ const ClassicGame = ({
                 ))}
               </>
             ) : (
-              <p style={{ textAlign: 'center', color: '#ffd700' }}>
+              <p style={{ textAlign: 'center', color: '#ff2347' }}>
                 {phase === 'hold'
                   ? 'La bonne réponse reste cachée, le temps que le chef prépare les points.'
                   : 'La bonne réponse s\'affichera quand les points seront validés.'}
@@ -524,8 +524,8 @@ const ClassicGame = ({
               margin: '12px 0 18px',
               padding: '12px',
               borderRadius: '10px',
-              background: 'rgba(255,215,0,0.15)',
-              border: '1px solid rgba(255,215,0,0.45)'
+              background: 'rgba(255, 35, 71,0.15)',
+              border: '1px solid rgba(255, 35, 71,0.45)'
             }}>
               Réponse prévue : <strong className="quiz-answer">{gameData.expectedAnswer || '—'}</strong>
               <div style={{ marginTop: 6, fontSize: '0.9rem', opacity: 0.85 }}>
@@ -558,7 +558,7 @@ const ClassicGame = ({
                       <button
                         type="button"
                         className="btn"
-                        style={{ background: 'rgba(255,215,0,0.25)', color: '#ffd700' }}
+                        style={{ background: 'rgba(255, 35, 71,0.25)', color: '#ff2347' }}
                         onClick={() => onUpdateCorrections({ ...corrections, [entry.id]: Math.min(99, given + 1) })}
                       >
                         +1
@@ -585,7 +585,7 @@ const ClassicGame = ({
                     </div>
                   ) : null}
                   {phase === 'correction' && (gameData.gainPreview || []).some((row) => row.id === entry.id && (row.tags || []).length > 0) && (
-                    <div style={{ color: '#ffd700', fontSize: '0.9rem' }}>
+                    <div style={{ color: '#ff2347', fontSize: '0.9rem' }}>
                       {((gameData.gainPreview || []).find((row) => row.id === entry.id)?.tags || []).join(' · ')}
                       {' → '}
                       {(gameData.gainPreview || []).find((row) => row.id === entry.id)?.gain || 0} pts au total
@@ -667,7 +667,7 @@ const ClassicGame = ({
                     +{entry.pointsThisRound || 0}
                   </div>
                   {entry.id === player.id && (gameData.roundNotes || []).length > 0 && (
-                    <div style={{ color: '#ffd700', fontSize: '0.9rem' }}>{gameData.roundNotes.join(' ')}</div>
+                    <div style={{ color: '#ff2347', fontSize: '0.9rem' }}>{gameData.roundNotes.join(' ')}</div>
                   )}
                 </div>
               ))}
@@ -679,7 +679,7 @@ const ClassicGame = ({
                   {gameData.questionIndex + 1 >= gameData.totalQuestions ? <><Icon name="trophy" />Voir les résultats</> : <><Icon name="go" />Question suivante</>}
                 </button>
               ) : (
-                <p style={{ color: '#ffd700' }}><Icon name="clock" tone="mark" />En attente du chef...</p>
+                <p style={{ color: '#ff2347' }}><Icon name="clock" tone="mark" />En attente du chef...</p>
               )}
             </div>
           </div>

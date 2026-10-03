@@ -56,7 +56,7 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
               onMouseEnter={(e) => {
                 if (!isQuiz && isLeader && p.id !== player.id) {
                   e.currentTarget.style.transform = 'scale(1.05)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 215, 0, 0.4)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 35, 71, 0.4)';
                 }
               }}
               onMouseLeave={(e) => {
@@ -69,7 +69,7 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
               <div style={{ fontWeight: 'bold' }}>{p.username}</div>
               {!isQuiz && index === 0 && <div style={{ fontSize: '0.8rem' }}><Icon name="crown" />Chef</div>}
               {!isQuiz && isLeader && p.id !== player.id && (
-                <div style={{ fontSize: '0.7rem', color: '#ffd700', marginTop: '5px', opacity: 0.8 }}>
+                <div style={{ fontSize: '0.7rem', color: '#ff2347', marginTop: '5px', opacity: 0.8 }}>
                   Cliquer pour transmettre
                 </div>
               )}
@@ -83,19 +83,19 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
           </div>
           
           {isQuiz && isLeader && lobby.players.length === 0 && (
-            <div style={{ color: '#ffd700', marginBottom: '20px' }}>
+            <div style={{ color: '#ff2347', marginBottom: '20px' }}>
               <Icon name="clock" tone="mark" />En attente d'au moins un joueur. Le chef ne répond pas.
             </div>
           )}
 
           {isQuiz && !isLeader && !lobby.isGameStarted && (
-            <div style={{ color: '#ffd700', marginBottom: '20px' }}>
+            <div style={{ color: '#ff2347', marginBottom: '20px' }}>
               <Icon name="clock" tone="mark" />En attente que le chef démarre la partie...
             </div>
           )}
 
           {!isQuiz && lobby.players.length < 2 && !isLeader && (
-            <div style={{ color: '#ffd700', marginBottom: '20px' }}>
+            <div style={{ color: '#ff2347', marginBottom: '20px' }}>
               <Icon name="clock" tone="mark" />En attente d'un autre joueur...
             </div>
           )}
@@ -143,7 +143,7 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
           )}
 
           {!isQuiz && !canStartGame && lobby.players.length >= 2 && !isLeader && (
-            <div style={{ color: '#ffd700' }}>
+            <div style={{ color: '#ff2347' }}>
               <Icon name="clock" tone="mark" />En attente que le chef démarre la partie...
             </div>
           )}

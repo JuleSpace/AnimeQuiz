@@ -229,24 +229,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
       <div className="admin-panel">
         {/* Header avec bouton retour */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '30px' }}>
-          <button 
-            onClick={onBack} 
-            className="btn" 
-            style={{ 
-              background: 'linear-gradient(135deg, #ff6b6b, #c92a2a)',
-              border: '2px solid rgba(255, 107, 107, 0.5)',
-              boxShadow: '0 4px 15px rgba(201, 42, 42, 0.3)',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(201, 42, 42, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = '0 4px 15px rgba(201, 42, 42, 0.3)';
-            }}
-          >
+          <button type="button" onClick={onBack} className="btn btn-danger">
             <Icon name="back" />Retour
           </button>
           
@@ -254,24 +237,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
             <Icon name="tools" tone="mark" />Panneau administrateur
           </h2>
           
-          <button 
-            onClick={() => setShowCreateForm(!showCreateForm)} 
-            className="btn btn-success"
-            style={{ 
-              background: 'linear-gradient(135deg, #51cf66, #40c057)',
-              border: '2px solid rgba(81, 207, 102, 0.5)',
-              boxShadow: '0 4px 15px rgba(81, 207, 102, 0.3)',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.05)';
-              e.currentTarget.style.boxShadow = '0 6px 20px rgba(81, 207, 102, 0.5)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = '0 4px 15px rgba(81, 207, 102, 0.3)';
-            }}
-          >
+          <button type="button" onClick={() => setShowCreateForm(!showCreateForm)} className="btn btn-success">
             <Icon name="plus" />Nouvelle salle
           </button>
         </div>
@@ -359,8 +325,8 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = 'translateY(-5px)';
-                    e.currentTarget.style.boxShadow = '6px 6px 0 #ffe14a';
-                    e.currentTarget.style.borderColor = '#ffe14a';
+                    e.currentTarget.style.boxShadow = '6px 6px 0 #ff2347';
+                    e.currentTarget.style.borderColor = '#ff2347';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
@@ -373,7 +339,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                     position: 'absolute',
                     top: '15px',
                     right: '15px',
-                    background: 'rgba(255, 215, 0, 0.9)',
+                    background: 'rgba(255, 35, 71, 0.9)',
                     color: '#000',
                     padding: '5px 12px',
                     borderRadius: '20px',
@@ -386,7 +352,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                   {/* Titre et description */}
                   <h4 style={{ 
                     margin: '0 0 15px 0', 
-                    color: '#ffd700', 
+                    color: '#ff2347', 
                     fontSize: '1.3rem',
                     fontWeight: 'bold',
                     textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
@@ -455,7 +421,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                       style={{ 
                         padding: '8px 16px', 
                         fontSize: '0.9rem',
-                        background: 'linear-gradient(135deg, #ffd93d, #ff9800)',
+                        background: '#1f6dff',
                         border: '2px solid rgba(255, 217, 61, 0.5)',
                         boxShadow: '0 2px 10px rgba(255, 152, 0, 0.3)',
                         transition: 'all 0.3s ease'
@@ -504,7 +470,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
         {/* Section d'édition avec système de cartes */}
         {selectedRoom && rooms.find(r => r._id === selectedRoom) && (
           <div style={{ marginBottom: '30px' }}>
-            <h3 style={{ textAlign: 'center', color: '#ffd700', marginBottom: '25px' }}>
+            <h3 style={{ textAlign: 'center', color: '#ff2347', marginBottom: '25px' }}>
               <Icon name="pencil" tone="mark" />Modification de la salle
             </h3>
             
@@ -520,7 +486,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                     border: '2px solid rgba(255, 217, 61, 0.3)',
                     marginBottom: '20px'
                   }}>
-                    <h4 style={{ color: '#ffd700', marginBottom: '20px', textAlign: 'center' }}>
+                    <h4 style={{ color: '#ff2347', marginBottom: '20px', textAlign: 'center' }}>
                       <Icon name="quiz" />Informations de base
                     </h4>
                     <input
@@ -580,7 +546,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                   {/* Grille des musiques existantes */}
                   {room.musicLinks.length > 0 && (
                     <div>
-                      <h4 style={{ color: '#ffd700', marginBottom: '20px', textAlign: 'center' }}>
+                      <h4 style={{ color: '#ff2347', marginBottom: '20px', textAlign: 'center' }}>
                         <Icon name="music" tone="mark" />Musiques existantes ({room.musicLinks.length})
                       </h4>
                       <div style={{ 
@@ -600,7 +566,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.transform = 'translateY(-3px)';
-                            e.currentTarget.style.borderColor = '#3ecbff';
+                            e.currentTarget.style.borderColor = '#1f6dff';
                           }}
                           onMouseLeave={(e) => {
                             e.currentTarget.style.transform = 'translateY(0)';
@@ -611,7 +577,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                               position: 'absolute',
                               top: '10px',
                               right: '10px',
-                              background: 'rgba(255, 215, 0, 0.9)',
+                              background: 'rgba(255, 35, 71, 0.9)',
                               color: '#000',
                               padding: '4px 8px',
                               borderRadius: '15px',
@@ -626,7 +592,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                                 <div>
                                   <div style={{ 
                                     fontWeight: 'bold', 
-                                    color: '#ffd700', 
+                                    color: '#ff2347', 
                                     marginBottom: '8px',
                                     fontSize: '1rem'
                                   }}>
@@ -793,19 +759,19 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                 ×
               </button>
 
-              <h3 style={{ color: '#ffd700', marginBottom: '20px', textAlign: 'center' }}>
+              <h3 style={{ color: '#ff2347', marginBottom: '20px', textAlign: 'center' }}>
                 <Icon name="eye" tone="mark" />Détails de la salle
               </h3>
               
               <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ color: '#ffd700', marginBottom: '10px' }}><Icon name="quiz" />Informations</h4>
+                <h4 style={{ color: '#ff2347', marginBottom: '10px' }}><Icon name="quiz" />Informations</h4>
                 <p><strong>Nom:</strong> {showPopup.name}</p>
                 {showPopup.description && <p><strong>Description:</strong> {showPopup.description}</p>}
                 <p style={{ fontSize: '0.8rem', opacity: 0.7 }}><strong>ID:</strong> {showPopup._id}</p>
               </div>
 
               <div>
-                <h4 style={{ color: '#ffd700', marginBottom: '15px' }}>
+                <h4 style={{ color: '#ff2347', marginBottom: '15px' }}>
                   <Icon name="music" />Musiques ({showPopup.musicLinks.length})
                 </h4>
                 {showPopup.musicLinks.length === 0 ? (
@@ -821,7 +787,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                         borderRadius: '10px',
                         marginBottom: '10px'
                       }}>
-                        <div style={{ fontWeight: 'bold', color: '#ffd700', marginBottom: '8px' }}>
+                        <div style={{ fontWeight: 'bold', color: '#ff2347', marginBottom: '8px' }}>
                           Musique {index + 1}
                         </div>
                         {(typeof link === 'object' && link.answer) && (

@@ -5,156 +5,62 @@ export const JOKERS = {
   double: {
     name: 'Double mise',
     rule: 'Les points du chef sont doublés.',
-    accent: '#f5c542',
-    ink: '#7a4b00',
-    paper: '#ffe08a'
+    accent: '#ff2347',
+    mate: '#1f6dff'
   },
   filet: {
     name: 'Filet',
-    rule: 'Si tu as 0, prends la moitié des points.',
-    accent: '#3ecf8e',
-    ink: '#0d5c3d',
-    paper: '#b8f5d6'
+    rule: 'La moyenne des autres, ou tes points s’ils sont plus hauts.',
+    accent: '#1f6dff',
+    mate: '#ff2347'
   },
   seconde: {
     name: 'Seconde main',
     rule: 'Change ta réponse une fois, tant que la question est ouverte.',
-    accent: '#4dabf7',
-    ink: '#0b4f8a',
-    paper: '#d0ebff'
+    accent: '#ff2347',
+    mate: '#1f6dff'
   },
   copie: {
     name: 'Copie',
     rule: 'Vois la réponse d\'un autre joueur.',
-    accent: '#b197fc',
-    ink: '#4c2f96',
-    paper: '#e5dbff'
+    accent: '#1f6dff',
+    mate: '#ff2347'
   },
   indice: {
     name: 'Indice gratuit',
     rule: 'Un indice du chef, sans perdre de point.',
-    accent: '#ffd43b',
-    ink: '#7a5b00',
-    paper: '#fff3bf'
+    accent: '#ff2347',
+    mate: '#1f6dff'
   },
   silence: {
     name: 'Silence',
     rule: 'Un joueur ne peut plus répondre.',
-    accent: '#91a7ff',
-    ink: '#2b3f8f',
-    paper: '#dbe4ff'
+    accent: '#1f6dff',
+    mate: '#ff2347'
   },
   vol: {
     name: 'Vol',
     rule: 'Vois les réponses, puis prends les points d\'un joueur.',
-    accent: '#ff8787',
-    ink: '#8a1c1c',
-    paper: '#ffc9c9'
+    accent: '#ff2347',
+    mate: '#1f6dff'
   }
 };
 
-const face = 'Impact, Haettenschweiler, Arial Black, sans-serif';
-
-const Lines = () => (
-  <g fill="none" stroke="#f4f6ff" strokeWidth="5" opacity="0.2" strokeLinecap="square">
-    <path d="M6 18h62" />
-    <path d="M6 34h40" />
-    <path d="M98 96h56" />
-    <path d="M118 110h36" />
-  </g>
-);
+const CARD_ART = {
+  double: '/double.png',
+  filet: '/filet.png?v=2',
+  seconde: '/seconde.png',
+  copie: '/copie.png',
+  indice: '/indice.png',
+  silence: '/silence-faker.png',
+  vol: '/vol.png'
+};
 
 const Mark = ({ cardId }) => {
-  const common = { viewBox: '0 0 160 120', 'aria-hidden': 'true' };
-  if (cardId === 'double') {
-    return (
-      <svg {...common}>
-        <Lines />
-        <text x="34" y="86" fontSize="68" fontFamily={face} fill="#f4f6ff" stroke="#111318" strokeWidth="7" paintOrder="stroke">3</text>
-        <g transform="rotate(-12 108 58)">
-          <rect x="64" y="30" width="88" height="56" fill="#ffe14a" stroke="#111318" strokeWidth="5" />
-          <text x="108" y="72" textAnchor="middle" fontSize="42" fontFamily={face} fill="#111318">×2</text>
-        </g>
-        <text x="132" y="114" textAnchor="middle" fontSize="28" fontFamily={face} fill="#ffe14a" stroke="#111318" strokeWidth="4" paintOrder="stroke">6</text>
-      </svg>
-    );
-  }
-  if (cardId === 'filet') {
-    return (
-      <svg {...common}>
-        <Lines />
-        <text x="80" y="34" textAnchor="middle" fontSize="30" fontFamily={face} fill="#f4f6ff" stroke="#111318" strokeWidth="4" paintOrder="stroke">0</text>
-        <path d="M16 46h128" stroke="#111318" strokeWidth="5" />
-        <path d="M22 46c12 52 104 52 116 0" fill="none" stroke="#39f0a0" strokeWidth="6" />
-        <path d="M42 46c8 32 68 32 76 0" fill="none" stroke="#111318" strokeWidth="4" />
-        <path d="M62 46c4 16 32 16 36 0" fill="none" stroke="#39f0a0" strokeWidth="4" />
-        <text x="80" y="96" textAnchor="middle" fontSize="36" fontFamily={face} fill="#111318" stroke="#39f0a0" strokeWidth="7" paintOrder="stroke">½</text>
-      </svg>
-    );
-  }
-  if (cardId === 'seconde') {
-    return (
-      <svg {...common}>
-        <Lines />
-        <rect x="8" y="22" width="58" height="42" fill="#f4f6ff" stroke="#111318" strokeWidth="5" />
-        <path d="M16 43h42" stroke="#ff4d6a" strokeWidth="6" />
-        <path d="M72 44h16" stroke="#111318" strokeWidth="6" />
-        <path d="M84 32l16 12-16 12z" fill="#3ecbff" stroke="#111318" strokeWidth="4" />
-        <rect x="104" y="48" width="48" height="46" fill="#3ecbff" stroke="#111318" strokeWidth="5" />
-        <path d="M114 64h28M114 76h18" stroke="#111318" strokeWidth="5" strokeLinecap="square" />
-      </svg>
-    );
-  }
-  if (cardId === 'copie') {
-    return (
-      <svg {...common}>
-        <Lines />
-        <rect x="8" y="18" width="50" height="70" fill="#f4f6ff" stroke="#111318" strokeWidth="5" />
-        <path d="M18 38h30M18 52h30M18 66h20" stroke="#111318" strokeWidth="5" strokeLinecap="square" />
-        <path d="M64 52h14" stroke="#111318" strokeWidth="6" />
-        <path d="M74 40l16 12-16 12z" fill="#d7b4ff" stroke="#111318" strokeWidth="4" />
-        <rect x="96" y="32" width="54" height="70" fill="#d7b4ff" stroke="#111318" strokeWidth="5" />
-        <path d="M106 52h32M106 66h32M106 80h22" stroke="#3a1868" strokeWidth="5" strokeLinecap="square" />
-      </svg>
-    );
-  }
-  if (cardId === 'indice') {
-    return (
-      <svg {...common}>
-        <Lines />
-        <g transform="rotate(-10 50 52)">
-          <path d="M12 24h78l-10 20 10 18H12z" fill="#ffe14a" stroke="#111318" strokeWidth="5" />
-          <text x="46" y="58" textAnchor="middle" fontSize="26" fontFamily={face} fill="#111318">−1</text>
-          <path d="M20 62h52" stroke="#ff4d6a" strokeWidth="5" />
-        </g>
-        <text x="118" y="90" textAnchor="middle" fontSize="62" fontFamily={face} fill="#ffe14a" stroke="#111318" strokeWidth="6" paintOrder="stroke">?</text>
-      </svg>
-    );
-  }
-  if (cardId === 'silence') {
-    return (
-      <svg {...common}>
-        <Lines />
-        <path d="M16 26h108c10 0 16 8 16 16v6c0 22-28 40-62 40S16 74 16 52V26z" fill="#f4f6ff" stroke="#111318" strokeWidth="5" />
-        <path d="M78 22v82" stroke="#111318" strokeWidth="5" />
-        {[34, 48, 62, 76].map((y) => (
-          <path key={y} d={`M68 ${y}h20`} stroke="#111318" strokeWidth="4" />
-        ))}
-        <rect x="64" y="88" width="28" height="16" fill="#8eb6ff" stroke="#111318" strokeWidth="4" />
-      </svg>
-    );
-  }
-  return (
-    <svg {...common}>
-      <Lines />
-      <circle cx="34" cy="62" r="24" fill="#f4f6ff" stroke="#111318" strokeWidth="5" />
-      <text x="34" y="72" textAnchor="middle" fontSize="28" fontFamily={face} fill="#111318">1</text>
-      <path d="M62 62h26" stroke="#111318" strokeWidth="6" strokeDasharray="7 6" />
-      <path d="M84 48l18 14-18 14z" fill="#ff5d6c" stroke="#111318" strokeWidth="4" />
-      <circle cx="126" cy="62" r="28" fill="#ff5d6c" stroke="#111318" strokeWidth="5" />
-      <text x="126" y="74" textAnchor="middle" fontSize="32" fontFamily={face} fill="#111318">1</text>
-    </svg>
-  );
+  const src = CARD_ART[cardId];
+  if (!src) return null;
+  const fit = cardId !== 'silence';
+  return <img className={fit ? 'tcg-photo tcg-photo-fit' : 'tcg-photo'} src={src} alt="" />;
 };
 
 export const JokerCard = ({ cardId, used = false, size = 'full' }) => {
@@ -164,7 +70,7 @@ export const JokerCard = ({ cardId, used = false, size = 'full' }) => {
   return (
     <article
       className={`tcg-card tcg-${size} ${used ? 'is-used' : ''}`}
-      style={{ '--tcg-accent': card.accent, '--tcg-paper': card.paper, '--tcg-ink': card.ink }}
+      style={{ '--tcg-accent': card.accent, '--tcg-mate': card.mate }}
     >
       <div className="tcg-name">{card.name}</div>
       <div className="tcg-art">

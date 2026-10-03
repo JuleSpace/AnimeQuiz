@@ -77,14 +77,14 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
           {/* Afficher la réponse pendant la correction */}
           {isCorrectionPhase && gameData && gameData.musicLinks && gameData.musicLinks[currentQuestion] && (
             <div style={{
-              background: 'rgba(255, 215, 0, 0.2)',
-              border: '2px solid #ffd700',
+              background: 'rgba(255, 35, 71, 0.2)',
+              border: '2px solid #ff2347',
               borderRadius: '10px',
               padding: '15px',
               marginBottom: '20px',
               textAlign: 'center'
             }}>
-              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#ffd700', marginBottom: '10px' }}>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#ff2347', marginBottom: '10px' }}>
                 <Icon name="check" tone="mark" />Réponse correcte
               </div>
               <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
@@ -186,8 +186,8 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
                         style={{ 
                           padding: '5px 15px', 
                           fontSize: '0.9rem',
-                          background: corrections[p.id] === 'bonus' ? '#ffd700' : 'rgba(255, 215, 0, 0.2)',
-                          color: corrections[p.id] === 'bonus' ? '#000' : '#ffd700',
+                          background: corrections[p.id] === 'bonus' ? '#ff2347' : 'rgba(255, 35, 71, 0.2)',
+                          color: corrections[p.id] === 'bonus' ? '#000' : '#ff2347',
                           cursor: gameData.players[0] && gameData.players[0].id === player.id ? 'pointer' : 'default',
                           opacity: gameData.players[0] && gameData.players[0].id === player.id ? 1 : 0.7,
                           filter: gameData.players[0] && gameData.players[0].id === player.id ? 'none' : 'grayscale(20%)'
@@ -218,7 +218,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
               {/* Message pour les non-chefs */}
               {gameData.players && (!gameData.players[0] || gameData.players[0].id !== player.id) && (
                 <div style={{ textAlign: 'center', padding: '20px' }}>
-                  <div style={{ fontSize: '1.2rem', marginBottom: '10px', color: '#ffd700' }}>
+                  <div style={{ fontSize: '1.2rem', marginBottom: '10px', color: '#ff2347' }}>
                     <Icon name="clock" tone="mark" />En attente du chef...
                   </div>
                   <div style={{ opacity: 0.8 }}>

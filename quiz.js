@@ -1506,7 +1506,7 @@ function attachQuiz(app, io) {
       joker.redoSpent = false;
 
       if (card === 'double') joker.note = 'Points doublés';
-      if (card === 'filet') joker.note = 'Filet si 0';
+      if (card === 'filet') joker.note = 'Moyenne des autres';
       if (card === 'seconde') joker.note = 'Peut modifier sa réponse';
       if (card === 'copie') joker.note = `Copie ${joker.targetName}`;
       if (card === 'silence') joker.note = `Silence sur ${joker.targetName}`;

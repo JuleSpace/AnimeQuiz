@@ -572,7 +572,7 @@ function App() {
                   alt="Pepe Music"
                   style={{ width: '60px', height: '60px', borderRadius: '10px' }}
                 />
-                <h1 style={{ fontSize: '2.5rem', margin: 0 }}>
+                <h1 className="stage-title">
                   Bully's Lair
                 </h1>
                 <img 
@@ -696,16 +696,16 @@ function App() {
                         textAlign: 'left',
                         background: '#14141c',
                         color: 'white',
-                        border: '3px solid #ffe14a',
+                        border: '3px solid #ff2347',
                         borderRadius: '4px',
-                        boxShadow: '5px 5px 0 #3ecbff',
+                        boxShadow: '5px 5px 0 #1f6dff',
                         padding: '22px',
                         cursor: quiz.questionCount ? 'pointer' : 'not-allowed',
                         opacity: quiz.questionCount ? 1 : 0.55,
                         fontFamily: 'inherit'
                       }}
                     >
-                      <div style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '1.2rem', marginBottom: 8 }}>{quiz.name}</div>
+                      <div style={{ color: '#ff2347', fontWeight: 'bold', fontSize: '1.2rem', marginBottom: 8 }}>{quiz.name}</div>
                       <div style={{ opacity: 0.85, minHeight: 40 }}>{quiz.description}</div>
                       <div style={{ marginTop: 12, color: '#51cf66' }}>
                         {quiz.questionCount ? `${quiz.questionCount} questions` : 'Pas encore de questions'}
@@ -728,7 +728,7 @@ function App() {
                 alt="Pepe Music"
                 style={{ width: '60px', height: '60px', borderRadius: '10px' }}
               />
-              <h1 style={{ fontSize: '2.5rem', margin: 0 }}>
+              <h1 className="stage-title">
                 Music Quiz
               </h1>
               <img 
@@ -757,7 +757,7 @@ function App() {
                   padding: '15px',
                   background: '#14141c',
                   borderRadius: '10px',
-                  border: '3px solid #3ecbff'
+                  border: '3px solid #1f6dff'
                 }}>
                   <div>
                     <span style={{ opacity: 0.7, fontSize: '0.9rem' }}>Connecté en tant que :</span>
@@ -806,8 +806,8 @@ function App() {
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.transform = 'translateY(-5px)';
-                          e.currentTarget.style.boxShadow = '6px 6px 0 #ffe14a';
-                          e.currentTarget.style.borderColor = '#ffe14a';
+                          e.currentTarget.style.boxShadow = '6px 6px 0 #ff2347';
+                          e.currentTarget.style.borderColor = '#ff2347';
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.transform = 'translateY(0)';
@@ -821,7 +821,7 @@ function App() {
                           position: 'absolute',
                           top: '10px',
                           right: '10px',
-                          background: 'rgba(255, 215, 0, 0.9)',
+                          background: 'rgba(255, 35, 71, 0.9)',
                           color: '#000',
                           padding: '5px 12px',
                           borderRadius: '20px',
@@ -833,7 +833,7 @@ function App() {
 
                         <h4 style={{ 
                           margin: '0 0 15px 0', 
-                          color: '#ffd700', 
+                          color: '#ff2347', 
                           fontSize: '1.3rem',
                           fontWeight: 'bold',
                           textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
@@ -972,25 +972,8 @@ function App() {
                 <button onClick={handleAdminAuth} className="btn btn-success">
                   Se connecter
                 </button>
-                <button 
-                  onClick={() => setCurrentView('login')} 
-                  className="btn"
-                  style={{ 
-                    background: 'linear-gradient(135deg, #ff6b6b, #c92a2a)',
-                    border: '2px solid rgba(255, 107, 107, 0.5)',
-                    boxShadow: '0 4px 15px rgba(201, 42, 42, 0.3)',
-                    transition: 'all 0.3s ease'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(201, 42, 42, 0.5)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(201, 42, 42, 0.3)';
-                  }}
-                >
-                  Retour
+                <button type="button" className="btn btn-danger" onClick={() => setCurrentView('login')}>
+                  <Icon name="back" />Retour
                 </button>
               </div>
             </div>

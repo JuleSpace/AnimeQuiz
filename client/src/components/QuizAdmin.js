@@ -126,7 +126,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
             className="btn"
             style={{
               margin: 0,
-              background: draft.type === option.id ? 'linear-gradient(45deg, #ffd700, #f08c00)' : undefined,
+              background: draft.type === option.id ? 'linear-gradient(90deg, #1f6dff, #ff2347)' : undefined,
               color: draft.type === option.id ? '#1a1a1a' : 'white'
             }}
             onClick={() => setDraft((current) => ({
@@ -615,7 +615,7 @@ const QuizAdmin = () => {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
             {quizzes.map((item) => (
               <div key={item._id} className="score-card">
-                <h3 style={{ color: '#ffd700' }}>{item.name}</h3>
+                <h3 style={{ color: '#ff2347' }}>{item.name}</h3>
                 <p style={{ minHeight: 40, opacity: 0.85 }}>{item.description}</p>
                 <div>{item.questions?.length || 0} questions</div>
                 <button type="button" className="btn" onClick={() => openQuiz(item._id)}><Icon name="pencil" />Modifier</button>
