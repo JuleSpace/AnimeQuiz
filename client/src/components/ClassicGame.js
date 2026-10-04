@@ -137,6 +137,8 @@ const ClassicGame = ({
   onSendHint,
   onPlayJoker,
   onTeamChat,
+  onChooseTeam,
+  onDismissCatchup,
   onBeginScoring,
   onStartQuestion
 }) => {
@@ -211,6 +213,32 @@ const ClassicGame = ({
     );
   }
 
+  if (gameData.lateBooster && phase !== 'booster') {
+    const pack = gameData.lateBooster;
+    return (
+      <div className="container">
+        <div className="card booster-stage">
+          <h2 style={{ textAlign: 'center' }}><Icon name="booster" tone="mark" />Booster</h2>
+          <p style={{ textAlign: 'center', opacity: 0.85 }}>
+            Tu rejoins à la question {(gameData.questionIndex || 0) + 1} / {gameData.totalQuestions}
+            {pack.validFrom ? ` · joker pour les questions ${pack.validFrom} à ${pack.validTo}` : ''}
+          </p>
+          {pack.sittingOut && (
+            <p style={{ textAlign: 'center' }}>
+              Cette question est déjà close. Tu joues à partir de la suivante.
+            </p>
+          )}
+          <BoosterOpening cardId={pack.card || gameData.myJoker?.card} />
+          <div style={{ textAlign: 'center' }}>
+            <button type="button" className="btn btn-success" onClick={onDismissCatchup}>
+              <Icon name="go" />Rejoindre la partie
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!question) {
     return <div className="loading">Chargement de la question...</div>;
   }
@@ -262,6 +290,15 @@ const ClassicGame = ({
           <div style={{ opacity: 0.8 }}>
             {gameData.answered || 0}/{gameData.totalPlayers || players.length} {progressLabel}
           </div>
+        </div>
+      );
+    }
+
+    if (teamMode && !myTeam) {
+      return (
+        <div style={{ textAlign: 'center', padding: '18px' }}>
+          <div style={{ fontSize: '1.2rem', marginBottom: 8 }}>Choisis ton équipe</div>
+          <div style={{ opacity: 0.8 }}>Ensuite tu suis la question avec les autres.</div>
         </div>
       );
     }
@@ -472,6 +509,20 @@ const ClassicGame = ({
             </span>
           ))}
         </div>
+
+        {teamMode && !isHost && !myTeam && (
+          <div style={{ textAlign: 'center', margin: '14px 0' }}>
+            <div style={{ marginBottom: 10 }}>Choisis Team Shadow ou Team Sonic.</div>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button type="button" className="btn btn-danger" onClick={() => onChooseTeam && onChooseTeam('shadow')}>
+                Team Shadow
+              </button>
+              <button type="button" className="btn" onClick={() => onChooseTeam && onChooseTeam('sonic')}>
+                Team Sonic
+              </button>
+            </div>
+          </div>
+        )}
 
         {isHost && !teamMode && (
           <HostJokerBoard players={gameData.jokerRoster || []} />
@@ -817,7 +868,7 @@ const ClassicGame = ({
                 }}
               />
             )}
-            {phase === 'answering' && !locked && !gameData.silenced && (
+            {phase === 'answering' && !locked && !gameData.silenced && (!teamMode || myTeam) && (
               <button type="button" className="hint-chip" onClick={requestHint} disabled={hintAsked}>
                 <Icon name="search" bare /> {hintAsked ? 'Indice demandé' : 'Indice −1'}
               </button>

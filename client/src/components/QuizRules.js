@@ -8,7 +8,8 @@ const SLIDES = [
     title: 'La partie',
     points: [
       'L’organisateur ne joue pas (pas illogique).',
-      'Le plus haut score gagne. Un F5 garde la place deux minutes.'
+      'Le plus haut score gagne. Un F5 garde la place deux minutes.',
+      'On peut rejoindre en cours de route, avec un booster tout de suite.'
     ]
   },
   {

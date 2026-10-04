@@ -36,6 +36,19 @@ function packRange(total, index) {
   return { from, to: Math.max(from, to) };
 }
 
+function activePackRange(total, index) {
+  const count = Math.max(0, Number(total) || 0);
+  const starts = packStarts(count);
+  if (!starts.length) return { from: 1, to: Math.max(1, count) };
+  let place = 0;
+  starts.forEach((start, step) => {
+    if (start <= index) place = step;
+  });
+  const from = starts[place] + 1;
+  const to = place + 1 < starts.length ? starts[place + 1] : count;
+  return { from, to: Math.max(from, to) };
+}
+
 function freshJoker(card) {
   return {
     card,
@@ -133,6 +146,7 @@ module.exports = {
   packStarts,
   isPackQuestion,
   packRange,
+  activePackRange,
   freshJoker,
   pointsFromChef,
   jokerPlayed,

@@ -4,6 +4,7 @@ const {
   TARGET_JOKERS,
   drawJoker,
   freshJoker,
+  activePackRange,
   isPackQuestion,
   packRange,
   pointsFromChef,
@@ -539,9 +540,10 @@ function teamRevealRows(lobby, index) {
 }
 
 function shuffleAnswers(lobby, index) {
+  const inRound = (player) => player && player.satOutIndex !== index;
   const holders = lobby.teamMode
-    ? ['shadow', 'sonic'].map((team) => membersOf(lobby, team)[0]).filter(Boolean)
-    : lobby.players.slice();
+    ? ['shadow', 'sonic'].map((team) => membersOf(lobby, team)[0]).filter(inRound)
+    : lobby.players.filter(inRound);
   if (holders.length < 2) return false;
 
   const pack = holders.map((player) => ({
@@ -625,13 +627,20 @@ function scoreAnswer(question, answer) {
 }
 
 function applyScores(lobby, index, corrections) {
+  const playing = lobby.players.filter((player) => player.satOutIndex !== index);
   const resolved = resolveGains(
-    lobby.players,
+    playing,
     lobby.questions[index],
     index,
     scoringCorrections(lobby, corrections)
   );
   lobby.players.forEach((player) => {
+    if (player.satOutIndex === index) {
+      player.lastGain = 0;
+      player.lastCorrect = false;
+      player.lastNotes = [];
+      return;
+    }
     const info = resolved[player.id] || { gain: 0, notes: [] };
     player.score = (player.score || 0) + info.gain;
     player.lastGain = info.gain;
@@ -810,8 +819,9 @@ function holdPayload(lobby, full, withAnswers) {
 }
 
 function previewList(lobby, index) {
+  const playing = lobby.players.filter((player) => player.satOutIndex !== index);
   const resolved = resolveGains(
-    lobby.players,
+    playing,
     lobby.questions[index],
     index,
     scoringCorrections(lobby, lobby.pendingCorrections || {})
@@ -1308,7 +1318,53 @@ function attachQuiz(app, io) {
         }
 
         if (lobby.isGameStarted) {
-          socket.emit('join-error', { message: 'La partie a déjà commencé' });
+          if (lobby.phase === 'ended') {
+            socket.emit('join-error', { message: 'La partie est terminée' });
+            return;
+          }
+          const player = {
+            id: socket.id,
+            username,
+            roomId: quizId,
+            isHost: false,
+            score: 0,
+            answers: {},
+            priorAnswers: {},
+            answered: {},
+            hints: {},
+            hintAsked: {},
+            joker: null,
+            silencedOn: null,
+            satOutIndex: null
+          };
+          if (lobby.phase !== 'answering' && lobby.phase !== 'booster') {
+            player.satOutIndex = lobby.currentQuestion;
+          }
+          if (!lobby.teamMode) {
+            player.joker = freshJoker(drawJoker());
+          }
+          lobby.players.push(player);
+          quizPlayers.set(socket.id, player);
+          socket.join(quizId);
+          socket.emit('joined-lobby', {
+            lobby: publicLobby(lobby),
+            player: { ...player, role: 'player' }
+          });
+          io.to(quizId).emit('lobby-updated', publicLobby(lobby));
+          syncQuizSocket(io, socket, lobby);
+          if (!lobby.teamMode && player.joker && lobby.phase !== 'booster') {
+            const range = activePackRange(lobby.questions.length, lobby.currentQuestion);
+            socket.emit('quiz-catchup-booster', {
+              card: player.joker.card,
+              validFrom: range.from,
+              validTo: range.to,
+              sittingOut: player.satOutIndex === lobby.currentQuestion
+            });
+          }
+          if (lobby.phase === 'answering') {
+            io.to(quizId).emit('quiz-progress', answerProgress(lobby, lobby.currentQuestion));
+          }
+          emitJokerRoster(io, lobby);
           return;
         }
 
@@ -1393,13 +1449,18 @@ function attachQuiz(app, io) {
       if (!player || player.isHost) return;
       const lobby = quizLobbies.get(player.roomId);
       const team = data?.team === 'sonic' ? 'sonic' : data?.team === 'shadow' ? 'shadow' : null;
-      if (!lobby || lobby.isGameStarted || !lobby.teamMode || !team || player.team === team) return;
+      if (!lobby || !lobby.teamMode || !team || player.team === team) return;
+      if (lobby.isGameStarted && player.team) return;
       const order = ensureTeamOrder(lobby);
       order.shadow = (order.shadow || []).filter((id) => id !== player.id);
       order.sonic = (order.sonic || []).filter((id) => id !== player.id);
       order[team].push(player.id);
       player.team = team;
       io.to(lobby.quizId).emit('lobby-updated', publicLobby(lobby));
+      if (lobby.isGameStarted && lobby.phase === 'answering') {
+        emitTeamChat(io, lobby, team);
+        io.to(lobby.quizId).emit('quiz-progress', answerProgress(lobby, lobby.currentQuestion));
+      }
     });
 
     socket.on('team-chat', (data) => {
@@ -1714,6 +1775,10 @@ function attachQuiz(app, io) {
       if (!lobby) return;
       if (lobby.teamMode) {
         socket.emit('quiz-error', { message: 'Pas de jokers en équipe' });
+        return;
+      }
+      if (player.satOutIndex === lobby.currentQuestion) {
+        socket.emit('quiz-error', { message: 'Tu joueras à partir de la prochaine question' });
         return;
       }
 

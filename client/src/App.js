@@ -99,12 +99,16 @@ function App() {
       if (lobby?.mode === 'quiz') {
         setGameData((prev) => {
           if (!prev || prev.mode !== 'quiz') return prev;
-          const ids = new Set((lobby.players || []).map((entry) => entry.id));
           return {
             ...prev,
             hostId: lobby.hostId,
+            hostName: lobby.hostName || prev.hostName,
+            teamMode: Boolean(lobby.teamMode),
             totalPlayers: (lobby.players || []).length,
-            players: (prev.players || []).filter((entry) => ids.has(entry.id))
+            players: (lobby.players || []).map((entry) => {
+              const previous = (prev.players || []).find((item) => item.id === entry.id);
+              return previous ? { ...previous, ...entry } : entry;
+            })
           };
         });
       }
@@ -194,7 +198,8 @@ function App() {
         copiedAnswer: null,
         silenced: false,
         roundNotes: [],
-        booster: null
+        booster: null,
+        lateBooster: prev?.lateBooster || null
       }));
       setCurrentView('quiz-game');
       setError('');
@@ -220,7 +225,8 @@ function App() {
         roundNotes: [],
         expectedAnswer: '',
         myJoker: prev?.myJoker && prev.phase === 'booster' ? prev.myJoker : null,
-        jokerRoster: prev?.jokerRoster || null
+        jokerRoster: prev?.jokerRoster || null,
+        lateBooster: null
       }));
       setCurrentView('quiz-game');
       setError('');
@@ -228,6 +234,18 @@ function App() {
 
     socket.on('quiz-own-joker', (data) => {
       setGameData((prev) => (prev ? { ...prev, myJoker: data.joker } : prev));
+    });
+
+    socket.on('quiz-catchup-booster', (data) => {
+      setGameData((prev) => (prev ? {
+        ...prev,
+        lateBooster: {
+          card: data.card,
+          validFrom: data.validFrom,
+          validTo: data.validTo,
+          sittingOut: Boolean(data.sittingOut)
+        }
+      } : prev));
     });
 
     socket.on('quiz-jokers', (data) => {
@@ -407,6 +425,7 @@ function App() {
       socket.off('start-error');
       socket.off('quiz-question');
       socket.off('quiz-booster-start');
+      socket.off('quiz-catchup-booster');
       socket.off('quiz-own-joker');
       socket.off('quiz-jokers');
       socket.off('quiz-hold');
@@ -699,7 +718,7 @@ function App() {
             <div className="card">
               <h1 style={{ textAlign: 'center', marginBottom: '8px' }}><Icon name="quiz" tone="mark" />Quiz</h1>
               <p style={{ textAlign: 'center', marginBottom: '16px', opacity: 0.85 }}>
-                Choisis un quiz, puis attends que le chef lance la partie.
+                Choisis un quiz. Une partie déjà lancée se rejoint en cours.
               </p>
               <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                 <button type="button" className="btn" onClick={() => setCurrentView('modes')}>
@@ -931,6 +950,8 @@ function App() {
             onSendHint={(playerId, words) => socket.emit('quiz-send-hint', { playerId, words })}
             onPlayJoker={(payload) => socket.emit('play-joker', payload)}
             onTeamChat={(text) => socket.emit('team-chat', { text })}
+            onChooseTeam={(team) => socket.emit('choose-team', { team })}
+            onDismissCatchup={() => setGameData((prev) => (prev ? { ...prev, lateBooster: null } : prev))}
             onBeginScoring={() => socket.emit('quiz-begin-scoring')}
             onStartQuestion={() => socket.emit('quiz-booster-done')}
           />
