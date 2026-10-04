@@ -244,7 +244,7 @@ const Lobby = ({
               <li>Rien n'est corrigé tout seul : le chef valide chaque réponse</li>
               <li>Il choisit les points, et peut ajouter +1 pour une blague</li>
               <li>Un seul indice par question : −1 pt, sauf avec la carte Indice gratuit. Le chef peut envoyer plusieurs messages à ce joueur</li>
-              <li>À la première question, puis toutes les 15 questions, chaque joueur ouvre un booster et pioche un joker secret</li>
+              <li>Dès 20 questions, cinq boosters (tous les 20 %). De 10 à 19, deux. En dessous, un seul. Pas de jokers en équipe</li>
               <li>Le chef voit les cartes, si elles sont jouées, et qui est visé. Les autres joueurs non</li>
               <li>Le chef peut lancer une partie en équipe. Team Shadow et Team Sonic se forment toutes seules, le premier arrivé envoie la réponse</li>
               <li>Le joueur avec le plus de points gagne</li>

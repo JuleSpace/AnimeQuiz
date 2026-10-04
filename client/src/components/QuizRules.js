@@ -15,7 +15,7 @@ const SLIDES = [
     kicker: 'Une question',
     title: 'Le tour',
     points: [
-      'Booster aux questions 1, 16, 31, en gros toutes les 15 questions.',
+      'Dès 20 questions, un booster tous les 20 %. De 10 à 19, un tous les 50 %. En dessous, un seul.',
       'Temps illimité, ou l’orga clos les réponses.',
       'Attente, puis l’orga donne les points et valide. La salle voit alors la réponse.',
     ]

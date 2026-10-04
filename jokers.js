@@ -1,10 +1,39 @@
-const PACK_EVERY = 15;
+const PACKS_PER_QUIZ = 5;
 
 const JOKER_IDS = ['double', 'filet', 'seconde', 'copie', 'indice', 'silence', 'vol', 'melange'];
 const TARGET_JOKERS = new Set(['copie', 'silence', 'vol']);
 
 function drawJoker() {
   return JOKER_IDS[Math.floor(Math.random() * JOKER_IDS.length)];
+}
+
+function packCount(total) {
+  if (total >= 20) return PACKS_PER_QUIZ;
+  if (total >= 10) return 2;
+  if (total >= 1) return 1;
+  return 0;
+}
+
+function packStarts(total) {
+  const count = Math.max(0, Number(total) || 0);
+  const packs = packCount(count);
+  const starts = [];
+  for (let step = 0; step < packs; step += 1) {
+    starts.push(Math.floor((step * count) / packs));
+  }
+  return starts;
+}
+
+function isPackQuestion(total, index) {
+  return packStarts(total).includes(index);
+}
+
+function packRange(total, index) {
+  const starts = packStarts(total);
+  const place = starts.indexOf(index);
+  const from = index + 1;
+  const to = place >= 0 && place + 1 < starts.length ? starts[place + 1] : total;
+  return { from, to: Math.max(from, to) };
 }
 
 function freshJoker(card) {
@@ -97,10 +126,13 @@ function resolveGains(players, question, index, corrections) {
 }
 
 module.exports = {
-  PACK_EVERY,
+  PACKS_PER_QUIZ,
   JOKER_IDS,
   TARGET_JOKERS,
   drawJoker,
+  packStarts,
+  isPackQuestion,
+  packRange,
   freshJoker,
   pointsFromChef,
   jokerPlayed,

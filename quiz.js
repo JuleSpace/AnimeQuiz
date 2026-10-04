@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 const {
-  PACK_EVERY,
   JOKER_IDS,
   TARGET_JOKERS,
   drawJoker,
   freshJoker,
+  isPackQuestion,
+  packRange,
   pointsFromChef,
   jokerPlayed,
   resolveGains
@@ -880,8 +881,7 @@ function emitJokerRoster(io, lobby) {
 }
 
 function boosterPayload(lobby) {
-  const from = lobby.currentQuestion + 1;
-  const to = Math.min(lobby.questions.length, lobby.currentQuestion + PACK_EVERY);
+  const range = packRange(lobby.questions.length, lobby.currentQuestion);
   return {
     quizName: lobby.quizName,
     hostId: lobby.host?.id || null,
@@ -889,8 +889,8 @@ function boosterPayload(lobby) {
     questionIndex: lobby.currentQuestion,
     totalQuestions: lobby.questions.length,
     players: playerSnapshot(lobby),
-    validFrom: from,
-    validTo: to
+    validFrom: range.from,
+    validTo: range.to
   };
 }
 
@@ -910,7 +910,7 @@ function dealBoosters(io, lobby) {
 
 function openRound(io, lobby) {
   lobby.io = io;
-  if (lobby.currentQuestion % PACK_EVERY === 0) {
+  if (!lobby.teamMode && isPackQuestion(lobby.questions.length, lobby.currentQuestion)) {
     dealBoosters(io, lobby);
     return true;
   }
@@ -1712,6 +1712,10 @@ function attachQuiz(app, io) {
       if (!player || player.isHost) return;
       const lobby = quizLobbies.get(player.roomId);
       if (!lobby) return;
+      if (lobby.teamMode) {
+        socket.emit('quiz-error', { message: 'Pas de jokers en équipe' });
+        return;
+      }
 
       const index = lobby.currentQuestion;
       const card = String(data?.card || '');

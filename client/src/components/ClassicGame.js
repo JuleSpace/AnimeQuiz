@@ -473,7 +473,7 @@ const ClassicGame = ({
           ))}
         </div>
 
-        {isHost && (
+        {isHost && !teamMode && (
           <HostJokerBoard players={gameData.jokerRoster || []} />
         )}
 
@@ -800,21 +800,23 @@ const ClassicGame = ({
 
         {!isHost && (
           <div className="player-dock">
-            <PlayerJokerBar
-              joker={myJoker}
-              phase={phase}
-              questionIndex={gameData.questionIndex}
-              locked={locked}
-              players={players}
-              selfId={player.id}
-              silenced={Boolean(gameData.silenced)}
-              canRedo={canRedo}
-              onPlay={onPlayJoker}
-              onRedo={() => {
-                setLocked(false);
-                setRedoTick((value) => value + 1);
-              }}
-            />
+            {!teamMode && (
+              <PlayerJokerBar
+                joker={myJoker}
+                phase={phase}
+                questionIndex={gameData.questionIndex}
+                locked={locked}
+                players={players}
+                selfId={player.id}
+                silenced={Boolean(gameData.silenced)}
+                canRedo={canRedo}
+                onPlay={onPlayJoker}
+                onRedo={() => {
+                  setLocked(false);
+                  setRedoTick((value) => value + 1);
+                }}
+              />
+            )}
             {phase === 'answering' && !locked && !gameData.silenced && (
               <button type="button" className="hint-chip" onClick={requestHint} disabled={hintAsked}>
                 <Icon name="search" bare /> {hintAsked ? 'Indice demandé' : 'Indice −1'}
