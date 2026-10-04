@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import BlindMusicPlayer from './BlindMusicPlayer';
 import { OrderAnswer, OrderReview, PlaceAnswer, PlaceBoard } from './InteractQuestion';
 import { extractYouTubeId } from '../utils/media';
-import { BoosterOpening, HostJokerBoard, PlayerJokerBar } from './JokerCards';
+import { BoosterOpening, HostJokerBoard, JokerCard, PlayerJokerBar } from './JokerCards';
 import Icon from './ArcadeIcon';
 
 const CHOICE_COLORS = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#8e44ad', '#e67e22'];
@@ -441,6 +441,14 @@ const ClassicGame = ({
 
   return (
     <div className="container">
+      {gameData.melange && (
+        <div className="melange-burst" role="status">
+          <div className="melange-burst-card">
+            <JokerCard cardId="melange" size="full" />
+          </div>
+          <p className="melange-burst-caption">{gameData.melange.username} mélange les réponses</p>
+        </div>
+      )}
       <div className="card">
         <div className="quiz-stage">
         <div className="question-number" style={{ marginBottom: 6 }}>

@@ -373,6 +373,18 @@ function App() {
       setError(data.message || 'Action impossible');
     });
 
+    socket.on('quiz-melange', (data) => {
+      const id = Date.now();
+      setGameData((prev) => (
+        prev ? { ...prev, melange: { id, username: data.username || '' } } : prev
+      ));
+      setTimeout(() => {
+        setGameData((prev) => (
+          prev && prev.melange?.id === id ? { ...prev, melange: null } : prev
+        ));
+      }, 3800);
+    });
+
     socket.on('join-error', (data) => {
       clearSeat();
       setError(data.message);
@@ -411,6 +423,7 @@ function App() {
       socket.off('quiz-hint-requests');
       socket.off('quiz-host-answer');
       socket.off('quiz-error');
+      socket.off('quiz-melange');
       socket.off('team-chat');
     };
   }, []);

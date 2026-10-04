@@ -103,6 +103,16 @@ const SLIDES = [
       'Tu vois les réponses des autres, pas la bonne. Tu choisis qui voler.',
       'Tu prends ses points de la question. Lui tombe à 0.'
     ]
+  },
+  {
+    card: 'melange',
+    kicker: 'Avant les points',
+    title: 'Mélange',
+    points: [
+      'Même moment que Vol : réponses closes, avant les points.',
+      'Toutes les réponses sont redistribuées au hasard.',
+      'En équipe, ce sont les réponses des chefs d’équipe qui tournent.'
+    ]
   }
 ];
 

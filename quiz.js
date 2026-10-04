@@ -537,6 +537,43 @@ function teamRevealRows(lobby, index) {
   });
 }
 
+function shuffleAnswers(lobby, index) {
+  const holders = lobby.teamMode
+    ? ['shadow', 'sonic'].map((team) => membersOf(lobby, team)[0]).filter(Boolean)
+    : lobby.players.slice();
+  if (holders.length < 2) return false;
+
+  const pack = holders.map((player) => ({
+    answer: player.answers ? player.answers[index] : null,
+    hasPrior: Boolean(player.priorAnswers && Object.prototype.hasOwnProperty.call(player.priorAnswers, index)),
+    prior: player.priorAnswers ? player.priorAnswers[index] : null
+  }));
+
+  const order = pack.map((_, slot) => slot);
+  for (let cursor = order.length - 1; cursor > 0; cursor -= 1) {
+    const swap = Math.floor(Math.random() * (cursor + 1));
+    const saved = order[cursor];
+    order[cursor] = order[swap];
+    order[swap] = saved;
+  }
+  if (order.every((source, slot) => source === slot)) {
+    const swap = 1 + Math.floor(Math.random() * (order.length - 1));
+    const saved = order[0];
+    order[0] = order[swap];
+    order[swap] = saved;
+  }
+
+  holders.forEach((player, slot) => {
+    const source = pack[order[slot]];
+    if (!player.answers) player.answers = {};
+    player.answers[index] = source.answer;
+    if (!player.priorAnswers) player.priorAnswers = {};
+    if (source.hasPrior) player.priorAnswers[index] = source.prior;
+    else delete player.priorAnswers[index];
+  });
+  return true;
+}
+
 function emitTeamChat(io, lobby, team) {
   const messages = (lobby.teamChat && lobby.teamChat[team]) || [];
   membersOf(lobby, team).forEach((player) => {
@@ -1684,9 +1721,13 @@ function attachQuiz(app, io) {
         return;
       }
 
-      if (card === 'vol') {
+      if (card === 'vol' || card === 'melange') {
         if (lobby.phase !== 'hold') {
-          socket.emit('quiz-error', { message: 'Vol se joue juste avant les points du chef' });
+          socket.emit('quiz-error', {
+            message: card === 'vol'
+              ? 'Vol se joue juste avant les points du chef'
+              : 'Mélange se joue juste avant les points du chef'
+          });
           return;
         }
       } else if (card === 'seconde') {
@@ -1707,7 +1748,7 @@ function attachQuiz(app, io) {
         socket.emit('quiz-error', { message: 'Seul le chef d\'équipe envoie la réponse' });
         return;
       }
-      if (lobby.teamMode && card !== 'vol' && card !== 'seconde' && player.team) {
+      if (lobby.teamMode && card !== 'vol' && card !== 'melange' && card !== 'seconde' && player.team) {
         const captain = membersOf(lobby, player.team)[0];
         if (captain && (captain.answered?.[index] || captain.silencedOn === index)) {
           socket.emit('quiz-error', { message: 'L\'équipe a déjà répondu' });
@@ -1747,6 +1788,7 @@ function attachQuiz(app, io) {
       if (card === 'copie') joker.note = `Copie ${joker.targetName}`;
       if (card === 'silence') joker.note = `Silence sur ${joker.targetName}`;
       if (card === 'vol') joker.note = `Vol sur ${joker.targetName}`;
+      if (card === 'melange') joker.note = 'Réponses mélangées';
       if (card === 'indice') joker.note = 'Indice gratuit';
 
       if (card === 'indice') {
@@ -1792,6 +1834,18 @@ function attachQuiz(app, io) {
           username: target.username,
           text
         });
+      }
+
+      if (card === 'melange') {
+        if (!shuffleAnswers(lobby, index)) {
+          joker.used = false;
+          joker.usedOn = null;
+          joker.note = 'En main';
+          socket.emit('quiz-error', { message: 'Il faut au moins deux réponses à mélanger' });
+          return;
+        }
+        emitHold(io, lobby);
+        io.to(lobby.quizId).emit('quiz-melange', { username: player.username });
       }
 
       io.to(player.id).emit('quiz-own-joker', { joker: ownJokerPayload(joker) });

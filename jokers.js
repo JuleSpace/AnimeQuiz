@@ -1,6 +1,6 @@
 const PACK_EVERY = 15;
 
-const JOKER_IDS = ['double', 'filet', 'seconde', 'copie', 'indice', 'silence', 'vol'];
+const JOKER_IDS = ['double', 'filet', 'seconde', 'copie', 'indice', 'silence', 'vol', 'melange'];
 const TARGET_JOKERS = new Set(['copie', 'silence', 'vol']);
 
 function drawJoker() {

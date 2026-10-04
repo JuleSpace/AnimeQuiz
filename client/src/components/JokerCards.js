@@ -43,6 +43,12 @@ export const JOKERS = {
     rule: 'Vois les réponses, puis prends les points d\'un joueur.',
     accent: '#ff2347',
     mate: '#1f6dff'
+  },
+  melange: {
+    name: 'Mélange',
+    rule: 'Les réponses sont redistribuées au hasard.',
+    accent: '#1f6dff',
+    mate: '#ff2347'
   }
 };
 
@@ -53,7 +59,8 @@ const CARD_ART = {
   copie: '/copie.png',
   indice: '/indice.png',
   silence: '/silence-faker.png',
-  vol: '/vol.png'
+  vol: '/vol.png',
+  melange: '/melange.gif'
 };
 
 const Mark = ({ cardId }) => {
@@ -230,8 +237,9 @@ export const PlayerJokerBar = ({
   const card = JOKERS[joker.card];
   const targets = (players || []).filter((entry) => entry.id !== selfId);
   const onThisQuestion = joker.used && joker.usedOn === questionIndex;
+  const holdCard = joker.card === 'vol' || joker.card === 'melange';
   const canPlay = !joker.used && (
-    joker.card === 'vol'
+    holdCard
       ? phase === 'hold'
       : joker.card === 'seconde'
         ? phase === 'answering' && !silenced
@@ -245,12 +253,14 @@ export const PlayerJokerBar = ({
 
   let hint = card.rule;
   if (joker.used) hint = joker.note || 'Jouée';
-  else if (silenced && joker.card !== 'vol') hint = 'Tu es réduit au silence.';
+  else if (silenced && !holdCard) hint = 'Tu es réduit au silence.';
   else if (joker.card === 'vol' && phase === 'answering') hint = 'Après les réponses, tu verras les copies.';
   else if (joker.card === 'vol' && phase !== 'hold') hint = 'Trop tard pour cette question.';
+  else if (joker.card === 'melange' && phase === 'answering') hint = 'Après les réponses, juste avant les points.';
+  else if (joker.card === 'melange' && phase !== 'hold') hint = 'Trop tard pour cette question.';
   else if (joker.card === 'seconde' && phase === 'answering' && locked) hint = 'Tu peux envoyer une deuxième réponse.';
-  else if (joker.card !== 'vol' && phase === 'answering' && locked) hint = 'Il fallait la jouer avant de répondre.';
-  else if (joker.card !== 'vol' && phase !== 'answering') hint = 'Trop tard pour cette question.';
+  else if (!holdCard && phase === 'answering' && locked) hint = 'Il fallait la jouer avant de répondre.';
+  else if (!holdCard && phase !== 'answering') hint = 'Trop tard pour cette question.';
 
   return (
     <div className="player-joker">
