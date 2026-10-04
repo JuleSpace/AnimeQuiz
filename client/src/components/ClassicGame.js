@@ -579,7 +579,8 @@ const ClassicGame = ({
                   <div key={entry.id} className="quiz-score-row">
                     <div className="quiz-answer">
                       <strong>{entry.username}</strong>
-                      {entry.members ? ` · ${entry.members.join(', ')}` : ''}
+                      {entry.captainName ? ` · chef ${entry.captainName}` : ''}
+                      {renderAnswer(entry)}
                     </div>
                   </div>
                 ))}
@@ -627,7 +628,9 @@ const ClassicGame = ({
                   <div className="quiz-answer">
                     <strong>{entry.username}</strong>
                     {entry.captainName ? ` · chef ${entry.captainName}` : ''}
-                    {entry.members ? ` · ${entry.members.join(', ')}` : ''}
+                    {(entry.members || []).filter((name) => name !== entry.captainName).length
+                      ? ` · ${(entry.members || []).filter((name) => name !== entry.captainName).join(', ')}`
+                      : ''}
                     {renderAnswer(entry)}
                   </div>
                   {phase === 'correction' ? (
@@ -740,20 +743,33 @@ const ClassicGame = ({
             )}
 
             <div style={{ marginTop: 16, width: '100%' }}>
-              {(reveal.players || []).map((entry) => (
-                <div key={entry.id} className="quiz-score-row">
-                  <div className="quiz-answer">
-                    <strong>{entry.username}</strong>
-                    {renderAnswer(entry)}
+              {((reveal.teams && reveal.teams.length) ? reveal.teams : (reveal.players || [])).map((entry) => {
+                const teammates = (entry.members || []).filter((name) => name !== entry.captainName);
+                const onThisRow = entry.memberIds
+                  ? entry.memberIds.includes(player.id)
+                  : entry.id === player.id;
+                return (
+                  <div key={entry.id} className="quiz-score-row">
+                    <div className="quiz-answer">
+                      <strong>{entry.username}</strong>
+                      {entry.captainName ? ` · chef ${entry.captainName}` : ''}
+                      {teammates.length ? ` · ${teammates.join(', ')}` : ''}
+                      {renderAnswer(entry)}
+                    </div>
+                    <div style={{ fontWeight: 'bold', color: entry.pointsThisRound > 0 ? '#51cf66' : '#ff6b6b' }}>
+                      +{entry.pointsThisRound || 0}
+                    </div>
+                    {(entry.memberGains || []).length > 0 && (
+                      <div style={{ fontSize: '0.9rem', opacity: 0.85 }}>
+                        {entry.memberGains.map((gain) => `${gain.username} +${gain.points}`).join(' · ')}
+                      </div>
+                    )}
+                    {onThisRow && (gameData.roundNotes || []).length > 0 && (
+                      <div style={{ color: '#ff2347', fontSize: '0.9rem' }}>{gameData.roundNotes.join(' ')}</div>
+                    )}
                   </div>
-                  <div style={{ fontWeight: 'bold', color: entry.pointsThisRound > 0 ? '#51cf66' : '#ff6b6b' }}>
-                    +{entry.pointsThisRound || 0}
-                  </div>
-                  {entry.id === player.id && (gameData.roundNotes || []).length > 0 && (
-                    <div style={{ color: '#ff2347', fontSize: '0.9rem' }}>{gameData.roundNotes.join(' ')}</div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div style={{ textAlign: 'center', marginTop: 16 }}>

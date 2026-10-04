@@ -501,7 +501,7 @@ function scoringCorrections(lobby, corrections) {
   return expanded;
 }
 
-function teamScoreRows(lobby, index) {
+function teamScoreRows(lobby, index, withAnswers = true) {
   const question = lobby.questions[index];
   return ['shadow', 'sonic'].flatMap((team) => {
     const members = membersOf(lobby, team);
@@ -513,8 +513,27 @@ function teamScoreRows(lobby, index) {
       team,
       captainName: captain.username,
       members: members.map((player) => player.username),
-      ...answerSnapshot(question, captain, index)
+      memberIds: members.map((player) => player.id),
+      ...(withAnswers ? answerSnapshot(question, captain, index) : { answerText: '', answer: null })
     }];
+  });
+}
+
+function teamRevealRows(lobby, index) {
+  return teamScoreRows(lobby, index, true).map((row) => {
+    const members = membersOf(lobby, row.team);
+    const gains = members.map((player) => ({
+      id: player.id,
+      username: player.username,
+      points: player.lastGain || 0
+    }));
+    const points = gains.length ? gains[0].points : 0;
+    const same = gains.every((entry) => entry.points === points);
+    return {
+      ...row,
+      pointsThisRound: points,
+      memberGains: same ? [] : gains
+    };
   });
 }
 
@@ -597,6 +616,8 @@ function emitReveal(io, lobby, question, index) {
     layoutImageUrl: question.layoutImageUrl || '',
     correctIndexes: question.type === 'qcm' ? (question.correctIndexes || []) : [],
     correctBoolean: question.type === 'boolean' ? Boolean(question.correctBoolean) : null,
+    teamMode: Boolean(lobby.teamMode),
+    teams: lobby.teamMode ? teamRevealRows(lobby, index) : [],
     players: lobby.players.map((player) => ({
       id: player.id,
       username: player.username,
@@ -744,7 +765,7 @@ function holdPayload(lobby, full, withAnswers) {
     full: Boolean(full),
     answersVisible: Boolean(withAnswers) && !full,
     teamMode: Boolean(lobby.teamMode),
-    teams: lobby.teamMode ? teamScoreRows(lobby, index) : [],
+    teams: lobby.teamMode ? teamScoreRows(lobby, index, showAnswers) : [],
     players: answeredPlayers(lobby, index, showAnswers),
     ...(full ? privateAnswerFields(lobby) : {})
   };
