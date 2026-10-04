@@ -111,7 +111,6 @@ const SLIDES = [
     points: [
       'Même moment que Vol : réponses closes, avant les points.',
       'Toutes les réponses sont redistribuées au hasard.',
-      'En équipe, ce sont les réponses des chefs d’équipe qui tournent.'
     ]
   }
 ];
