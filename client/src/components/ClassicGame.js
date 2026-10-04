@@ -83,6 +83,48 @@ const HintComposer = ({ request, onSend }) => {
   );
 };
 
+const TeamChat = ({ messages, onSend, accent }) => {
+  const [text, setText] = useState('');
+  const endRef = useRef(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [messages]);
+
+  return (
+    <form
+      className={`team-chat team-chat-${accent}`}
+      onSubmit={(event) => {
+        event.preventDefault();
+        const next = text.trim();
+        if (!next) return;
+        onSend(next);
+        setText('');
+      }}
+    >
+      <div className="team-chat-log">
+        {(messages || []).map((message) => (
+          <div key={message.id} className="team-chat-line">
+            <strong>{message.username}</strong>
+            <span>{message.text}</span>
+          </div>
+        ))}
+        <div ref={endRef} />
+      </div>
+      <div className="team-chat-compose">
+        <input
+          className="input"
+          maxLength={200}
+          value={text}
+          placeholder="Parle avec ton équipe"
+          onChange={(event) => setText(event.target.value)}
+        />
+        <button type="submit" className="btn">Envoyer</button>
+      </div>
+    </form>
+  );
+};
+
 const ClassicGame = ({
   gameData,
   player,
@@ -94,6 +136,7 @@ const ClassicGame = ({
   onRequestHint,
   onSendHint,
   onPlayJoker,
+  onTeamChat,
   onBeginScoring,
   onStartQuestion
 }) => {
@@ -177,6 +220,12 @@ const ClassicGame = ({
   const reveal = gameData.reveal;
   const players = gameData.players || [];
   const remaining = gameData.deadline ? Math.max(0, Math.ceil((gameData.deadline - now) / 1000)) : null;
+  const me = players.find((entry) => entry.id === player.id);
+  const teamMode = Boolean(gameData.teamMode);
+  const myTeam = me?.team === 'shadow' || me?.team === 'sonic' ? me.team : null;
+  const iAmCaptain = !teamMode || Boolean(me?.captain);
+  const scoreRows = teamMode && (gameData.teams || []).length ? gameData.teams : players;
+  const progressLabel = teamMode ? 'équipes ont répondu' : 'ont répondu';
   const ratio = question.timeLimit && gameData.deadline
     ? Math.max(0, Math.min(1, (gameData.deadline - now) / (question.timeLimit * 1000)))
     : 0;
@@ -211,8 +260,19 @@ const ClassicGame = ({
         <div style={{ textAlign: 'center', padding: '18px' }}>
           <div style={{ fontSize: '1.2rem', marginBottom: 8 }}>Réponse envoyée</div>
           <div style={{ opacity: 0.8 }}>
-            {gameData.answered || 0}/{gameData.totalPlayers || players.length} joueurs ont répondu
+            {gameData.answered || 0}/{gameData.totalPlayers || players.length} {progressLabel}
           </div>
+        </div>
+      );
+    }
+
+    if (teamMode && !iAmCaptain) {
+      return (
+        <div style={{ textAlign: 'center', padding: '18px' }}>
+          <div style={{ fontSize: '1.2rem', marginBottom: 8 }}>
+            {me?.captainName || 'Le chef d\'équipe'} envoie la réponse
+          </div>
+          <div style={{ opacity: 0.8 }}>Échangez dans le chat, une seule réponse part pour l'équipe.</div>
         </div>
       );
     }
@@ -463,7 +523,7 @@ const ClassicGame = ({
               />
             )}
             <div style={{ opacity: 0.8, marginBottom: 8 }}>
-              {gameData.answered || 0}/{gameData.totalPlayers || players.length} ont répondu
+              {gameData.answered || 0}/{gameData.totalPlayers || players.length} {progressLabel}
             </div>
             {hintRequests.length === 0 && (
               <div style={{ opacity: 0.75 }}>Aucun indice demandé.</div>
@@ -485,6 +545,13 @@ const ClassicGame = ({
               </div>
             )}
             {renderAnswering()}
+            {teamMode && myTeam && (
+              <TeamChat
+                accent={myTeam}
+                messages={gameData.teamChat || []}
+                onSend={onTeamChat}
+              />
+            )}
             {hints.length > 0 && (
               <div className="quiz-hint-list">
                 {hints.map((words, index) => (
@@ -493,7 +560,7 @@ const ClassicGame = ({
               </div>
             )}
             <div style={{ opacity: 0.75, marginTop: 8 }}>
-              {gameData.answered || 0}/{gameData.totalPlayers || players.length} ont répondu
+              {gameData.answered || 0}/{gameData.totalPlayers || players.length} {progressLabel}
             </div>
           </>
         )}
@@ -508,11 +575,11 @@ const ClassicGame = ({
                 <p style={{ textAlign: 'center', color: '#ff2347' }}>
                   Tu as Vol. Les réponses sont là, la bonne reste cachée.
                 </p>
-                {players.map((entry) => (
+                {scoreRows.map((entry) => (
                   <div key={entry.id} className="quiz-score-row">
                     <div className="quiz-answer">
                       <strong>{entry.username}</strong>
-                      {renderAnswer(entry)}
+                      {entry.members ? ` · ${entry.members.join(', ')}` : ''}
                     </div>
                   </div>
                 ))}
@@ -549,13 +616,18 @@ const ClassicGame = ({
               {renderPlacement(null, true)}
               <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} />
             </div>
-            {players.map((entry) => {
+            {scoreRows.map((entry) => {
               const given = Number(corrections[entry.id]) || 0;
               const suggested = gameData.suggestedPoints || question.points || 1;
+              const memberPreview = (gameData.gainPreview || []).filter((row) => (
+                entry.team ? row.team === entry.team : row.id === entry.id
+              ));
               return (
                 <div key={entry.id} className="quiz-score-row">
                   <div className="quiz-answer">
                     <strong>{entry.username}</strong>
+                    {entry.captainName ? ` · chef ${entry.captainName}` : ''}
+                    {entry.members ? ` · ${entry.members.join(', ')}` : ''}
                     {renderAnswer(entry)}
                   </div>
                   {phase === 'correction' ? (
@@ -596,11 +668,11 @@ const ClassicGame = ({
                       />
                     </div>
                   ) : null}
-                  {phase === 'correction' && (gameData.gainPreview || []).some((row) => row.id === entry.id && (row.tags || []).length > 0) && (
+                  {phase === 'correction' && memberPreview.some((row) => (row.tags || []).length > 0) && (
                     <div style={{ color: '#ff2347', fontSize: '0.9rem' }}>
-                      {((gameData.gainPreview || []).find((row) => row.id === entry.id)?.tags || []).join(' · ')}
-                      {' → '}
-                      {(gameData.gainPreview || []).find((row) => row.id === entry.id)?.gain || 0} pts au total
+                      {memberPreview.filter((row) => (row.tags || []).length > 0).map((row) => (
+                        `${row.username || ''} ${(row.tags || []).join(' · ')} → ${row.gain || 0}`
+                      )).join(' · ')}
                     </div>
                   )}
                 </div>

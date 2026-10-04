@@ -72,7 +72,8 @@ h1, h2, h3 {
   font-style: italic;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  text-shadow: 3px 3px 0 #1f6dff, 6px 6px 0 #ff2347;
+  line-height: 1.15;
+  text-shadow: 2px 2px 0 #111318, 3px 3px 0 #1f6dff;
 }
 
 .stage-title {
@@ -81,7 +82,7 @@ h1, h2, h3 {
   color: #fff;
   font-size: clamp(2.4rem, 6vw, 3.5rem);
   letter-spacing: 0.08em;
-  text-shadow: 4px 4px 0 #1f6dff, 8px 8px 0 #ff2347;
+  text-shadow: 2px 2px 0 #111318, 5px 5px 0 #ff2347;
 }
 
 .stage-title::after {
@@ -220,6 +221,7 @@ h1, h2, h3 {
 .player-list {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 15px;
   margin: 20px 0;
 }
@@ -235,9 +237,20 @@ h1, h2, h3 {
 }
 
 .player-card.leader {
+  align-self: flex-start;
+  flex: 0 0 auto;
   background: #ff2347;
   color: #111318;
   border-color: #111318;
+}
+
+.player-list-teams {
+  flex-direction: column;
+  align-items: center;
+}
+
+.player-list-teams .player-card.leader {
+  align-self: center;
 }
 
 .player-card.leader * {
@@ -1723,6 +1736,112 @@ textarea.input {
 
   .rules-copy h2 {
     font-size: 1.7rem;
+  }
+}
+
+.team-board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: min(760px, 100%);
+  margin: 0;
+}
+
+.team-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  background: #14141c;
+  border: 3px solid #ff2347;
+  box-shadow: 6px 6px 0 #111318;
+}
+
+.team-sonic {
+  border-color: #1f6dff;
+}
+
+.team-name {
+  font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif;
+  font-style: italic;
+  font-size: 1.7rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  line-height: 1;
+  text-shadow: 2px 2px 0 #111318;
+}
+
+.team-shadow .team-name {
+  color: #ff2347;
+}
+
+.team-sonic .team-name {
+  color: #1f6dff;
+}
+
+.team-column .player-card {
+  width: 100%;
+}
+
+.team-column .btn {
+  margin: 0;
+}
+
+.team-chat {
+  width: min(560px, 100%);
+  margin: 16px auto 0;
+  border: 3px solid #ff2347;
+  background: #14141c;
+  box-shadow: 5px 5px 0 #111318;
+}
+
+.team-chat-sonic {
+  border-color: #1f6dff;
+}
+
+.team-chat-log {
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.team-chat-line {
+  display: flex;
+  gap: 8px;
+}
+
+.team-chat-line strong {
+  color: #ff2347;
+  flex: 0 0 auto;
+}
+
+.team-chat-sonic .team-chat-line strong {
+  color: #1f6dff;
+}
+
+.team-chat-compose {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+}
+
+.team-chat-compose .input {
+  margin: 0;
+  flex: 1;
+}
+
+.team-chat-compose .btn {
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .team-board {
+    grid-template-columns: 1fr;
   }
 }
 

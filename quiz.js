@@ -418,11 +418,111 @@ function validateQuestion(question, position) {
 }
 
 function playerSnapshot(lobby) {
-  return lobby.players.map((player) => ({
-    id: player.id,
-    username: player.username,
-    score: player.score || 0
-  }));
+  return lobby.players.map((player) => {
+    const team = player.team === 'shadow' || player.team === 'sonic' ? player.team : null;
+    const members = team ? membersOf(lobby, team) : [];
+    const captain = members[0];
+    return {
+      id: player.id,
+      username: player.username,
+      score: player.score || 0,
+      team,
+      captain: Boolean(captain && captain.id === player.id),
+      captainName: captain ? captain.username : ''
+    };
+  });
+}
+
+function ensureTeamOrder(lobby) {
+  if (!lobby.teamOrder) lobby.teamOrder = { shadow: [], sonic: [] };
+  if (!lobby.teamOrder.shadow) lobby.teamOrder.shadow = [];
+  if (!lobby.teamOrder.sonic) lobby.teamOrder.sonic = [];
+  return lobby.teamOrder;
+}
+
+function membersOf(lobby, team) {
+  const order = (ensureTeamOrder(lobby)[team] || []);
+  return order
+    .map((id) => lobby.players.find((player) => player.id === id))
+    .filter(Boolean);
+}
+
+function isTeamCaptain(lobby, player) {
+  if (!lobby.teamMode || !player) return false;
+  const team = player.team === 'shadow' || player.team === 'sonic' ? player.team : null;
+  if (!team) return false;
+  const captain = membersOf(lobby, team)[0];
+  return Boolean(captain && captain.id === player.id);
+}
+
+function dropFromTeam(lobby, player) {
+  const order = ensureTeamOrder(lobby);
+  ['shadow', 'sonic'].forEach((team) => {
+    const list = order[team] || [];
+    const wasCaptain = list[0] === player.id;
+    order[team] = list.filter((id) => id !== player.id);
+    if (!wasCaptain || lobby.phase !== 'answering') return;
+    const next = membersOf(lobby, team)[0];
+    const index = lobby.currentQuestion;
+    if (!next || !player.answered?.[index]) return;
+    next.answers[index] = player.answers?.[index];
+    next.answered[index] = true;
+    if (player.priorAnswers && Object.prototype.hasOwnProperty.call(player.priorAnswers, index)) {
+      if (!next.priorAnswers) next.priorAnswers = {};
+      next.priorAnswers[index] = player.priorAnswers[index];
+    }
+  });
+  player.team = null;
+}
+
+function answerProgress(lobby, index) {
+  if (!lobby.teamMode) {
+    return {
+      answered: lobby.players.filter((entry) => entry.answered?.[index]).length,
+      totalPlayers: lobby.players.length
+    };
+  }
+  const teams = ['shadow', 'sonic'].filter((team) => membersOf(lobby, team).length);
+  const answered = teams.filter((team) => {
+    const captain = membersOf(lobby, team)[0];
+    return captain && (captain.answered?.[index] || captain.silencedOn === index);
+  }).length;
+  return { answered, totalPlayers: teams.length };
+}
+
+function scoringCorrections(lobby, corrections) {
+  const source = corrections || {};
+  if (!lobby.teamMode) return source;
+  const expanded = {};
+  lobby.players.forEach((player) => {
+    const team = player.team === 'shadow' || player.team === 'sonic' ? player.team : null;
+    expanded[player.id] = team ? pointsFromChef(source[team]) : 0;
+  });
+  return expanded;
+}
+
+function teamScoreRows(lobby, index) {
+  const question = lobby.questions[index];
+  return ['shadow', 'sonic'].flatMap((team) => {
+    const members = membersOf(lobby, team);
+    if (!members.length || !question) return [];
+    const captain = members[0];
+    return [{
+      id: team,
+      username: team === 'shadow' ? 'Team Shadow' : 'Team Sonic',
+      team,
+      captainName: captain.username,
+      members: members.map((player) => player.username),
+      ...answerSnapshot(question, captain, index)
+    }];
+  });
+}
+
+function emitTeamChat(io, lobby, team) {
+  const messages = (lobby.teamChat && lobby.teamChat[team]) || [];
+  membersOf(lobby, team).forEach((player) => {
+    io.to(player.id).emit('team-chat', { team, messages });
+  });
 }
 
 function publicLobby(lobby) {
@@ -433,6 +533,7 @@ function publicLobby(lobby) {
     mode: 'quiz',
     hostId: lobby.host?.id || null,
     hostName: lobby.host?.username || lobby.hostName || '',
+    teamMode: Boolean(lobby.teamMode),
     players: playerSnapshot(lobby),
     isGameStarted: lobby.isGameStarted,
     totalQuestions: total,
@@ -467,7 +568,12 @@ function scoreAnswer(question, answer) {
 }
 
 function applyScores(lobby, index, corrections) {
-  const resolved = resolveGains(lobby.players, lobby.questions[index], index, corrections);
+  const resolved = resolveGains(
+    lobby.players,
+    lobby.questions[index],
+    index,
+    scoringCorrections(lobby, corrections)
+  );
   lobby.players.forEach((player) => {
     const info = resolved[player.id] || { gain: 0, notes: [] };
     player.score = (player.score || 0) + info.gain;
@@ -521,9 +627,14 @@ function closeQuestion(io, quizId) {
   });
 
   const corrections = {};
-  lobby.players.forEach((player) => {
-    corrections[player.id] = 0;
-  });
+  if (lobby.teamMode) {
+    corrections.shadow = 0;
+    corrections.sonic = 0;
+  } else {
+    lobby.players.forEach((player) => {
+      corrections[player.id] = 0;
+    });
+  }
   lobby.pendingCorrections = corrections;
   emitHold(io, lobby);
 }
@@ -539,9 +650,10 @@ function questionPayload(lobby) {
     questionIndex: index,
     totalQuestions: lobby.questions.length,
     players: playerSnapshot(lobby),
+    teamMode: Boolean(lobby.teamMode),
+    teams: lobby.teamMode ? teamScoreRows(lobby, index) : [],
     deadline: lobby.deadline,
-    answered: lobby.players.filter((entry) => entry.answered?.[index]).length,
-    totalPlayers: lobby.players.length
+    ...answerProgress(lobby, index)
   };
 }
 
@@ -552,6 +664,7 @@ function sendQuestion(io, lobby) {
   const timeLimit = question.timeLimit || 0;
   lobby.deadline = timeLimit ? Date.now() + timeLimit * 1000 : null;
   lobby.hintRequests = [];
+  lobby.teamChat = { shadow: [], sonic: [] };
 
   let payload;
   let expectedAnswer = '';
@@ -565,6 +678,10 @@ function sendQuestion(io, lobby) {
   lobby.phase = 'answering';
   lobby.io = io;
   io.to(lobby.quizId).emit('quiz-question', payload);
+  if (lobby.teamMode) {
+    emitTeamChat(io, lobby, 'shadow');
+    emitTeamChat(io, lobby, 'sonic');
+  }
   if (lobby.host?.id) {
     io.to(lobby.host.id).emit('quiz-host-answer', {
       questionIndex: lobby.currentQuestion,
@@ -626,6 +743,8 @@ function holdPayload(lobby, full, withAnswers) {
     hostId: lobby.host?.id || null,
     full: Boolean(full),
     answersVisible: Boolean(withAnswers) && !full,
+    teamMode: Boolean(lobby.teamMode),
+    teams: lobby.teamMode ? teamScoreRows(lobby, index) : [],
     players: answeredPlayers(lobby, index, showAnswers),
     ...(full ? privateAnswerFields(lobby) : {})
   };
@@ -636,10 +755,12 @@ function previewList(lobby, index) {
     lobby.players,
     lobby.questions[index],
     index,
-    lobby.pendingCorrections || {}
+    scoringCorrections(lobby, lobby.pendingCorrections || {})
   );
   return lobby.players.map((player) => ({
     id: player.id,
+    username: player.username,
+    team: player.team || null,
     gain: resolved[player.id]?.gain || 0,
     tags: resolved[player.id]?.tags || []
   }));
@@ -658,7 +779,9 @@ function correctionPayload(lobby, full) {
     ...payload,
     ...privateAnswerFields(lobby),
     corrections: lobby.pendingCorrections || {},
-    preview: previewList(lobby, index)
+    preview: previewList(lobby, index),
+    teamMode: Boolean(lobby.teamMode),
+    teams: lobby.teamMode ? teamScoreRows(lobby, index) : []
   };
 }
 
@@ -785,7 +908,8 @@ function publishCopies(io, lobby, source) {
 function maybeCloseIfComplete(io, lobby) {
   const index = lobby.currentQuestion;
   if (lobby.phase !== 'answering') return;
-  if (lobby.players.length > 0 && lobby.players.every((entry) => entry.answered[index])) {
+  const progress = answerProgress(lobby, index);
+  if (progress.totalPlayers > 0 && progress.answered >= progress.totalPlayers) {
     closeQuestion(io, lobby.quizId);
   }
 }
@@ -830,6 +954,11 @@ function syncQuizSocket(io, socket, lobby) {
       words: hints[hints.length - 1],
       hints
     });
+  }
+
+  if (person && !person.isHost && person.team && lobby.teamMode && lobby.phase === 'answering') {
+    const messages = (lobby.teamChat && lobby.teamChat[person.team]) || [];
+    socket.emit('team-chat', { team: person.team, messages });
   }
 
   if (person && !person.isHost && person.silencedOn === lobby.currentQuestion && lobby.phase === 'answering') {
@@ -892,6 +1021,7 @@ function removeQuizPlayer(io, socket) {
   if (lobby) {
     const wasHost = isHostSocket(lobby, socket.id);
     if (wasHost) lobby.host = null;
+    dropFromTeam(lobby, person);
     lobby.players = lobby.players.filter((entry) => entry.id !== socket.id);
     socket.leave(person.roomId);
 
@@ -901,9 +1031,8 @@ function removeQuizPlayer(io, socket) {
     } else {
       io.to(person.roomId).emit('lobby-updated', publicLobby(lobby));
       emitJokerRoster(io, lobby);
-      const index = lobby.currentQuestion;
-      if (!wasHost && lobby.phase === 'answering' && lobby.players.length > 0 && lobby.players.every((entry) => entry.answered[index])) {
-        closeQuestion(io, lobby.quizId);
+      if (!wasHost && lobby.phase === 'answering') {
+        maybeCloseIfComplete(io, lobby);
       }
     }
   }
@@ -1054,7 +1183,10 @@ function attachQuiz(app, io) {
             currentQuestion: 0,
             phase: 'lobby',
             host: null,
-            hostName: ''
+            hostName: '',
+            teamMode: false,
+            teamOrder: { shadow: [], sonic: [] },
+            teamChat: { shadow: [], sonic: [] }
           });
         }
 
@@ -1099,8 +1231,13 @@ function attachQuiz(app, io) {
             return;
           }
           clearDrop(existingPlayer);
-          quizPlayers.delete(existingPlayer.id);
+          const previousId = existingPlayer.id;
+          quizPlayers.delete(previousId);
           existingPlayer.id = socket.id;
+          const order = ensureTeamOrder(lobby);
+          ['shadow', 'sonic'].forEach((team) => {
+            order[team] = (order[team] || []).map((id) => (id === previousId ? socket.id : id));
+          });
           quizPlayers.set(socket.id, existingPlayer);
           socket.join(quizId);
           socket.emit('joined-lobby', {
@@ -1184,6 +1321,48 @@ function attachQuiz(app, io) {
       }
     });
 
+    socket.on('set-team-mode', (data) => {
+      const player = quizPlayers.get(socket.id);
+      if (!player) return;
+      const lobby = quizLobbies.get(player.roomId);
+      if (!lobby || !isHostSocket(lobby, socket.id) || lobby.isGameStarted) return;
+      lobby.teamMode = Boolean(data?.enabled);
+      io.to(lobby.quizId).emit('lobby-updated', publicLobby(lobby));
+    });
+
+    socket.on('choose-team', (data) => {
+      const player = quizPlayers.get(socket.id);
+      if (!player || player.isHost) return;
+      const lobby = quizLobbies.get(player.roomId);
+      const team = data?.team === 'sonic' ? 'sonic' : data?.team === 'shadow' ? 'shadow' : null;
+      if (!lobby || lobby.isGameStarted || !lobby.teamMode || !team || player.team === team) return;
+      const order = ensureTeamOrder(lobby);
+      order.shadow = (order.shadow || []).filter((id) => id !== player.id);
+      order.sonic = (order.sonic || []).filter((id) => id !== player.id);
+      order[team].push(player.id);
+      player.team = team;
+      io.to(lobby.quizId).emit('lobby-updated', publicLobby(lobby));
+    });
+
+    socket.on('team-chat', (data) => {
+      const player = quizPlayers.get(socket.id);
+      if (!player || player.isHost) return;
+      const lobby = quizLobbies.get(player.roomId);
+      const team = player.team === 'shadow' || player.team === 'sonic' ? player.team : null;
+      if (!lobby || !lobby.teamMode || !team || lobby.phase !== 'answering') return;
+      const text = String(data?.text || '').trim().slice(0, 200);
+      if (!text) return;
+      if (!lobby.teamChat) lobby.teamChat = { shadow: [], sonic: [] };
+      const messages = lobby.teamChat[team] || [];
+      messages.push({
+        id: `${player.id}-${Date.now()}`,
+        username: player.username,
+        text
+      });
+      lobby.teamChat[team] = messages.slice(-40);
+      emitTeamChat(io, lobby, team);
+    });
+
     socket.on('start-quiz', async (data) => {
       try {
         const quizId = String(data.quizId || '');
@@ -1197,6 +1376,17 @@ function attachQuiz(app, io) {
         if (!lobby.players.length) {
           socket.emit('start-error', { message: 'Il faut au moins un joueur en plus du chef' });
           return;
+        }
+        if (lobby.teamMode) {
+          const unassigned = lobby.players.some((entry) => entry.team !== 'shadow' && entry.team !== 'sonic');
+          if (unassigned) {
+            socket.emit('start-error', { message: 'Chaque joueur doit choisir une équipe' });
+            return;
+          }
+          if (!membersOf(lobby, 'shadow').length || !membersOf(lobby, 'sonic').length) {
+            socket.emit('start-error', { message: 'Les deux équipes doivent avoir au moins un joueur' });
+            return;
+          }
         }
 
         const quiz = await Quiz.findById(quizId);
@@ -1254,6 +1444,10 @@ function attachQuiz(app, io) {
         socket.emit('quiz-error', { message: 'Tu es réduit au silence' });
         return;
       }
+      if (lobby.teamMode && !isTeamCaptain(lobby, player)) {
+        socket.emit('quiz-error', { message: 'Seul le chef d\'équipe envoie la réponse' });
+        return;
+      }
 
       const canRedo = player.answered[index]
         && jokerPlayed(player, index, 'seconde')
@@ -1274,15 +1468,9 @@ function attachQuiz(app, io) {
       player.answered[index] = true;
       publishCopies(io, lobby, player);
 
-      const answered = lobby.players.filter((entry) => entry.answered[index]).length;
-      io.to(lobby.quizId).emit('quiz-progress', {
-        answered,
-        totalPlayers: lobby.players.length
-      });
+      io.to(lobby.quizId).emit('quiz-progress', answerProgress(lobby, index));
 
-      if (answered === lobby.players.length) {
-        closeQuestion(io, lobby.quizId);
-      }
+      maybeCloseIfComplete(io, lobby);
     });
 
     socket.on('quiz-force-close', () => {
@@ -1300,9 +1488,14 @@ function attachQuiz(app, io) {
       if (!lobby || lobby.phase !== 'correction' || !isHostSocket(lobby, socket.id)) return;
 
       const sanitized = {};
-      Object.entries(data.corrections || {}).forEach(([id, value]) => {
-        sanitized[id] = pointsFromChef(value);
-      });
+      if (lobby.teamMode) {
+        sanitized.shadow = pointsFromChef(data.corrections?.shadow);
+        sanitized.sonic = pointsFromChef(data.corrections?.sonic);
+      } else {
+        Object.entries(data.corrections || {}).forEach(([id, value]) => {
+          sanitized[id] = pointsFromChef(value);
+        });
+      }
       lobby.pendingCorrections = sanitized;
       io.to(lobby.host.id).emit('quiz-corrections-updated', {
         corrections: lobby.pendingCorrections,
@@ -1489,6 +1682,18 @@ function attachQuiz(app, io) {
         return;
       }
 
+      if (lobby.teamMode && card === 'seconde' && !isTeamCaptain(lobby, player)) {
+        socket.emit('quiz-error', { message: 'Seul le chef d\'équipe envoie la réponse' });
+        return;
+      }
+      if (lobby.teamMode && card !== 'vol' && card !== 'seconde' && player.team) {
+        const captain = membersOf(lobby, player.team)[0];
+        if (captain && (captain.answered?.[index] || captain.silencedOn === index)) {
+          socket.emit('quiz-error', { message: 'L\'équipe a déjà répondu' });
+          return;
+        }
+      }
+
       let target = null;
       if (TARGET_JOKERS.has(card)) {
         target = lobby.players.find((entry) => entry.id === data.targetId);
@@ -1572,11 +1777,7 @@ function attachQuiz(app, io) {
       emitJokerRoster(io, lobby);
 
       if (card === 'silence') {
-        const answered = lobby.players.filter((entry) => entry.answered[index]).length;
-        io.to(lobby.quizId).emit('quiz-progress', {
-          answered,
-          totalPlayers: lobby.players.length
-        });
+        io.to(lobby.quizId).emit('quiz-progress', answerProgress(lobby, index));
         maybeCloseIfComplete(io, lobby);
       }
     });

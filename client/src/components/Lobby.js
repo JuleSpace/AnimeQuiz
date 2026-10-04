@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Icon from './ArcadeIcon';
 
-const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, variant = 'music' }) => {
+const Lobby = ({
+  lobby,
+  player,
+  onStartGame,
+  onLeave,
+  onTransferLeadership,
+  onSetTeamMode,
+  onChooseTeam,
+  variant = 'music'
+}) => {
   const [numberOfSongs, setNumberOfSongs] = useState(10);
   const [maxSongs, setMaxSongs] = useState(10);
   const isQuiz = variant === 'quiz';
@@ -17,8 +26,15 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
   if (!lobby || !player) return null;
 
   const isLeader = isQuiz ? lobby.hostId === player.id : lobby.players[0]?.id === player.id;
+  const teamMode = Boolean(isQuiz && lobby.teamMode);
+  const shadowPlayers = lobby.players.filter((entry) => entry.team === 'shadow');
+  const sonicPlayers = lobby.players.filter((entry) => entry.team === 'sonic');
+  const unassigned = lobby.players.filter((entry) => entry.team !== 'shadow' && entry.team !== 'sonic');
+  const teamsReady = !teamMode || (
+    unassigned.length === 0 && shadowPlayers.length > 0 && sonicPlayers.length > 0
+  );
   const canStartGame = isQuiz
-    ? isLeader && lobby.players.length >= 1 && !lobby.isGameStarted
+    ? isLeader && lobby.players.length >= 1 && teamsReady && !lobby.isGameStarted
     : lobby.players.length >= 1 && isLeader && !lobby.isGameStarted;
 
   const handleStartGame = () => {
@@ -33,16 +49,50 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
           {isQuiz ? `Lobby — ${lobby.quizName || 'Quiz'}` : `Lobby — Salle ${player.roomId}`}
         </h2>
         
-        <div className="player-list" style={{ justifyContent: 'center' }}>
+        <div className={`player-list${teamMode ? ' player-list-teams' : ''}`}>
           {isQuiz && lobby.hostName && (
             <div className="player-card leader">
               <div style={{ fontWeight: 'bold' }}>{lobby.hostName}</div>
               <div style={{ fontSize: '0.8rem' }}><Icon name="crown" />Chef · ne joue pas</div>
             </div>
           )}
-          {lobby.players.map((p, index) => (
-            <div 
-              key={p.id} 
+          {teamMode ? (
+            <>
+              <div className="team-board">
+                {[
+                  { id: 'shadow', label: 'Team Shadow', members: shadowPlayers },
+                  { id: 'sonic', label: 'Team Sonic', members: sonicPlayers }
+                ].map((team) => (
+                  <div key={team.id} className={`team-column team-${team.id}`}>
+                    <div className="team-name">{team.label}</div>
+                    {team.members.map((member) => (
+                      <div key={member.id} className="player-card">
+                        <div style={{ fontWeight: 'bold' }}>{member.username}</div>
+                        {member.captain && <div style={{ fontSize: '0.8rem' }}>Chef d'équipe</div>}
+                      </div>
+                    ))}
+                    {!isLeader && (
+                      <button
+                        type="button"
+                        className={`btn${lobby.players.find((entry) => entry.id === player.id)?.team === team.id ? ' btn-danger' : ''}`}
+                        onClick={() => onChooseTeam && onChooseTeam(team.id)}
+                      >
+                        {lobby.players.find((entry) => entry.id === player.id)?.team === team.id ? 'Ton équipe' : 'Rejoindre'}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {unassigned.map((entry) => (
+                <div key={entry.id} className="player-card">
+                  <div style={{ fontWeight: 'bold' }}>{entry.username}</div>
+                  <div style={{ fontSize: '0.8rem' }}>Sans équipe</div>
+                </div>
+              ))}
+            </>
+          ) : lobby.players.map((p, index) => (
+            <div
+              key={p.id}
               className={`player-card ${!isQuiz && index === 0 ? 'leader' : ''}`}
               onClick={() => {
                 if (!isQuiz && isLeader && p.id !== player.id && onTransferLeadership) {
@@ -81,6 +131,30 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
           <div style={{ fontSize: '1.2rem', marginBottom: '20px' }}>
             Joueurs connectés: {lobby.players.length}/∞
           </div>
+
+          {isQuiz && isLeader && !lobby.isGameStarted && (
+            <div style={{ marginBottom: '20px' }}>
+              <button
+                type="button"
+                className={teamMode ? 'btn btn-danger' : 'btn'}
+                onClick={() => onSetTeamMode && onSetTeamMode(!teamMode)}
+              >
+                {teamMode ? 'Équipes activées' : 'Jouer en équipe'}
+              </button>
+            </div>
+          )}
+
+          {teamMode && isLeader && lobby.players.length > 0 && !teamsReady && (
+            <div style={{ color: '#ff2347', marginBottom: '20px' }}>
+              Chaque joueur choisit Team Shadow ou Team Sonic. Les deux équipes doivent avoir au moins un joueur.
+            </div>
+          )}
+
+          {teamMode && !isLeader && !lobby.players.find((entry) => entry.id === player.id)?.team && (
+            <div style={{ color: '#ff2347', marginBottom: '20px' }}>
+              Choisis Team Shadow ou Team Sonic.
+            </div>
+          )}
           
           {isQuiz && isLeader && lobby.players.length === 0 && (
             <div style={{ color: '#ff2347', marginBottom: '20px' }}>
@@ -172,6 +246,7 @@ const Lobby = ({ lobby, player, onStartGame, onLeave, onTransferLeadership, vari
               <li>Un seul indice par question : −1 pt, sauf avec la carte Indice gratuit. Le chef peut envoyer plusieurs messages à ce joueur</li>
               <li>À la première question, puis toutes les 15 questions, chaque joueur ouvre un booster et pioche un joker secret</li>
               <li>Le chef voit les cartes, si elles sont jouées, et qui est visé. Les autres joueurs non</li>
+              <li>Le chef peut lancer une partie en équipe. Team Shadow et Team Sonic se forment toutes seules, le premier arrivé envoie la réponse</li>
               <li>Le joueur avec le plus de points gagne</li>
             </ul>
           ) : (

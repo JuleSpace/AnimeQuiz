@@ -167,6 +167,9 @@ function App() {
         questionIndex: data.questionIndex,
         totalQuestions: data.totalQuestions,
         players: data.players,
+        teamMode: Boolean(data.teamMode),
+        teams: data.teams || [],
+        teamChat: [],
         deadline: data.deadline,
         answered: data.answered,
         totalPlayers: data.totalPlayers,
@@ -356,6 +359,12 @@ function App() {
       ));
     });
 
+    socket.on('team-chat', (data) => {
+      setGameData((prev) => (
+        prev ? { ...prev, teamChat: data.messages || [], teamChatTeam: data.team || null } : prev
+      ));
+    });
+
     socket.on('quiz-error', (data) => {
       setError(data.message || 'Action impossible');
     });
@@ -398,6 +407,7 @@ function App() {
       socket.off('quiz-hint-requests');
       socket.off('quiz-host-answer');
       socket.off('quiz-error');
+      socket.off('team-chat');
     };
   }, []);
 
@@ -885,6 +895,8 @@ function App() {
             onStartGame={playMode === 'quiz' ? handleStartQuiz : handleStartGame}
             onLeave={resetGame}
             onTransferLeadership={handleTransferLeadership}
+            onSetTeamMode={(enabled) => socket.emit('set-team-mode', { enabled })}
+            onChooseTeam={(team) => socket.emit('choose-team', { team })}
           />
         );
 
@@ -901,6 +913,7 @@ function App() {
             onRequestHint={() => socket.emit('quiz-request-hint')}
             onSendHint={(playerId, words) => socket.emit('quiz-send-hint', { playerId, words })}
             onPlayJoker={(payload) => socket.emit('play-joker', payload)}
+            onTeamChat={(text) => socket.emit('team-chat', { text })}
             onBeginScoring={() => socket.emit('quiz-begin-scoring')}
             onStartQuestion={() => socket.emit('quiz-booster-done')}
           />
