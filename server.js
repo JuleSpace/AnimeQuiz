@@ -141,6 +141,122 @@ app.delete('/api/rooms/:id', async (req, res) => {
   }
 });
 
+const YOUTUBE_CONTEXT = {
+  client: { clientName: 'WEB', clientVersion: '2.20241001.00.00', hl: 'fr', gl: 'FR' }
+};
+const PLAYLIST_TRACK_CAP = 400;
+
+function extractPlaylistId(url) {
+  const match = String(url || '').match(/[?&]list=([A-Za-z0-9_-]+)/);
+  return match ? match[1] : '';
+}
+
+function youtubeText(node) {
+  if (!node) return '';
+  if (typeof node === 'string') return node;
+  if (node.simpleText) return node.simpleText;
+  if (node.content) return node.content;
+  if (Array.isArray(node.runs)) return node.runs.map((run) => run.text || '').join('');
+  return '';
+}
+
+function collectPlaylistPieces(node, tracks, seen, tokens) {
+  if (!node || typeof node !== 'object') return;
+  if (node.playlistSidebarPrimaryInfoRenderer && !tracks.title) {
+    tracks.title = youtubeText(node.playlistSidebarPrimaryInfoRenderer.title).trim();
+  }
+  const lockupId = node.lockupViewModel && node.lockupViewModel.contentId;
+  if (lockupId && /^[A-Za-z0-9_-]{11}$/.test(lockupId) && !seen.has(lockupId)) {
+    seen.add(lockupId);
+    const answer = youtubeText(
+      node.lockupViewModel.metadata
+      && node.lockupViewModel.metadata.lockupMetadataViewModel
+      && node.lockupViewModel.metadata.lockupMetadataViewModel.title
+    ).trim();
+    tracks.items.push({ url: `https://www.youtube.com/watch?v=${lockupId}`, answer });
+  }
+  if (node.playlistVideoRenderer && node.playlistVideoRenderer.videoId && !seen.has(node.playlistVideoRenderer.videoId)) {
+    const video = node.playlistVideoRenderer;
+    seen.add(video.videoId);
+    tracks.items.push({
+      url: `https://www.youtube.com/watch?v=${video.videoId}`,
+      answer: youtubeText(video.title).trim()
+    });
+  }
+  const modernToken = node.continuationItemViewModel
+    && node.continuationItemViewModel.continuationCommand
+    && node.continuationItemViewModel.continuationCommand.innertubeCommand
+    && node.continuationItemViewModel.continuationCommand.innertubeCommand.continuationCommand
+    && node.continuationItemViewModel.continuationCommand.innertubeCommand.continuationCommand.token;
+  const classicToken = node.continuationItemRenderer
+    && node.continuationItemRenderer.continuationEndpoint
+    && node.continuationItemRenderer.continuationEndpoint.continuationCommand
+    && node.continuationItemRenderer.continuationEndpoint.continuationCommand.token;
+  if (modernToken) tokens.push(modernToken);
+  if (classicToken) tokens.push(classicToken);
+  const values = Array.isArray(node) ? node : Object.values(node);
+  values.forEach((value) => collectPlaylistPieces(value, tracks, seen, tokens));
+}
+
+async function fetchYouTubePlaylist(playlistId) {
+  const tracks = { title: '', items: [] };
+  const seen = new Set();
+  const usedTokens = new Set();
+  let continuation = '';
+  let truncated = false;
+
+  for (let page = 0; page < 6 && tracks.items.length < PLAYLIST_TRACK_CAP; page += 1) {
+    const body = continuation
+      ? { context: YOUTUBE_CONTEXT, continuation }
+      : { context: YOUTUBE_CONTEXT, browseId: `VL${playlistId}` };
+    const response = await axios.post(
+      'https://www.youtube.com/youtubei/v1/browse?prettyPrint=false',
+      body,
+      {
+        timeout: 20000,
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0',
+          'Accept-Language': 'fr-FR,fr;q=0.9'
+        }
+      }
+    );
+    const before = tracks.items.length;
+    const tokens = [];
+    collectPlaylistPieces(response.data, tracks, seen, tokens);
+    if (tracks.items.length === before) break;
+    if (tracks.items.length >= PLAYLIST_TRACK_CAP) {
+      tracks.items = tracks.items.slice(0, PLAYLIST_TRACK_CAP);
+      truncated = true;
+      break;
+    }
+    continuation = tokens.find((token) => token && !usedTokens.has(token)) || '';
+    if (!continuation) break;
+    usedTokens.add(continuation);
+  }
+
+  return { title: tracks.title, tracks: tracks.items, truncated };
+}
+
+app.post('/api/youtube-playlist', async (req, res) => {
+  try {
+    const playlistId = extractPlaylistId(req.body && req.body.url);
+    if (!playlistId) {
+      return res.status(400).json({ error: "Ce lien n'est pas une playlist YouTube." });
+    }
+    if (/^RD/.test(playlistId) || playlistId === 'LL' || playlistId === 'WL') {
+      return res.status(400).json({ error: "Cette liste YouTube n'est pas une playlist fixe." });
+    }
+    const result = await fetchYouTubePlaylist(playlistId);
+    if (!result.tracks.length) {
+      return res.status(404).json({ error: "Aucune musique trouvée. La playlist est peut-être privée." });
+    }
+    res.json(result);
+  } catch (error) {
+    res.status(502).json({ error: "YouTube n'a pas répondu. Réessaie dans un moment." });
+  }
+});
+
 // Route pour extraire l'audio YouTube
 app.get('/api/youtube-audio/:videoId', async (req, res) => {
   try {

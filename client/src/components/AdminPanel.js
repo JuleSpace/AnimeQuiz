@@ -17,6 +17,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
   const [showPopup, setShowPopup] = useState(null); // Pour les popups de détails
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [section, setSection] = useState('music');
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     fetchRooms();
@@ -67,6 +68,58 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
       
       setRooms(rooms.map(r => r._id === roomId ? updatedRoom : r));
       setNewLink({ url: '', answer: '' });
+    }
+  };
+
+  const updateMusicLink = (roomId, linkIndex, field, value) => {
+    setRooms(rooms.map((room) => {
+      if (room._id !== roomId) return room;
+      const musicLinks = room.musicLinks.map((link, index) => {
+        if (index !== linkIndex) return link;
+        const current = typeof link === 'string' ? { url: link, answer: '' } : { url: link?.url || '', answer: link?.answer || '' };
+        return { ...current, [field]: value };
+      });
+      return { ...room, musicLinks };
+    }));
+  };
+
+  const importPlaylist = async (roomId) => {
+    const source = newLink.url.trim();
+    if (!source) return;
+    const room = rooms.find((entry) => entry._id === roomId);
+    if (!room) return;
+
+    try {
+      setImporting(true);
+      setError('');
+      const response = await axios.post('/api/youtube-playlist', { url: source });
+      const known = new Set(room.musicLinks.map((link) => {
+        const url = typeof link === 'string' ? link : (link?.url || '');
+        const match = String(url).match(/(?:youtu\.be\/|shorts\/|embed\/|v\/|watch\?v=|&v=)([A-Za-z0-9_-]{11})/);
+        return match ? match[1] : url;
+      }));
+      const fresh = (response.data.tracks || []).filter((track) => {
+        const match = String(track.url || '').match(/[?&]v=([A-Za-z0-9_-]{11})/);
+        const id = match ? match[1] : track.url;
+        if (!id || known.has(id)) return false;
+        known.add(id);
+        return true;
+      });
+      if (!fresh.length) {
+        setError('Ces musiques sont déjà dans la salle.');
+        return;
+      }
+      setRooms(rooms.map((entry) => (
+        entry._id === roomId ? { ...entry, musicLinks: [...entry.musicLinks, ...fresh] } : entry
+      )));
+      setNewLink({ url: '', answer: '' });
+      const playlistName = response.data.title ? ` depuis « ${response.data.title} »` : '';
+      const truncated = response.data.truncated ? ' La playlist continue, les 400 premières ont été prises.' : '';
+      setSuccess(`${fresh.length} musiques ajoutées${playlistName}. Le titre YouTube est proposé comme réponse : tu peux le modifier, puis enregistrer.${truncated}`);
+    } catch (error) {
+      setError(error.response?.data?.error || "Impossible de lire cette playlist.");
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -496,6 +549,20 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                     >
                       <Icon name="plus" />Ajouter cette musique
                     </button>
+                    {/[?&]list=([A-Za-z0-9_-]+)/.test(newLink.url) && (
+                      <button
+                        type="button"
+                        onClick={() => importPlaylist(room._id)}
+                        className="btn"
+                        disabled={importing}
+                        style={{ padding: '12px 20px', width: '100%', marginTop: '10px' }}
+                      >
+                        <Icon name="music" />{importing ? 'Lecture de la playlist…' : 'Importer la playlist'}
+                      </button>
+                    )}
+                    <p style={{ margin: '14px 0 0', opacity: 0.8, textAlign: 'center' }}>
+                      Colle un lien de playlist YouTube pour ajouter toutes ses vidéos. Le titre de la vidéo devient la réponse, et tu peux le changer ensuite.
+                    </p>
                   </div>
 
                   {/* Grille des musiques existantes */}
@@ -513,70 +580,29 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                         {room.musicLinks.map((link, index) => (
                           <div key={index} style={{ 
                             background: '#14141c',
-                            padding: '20px', 
+                            padding: '16px', 
                             borderRadius: '15px',
-                            border: '2px solid rgba(255, 255, 255, 0.1)',
-                            transition: 'all 0.3s ease',
-                            position: 'relative'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-3px)';
-                            e.currentTarget.style.borderColor = '#1f6dff';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                            border: '2px solid rgba(255, 255, 255, 0.1)'
                           }}>
-                            {/* Badge du numéro */}
-                            <div style={{
-                              position: 'absolute',
-                              top: '10px',
-                              right: '10px',
-                              background: 'rgba(255, 35, 71, 0.9)',
-                              color: '#000',
-                              padding: '4px 8px',
-                              borderRadius: '15px',
-                              fontSize: '0.7rem',
-                              fontWeight: 'bold'
-                            }}>
+                            <div style={{ fontSize: '0.75rem', letterSpacing: '0.08em', marginBottom: '8px', color: '#ffd000' }}>
                               #{index + 1}
                             </div>
-
-                            <div style={{ marginBottom: '15px' }}>
-                              {(typeof link === 'object' && link.answer) ? (
-                                <div>
-                                  <div style={{ 
-                                    fontWeight: 'bold', 
-                                    color: '#ff2347', 
-                                    marginBottom: '8px',
-                                    fontSize: '1rem'
-                                  }}>
-                                    {link.answer}
-                                  </div>
-                                  <div style={{ 
-                                    fontSize: '0.8rem', 
-                                    opacity: 0.7, 
-                                    wordBreak: 'break-all',
-                                    background: 'rgba(255, 255, 255, 0.1)',
-                                    padding: '8px',
-                                    borderRadius: '8px'
-                                  }}>
-                                    {link.url}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div style={{ 
-                                  fontSize: '0.8rem', 
-                                  opacity: 0.7, 
-                                  wordBreak: 'break-all',
-                                  background: 'rgba(255, 255, 255, 0.1)',
-                                  padding: '8px',
-                                  borderRadius: '8px'
-                                }}>
-                                  {typeof link === 'string' ? link : link.url}
-                                </div>
-                              )}
-                            </div>
+                            <input
+                              type="text"
+                              className="input"
+                              style={{ margin: '0 0 8px' }}
+                              placeholder="Réponse"
+                              value={typeof link === 'string' ? '' : (link.answer || '')}
+                              onChange={(event) => updateMusicLink(room._id, index, 'answer', event.target.value)}
+                            />
+                            <input
+                              type="url"
+                              className="input"
+                              style={{ margin: '0 0 12px', fontSize: '0.85rem' }}
+                              placeholder="Lien"
+                              value={typeof link === 'string' ? link : (link.url || '')}
+                              onChange={(event) => updateMusicLink(room._id, index, 'url', event.target.value)}
+                            />
                             
                             <button
                               onClick={() => removeMusicLink(room._id, index)}
