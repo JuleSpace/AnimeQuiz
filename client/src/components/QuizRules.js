@@ -64,8 +64,9 @@ const SLIDES = [
     kicker: 'Question ouverte',
     title: 'Seconde main',
     points: [
-      'Tu envoies une deuxième réponse. La première reste.',
-      'L’organisateur voit les deux pour noter.'
+      'Tu peux la jouer avant ta réponse, ou après, tant que la question est ouverte.',
+      'La première reste. Tu en envoies une deuxième, quel que soit le type de question.',
+      'L’organisateur note les deux. La plus haute est retenue.'
     ]
   },
   {
@@ -112,6 +113,67 @@ const SLIDES = [
     points: [
       'Même moment que Vol : réponses closes, avant les points.',
       'Toutes les réponses sont redistribuées au hasard.',
+    ]
+  },
+  {
+    card: 'pot',
+    kicker: 'Avant les points',
+    title: 'Pot commun',
+    points: [
+      'Même moment que Mélange : réponses closes, avant les points.',
+      'Le chef note d’abord. Tous les points de la question vont dans une cagnotte.',
+      'Chaque joueur qui a répondu reçoit une part égale. Le reste va à celui qui a joué la carte.'
+    ]
+  },
+  {
+    card: 'renversement',
+    kicker: 'Avant les points',
+    title: 'Renversement',
+    points: [
+      'Même moment que Mélange : réponses closes, avant les points.',
+      'Le chef note normalement, puis le classement se retourne.',
+      'Le plus gros score va à celui qui en avait le moins.',
+      'En cas d\'égalité, celui qui a joué la carte passe devant, puis celui qui a le moins de points avant la question.'
+    ]
+  },
+  {
+    card: 'toutourien',
+    kicker: 'Avant de répondre',
+    title: 'Tout ou rien',
+    points: [
+      'Tu la joues avant d\'envoyer ta réponse.',
+      'Si le chef te donne au moins 1 point, tu prends le plus haut score de la question.',
+      'S\'il te met 0, tu restes à 0.'
+    ]
+  },
+  {
+    card: 'gambling',
+    kicker: 'Avant de répondre',
+    title: 'Gambling',
+    points: [
+      'Tu la joues avant d\'envoyer ta réponse.',
+      'Le hasard tombe quand le chef distribue les points, entre 0 et le plus haut qu\'il a donné.',
+      'Même notée 3, la carte peut finir à 0. Le résultat apparaît avec les scores de tout le monde.'
+    ]
+  },
+  {
+    card: 'rumeur',
+    kicker: 'Avant de répondre',
+    title: 'Rumeur',
+    points: [
+      'Tu la joues avant d\'envoyer ta réponse.',
+      'Dès que deux joueurs ont écrit la même réponse, tu la vois.',
+      'Sans les noms. Tu peux t\'en servir pour la tienne.'
+    ]
+  },
+  {
+    card: 'bouclier',
+    kicker: 'Question ouverte',
+    title: 'Bouclier',
+    points: [
+      'Vol ne peut pas prendre tes points.',
+      'Silence ne peut pas t\'empêcher de répondre.',
+      'Si tu es déjà réduit au silence, joue-la : tu peux répondre à nouveau.'
     ]
   }
 ];

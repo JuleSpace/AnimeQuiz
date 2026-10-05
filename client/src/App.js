@@ -196,6 +196,7 @@ function App() {
         myJoker: prev?.myJoker || null,
         jokerRoster: prev?.jokerRoster || null,
         copiedAnswer: null,
+        rumors: null,
         silenced: false,
         roundNotes: [],
         booster: null,
@@ -221,6 +222,7 @@ function App() {
         booster: { validFrom: data.validFrom, validTo: data.validTo },
         reveal: null,
         copiedAnswer: null,
+        rumors: null,
         silenced: false,
         roundNotes: [],
         expectedAnswer: '',
@@ -277,6 +279,16 @@ function App() {
 
     socket.on('quiz-copied-answer', (data) => {
       setGameData((prev) => (prev ? { ...prev, copiedAnswer: data } : prev));
+    });
+
+    socket.on('quiz-rumor', (data) => {
+      setGameData((prev) => (prev ? { ...prev, rumors: data } : prev));
+    });
+
+    socket.on('quiz-unsilenced', (data) => {
+      setGameData((prev) => (
+        prev && prev.questionIndex === data.questionIndex ? { ...prev, silenced: false } : prev
+      ));
     });
 
     socket.on('quiz-silenced', (data) => {
@@ -391,14 +403,15 @@ function App() {
       setError(data.message || 'Action impossible');
     });
 
-    socket.on('quiz-melange', (data) => {
+    socket.on('quiz-table-card', (data) => {
       const id = Date.now();
+      const card = data.card || 'melange';
       setGameData((prev) => (
-        prev ? { ...prev, melange: { id, username: data.username || '' } } : prev
+        prev ? { ...prev, tableShow: { id, card, username: data.username || '' } } : prev
       ));
       setTimeout(() => {
         setGameData((prev) => (
-          prev && prev.melange?.id === id ? { ...prev, melange: null } : prev
+          prev && prev.tableShow?.id === id ? { ...prev, tableShow: null } : prev
         ));
       }, 3800);
     });
@@ -430,6 +443,8 @@ function App() {
       socket.off('quiz-jokers');
       socket.off('quiz-hold');
       socket.off('quiz-copied-answer');
+      socket.off('quiz-rumor');
+      socket.off('quiz-unsilenced');
       socket.off('quiz-silenced');
       socket.off('quiz-round-note');
       socket.off('quiz-progress');
@@ -442,7 +457,7 @@ function App() {
       socket.off('quiz-hint-requests');
       socket.off('quiz-host-answer');
       socket.off('quiz-error');
-      socket.off('quiz-melange');
+      socket.off('quiz-table-card');
       socket.off('team-chat');
     };
   }, []);

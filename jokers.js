@@ -1,6 +1,6 @@
 const PACKS_PER_QUIZ = 5;
 
-const JOKER_IDS = ['double', 'filet', 'seconde', 'copie', 'indice', 'silence', 'vol', 'melange'];
+const JOKER_IDS = ['double', 'filet', 'seconde', 'copie', 'indice', 'silence', 'vol', 'melange', 'pot', 'renversement', 'toutourien', 'gambling', 'rumeur', 'bouclier'];
 const TARGET_JOKERS = new Set(['copie', 'silence', 'vol']);
 
 function drawJoker() {
@@ -76,6 +76,11 @@ function jokerPlayed(player, index, card) {
   return true;
 }
 
+function gaveAnswer(player, index) {
+  const answer = player && player.answers ? player.answers[index] : null;
+  return answer != null && answer !== '';
+}
+
 function resolveGains(players, question, index, corrections) {
   const draft = {};
 
@@ -89,6 +94,10 @@ function resolveGains(players, question, index, corrections) {
       gain = raw * 2;
       tags.push('×2');
       notes.push('Double mise : tes points ont été doublés.');
+    }
+
+    if (player.priorAnswers && Object.prototype.hasOwnProperty.call(player.priorAnswers, index)) {
+      notes.push('Seconde main : la meilleure des deux réponses est retenue.');
     }
 
     draft[player.id] = { gain, tags, notes };
@@ -114,11 +123,111 @@ function resolveGains(players, question, index, corrections) {
     }
   });
 
+  const potPlayer = players.find((player) => jokerPlayed(player, index, 'pot'));
+  if (potPlayer) {
+    const eligible = players.filter((player) => gaveAnswer(player, index));
+    if (eligible.length >= 2) {
+      const total = players.reduce((sum, player) => sum + draft[player.id].gain, 0);
+      const baseShare = Math.floor(total / eligible.length);
+      let spare = total % eligible.length;
+      const ordered = [...eligible].sort((a, b) => {
+        if (a.id === potPlayer.id) return -1;
+        if (b.id === potPlayer.id) return 1;
+        return String(a.username || '').localeCompare(String(b.username || ''), 'fr');
+      });
+      const shares = new Map();
+      ordered.forEach((player) => {
+        const share = baseShare + (spare > 0 ? 1 : 0);
+        if (spare > 0) spare -= 1;
+        shares.set(player.id, share);
+      });
+      players.forEach((player) => {
+        const share = shares.has(player.id) ? shares.get(player.id) : 0;
+        draft[player.id].gain = share;
+        draft[player.id].tags.push('Pot');
+        draft[player.id].notes.push(
+          shares.has(player.id)
+            ? `Pot commun : la cagnotte de ${total} pt est partagée, tu reçois ${share}.`
+            : 'Pot commun : pas de réponse, pas de part.'
+        );
+      });
+    }
+  }
+
+  const flipPlayer = players.find((player) => jokerPlayed(player, index, 'renversement'));
+  if (flipPlayer && !potPlayer && players.length >= 2) {
+    const ranked = [...players].sort((a, b) => {
+      const diff = draft[b.id].gain - draft[a.id].gain;
+      if (diff) return diff;
+      const aCard = a.id === flipPlayer.id;
+      const bCard = b.id === flipPlayer.id;
+      if (aCard !== bCard) return aCard ? 1 : -1;
+      const before = (b.score || 0) - (a.score || 0);
+      if (before) return before;
+      return String(a.username || '').localeCompare(String(b.username || ''), 'fr');
+    });
+    const lowToHigh = ranked.map((player) => draft[player.id].gain).sort((a, b) => a - b);
+    ranked.forEach((player, place) => {
+      const previous = draft[player.id].gain;
+      const next = lowToHigh[place];
+      draft[player.id].gain = next;
+      draft[player.id].tags.push('Renversé');
+      draft[player.id].notes.push(`Renversement : ${previous} pt deviennent ${next}.`);
+    });
+  }
+
+  const stakePlayers = players.filter((player) => jokerPlayed(player, index, 'toutourien'));
+  if (stakePlayers.length) {
+    const best = players.reduce((max, player) => Math.max(max, draft[player.id].gain), 0);
+    stakePlayers.forEach((player) => {
+      const own = draft[player.id].gain;
+      if (own <= 0) {
+        draft[player.id].tags.push('Rien');
+        draft[player.id].notes.push('Tout ou rien : 0 pt, tu restes à 0.');
+        return;
+      }
+      draft[player.id].gain = best;
+      draft[player.id].tags.push('Tout');
+      draft[player.id].notes.push(
+        own === best
+          ? `Tout ou rien : tu avais déjà le plus haut score, ${best} pt.`
+          : `Tout ou rien : tu prends le plus haut score, ${best} pt.`
+      );
+    });
+  }
+
+  const gamblers = players.filter((player) => jokerPlayed(player, index, 'gambling'));
+  if (gamblers.length) {
+    const best = players.reduce(
+      (max, player) => Math.max(max, pointsFromChef(corrections ? corrections[player.id] : 0)),
+      0
+    );
+    gamblers.forEach((player) => {
+      const unit = Number(player.joker && player.joker.gambleRoll);
+      if (!Number.isFinite(unit)) {
+        draft[player.id].tags.push('Tirage');
+        draft[player.id].notes.push(`Gambling : le tirage se fait à la distribution, entre 0 et ${best}.`);
+        return;
+      }
+      const roll = Math.min(0.999999, Math.max(0, unit));
+      const drawn = Math.min(best, Math.floor(roll * (best + 1)));
+      draft[player.id].gain = drawn;
+      draft[player.id].tags.push('Gambling');
+      draft[player.id].notes.push(`Gambling : tu tires ${drawn} pt, entre 0 et ${best}, le plus haut donné par le chef.`);
+    });
+  }
+
   const claimed = new Set();
   players.forEach((player) => {
     if (!jokerPlayed(player, index, 'vol')) return;
     const targetId = player.joker.targetId;
     if (!targetId || targetId === player.id || !draft[targetId] || claimed.has(targetId)) return;
+    const target = players.find((entry) => entry.id === targetId);
+    if (target && jokerPlayed(target, index, 'bouclier')) {
+      draft[player.id].tags.push('Vol');
+      draft[player.id].notes.push('Vol : la cible est protégée.');
+      return;
+    }
     claimed.add(targetId);
 
     const stolen = draft[targetId].gain;

@@ -148,7 +148,9 @@ const ClassicGame = ({
   const [now, setNow] = useState(Date.now());
   const [hintAsked, setHintAsked] = useState(false);
   const [redoTick, setRedoTick] = useState(0);
+  const [secondDraft, setSecondDraft] = useState(false);
   const hintAskedFor = useRef(null);
+  const secondSent = useRef(false);
 
   const question = gameData?.question;
   const phase = gameData?.phase || 'answering';
@@ -157,6 +159,8 @@ const ClassicGame = ({
     setTextAnswer('');
     setSelected([]);
     setRedoTick(0);
+    setSecondDraft(false);
+    secondSent.current = false;
     setLocked(Boolean(gameData?.locked));
     if (gameData?.hintUsed) {
       hintAskedFor.current = gameData.questionIndex;
@@ -166,7 +170,13 @@ const ClassicGame = ({
     if (hintAskedFor.current !== gameData?.questionIndex) {
       setHintAsked(false);
     }
-  }, [gameData?.questionIndex, gameData?.locked, gameData?.hintUsed]);
+  }, [gameData?.questionIndex]);
+
+  useEffect(() => {
+    if (!gameData?.hintUsed) return;
+    hintAskedFor.current = gameData.questionIndex;
+    setHintAsked(true);
+  }, [gameData?.hintUsed, gameData?.questionIndex]);
 
   useEffect(() => {
     if (phase !== 'answering' || !gameData?.deadline) return undefined;
@@ -181,6 +191,28 @@ const ClassicGame = ({
       setHintAsked(true);
     }
   }, [gameData?.myJoker, gameData?.questionIndex]);
+
+  useEffect(() => {
+    if (gameData?.myJoker?.card !== 'bouclier' || gameData.myJoker.note !== 'Silence annulé') return;
+    setLocked(false);
+    setTextAnswer('');
+    setSelected([]);
+  }, [gameData?.myJoker]);
+
+  useEffect(() => {
+    if (secondSent.current || phase !== 'answering' || !locked) return;
+    const joker = gameData?.myJoker;
+    const secondeOn = joker?.card === 'seconde'
+      && joker.used
+      && joker.usedOn === gameData?.questionIndex
+      && !joker.redoSpent;
+    if (!secondeOn) return;
+    setTextAnswer('');
+    setSelected([]);
+    setRedoTick((value) => value + 1);
+    setSecondDraft(true);
+    setLocked(false);
+  }, [gameData?.myJoker, gameData?.questionIndex, locked, phase]);
 
   if (!gameData || !player) {
     return <div className="loading">Chargement de la question...</div>;
@@ -260,8 +292,22 @@ const ClassicGame = ({
 
   const send = (answer) => {
     if (gameData.silenced || locked || phase !== 'answering') return;
-    setLocked(true);
+    const joker = gameData.myJoker;
+    const secondeOn = joker?.card === 'seconde'
+      && joker.used
+      && joker.usedOn === gameData.questionIndex
+      && !joker.redoSpent;
     onSubmitAnswer(answer);
+    if (secondDraft || !secondeOn) {
+      secondSent.current = Boolean(secondDraft);
+      setSecondDraft(false);
+      setLocked(true);
+      return;
+    }
+    setTextAnswer('');
+    setSelected([]);
+    setRedoTick((value) => value + 1);
+    setSecondDraft(true);
   };
 
   const myJoker = gameData.myJoker;
@@ -286,7 +332,9 @@ const ClassicGame = ({
     if (locked) {
       return (
         <div style={{ textAlign: 'center', padding: '18px' }}>
-          <div style={{ fontSize: '1.2rem', marginBottom: 8 }}>Réponse envoyée</div>
+          <div style={{ fontSize: '1.2rem', marginBottom: 8 }}>
+            {gameData.myJoker?.redoSpent ? 'Deux réponses envoyées' : 'Réponse envoyée'}
+          </div>
           <div style={{ opacity: 0.8 }}>
             {gameData.answered || 0}/{gameData.totalPlayers || players.length} {progressLabel}
           </div>
@@ -462,28 +510,41 @@ const ClassicGame = ({
     );
   };
 
-  const renderAnswer = (entry) => (
-    <>
-      {entry.firstAnswerText ? (
-        <>
-          <div style={{ opacity: 0.85 }}>1re : {entry.firstAnswerText}</div>
-          <div style={{ opacity: 0.85 }}>2e : {entry.answerText}</div>
-        </>
-      ) : (
-        <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
-      )}
-      {renderPlacement(entry.answer)}
-    </>
-  );
+  const renderAnswer = (entry) => {
+    const paired = Boolean(entry.firstAnswerText);
+    return (
+      <>
+        {paired ? (
+          <>
+            <div style={{ opacity: 0.85 }}>1re : {entry.firstAnswerText}</div>
+            {renderPlacement(entry.firstAnswer)}
+            <div style={{ opacity: 0.85 }}>2e : {entry.answerText}</div>
+            {renderPlacement(entry.answer)}
+          </>
+        ) : (
+          <>
+            <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
+            {renderPlacement(entry.answer)}
+          </>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="container">
-      {gameData.melange && (
+      {gameData.tableShow && (
         <div className="melange-burst" role="status">
           <div className="melange-burst-card">
-            <JokerCard cardId="melange" size="full" />
+            <JokerCard cardId={gameData.tableShow.card} size="full" />
           </div>
-          <p className="melange-burst-caption">{gameData.melange.username} mélange les réponses</p>
+          <p className="melange-burst-caption">
+            {gameData.tableShow.card === 'pot'
+              ? `${gameData.tableShow.username} met les points au pot`
+              : gameData.tableShow.card === 'renversement'
+                ? `${gameData.tableShow.username} renverse le classement`
+                : `${gameData.tableShow.username} mélange les réponses`}
+          </p>
         </div>
       )}
       <div className="card">
@@ -603,6 +664,16 @@ const ClassicGame = ({
                 Réponse de {gameData.copiedAnswer.username} : {gameData.copiedAnswer.text}
               </div>
             )}
+            {gameData.rumors && gameData.rumors.questionIndex === gameData.questionIndex && (gameData.rumors.texts || []).length > 0 && (
+              <div className="copied-banner">
+                Rumeur : {gameData.rumors.texts.join(' · ')}
+              </div>
+            )}
+            {secondDraft && (
+              <div style={{ textAlign: 'center', marginBottom: 10, color: '#ff2347' }}>
+                Première réponse gardée. Entre la deuxième.
+              </div>
+            )}
             {renderAnswering()}
             {teamMode && myTeam && (
               <TeamChat
@@ -677,11 +748,26 @@ const ClassicGame = ({
               <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} />
             </div>
             {scoreRows.map((entry) => {
-              const given = Number(corrections[entry.id]) || 0;
               const suggested = gameData.suggestedPoints || question.points || 1;
+              const paired = Boolean(entry.firstAnswerText) && !gameData.teamMode;
+              const pads = paired
+                ? [
+                  { key: `${entry.id}::1`, label: '1re' },
+                  { key: `${entry.id}::2`, label: '2e' }
+                ]
+                : [{ key: entry.id, label: '' }];
+              const retained = paired
+                ? Math.max(...pads.map((pad) => Number(corrections[pad.key]) || 0))
+                : 0;
               const memberPreview = (gameData.gainPreview || []).filter((row) => (
                 entry.team ? row.team === entry.team : row.id === entry.id
               ));
+              const setScore = (key, value) => {
+                onUpdateCorrections({
+                  ...corrections,
+                  [key]: Math.max(0, Math.min(99, Math.round(Number(value) || 0)))
+                });
+              };
               return (
                 <div key={entry.id} className="quiz-score-row">
                   <div className="quiz-answer">
@@ -692,44 +778,52 @@ const ClassicGame = ({
                       : ''}
                     {renderAnswer(entry)}
                   </div>
-                  {phase === 'correction' ? (
-                    <div className="quiz-score-actions">
-                      <button
-                        type="button"
-                        className="btn btn-success"
-                        onClick={() => onUpdateCorrections({ ...corrections, [entry.id]: suggested })}
-                      >
-                        Valider ({suggested})
-                      </button>
-                      <button
-                        type="button"
-                        className="btn"
-                        style={{ background: 'rgba(255, 35, 71,0.25)', color: '#ff2347' }}
-                        onClick={() => onUpdateCorrections({ ...corrections, [entry.id]: Math.min(99, given + 1) })}
-                      >
-                        +1
-                      </button>
-                      <button
-                        type="button"
-                        className="btn"
-                        onClick={() => onUpdateCorrections({ ...corrections, [entry.id]: Math.max(0, given - 1) })}
-                      >
-                        −1
-                      </button>
-                      <input
-                        type="number"
-                        min="0"
-                        max="99"
-                        className="input"
-                        style={{ width: '80px', margin: 0, textAlign: 'center' }}
-                        value={given}
-                        onChange={(event) => {
-                          const next = Math.max(0, Math.min(99, Math.round(Number(event.target.value) || 0)));
-                          onUpdateCorrections({ ...corrections, [entry.id]: next });
-                        }}
-                      />
+                  {phase === 'correction' ? pads.map((pad) => {
+                    const given = Number(corrections[pad.key]) || 0;
+                    return (
+                      <div key={pad.key} className="quiz-score-actions" style={{ marginTop: 8 }}>
+                        {pad.label ? (
+                          <span style={{ minWidth: 28, fontWeight: 'bold' }}>{pad.label}</span>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="btn btn-success"
+                          onClick={() => setScore(pad.key, suggested)}
+                        >
+                          Valider ({suggested})
+                        </button>
+                        <button
+                          type="button"
+                          className="btn"
+                          style={{ background: 'rgba(255, 35, 71,0.25)', color: '#ff2347' }}
+                          onClick={() => setScore(pad.key, Math.min(99, given + 1))}
+                        >
+                          +1
+                        </button>
+                        <button
+                          type="button"
+                          className="btn"
+                          onClick={() => setScore(pad.key, Math.max(0, given - 1))}
+                        >
+                          −1
+                        </button>
+                        <input
+                          type="number"
+                          min="0"
+                          max="99"
+                          className="input"
+                          style={{ width: '80px', margin: 0, textAlign: 'center' }}
+                          value={given}
+                          onChange={(event) => setScore(pad.key, event.target.value)}
+                        />
+                      </div>
+                    );
+                  }) : null}
+                  {phase === 'correction' && paired && (
+                    <div style={{ textAlign: 'center', marginTop: 6 }}>
+                      Retenu : {retained}
                     </div>
-                  ) : null}
+                  )}
                   {phase === 'correction' && memberPreview.some((row) => (row.tags || []).length > 0) && (
                     <div style={{ color: '#ff2347', fontSize: '0.9rem' }}>
                       {memberPreview.filter((row) => (row.tags || []).length > 0).map((row) => (
@@ -863,8 +957,11 @@ const ClassicGame = ({
                 canRedo={canRedo}
                 onPlay={onPlayJoker}
                 onRedo={() => {
-                  setLocked(false);
+                  setTextAnswer('');
+                  setSelected([]);
                   setRedoTick((value) => value + 1);
+                  setSecondDraft(true);
+                  setLocked(false);
                 }}
               />
             )}

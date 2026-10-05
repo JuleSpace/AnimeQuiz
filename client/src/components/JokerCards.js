@@ -16,7 +16,7 @@ export const JOKERS = {
   },
   seconde: {
     name: 'Seconde main',
-    rule: 'Une deuxième réponse. La première reste.',
+    rule: 'Deux réponses. La plus haute est retenue.',
     accent: '#ff2347',
     mate: '#1f6dff'
   },
@@ -49,6 +49,42 @@ export const JOKERS = {
     rule: 'Les réponses sont redistribuées au hasard.',
     accent: '#1f6dff',
     mate: '#ff2347'
+  },
+  pot: {
+    name: 'Pot commun',
+    rule: 'Les points de la question sont partagés.',
+    accent: '#ff2347',
+    mate: '#1f6dff'
+  },
+  renversement: {
+    name: 'Renversement',
+    rule: 'Le classement des points se retourne.',
+    accent: '#1f6dff',
+    mate: '#ff2347'
+  },
+  toutourien: {
+    name: 'Tout ou rien',
+    rule: 'Si tu marques, tu prends le plus haut score. Sinon, 0.',
+    accent: '#ff2347',
+    mate: '#1f6dff'
+  },
+  gambling: {
+    name: 'Gambling',
+    rule: 'À la distribution, entre 0 et le plus haut donné par le chef.',
+    accent: '#1f6dff',
+    mate: '#ff2347'
+  },
+  rumeur: {
+    name: 'Rumeur',
+    rule: 'Tu vois une réponse dès que deux joueurs l\'ont écrite.',
+    accent: '#ff2347',
+    mate: '#1f6dff'
+  },
+  bouclier: {
+    name: 'Bouclier',
+    rule: 'Protège de Vol. Annule un Silence.',
+    accent: '#1f6dff',
+    mate: '#ff2347'
   }
 };
 
@@ -60,7 +96,13 @@ const CARD_ART = {
   indice: '/indice.png',
   silence: '/silence-faker.png',
   vol: '/vol.png',
-  melange: '/melange.gif'
+  melange: '/melange.gif',
+  pot: '/pot.png',
+  renversement: '/renversement.png',
+  toutourien: '/toutourien.png',
+  gambling: '/gambling.png',
+  rumeur: '/rumeur.png',
+  bouclier: '/bouclier.png'
 };
 
 const Mark = ({ cardId }) => {
@@ -237,13 +279,15 @@ export const PlayerJokerBar = ({
   const card = JOKERS[joker.card];
   const targets = (players || []).filter((entry) => entry.id !== selfId);
   const onThisQuestion = joker.used && joker.usedOn === questionIndex;
-  const holdCard = joker.card === 'vol' || joker.card === 'melange';
+  const holdCard = joker.card === 'vol' || joker.card === 'melange' || joker.card === 'pot' || joker.card === 'renversement';
   const canPlay = !joker.used && (
     holdCard
       ? phase === 'hold'
-      : joker.card === 'seconde'
-        ? phase === 'answering' && !silenced
-        : phase === 'answering' && !locked && !silenced
+      : joker.card === 'bouclier'
+        ? phase === 'answering'
+        : joker.card === 'seconde'
+          ? phase === 'answering' && !silenced
+          : phase === 'answering' && !locked && !silenced
   );
 
   const play = (targetId) => {
@@ -252,13 +296,21 @@ export const PlayerJokerBar = ({
   };
 
   let hint = card.rule;
-  if (joker.used) hint = joker.note || 'Jouée';
+  if (joker.card === 'seconde' && phase === 'answering' && joker.used && !joker.redoSpent) {
+    hint = 'Entre ta deuxième réponse.';
+  } else if (joker.used) hint = joker.note || 'Jouée';
+  else if (joker.card === 'bouclier' && phase === 'answering' && silenced) hint = 'Joue-la pour annuler le silence.';
+  else if (joker.card === 'bouclier' && phase !== 'answering') hint = 'Trop tard pour cette question.';
   else if (silenced && !holdCard) hint = 'Tu es réduit au silence.';
   else if (joker.card === 'vol' && phase === 'answering') hint = 'Après les réponses, tu verras les copies.';
   else if (joker.card === 'vol' && phase !== 'hold') hint = 'Trop tard pour cette question.';
   else if (joker.card === 'melange' && phase === 'answering') hint = 'Après les réponses, juste avant les points.';
   else if (joker.card === 'melange' && phase !== 'hold') hint = 'Trop tard pour cette question.';
-  else if (joker.card === 'seconde' && phase === 'answering' && locked) hint = 'Tu peux envoyer une deuxième réponse.';
+  else if (joker.card === 'pot' && phase === 'answering') hint = 'Après les réponses, juste avant les points.';
+  else if (joker.card === 'pot' && phase !== 'hold') hint = 'Trop tard pour cette question.';
+  else if (joker.card === 'renversement' && phase === 'answering') hint = 'Après les réponses, juste avant les points.';
+  else if (joker.card === 'renversement' && phase !== 'hold') hint = 'Trop tard pour cette question.';
+  else if (joker.card === 'seconde' && phase === 'answering') hint = 'Joue-la avant ou après ta réponse, tant que la question est ouverte.';
   else if (!holdCard && phase === 'answering' && locked) hint = 'Il fallait la jouer avant de répondre.';
   else if (!holdCard && phase !== 'answering') hint = 'Trop tard pour cette question.';
 

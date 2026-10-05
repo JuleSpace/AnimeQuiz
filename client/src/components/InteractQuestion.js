@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 
 const itemLabel = (item, index) => {
   if (item?.text) return item.text;
@@ -141,24 +141,60 @@ export const PlaceBoard = ({
   onChange
 }) => {
   const boardRef = useRef(null);
+  const [frame, setFrame] = useState(null);
   const catalog = byId(items);
   const placedIds = new Set(places.map((place) => place.id));
   const tray = items.filter((item) => !placedIds.has(item.id));
+  const ratio = frame && frame.url === imageUrl ? frame.ratio : null;
+  const schemaReady = mode !== 'schema' || !imageUrl || Boolean(ratio);
+  const [leftLabels, setLeftLabels] = useState({});
+
+  useLayoutEffect(() => {
+    if (mode !== 'schema' || !boardRef.current) return undefined;
+    const board = boardRef.current;
+    const measure = () => {
+      const width = board.clientWidth;
+      const next = {};
+      board.querySelectorAll('.place-chip.schema-pin').forEach((node) => {
+        const id = node.dataset.pin;
+        const label = node.querySelector('.pin-label');
+        if (!id || !label || !width) return;
+        const x = (parseFloat(node.style.left) / 100) * width;
+        const needed = label.offsetWidth + 18;
+        const roomRight = width - x;
+        const roomLeft = x;
+        next[id] = needed > roomRight - 4 && roomLeft > roomRight;
+      });
+      setLeftLabels((current) => {
+        const ids = Object.keys(next);
+        const same = ids.length === Object.keys(current).length
+          && ids.every((id) => Boolean(next[id]) === Boolean(current[id]));
+        return same ? current : next;
+      });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(board);
+    return () => observer.disconnect();
+  }, [places, ratio, items, mode]);
 
   const pointFromEvent = (event) => {
     const rect = boardRef.current?.getBoundingClientRect();
-    if (!rect) return null;
+    if (!rect || rect.width < 2 || rect.height < 2) return null;
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     const y = ((event.clientY - rect.top) / rect.height) * 100;
     if (x < 0 || x > 100 || y < 0 || y > 100) return null;
+    if (mode === 'timeline') {
+      return { x: Math.max(4, Math.min(96, x)), y: 50 };
+    }
     return {
-      x: Math.max(4, Math.min(96, x)),
-      y: Math.max(10, Math.min(90, y))
+      x: Math.max(1, Math.min(99, x)),
+      y: Math.max(1, Math.min(99, y))
     };
   };
 
   const moveItem = (id, event) => {
-    if (readOnly || !onChange) return;
+    if (readOnly || !onChange || !schemaReady) return;
     const point = pointFromEvent(event);
     if (!point) {
       onChange(places.filter((place) => place.id !== id));
@@ -173,9 +209,22 @@ export const PlaceBoard = ({
     <div className="place-wrap">
       <div
         ref={boardRef}
-        className={`place-board ${mode === 'schema' ? 'schema' : 'timeline'}`}
-        style={mode === 'schema' && imageUrl ? { backgroundImage: `url("${imageUrl}")` } : undefined}
+        className={`place-board ${mode === 'schema' ? 'schema' : 'timeline'}${ratio ? ' is-ready' : ''}`}
+        style={ratio ? { '--schema-ratio': String(ratio) } : undefined}
       >
+        {mode === 'schema' && imageUrl && (
+          <img
+            className="place-schema"
+            src={imageUrl}
+            alt=""
+            draggable={false}
+            onLoad={(event) => {
+              const image = event.currentTarget;
+              if (!image.naturalWidth || !image.naturalHeight) return;
+              setFrame({ url: imageUrl, ratio: image.naturalWidth / image.naturalHeight });
+            }}
+          />
+        )}
         {mode === 'timeline' && <div className="place-line" />}
         {places.map((place) => {
           const item = catalog.get(place.id);
@@ -184,7 +233,8 @@ export const PlaceBoard = ({
           return (
             <div
               key={place.id}
-              className="place-chip"
+              className={`place-chip${mode === 'schema' ? ' schema-pin' : ''}${leftLabels[place.id] ? ' pin-left' : ''}`}
+              data-pin={place.id}
               style={chipStyle(mode, place)}
               onPointerDown={(event) => {
                 if (readOnly) return;
@@ -196,8 +246,17 @@ export const PlaceBoard = ({
               }}
               onPointerUp={(event) => moveItem(place.id, event)}
             >
-              {item.imageUrl && <img src={item.imageUrl} alt="" />}
-              <span>{itemLabel(item, index)}</span>
+              {mode === 'schema' ? (
+                <span className="pin-label">
+                  {item.imageUrl && <img src={item.imageUrl} alt="" />}
+                  <span>{itemLabel(item, index)}</span>
+                </span>
+              ) : (
+                <>
+                  {item.imageUrl && <img src={item.imageUrl} alt="" />}
+                  <span>{itemLabel(item, index)}</span>
+                </>
+              )}
             </div>
           );
         })}

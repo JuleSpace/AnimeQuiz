@@ -168,10 +168,17 @@ function correctLabel(question) {
 function answerSnapshot(question, player, index) {
   const current = player.answers ? player.answers[index] : null;
   const hasPrior = Boolean(player.priorAnswers && Object.prototype.hasOwnProperty.call(player.priorAnswers, index));
+  const prior = hasPrior ? player.priorAnswers[index] : null;
+  const visual = (value) => (
+    (question.type === 'order' || question.type === 'layout') ? (value || null) : null
+  );
   return {
     answerText: formatPlayerAnswer(question, current),
-    answer: (question.type === 'order' || question.type === 'layout') ? (current || null) : null,
-    ...(hasPrior ? { firstAnswerText: formatPlayerAnswer(question, player.priorAnswers[index]) } : {})
+    answer: visual(current),
+    ...(hasPrior ? {
+      firstAnswerText: formatPlayerAnswer(question, prior),
+      firstAnswer: visual(prior)
+    } : {})
   };
 }
 
@@ -478,9 +485,14 @@ function dropFromTeam(lobby, player) {
 }
 
 function answerProgress(lobby, index) {
+  const settled = (player) => {
+    if (!player.answered?.[index]) return false;
+    const owesSecond = jokerPlayed(player, index, 'seconde') && player.joker && !player.joker.redoSpent;
+    return !owesSecond;
+  };
   if (!lobby.teamMode) {
     return {
-      answered: lobby.players.filter((entry) => entry.answered?.[index]).length,
+      answered: lobby.players.filter(settled).length,
       totalPlayers: lobby.players.length
     };
   }
@@ -490,6 +502,21 @@ function answerProgress(lobby, index) {
     return captain && (captain.answered?.[index] || captain.silencedOn === index);
   }).length;
   return { answered, totalPlayers: teams.length };
+}
+
+function pairScore(lobby, corrections, index) {
+  const source = { ...(corrections || {}) };
+  if (lobby.teamMode) return scoringCorrections(lobby, source);
+  lobby.players.forEach((player) => {
+    const hasPrior = Boolean(
+      player.priorAnswers && Object.prototype.hasOwnProperty.call(player.priorAnswers, index)
+    );
+    if (!hasPrior) return;
+    const first = pointsFromChef(source[`${player.id}::1`]);
+    const second = pointsFromChef(source[`${player.id}::2`]);
+    source[player.id] = Math.max(first, second);
+  });
+  return source;
 }
 
 function scoringCorrections(lobby, corrections) {
@@ -628,11 +655,18 @@ function scoreAnswer(question, answer) {
 
 function applyScores(lobby, index, corrections) {
   const playing = lobby.players.filter((player) => player.satOutIndex !== index);
+  const scored = pairScore(lobby, corrections, index);
+  playing.forEach((player) => {
+    if (!jokerPlayed(player, index, 'gambling') || !player.joker) return;
+    if (!Number.isFinite(Number(player.joker.gambleRoll))) {
+      player.joker.gambleRoll = Math.random();
+    }
+  });
   const resolved = resolveGains(
     playing,
     lobby.questions[index],
     index,
-    scoringCorrections(lobby, corrections)
+    scored
   );
   lobby.players.forEach((player) => {
     if (player.satOutIndex === index) {
@@ -824,7 +858,7 @@ function previewList(lobby, index) {
     playing,
     lobby.questions[index],
     index,
-    scoringCorrections(lobby, lobby.pendingCorrections || {})
+    pairScore(lobby, lobby.pendingCorrections || {}, index)
   );
   return lobby.players.map((player) => ({
     id: player.id,
@@ -973,6 +1007,30 @@ function publishCopies(io, lobby, source) {
   if (changed) emitJokerRoster(io, lobby);
 }
 
+function rumorList(lobby, index) {
+  const question = lobby.questions[index];
+  if (!question) return [];
+  const counts = new Map();
+  lobby.players.forEach((player) => {
+    if (player.satOutIndex === index || !player.answered?.[index]) return;
+    const text = formatPlayerAnswer(question, player.answers ? player.answers[index] : null);
+    if (!text || text === 'Pas de réponse') return;
+    counts.set(text, (counts.get(text) || 0) + 1);
+  });
+  return [...counts.keys()].filter((text) => counts.get(text) >= 2);
+}
+
+function publishRumors(io, lobby) {
+  const index = lobby.currentQuestion;
+  const texts = rumorList(lobby, index);
+  lobby.players.forEach((watcher) => {
+    if (!jokerPlayed(watcher, index, 'rumeur') || watcher.answered?.[index]) return;
+    watcher.joker.note = texts.length ? 'Une rumeur circule' : 'En attente d\'une rumeur';
+    io.to(watcher.id).emit('quiz-rumor', { questionIndex: index, texts });
+    io.to(watcher.id).emit('quiz-own-joker', { joker: ownJokerPayload(watcher.joker) });
+  });
+}
+
 function maybeCloseIfComplete(io, lobby) {
   const index = lobby.currentQuestion;
   if (lobby.phase !== 'answering') return;
@@ -1031,6 +1089,19 @@ function syncQuizSocket(io, socket, lobby) {
 
   if (person && !person.isHost && person.silencedOn === lobby.currentQuestion && lobby.phase === 'answering') {
     socket.emit('quiz-silenced', { questionIndex: lobby.currentQuestion });
+  }
+
+  if (
+    person
+    && !person.isHost
+    && jokerPlayed(person, lobby.currentQuestion, 'rumeur')
+    && !person.answered?.[lobby.currentQuestion]
+    && lobby.phase === 'answering'
+  ) {
+    socket.emit('quiz-rumor', {
+      questionIndex: lobby.currentQuestion,
+      texts: rumorList(lobby, lobby.currentQuestion)
+    });
   }
 
   if (
@@ -1586,6 +1657,7 @@ function attachQuiz(app, io) {
       player.answers[index] = sanitizeStoredAnswer(question, data.answer);
       player.answered[index] = true;
       publishCopies(io, lobby, player);
+      publishRumors(io, lobby);
 
       io.to(lobby.quizId).emit('quiz-progress', answerProgress(lobby, index));
 
@@ -1790,13 +1862,16 @@ function attachQuiz(app, io) {
         return;
       }
 
-      if (card === 'vol' || card === 'melange') {
+      if (card === 'vol' || card === 'melange' || card === 'pot' || card === 'renversement') {
         if (lobby.phase !== 'hold') {
-          socket.emit('quiz-error', {
-            message: card === 'vol'
-              ? 'Vol se joue juste avant les points du chef'
-              : 'Mélange se joue juste avant les points du chef'
-          });
+          const label = card === 'vol'
+            ? 'Vol'
+            : card === 'melange'
+              ? 'Mélange'
+              : card === 'pot'
+                ? 'Pot commun'
+                : 'Renversement';
+          socket.emit('quiz-error', { message: `${label} se joue juste avant les points du chef` });
           return;
         }
       } else if (card === 'seconde') {
@@ -1808,6 +1883,11 @@ function attachQuiz(app, io) {
           socket.emit('quiz-error', { message: 'Tu es réduit au silence' });
           return;
         }
+      } else if (card === 'bouclier') {
+        if (lobby.phase !== 'answering') {
+          socket.emit('quiz-error', { message: 'La question est déjà fermée' });
+          return;
+        }
       } else if (lobby.phase !== 'answering' || player.answered[index]) {
         socket.emit('quiz-error', { message: 'Joue la carte avant de répondre' });
         return;
@@ -1817,7 +1897,7 @@ function attachQuiz(app, io) {
         socket.emit('quiz-error', { message: 'Seul le chef d\'équipe envoie la réponse' });
         return;
       }
-      if (lobby.teamMode && card !== 'vol' && card !== 'melange' && card !== 'seconde' && player.team) {
+      if (lobby.teamMode && card !== 'vol' && card !== 'melange' && card !== 'pot' && card !== 'renversement' && card !== 'seconde' && player.team) {
         const captain = membersOf(lobby, player.team)[0];
         if (captain && (captain.answered?.[index] || captain.silencedOn === index)) {
           socket.emit('quiz-error', { message: 'L\'équipe a déjà répondu' });
@@ -1830,6 +1910,13 @@ function attachQuiz(app, io) {
         target = lobby.players.find((entry) => entry.id === data.targetId);
         if (!target || target.id === player.id) {
           socket.emit('quiz-error', { message: 'Choisis un autre joueur' });
+          return;
+        }
+        if (
+          (card === 'silence' || card === 'vol')
+          && jokerPlayed(target, index, 'bouclier')
+        ) {
+          socket.emit('quiz-error', { message: 'Cette personne est protégée' });
           return;
         }
         if (
@@ -1858,6 +1945,12 @@ function attachQuiz(app, io) {
       if (card === 'silence') joker.note = `Silence sur ${joker.targetName}`;
       if (card === 'vol') joker.note = `Vol sur ${joker.targetName}`;
       if (card === 'melange') joker.note = 'Réponses mélangées';
+      if (card === 'pot') joker.note = 'Points mis au pot';
+      if (card === 'renversement') joker.note = 'Classement renversé';
+      if (card === 'toutourien') joker.note = 'Tout ou rien';
+      if (card === 'gambling') joker.note = 'Tirage à la distribution';
+      if (card === 'rumeur') joker.note = 'En attente d\'une rumeur';
+      if (card === 'bouclier') joker.note = 'Protégé';
       if (card === 'indice') joker.note = 'Indice gratuit';
 
       if (card === 'indice') {
@@ -1890,6 +1983,21 @@ function attachQuiz(app, io) {
         target.answered[index] = true;
         io.to(target.id).emit('quiz-silenced', { questionIndex: index });
         publishCopies(io, lobby, target);
+        publishRumors(io, lobby);
+      }
+
+      if (card === 'bouclier' && player.silencedOn === index) {
+        player.silencedOn = null;
+        if (player.answers) delete player.answers[index];
+        if (player.priorAnswers) delete player.priorAnswers[index];
+        player.answered[index] = false;
+        player.joker.note = 'Silence annulé';
+        io.to(player.id).emit('quiz-unsilenced', { questionIndex: index });
+        io.to(lobby.quizId).emit('quiz-progress', answerProgress(lobby, index));
+      }
+
+      if (card === 'rumeur') {
+        publishRumors(io, lobby);
       }
 
       if (card === 'copie' && target && target.answered[index]) {
@@ -1914,7 +2022,34 @@ function attachQuiz(app, io) {
           return;
         }
         emitHold(io, lobby);
-        io.to(lobby.quizId).emit('quiz-melange', { username: player.username });
+        io.to(lobby.quizId).emit('quiz-table-card', { card: 'melange', username: player.username });
+      }
+
+      if (card === 'pot' || card === 'renversement') {
+        const blocked = lobby.players.some((entry) => (
+          entry.id !== player.id
+          && (jokerPlayed(entry, index, 'pot') || jokerPlayed(entry, index, 'renversement'))
+        ));
+        const inRound = lobby.players.filter((entry) => entry.satOutIndex !== index);
+        const answered = inRound.filter((entry) => {
+          const value = entry.answers ? entry.answers[index] : null;
+          return value != null && value !== '';
+        });
+        const tooFew = card === 'pot' ? answered.length < 2 : inRound.length < 2;
+        if (blocked || tooFew) {
+          joker.used = false;
+          joker.usedOn = null;
+          joker.note = 'En main';
+          socket.emit('quiz-error', {
+            message: blocked
+              ? 'Une redistribution des points est déjà jouée'
+              : card === 'pot'
+                ? 'Il faut au moins deux réponses à partager'
+                : 'Il faut au moins deux joueurs'
+          });
+          return;
+        }
+        io.to(lobby.quizId).emit('quiz-table-card', { card, username: player.username });
       }
 
       io.to(player.id).emit('quiz-own-joker', { joker: ownJokerPayload(joker) });
@@ -1923,6 +2058,9 @@ function attachQuiz(app, io) {
       if (card === 'silence') {
         io.to(lobby.quizId).emit('quiz-progress', answerProgress(lobby, index));
         maybeCloseIfComplete(io, lobby);
+      }
+      if (card === 'seconde' && player.answered[index]) {
+        io.to(lobby.quizId).emit('quiz-progress', answerProgress(lobby, index));
       }
     });
 
