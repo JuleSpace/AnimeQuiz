@@ -557,6 +557,31 @@ const ClassicGame = ({
     );
   };
 
+  const renderPlanned = (note) => (
+    <div style={{
+      textAlign: 'center',
+      margin: '12px 0 18px',
+      padding: '12px',
+      borderRadius: '10px',
+      background: 'rgba(255, 35, 71,0.15)',
+      border: '1px solid rgba(255, 35, 71,0.45)'
+    }}>
+      Réponse prévue : <strong className="quiz-answer">{gameData.expectedAnswer || '—'}</strong>
+      {note ? (
+        <div style={{ marginTop: 6, fontSize: '0.9rem', opacity: 0.85 }}>{note}</div>
+      ) : null}
+      {renderPlacement(null, true)}
+      {question.type === 'imageqcm' && (
+        <ImageChoices
+          options={question.options}
+          correctIndexes={gameData.correctIndexes}
+          readOnly
+        />
+      )}
+      <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} />
+    </div>
+  );
+
   const renderAnswer = (entry) => {
     const paired = Boolean(entry.firstAnswerText);
     return (
@@ -759,7 +784,20 @@ const ClassicGame = ({
             <h3 style={{ textAlign: 'center' }}>
               {phase === 'hold' ? 'Réponses closes' : 'Le chef distribue les points'}
             </h3>
-            {phase === 'hold' && gameData.answersVisible ? (
+            {phase === 'correction' ? (
+              <>
+                {renderPlanned('Les points ne sont pas encore validés.')}
+                {scoreRows.map((entry) => (
+                  <div key={entry.id} className="quiz-score-row">
+                    <div className="quiz-answer">
+                      <strong>{entry.username}</strong>
+                      {entry.captainName ? ` · chef ${entry.captainName}` : ''}
+                      {renderAnswer(entry)}
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : phase === 'hold' && gameData.answersVisible ? (
               <>
                 <p style={{ textAlign: 'center', color: '#ff2347' }}>
                   Tu as Vol. Les réponses sont là, la bonne reste cachée.
@@ -776,9 +814,7 @@ const ClassicGame = ({
               </>
             ) : (
               <p style={{ textAlign: 'center', color: '#ff2347' }}>
-                {phase === 'hold'
-                  ? 'La bonne réponse reste cachée, le temps que le chef prépare les points.'
-                  : 'La bonne réponse s\'affichera quand les points seront validés.'}
+                La bonne réponse reste cachée, le temps que le chef prépare les points.
               </p>
             )}
           </div>
@@ -789,32 +825,11 @@ const ClassicGame = ({
             <h3 style={{ textAlign: 'center' }}>
               {phase === 'hold' ? 'Prépare la correction' : 'Distribue les points'}
             </h3>
-            <div style={{
-              textAlign: 'center',
-              margin: '12px 0 18px',
-              padding: '12px',
-              borderRadius: '10px',
-              background: 'rgba(255, 35, 71,0.15)',
-              border: '1px solid rgba(255, 35, 71,0.45)'
-            }}>
-              Réponse prévue : <strong className="quiz-answer">{gameData.expectedAnswer || '—'}</strong>
-              <div style={{ marginTop: 6, fontSize: '0.9rem', opacity: 0.85 }}>
-                {solo
-                  ? 'À toi de te noter. La réponse prévue est là, le reste se dit en face de soi.'
-                  : phase === 'hold'
-                    ? 'La réponse prévue reste cachée. Celui qui a Vol voit les réponses des autres.'
-                    : `Rien n'est validé tout seul. Une bonne réponse vaut ${gameData.suggestedPoints || question.points || 1} pt.`}
-              </div>
-              {renderPlacement(null, true)}
-              {question.type === 'imageqcm' && (
-                <ImageChoices
-                  options={question.options}
-                  correctIndexes={gameData.correctIndexes}
-                  readOnly
-                />
-              )}
-              <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} />
-            </div>
+            {renderPlanned(solo
+              ? 'À toi de te noter. La réponse prévue est là, le reste se dit en face de soi.'
+              : phase === 'hold'
+                ? 'La réponse prévue reste cachée. Celui qui a Vol voit les réponses des autres.'
+                : `Rien n'est validé tout seul. Une bonne réponse vaut ${gameData.suggestedPoints || question.points || 1} pt.`)}
             {scoreRows.map((entry) => {
               const suggested = gameData.suggestedPoints || question.points || 1;
               const paired = Boolean(entry.firstAnswerText) && !gameData.teamMode;

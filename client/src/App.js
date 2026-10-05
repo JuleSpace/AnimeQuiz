@@ -331,14 +331,14 @@ function App() {
           players: data.players,
           teamMode: typeof data.teamMode === 'boolean' ? data.teamMode : Boolean(prev.teamMode),
           teams: Array.isArray(data.teams) ? data.teams : (prev.teams || []),
-          expectedAnswer: data.full ? (data.expectedAnswer || '') : '',
-          answerImageUrl: data.full ? (data.answerImageUrl || '') : '',
-          answerVideoUrl: data.full ? (data.answerVideoUrl || '') : '',
-          solutionItems: data.full ? (data.solutionItems || []) : [],
-          layoutImageUrl: data.full ? (data.layoutImageUrl || '') : '',
-          timelineStart: data.full ? (data.timelineStart || '') : (prev.timelineStart || ''),
-          timelineEnd: data.full ? (data.timelineEnd || '') : (prev.timelineEnd || ''),
-          correctIndexes: data.full ? (data.correctIndexes || []) : []
+          expectedAnswer: data.expectedAnswer || '',
+          answerImageUrl: data.answerImageUrl || '',
+          answerVideoUrl: data.answerVideoUrl || '',
+          solutionItems: data.solutionItems || [],
+          layoutImageUrl: data.layoutImageUrl || '',
+          timelineStart: data.timelineStart || prev.timelineStart || '',
+          timelineEnd: data.timelineEnd || prev.timelineEnd || '',
+          correctIndexes: data.correctIndexes || []
         } : prev
       ));
     });
@@ -574,13 +574,9 @@ function App() {
     }
   };
 
-  const handleStartQuiz = (numberOfQuestions, options) => {
+  const handleStartQuiz = (numberOfQuestions) => {
     if (lobby && player) {
-      socket.emit('start-quiz', {
-        quizId: player.roomId,
-        numberOfQuestions,
-        solo: Boolean(options && options.solo)
-      });
+      socket.emit('start-quiz', { quizId: player.roomId, numberOfQuestions });
     }
   };
 
@@ -707,12 +703,7 @@ function App() {
                   <Icon name="go" />Entrer
                 </button>
 
-                <div style={{ 
-                  marginTop: '30px', 
-                  paddingTop: '20px', 
-                  borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-                  textAlign: 'center'
-                }}>
+                <div className="login-split">
                   <button type="button" className="btn btn-danger" onClick={() => setCurrentView('admin-login')}>
                     <Icon name="lock" />Connexion Admin
                   </button>
@@ -763,29 +754,18 @@ function App() {
                   <p>Aucun quiz disponible pour le moment.</p>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '16px' }}>
+                <div className="pick-grid">
                   {quizzes.map((quiz) => (
                     <button
                       key={quiz._id}
                       type="button"
+                      className="pick-card"
                       disabled={!quiz.questionCount}
                       onClick={() => quiz.questionCount && handleJoinQuiz(quiz._id)}
-                      style={{
-                        textAlign: 'left',
-                        background: '#14141c',
-                        color: 'white',
-                        border: '3px solid #ff2347',
-                        borderRadius: '4px',
-                        boxShadow: '5px 5px 0 #1f6dff',
-                        padding: '22px',
-                        cursor: quiz.questionCount ? 'pointer' : 'not-allowed',
-                        opacity: quiz.questionCount ? 1 : 0.55,
-                        fontFamily: 'inherit'
-                      }}
                     >
-                      <div style={{ color: '#ff2347', fontWeight: 'bold', fontSize: '1.2rem', marginBottom: 8 }}>{quiz.name}</div>
-                      <div style={{ opacity: 0.85, minHeight: 40 }}>{quiz.description}</div>
-                      <div style={{ marginTop: 12, color: '#51cf66' }}>
+                      <div className="pick-title">{quiz.name}</div>
+                      <div className="pick-desc">{quiz.description}</div>
+                      <div className="pick-meta">
                         {quiz.questionCount ? `${quiz.questionCount} questions` : 'Pas encore de questions'}
                       </div>
                     </button>
@@ -862,88 +842,22 @@ function App() {
                     <p>Aucun quiz disponible pour le moment</p>
                   </div>
                 ) : (
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-                    gap: '20px', 
-                    marginBottom: '30px' 
-                  }}>
+                  <div className="pick-grid" style={{ marginBottom: '30px' }}>
                     {rooms.map(room => (
-                      <div 
-                        key={room._id} 
-                        style={{ 
-                          background: '#14141c',
-                          padding: '25px', 
-                          borderRadius: '20px',
-                          border: '2px solid rgba(255, 255, 255, 0.1)',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease',
-                          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-                          position: 'relative',
-                          overflow: 'hidden'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-5px)';
-                          e.currentTarget.style.boxShadow = '6px 6px 0 #ff2347';
-                          e.currentTarget.style.borderColor = '#ff2347';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
-                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                        }}
+                      <div
+                        key={room._id}
+                        className="pick-card"
                         onClick={() => handleJoinLobby(room._id)}
                       >
-                        {/* Badge de nombre de musiques */}
-                        <div style={{
-                          position: 'absolute',
-                          top: '10px',
-                          right: '10px',
-                          background: 'rgba(255, 35, 71, 0.9)',
-                          color: '#000',
-                          padding: '5px 12px',
-                          borderRadius: '20px',
-                          fontSize: '0.8rem',
-                          fontWeight: 'bold'
-                        }}>
+                        <div className="pick-count">
                           <Icon name="music" bare /> {room.musicLinks.length}
                         </div>
-
-                        <h4 style={{ 
-                          margin: '0 0 15px 0', 
-                          color: '#ff2347', 
-                          fontSize: '1.3rem',
-                          fontWeight: 'bold',
-                          textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
-                        }}>
-                          {room.name}
-                        </h4>
-                        
+                        <h4 className="pick-title">{room.name}</h4>
                         {room.description && (
-                          <p style={{ 
-                            margin: '0 0 15px 0', 
-                            opacity: 0.9,
-                            fontSize: '0.9rem',
-                            lineHeight: '1.4',
-                            textAlign: 'center'
-                          }}>
-                            {room.description}
-                          </p>
+                          <p className="pick-desc">{room.description}</p>
                         )}
-                        
-                        <div style={{ 
-                          textAlign: 'center',
-                          marginTop: '15px',
-                          paddingTop: '15px',
-                          borderTop: '1px solid rgba(255, 255, 255, 0.2)'
-                        }}>
-                          <span style={{ 
-                            fontSize: '0.9rem', 
-                            color: '#51cf66',
-                            fontWeight: 'bold'
-                          }}>
-                            <Icon name="play" tone="cyan" />Cliquer pour rejoindre
-                          </span>
+                        <div className="pick-meta">
+                          <Icon name="play" bare />Cliquer pour rejoindre
                         </div>
                       </div>
                     ))}

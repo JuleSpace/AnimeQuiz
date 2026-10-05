@@ -97,7 +97,7 @@ const CARD_ART = {
   silence: '/silence-faker.png',
   vol: '/vol.png',
   melange: '/melange.gif',
-  pot: '/pot.png',
+  pot: '/pot.png?v=2',
   renversement: '/renversement.png',
   toutourien: '/toutourien.png',
   gambling: '/gambling.png',

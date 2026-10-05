@@ -18,7 +18,7 @@ const SLIDES = [
     points: [
       'Dès 20 questions, un booster tous les 20 %. De 10 à 19, un tous les 50 %. En dessous, un seul.',
       'Temps illimité, ou l’orga clos les réponses.',
-      'Attente, puis l’orga donne les points et valide. La salle voit alors la réponse.',
+      'Quand l’orga distribue les points, la salle voit la réponse prévue et les réponses de chacun. Les scores arrivent à la validation.',
     ]
   },
   {

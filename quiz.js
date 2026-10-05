@@ -951,16 +951,16 @@ function correctionPayload(lobby, full) {
     questionIndex: index,
     hostId: lobby.host?.id || null,
     full: Boolean(full),
-    players: answeredPlayers(lobby, index, full)
+    players: answeredPlayers(lobby, index, true),
+    teamMode: Boolean(lobby.teamMode),
+    teams: lobby.teamMode ? teamScoreRows(lobby, index, true) : [],
+    ...privateAnswerFields(lobby)
   };
   if (!full) return payload;
   return {
     ...payload,
-    ...privateAnswerFields(lobby),
     corrections: lobby.pendingCorrections || {},
-    preview: previewList(lobby, index),
-    teamMode: Boolean(lobby.teamMode),
-    teams: lobby.teamMode ? teamScoreRows(lobby, index) : []
+    preview: previewList(lobby, index)
   };
 }
 
@@ -1754,7 +1754,6 @@ function attachQuiz(app, io) {
       const lobby = quizLobbies.get(player.roomId);
       if (!lobby || lobby.phase !== 'answering') return;
       if (player.isHost && !lobby.solo) return;
-
       const index = lobby.currentQuestion;
       if (player.silencedOn === index) {
         socket.emit('quiz-error', { message: 'Tu es réduit au silence' });
