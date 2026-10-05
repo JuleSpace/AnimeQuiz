@@ -154,7 +154,7 @@ const Game = ({ gameData, player, onSubmitAnswer, onSubmitCorrection, onUpdateCo
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button
                         onClick={gameData.players[0] && gameData.players[0].id === player.id ? () => toggleCorrection(p.id, true) : undefined}
-                        className={`btn ${corrections[p.id] === true ? 'btn-success' : ''}`}
+                        className={`btn${corrections[p.id] === true ? ' is-on' : ''}`}
                         style={{ 
                           padding: '5px 15px', 
                           fontSize: '0.9rem',

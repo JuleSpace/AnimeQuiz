@@ -240,7 +240,7 @@ const QuizRules = () => {
         </button>
         <button
           type="button"
-          className="btn btn-success"
+          className="btn"
           onClick={() => setIndex((value) => Math.min(SLIDES.length - 1, value + 1))}
           disabled={index === SLIDES.length - 1}
         >

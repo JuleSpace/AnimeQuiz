@@ -1821,12 +1821,12 @@ textarea.input {
   box-shadow: 5px 5px 0 #111318;
 }
 
-.rules-nav .btn.btn-success,
-.rules-nav .btn.btn-success:hover:not(:disabled) {
-  background: #1f6dff;
-  color: #111318;
-  border-color: #111318;
-  box-shadow: 4px 4px 0 #ff2347;
+.correction-item .btn.is-on,
+.correction-item .btn.btn-danger {
+  background: #111318;
+  color: #ffd000;
+  border-color: #ffd000;
+  box-shadow: 4px 4px 0 #ffd000;
 }
 
 .rules-stage:fullscreen,
