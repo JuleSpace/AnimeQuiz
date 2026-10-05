@@ -173,6 +173,7 @@ function App() {
         players: data.players,
         teamMode: Boolean(data.teamMode),
         jokersEnabled: data.jokersEnabled !== false,
+        solo: Boolean(data.solo),
         teams: data.teams || [],
         teamChat: [],
         deadline: data.deadline,
@@ -573,9 +574,13 @@ function App() {
     }
   };
 
-  const handleStartQuiz = (numberOfQuestions) => {
+  const handleStartQuiz = (numberOfQuestions, options) => {
     if (lobby && player) {
-      socket.emit('start-quiz', { quizId: player.roomId, numberOfQuestions });
+      socket.emit('start-quiz', {
+        quizId: player.roomId,
+        numberOfQuestions,
+        solo: Boolean(options && options.solo)
+      });
     }
   };
 

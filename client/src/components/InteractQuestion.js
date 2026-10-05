@@ -128,7 +128,7 @@ export const OrderAnswer = ({ items, onSubmit }) => {
 
 const chipStyle = (mode, place) => (
   mode === 'timeline'
-    ? { left: `${place.x}%`, top: '50%' }
+    ? { left: `${place.x}%`, top: '36%' }
     : { left: `${place.x}%`, top: `${place.y}%` }
 );
 
@@ -150,27 +150,48 @@ export const PlaceBoard = ({
   const ratio = frame && frame.url === imageUrl ? frame.ratio : null;
   const schemaReady = mode !== 'schema' || !imageUrl || Boolean(ratio);
   const [leftLabels, setLeftLabels] = useState({});
+  const [labelAlign, setLabelAlign] = useState({});
 
   useLayoutEffect(() => {
-    if (mode !== 'schema' || !boardRef.current) return undefined;
+    if (!boardRef.current || (mode !== 'schema' && mode !== 'timeline')) return undefined;
     const board = boardRef.current;
     const measure = () => {
       const width = board.clientWidth;
+      if (!width) return;
+      if (mode === 'schema') {
+        const next = {};
+        board.querySelectorAll('.place-chip.schema-pin').forEach((node) => {
+          const id = node.dataset.pin;
+          const label = node.querySelector('.pin-label');
+          if (!id || !label) return;
+          const x = (parseFloat(node.style.left) / 100) * width;
+          const needed = label.offsetWidth + 18;
+          const roomRight = width - x;
+          const roomLeft = x;
+          next[id] = needed > roomRight - 4 && roomLeft > roomRight;
+        });
+        setLeftLabels((current) => {
+          const ids = Object.keys(next);
+          const same = ids.length === Object.keys(current).length
+            && ids.every((id) => Boolean(next[id]) === Boolean(current[id]));
+          return same ? current : next;
+        });
+        return;
+      }
       const next = {};
-      board.querySelectorAll('.place-chip.schema-pin').forEach((node) => {
+      board.querySelectorAll('.place-chip.timeline-pin').forEach((node) => {
         const id = node.dataset.pin;
         const label = node.querySelector('.pin-label');
-        if (!id || !label || !width) return;
+        if (!id || !label) return;
         const x = (parseFloat(node.style.left) / 100) * width;
-        const needed = label.offsetWidth + 18;
-        const roomRight = width - x;
-        const roomLeft = x;
-        next[id] = needed > roomRight - 4 && roomLeft > roomRight;
+        const half = label.offsetWidth / 2;
+        if (x - half < 6) next[id] = 'start';
+        else if (x + half > width - 6) next[id] = 'end';
       });
-      setLeftLabels((current) => {
+      setLabelAlign((current) => {
         const ids = Object.keys(next);
         const same = ids.length === Object.keys(current).length
-          && ids.every((id) => Boolean(next[id]) === Boolean(current[id]));
+          && ids.every((id) => next[id] === current[id]);
         return same ? current : next;
       });
     };
@@ -235,7 +256,7 @@ export const PlaceBoard = ({
           return (
             <div
               key={place.id}
-              className={`place-chip${mode === 'schema' ? ' schema-pin' : ''}${leftLabels[place.id] ? ' pin-left' : ''}`}
+              className={`place-chip${mode === 'schema' ? ' schema-pin' : ' timeline-pin'}${leftLabels[place.id] ? ' pin-left' : ''}${labelAlign[place.id] ? ` pin-${labelAlign[place.id]}` : ''}`}
               data-pin={place.id}
               style={chipStyle(mode, place)}
               onPointerDown={(event) => {
@@ -248,17 +269,12 @@ export const PlaceBoard = ({
               }}
               onPointerUp={(event) => moveItem(place.id, event)}
             >
-              {mode === 'schema' ? (
+              {mode === 'schema' || mode === 'timeline' ? (
                 <span className="pin-label">
                   {item.imageUrl && <img src={item.imageUrl} alt="" />}
                   <span>{itemLabel(item, index)}</span>
                 </span>
-              ) : (
-                <>
-                  {item.imageUrl && <img src={item.imageUrl} alt="" />}
-                  <span>{itemLabel(item, index)}</span>
-                </>
-              )}
+              ) : null}
             </div>
           );
         })}

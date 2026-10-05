@@ -213,6 +213,22 @@ h1, h2, h3 {
   box-shadow: 5px 5px 0 #111318;
 }
 
+.btn.lobby-solo {
+  position: absolute;
+  top: 32px;
+  left: 16px;
+  z-index: 2;
+  margin: 0;
+  background: #111318;
+  color: #ffd000;
+  border-color: #ffd000;
+  box-shadow: 3px 3px 0 #111318;
+}
+
+.btn.lobby-solo:hover:not(:disabled) {
+  box-shadow: 5px 5px 0 #111318;
+}
+
 .btn:hover:not(:disabled) {
   transform: skewX(-8deg) translate(-2px, -2px);
   box-shadow: 7px 7px 0 #ff2347;
@@ -1103,7 +1119,75 @@ textarea.input {
 }
 
 .place-board.timeline {
-  height: 140px;
+  height: 124px;
+}
+
+.place-board.timeline .place-line {
+  top: 36%;
+}
+
+.place-board.timeline .place-chip.timeline-pin {
+  transform: none;
+  width: 0;
+  height: 0;
+  padding: 0;
+  gap: 0;
+  max-width: none;
+  background: transparent;
+  border: none;
+  overflow: visible;
+}
+
+.place-board.timeline .place-chip.timeline-pin::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ff2347;
+  border: 2px solid #fff;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.place-board.timeline .pin-label {
+  position: absolute;
+  left: 0;
+  top: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  max-width: 92px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(20, 20, 30, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  font-size: 0.74rem;
+  line-height: 1.15;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.place-board.timeline .place-chip.pin-start .pin-label {
+  transform: none;
+}
+
+.place-board.timeline .place-chip.pin-end .pin-label {
+  transform: translateX(-100%);
+}
+
+.place-board.timeline .pin-label img {
+  width: 22px;
+  height: 16px;
+}
+
+.place-board.timeline .pin-label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .place-board.schema {

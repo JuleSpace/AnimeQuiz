@@ -825,6 +825,7 @@ function questionPayload(lobby) {
     players: playerSnapshot(lobby),
     teamMode: Boolean(lobby.teamMode),
     jokersEnabled: jokersActive(lobby),
+    solo: Boolean(lobby.solo),
     teams: lobby.teamMode ? teamScoreRows(lobby, index) : [],
     deadline: lobby.deadline,
     ...answerProgress(lobby, index)
@@ -1137,7 +1138,7 @@ function syncQuizSocket(io, socket, lobby) {
 
   socket.emit('quiz-question', {
     ...questionPayload(lobby),
-    locked: Boolean(person && !person.isHost && person.answered?.[lobby.currentQuestion]),
+    locked: Boolean(person && (!person.isHost || lobby.solo) && person.answered?.[lobby.currentQuestion]),
     hintUsed: Boolean(person && !person.isHost && person.hintAsked?.[lobby.currentQuestion])
   });
 
@@ -1658,6 +1659,35 @@ function attachQuiz(app, io) {
           socket.emit('start-error', { message: 'Seul le chef peut lancer la partie' });
           return;
         }
+        if (data.solo) {
+          if (lobby.players.length) {
+            socket.emit('start-error', { message: 'Le solo se lance quand tu es seul dans la salle' });
+            return;
+          }
+          const host = lobby.host;
+          quizPlayers.set(socket.id, {
+            id: host.id,
+            username: host.username,
+            roomId: lobby.quizId,
+            isHost: true,
+            score: 0,
+            answers: {},
+            priorAnswers: {},
+            answered: {},
+            hints: {},
+            hintAsked: {},
+            joker: null,
+            silencedOn: null,
+            satOutIndex: null,
+            lastGain: 0,
+            lastCorrect: false,
+            lastNotes: []
+          });
+          lobby.players = [quizPlayers.get(socket.id)];
+          lobby.solo = true;
+          lobby.teamMode = false;
+          lobby.jokersEnabled = false;
+        }
         if (!lobby.players.length) {
           socket.emit('start-error', { message: 'Il faut au moins un joueur en plus du chef' });
           return;
@@ -1720,9 +1750,10 @@ function attachQuiz(app, io) {
 
     socket.on('submit-quiz-answer', (data) => {
       const player = quizPlayers.get(socket.id);
-      if (!player || player.isHost) return;
+      if (!player) return;
       const lobby = quizLobbies.get(player.roomId);
       if (!lobby || lobby.phase !== 'answering') return;
+      if (player.isHost && !lobby.solo) return;
 
       const index = lobby.currentQuestion;
       if (player.silencedOn === index) {

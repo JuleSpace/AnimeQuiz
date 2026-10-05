@@ -308,6 +308,7 @@ const ClassicGame = ({
   }
 
   const isHost = gameData.hostId === player.id;
+  const solo = Boolean(gameData.solo);
   const corrections = gameData.corrections || {};
   const reveal = gameData.reveal;
   const players = gameData.players || [];
@@ -671,7 +672,7 @@ const ClassicGame = ({
           <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} />
         )}
 
-        {phase === 'answering' && isHost && (
+        {phase === 'answering' && isHost && !solo && (
           <div className="quiz-host-panel">
             <div style={{ marginBottom: 8 }}>Tu es le chef : tu ne réponds pas.</div>
             {gameData.hostAnswer && (
@@ -715,7 +716,7 @@ const ClassicGame = ({
           </div>
         )}
 
-        {phase === 'answering' && !isHost && (
+        {phase === 'answering' && (!isHost || solo) && (
           <>
             {gameData.copiedAnswer && gameData.copiedAnswer.questionIndex === gameData.questionIndex && !gameData.silenced && (
               <div className="copied-banner">
@@ -798,9 +799,11 @@ const ClassicGame = ({
             }}>
               Réponse prévue : <strong className="quiz-answer">{gameData.expectedAnswer || '—'}</strong>
               <div style={{ marginTop: 6, fontSize: '0.9rem', opacity: 0.85 }}>
-                {phase === 'hold'
-                  ? 'La réponse prévue reste cachée. Celui qui a Vol voit les réponses des autres.'
-                  : `Rien n'est validé tout seul. Une bonne réponse vaut ${gameData.suggestedPoints || question.points || 1} pt.`}
+                {solo
+                  ? 'À toi de te noter. La réponse prévue est là, le reste se dit en face de soi.'
+                  : phase === 'hold'
+                    ? 'La réponse prévue reste cachée. Celui qui a Vol voit les réponses des autres.'
+                    : `Rien n'est validé tout seul. Une bonne réponse vaut ${gameData.suggestedPoints || question.points || 1} pt.`}
               </div>
               {renderPlacement(null, true)}
               {question.type === 'imageqcm' && (
