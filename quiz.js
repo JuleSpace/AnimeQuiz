@@ -15,7 +15,7 @@ const {
 const QuizQuestionSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['qcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout'],
+    enum: ['qcm', 'imageqcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout'],
     required: true
   },
   prompt: { type: String, default: '' },
@@ -33,6 +33,8 @@ const QuizQuestionSchema = new mongoose.Schema({
   timeLimit: { type: Number, default: 20 },
   layoutMode: { type: String, enum: ['timeline', 'schema'], default: 'timeline' },
   layoutImageUrl: { type: String, default: '' },
+  timelineStart: { type: String, default: '' },
+  timelineEnd: { type: String, default: '' },
   items: {
     type: [{
       id: { type: String, default: '' },
@@ -106,7 +108,7 @@ function isHttpUrl(value) {
 function isObjectiveCorrect(question, answer) {
   if (answer == null) return false;
 
-  if (question.type === 'qcm') {
+  if (question.type === 'qcm' || question.type === 'imageqcm') {
     const selected = (Array.isArray(answer) ? answer : [answer])
       .map((value) => Number(value))
       .sort((a, b) => a - b);
@@ -142,6 +144,10 @@ function correctLabel(question) {
       .filter(Boolean)
       .join(' · ');
   }
+  if (question.type === 'imageqcm') {
+    const index = Number((question.correctIndexes || [])[0]);
+    return Number.isInteger(index) && index >= 0 ? `Image ${index + 1}` : 'Image';
+  }
   if (question.type === 'boolean') return question.correctBoolean ? 'Vrai' : 'Faux';
   if (question.type === 'text' || question.type === 'music') {
     const answers = acceptedList(question.acceptedAnswers);
@@ -173,12 +179,20 @@ function answerSnapshot(question, player, index) {
   const visual = (value) => (
     (question.type === 'order' || question.type === 'layout') ? (value || null) : null
   );
+  const pickedImages = (value) => {
+    if (!question || question.type !== 'imageqcm' || value == null || value === '') return [];
+    const options = question.options || [];
+    const indexes = Array.isArray(value) ? value : [value];
+    return indexes.map((optionIndex) => options[Number(optionIndex)]).filter(Boolean);
+  };
   return {
     answerText: formatPlayerAnswer(question, current),
     answer: visual(current),
+    ...(question.type === 'imageqcm' ? { answerImages: pickedImages(current) } : {}),
     ...(hasPrior ? {
       firstAnswerText: formatPlayerAnswer(question, prior),
-      firstAnswer: visual(prior)
+      firstAnswer: visual(prior),
+      ...(question.type === 'imageqcm' ? { firstAnswerImages: pickedImages(prior) } : {})
     } : {})
   };
 }
@@ -189,6 +203,13 @@ function formatPlayerAnswer(question, answer) {
     const options = question.options || [];
     const indexes = Array.isArray(answer) ? answer : [answer];
     return indexes.map((index) => options[index] || '?').join(', ');
+  }
+  if (question.type === 'imageqcm') {
+    const indexes = Array.isArray(answer) ? answer : [answer];
+    return indexes.map((index) => {
+      const number = Number(index);
+      return Number.isInteger(number) && number >= 0 ? `Image ${number + 1}` : '?';
+    }).join(', ');
   }
   if (question.type === 'boolean') return answer ? 'Vrai' : 'Faux';
   if (question.type === 'blank') {
@@ -244,12 +265,22 @@ function publicItems(question) {
 }
 
 function hostSolution(question) {
-  if (!question || (question.type !== 'order' && question.type !== 'layout')) return null;
+  if (!question) return null;
+  if (question.type === 'imageqcm') {
+    return {
+      type: 'imageqcm',
+      options: question.options || [],
+      correctIndexes: question.correctIndexes || []
+    };
+  }
+  if (question.type !== 'order' && question.type !== 'layout') return null;
   return {
     type: question.type,
     items: solutionItems(question),
     layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
-    layoutImageUrl: question.layoutImageUrl || ''
+    layoutImageUrl: question.layoutImageUrl || '',
+    timelineStart: question.timelineStart || '',
+    timelineEnd: question.timelineEnd || ''
   };
 }
 
@@ -291,7 +322,7 @@ function publicQuestion(question, index, total) {
     imageUrl: question.imageUrl || '',
     videoUrl: question.type === 'music' ? '' : (question.videoUrl || ''),
     musicUrl: question.type === 'music' ? (question.musicUrl || '') : '',
-    options: question.type === 'qcm' ? (question.options || []) : [],
+    options: (question.type === 'qcm' || question.type === 'imageqcm') ? (question.options || []) : [],
     multiple: question.type === 'qcm' && (question.correctIndexes || []).length > 1,
     blankCount: question.type === 'blank' ? (question.blanks || []).length : 0,
     points: question.points || 1,
@@ -300,6 +331,12 @@ function publicQuestion(question, index, total) {
     layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
     layoutImageUrl: question.type === 'layout' && question.layoutMode === 'schema'
       ? (question.layoutImageUrl || '')
+      : '',
+    timelineStart: question.type === 'layout' && question.layoutMode !== 'schema'
+      ? (question.timelineStart || '')
+      : '',
+    timelineEnd: question.type === 'layout' && question.layoutMode !== 'schema'
+      ? (question.timelineEnd || '')
       : ''
   };
 }
@@ -356,8 +393,10 @@ function sanitizeQuestion(raw) {
     answerImageUrl: String(raw.answerImageUrl || '').trim(),
     answerVideoUrl: String(raw.answerVideoUrl || '').trim(),
     musicUrl: type === 'music' ? String(raw.musicUrl || '').trim() : '',
-    options: type === 'qcm' ? options : [],
-    correctIndexes: type === 'qcm' ? correctIndexes : [],
+    options: (type === 'qcm' || type === 'imageqcm') ? options : [],
+    correctIndexes: type === 'qcm'
+      ? correctIndexes
+      : (type === 'imageqcm' ? correctIndexes.slice(0, 1) : []),
     correctBoolean: raw.correctBoolean !== false,
     acceptedAnswers: (type === 'text' || type === 'music') ? acceptedAnswers : [],
     blanks: type === 'blank' ? blanks : [],
@@ -365,13 +404,15 @@ function sanitizeQuestion(raw) {
     timeLimit: Math.max(0, Number(raw.timeLimit) || 0),
     layoutMode: raw.layoutMode === 'schema' ? 'schema' : 'timeline',
     layoutImageUrl: String(raw.layoutImageUrl || '').trim(),
+    timelineStart: String(raw.timelineStart || '').trim().slice(0, 80),
+    timelineEnd: String(raw.timelineEnd || '').trim().slice(0, 80),
     items: cleanItems(raw.items)
   };
 }
 
 function validateQuestion(question, position) {
   const label = `Question ${position}`;
-  const types = ['qcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout'];
+  const types = ['qcm', 'imageqcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout'];
   if (!types.includes(question.type)) return `${label} : type invalide`;
 
   const urlError = ['imageUrl', 'videoUrl', 'answerImageUrl', 'answerVideoUrl', 'musicUrl', 'layoutImageUrl'].map((field) => {
@@ -389,13 +430,16 @@ function validateQuestion(question, position) {
     return `${label} : ajoute un énoncé ou une image`;
   }
 
-  if (question.type === 'qcm') {
-    if ((question.options || []).length < 2) return `${label} : au moins 2 choix`;
-    if (!(question.correctIndexes || []).length) return `${label} : indique la bonne réponse`;
+  if (question.type === 'qcm' || question.type === 'imageqcm') {
+    const noun = question.type === 'imageqcm' ? 'images' : 'choix';
+    if ((question.options || []).length < 2) return `${label} : au moins 2 ${noun}`;
+    if (!(question.correctIndexes || []).length) {
+      return `${label} : indique la bonne ${question.type === 'imageqcm' ? 'image' : 'réponse'}`;
+    }
   }
-
-  if (question.type === 'text' && !(question.acceptedAnswers || []).length) {
-    return `${label} : indique au moins une réponse acceptée`;
+  if (question.type === 'imageqcm') {
+    const badImage = (question.options || []).find((option) => !isHttpUrl(option));
+    if (badImage) return `${label} : chaque image doit être un lien http:// ou https://`;
   }
 
   if (question.type === 'blank') {
@@ -415,7 +459,7 @@ function validateQuestion(question, position) {
   }
 
   if (question.type === 'layout') {
-    if ((question.items || []).length < 2) return `${label} : ajoute au moins 2 éléments à placer`;
+    if ((question.items || []).length < 1) return `${label} : ajoute au moins 1 élément à placer`;
     if (question.layoutMode === 'schema' && !String(question.layoutImageUrl || '').trim()) {
       return `${label} : ajoute l'image du schéma`;
     }
@@ -696,7 +740,9 @@ function emitReveal(io, lobby, question, index) {
     solutionItems: solutionItems(question),
     layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
     layoutImageUrl: question.layoutImageUrl || '',
-    correctIndexes: question.type === 'qcm' ? (question.correctIndexes || []) : [],
+    timelineStart: question.timelineStart || '',
+    timelineEnd: question.timelineEnd || '',
+    correctIndexes: question.type === 'qcm' || question.type === 'imageqcm' ? (question.correctIndexes || []) : [],
     correctBoolean: question.type === 'boolean' ? Boolean(question.correctBoolean) : null,
     teamMode: Boolean(lobby.teamMode),
     teams: lobby.teamMode ? teamRevealRows(lobby, index) : [],
@@ -830,6 +876,9 @@ function privateAnswerFields(lobby) {
     solutionItems: solutionItems(question),
     layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
     layoutImageUrl: question.layoutImageUrl || '',
+    timelineStart: question.timelineStart || '',
+    timelineEnd: question.timelineEnd || '',
+    correctIndexes: question.type === 'imageqcm' ? (question.correctIndexes || []) : [],
     suggestedPoints: question.points || 1
   };
 }

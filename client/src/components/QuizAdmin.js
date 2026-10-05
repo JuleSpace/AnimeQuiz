@@ -5,6 +5,7 @@ import Icon from './ArcadeIcon';
 
 const TYPE_OPTIONS = [
   { id: 'qcm', label: 'Choix multiple' },
+  { id: 'imageqcm', label: 'Choix d\'images' },
   { id: 'boolean', label: 'Vrai / Faux' },
   { id: 'text', label: 'Réponse libre' },
   { id: 'music', label: 'Blind test' },
@@ -29,7 +30,9 @@ const emptyDraft = () => ({
   timeLimit: 20,
   items: [],
   layoutMode: 'timeline',
-  layoutImageUrl: ''
+  layoutImageUrl: '',
+  timelineStart: '',
+  timelineEnd: ''
 });
 
 const questionToApi = (draft) => ({
@@ -49,7 +52,9 @@ const questionToApi = (draft) => ({
   timeLimit: draft.timeLimit === '' ? 0 : Number(draft.timeLimit) || 0,
   items: draft.items || [],
   layoutMode: draft.layoutMode === 'schema' ? 'schema' : 'timeline',
-  layoutImageUrl: draft.layoutImageUrl || ''
+  layoutImageUrl: draft.layoutImageUrl || '',
+  timelineStart: draft.timelineStart || '',
+  timelineEnd: draft.timelineEnd || ''
 });
 
 const questionFromApi = (question) => ({
@@ -75,7 +80,9 @@ const questionFromApi = (question) => ({
     y: Number.isFinite(Number(item.y)) ? Number(item.y) : 50
   })),
   layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
-  layoutImageUrl: question.layoutImageUrl || ''
+  layoutImageUrl: question.layoutImageUrl || '',
+  timelineStart: question.timelineStart || '',
+  timelineEnd: question.timelineEnd || ''
 });
 
 const typeLabel = (type) => TYPE_OPTIONS.find((option) => option.id === type)?.label || type;
@@ -129,11 +136,20 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
               background: draft.type === option.id ? 'linear-gradient(90deg, #1f6dff, #ff2347)' : undefined,
               color: draft.type === option.id ? '#1a1a1a' : 'white'
             }}
-            onClick={() => setDraft((current) => ({
-              ...current,
-              type: option.id,
-              timeLimit: option.id === 'music' && Number(current.timeLimit) === 20 ? 0 : current.timeLimit
-            }))}
+            onClick={() => setDraft((current) => {
+              if (current.type === option.id) return current;
+              const next = {
+                ...current,
+                type: option.id,
+                timeLimit: option.id === 'music' && Number(current.timeLimit) === 20 ? 0 : current.timeLimit
+              };
+              if (option.id === 'imageqcm') {
+                next.options = ['', ''];
+                next.correctIndexes = [0];
+                next.multiple = false;
+              }
+              return next;
+            })}
           >
             {option.label}
           </button>
@@ -150,6 +166,8 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
               ? 'Consigne, ex. Classe ces images de ta préférée à la moins aimée'
               : draft.type === 'layout'
                 ? 'Consigne, ex. Place ces événements sur la frise'
+                : draft.type === 'imageqcm'
+                  ? 'Consigne, ex. Laquelle de ces images est la bonne ?'
                 : 'Énoncé de la question'
         }
         value={draft.prompt}
@@ -220,6 +238,67 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         </div>
       )}
 
+      {draft.type === 'imageqcm' && (
+        <div>
+          <p className="blind-hint">Une image par lien. Coche la bonne. Deux minimum, sans maximum.</p>
+          {draft.options.map((option, index) => {
+            const url = String(option || '').trim();
+            const preview = /^https?:\/\//i.test(url);
+            return (
+              <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ margin: 0, minWidth: 52 }}
+                  onClick={() => setDraft({ ...draft, correctIndexes: [index] })}
+                >
+                  {draft.correctIndexes.includes(index) ? <Icon name="check" bare /> : <Icon name="box" bare />}
+                </button>
+                {preview && <img src={url} alt="" className="answer-thumb" />}
+                <input
+                  className="input"
+                  style={{ margin: '6px 0' }}
+                  placeholder={`Lien de l'image ${index + 1}`}
+                  value={option}
+                  onChange={(event) => {
+                    const options = [...draft.options];
+                    options[index] = event.target.value;
+                    setDraft({ ...draft, options });
+                  }}
+                />
+                {draft.options.length > 2 && (
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    style={{ margin: 0 }}
+                    onClick={() => {
+                      const options = draft.options.filter((_, optionIndex) => optionIndex !== index);
+                      const correctIndexes = draft.correctIndexes
+                        .filter((value) => value !== index)
+                        .map((value) => (value > index ? value - 1 : value));
+                      setDraft({
+                        ...draft,
+                        options,
+                        correctIndexes: correctIndexes.length ? correctIndexes : [0]
+                      });
+                    }}
+                  >
+                    <Icon name="cross" bare />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setDraft({ ...draft, options: [...draft.options, ''] })}
+          >
+            Ajouter une image
+          </button>
+        </div>
+      )}
+
       {draft.type === 'boolean' && (
         <div style={{ display: 'flex', gap: '8px', margin: '8px 0' }}>
           <button
@@ -242,13 +321,16 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
       )}
 
       {draft.type === 'text' && (
-        <textarea
-          className="input"
-          rows={3}
-          placeholder={'Une réponse acceptée par ligne\nNaruto\nNaruto Uzumaki'}
-          value={draft.acceptedText}
-          onChange={(event) => setDraft({ ...draft, acceptedText: event.target.value })}
-        />
+        <>
+          <textarea
+            className="input"
+            rows={3}
+            placeholder={'Réponses acceptées, facultatif, une par ligne\nNaruto\nNaruto Uzumaki'}
+            value={draft.acceptedText}
+            onChange={(event) => setDraft({ ...draft, acceptedText: event.target.value })}
+          />
+          <p className="blind-hint">Tu peux laisser vide. Le chef corrigera à la main.</p>
+        </>
       )}
 
       {draft.type === 'order' && (
@@ -278,20 +360,41 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
               Schéma
             </button>
           </div>
-          {draft.layoutMode === 'schema' && (
+          {draft.layoutMode === 'schema' ? (
             <input
               className="input"
               placeholder="Image du schéma"
               value={draft.layoutImageUrl || ''}
               onChange={(event) => setDraft({ ...draft, layoutImageUrl: event.target.value })}
             />
+          ) : (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                className="input"
+                placeholder="Date de début, à gauche"
+                value={draft.timelineStart || ''}
+                onChange={(event) => setDraft({ ...draft, timelineStart: event.target.value })}
+              />
+              <input
+                className="input"
+                placeholder="Date de fin, à droite"
+                value={draft.timelineEnd || ''}
+                onChange={(event) => setDraft({ ...draft, timelineEnd: event.target.value })}
+              />
+            </div>
           )}
           <ItemEditor items={draft.items || []} onChange={(items) => setDraft({ ...draft, items })} />
-          <p className="blind-hint">Place les éléments : c'est l'emplacement attendu.</p>
+          <p className="blind-hint">
+            {draft.layoutMode === 'schema'
+              ? 'Place les éléments : c\'est l\'emplacement attendu. Un seul suffit.'
+              : 'Place les éléments : c\'est l\'emplacement attendu. Un seul suffit. Les dates aident les joueurs, elles restent facultatives.'}
+          </p>
           <PlaceBoard
             mode={draft.layoutMode === 'schema' ? 'schema' : 'timeline'}
             imageUrl={draft.layoutImageUrl || ''}
             items={draft.items || []}
+            timelineStart={draft.timelineStart || ''}
+            timelineEnd={draft.timelineEnd || ''}
             places={(draft.items || []).map((item) => ({ id: item.id, x: item.x ?? 50, y: item.y ?? 50 }))}
             onChange={(places) => {
               const positions = new Map(places.map((place) => [place.id, place]));
@@ -319,7 +422,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
           <textarea
             className="input"
             rows={2}
-            placeholder={'Réponse attendue (une par ligne)\nTank!\nCowboy Bebop'}
+            placeholder={'Réponse attendue, facultatif, une par ligne\nTank!\nCowboy Bebop'}
             value={draft.acceptedText}
             onChange={(event) => setDraft({ ...draft, acceptedText: event.target.value })}
           />

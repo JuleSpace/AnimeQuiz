@@ -23,10 +23,11 @@ const SLIDES = [
   },
   {
     kicker: 'Les questions',
-    title: 'Six formes',
+    title: 'Les formes',
     points: [
-      'Choix multiple, vrai/faux, texte libre, blind test masqué.',
-      'Classement, ou placement sur une frise et un schéma.',
+      'Choix multiple, choix d\'images, vrai/faux, texte libre, blind test masqué.',
+      'Classement, ou placement sur une frise et un schéma. Un seul élément à placer suffit.',
+      'La frise peut afficher une date de début et une date de fin.',
       'L’image et la vidéo de la réponse n’apparaissent qu’avec les points.',
       'Rien n’est noté tout seul : l’orga décide.'
     ]

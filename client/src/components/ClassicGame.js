@@ -125,6 +125,38 @@ const TeamChat = ({ messages, onSend, accent }) => {
   );
 };
 
+const ImageChoices = ({ options, correctIndexes, pickedIndex, onPick, readOnly = false }) => (
+  <div className="image-choice-grid">
+    {(options || []).map((url, index) => {
+      const correct = (correctIndexes || []).includes(index);
+      const picked = pickedIndex === index;
+      return (
+        <button
+          key={`${url}-${index}`}
+          type="button"
+          className={`image-choice${correct ? ' is-correct' : ''}${picked ? ' is-picked' : ''}`}
+          disabled={readOnly}
+          onClick={() => onPick && onPick(index)}
+        >
+          <img src={url} alt={`Image ${index + 1}`} />
+          <span>Image {index + 1}</span>
+        </button>
+      );
+    })}
+  </div>
+);
+
+const AnswerThumbs = ({ urls }) => {
+  if (!urls || !urls.length) return null;
+  return (
+    <div className="answer-thumbs">
+      {urls.map((url, index) => (
+        <img key={`${url}-${index}`} src={url} alt="" className="answer-thumb" />
+      ))}
+    </div>
+  );
+};
+
 const ClassicGame = ({
   gameData,
   player,
@@ -362,6 +394,15 @@ const ClassicGame = ({
       );
     }
 
+    if (question.type === 'imageqcm') {
+      return (
+        <ImageChoices
+          options={question.options}
+          onPick={(index) => send(index)}
+        />
+      );
+    }
+
     if (question.type === 'qcm') {
       return (
         <div className="choice-grid">
@@ -426,6 +467,8 @@ const ClassicGame = ({
           mode={question.layoutMode === 'schema' ? 'schema' : 'timeline'}
           imageUrl={question.layoutImageUrl || ''}
           onSubmit={(places) => send({ places })}
+          timelineStart={question.timelineStart || ''}
+          timelineEnd={question.timelineEnd || ''}
         />
       );
     }
@@ -504,6 +547,8 @@ const ClassicGame = ({
           imageUrl={gameData.layoutImageUrl || question.layoutImageUrl || ''}
           items={solutionCatalog}
           places={places}
+          timelineStart={gameData.timelineStart || question.timelineStart || ''}
+          timelineEnd={gameData.timelineEnd || question.timelineEnd || ''}
           readOnly
         />
       </div>
@@ -517,13 +562,16 @@ const ClassicGame = ({
         {paired ? (
           <>
             <div style={{ opacity: 0.85 }}>1re : {entry.firstAnswerText}</div>
+            <AnswerThumbs urls={entry.firstAnswerImages} />
             {renderPlacement(entry.firstAnswer)}
             <div style={{ opacity: 0.85 }}>2e : {entry.answerText}</div>
+            <AnswerThumbs urls={entry.answerImages} />
             {renderPlacement(entry.answer)}
           </>
         ) : (
           <>
             <div style={{ opacity: 0.85 }}>{entry.answerText}</div>
+            <AnswerThumbs urls={entry.answerImages} />
             {renderPlacement(entry.answer)}
           </>
         )}
@@ -638,7 +686,16 @@ const ClassicGame = ({
                 mode={gameData.hostSolution.layoutMode === 'schema' ? 'schema' : 'timeline'}
                 imageUrl={gameData.hostSolution.layoutImageUrl || ''}
                 items={gameData.hostSolution.items || []}
+                timelineStart={gameData.hostSolution.timelineStart || ''}
+                timelineEnd={gameData.hostSolution.timelineEnd || ''}
                 places={(gameData.hostSolution.items || []).map((item) => ({ id: item.id, x: item.x, y: item.y }))}
+                readOnly
+              />
+            )}
+            {gameData.hostSolution?.type === 'imageqcm' && (
+              <ImageChoices
+                options={gameData.hostSolution.options}
+                correctIndexes={gameData.hostSolution.correctIndexes}
                 readOnly
               />
             )}
@@ -745,6 +802,13 @@ const ClassicGame = ({
                   : `Rien n'est validé tout seul. Une bonne réponse vaut ${gameData.suggestedPoints || question.points || 1} pt.`}
               </div>
               {renderPlacement(null, true)}
+              {question.type === 'imageqcm' && (
+                <ImageChoices
+                  options={question.options}
+                  correctIndexes={gameData.correctIndexes}
+                  readOnly
+                />
+              )}
               <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} />
             </div>
             {scoreRows.map((entry) => {
@@ -893,6 +957,14 @@ const ClassicGame = ({
                   );
                 })}
               </div>
+            )}
+
+            {question.type === 'imageqcm' && (
+              <ImageChoices
+                options={question.options}
+                correctIndexes={reveal.correctIndexes}
+                readOnly
+              />
             )}
 
             <div style={{ marginTop: 16, width: '100%' }}>

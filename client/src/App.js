@@ -187,6 +187,9 @@ function App() {
         solutionItems: [],
         layoutMode: 'timeline',
         layoutImageUrl: '',
+        timelineStart: '',
+        timelineEnd: '',
+        correctIndexes: [],
         hostAnswer: '',
         hostSolution: null,
         hints: [],
@@ -272,6 +275,9 @@ function App() {
           solutionItems: data.full ? (data.solutionItems || []) : [],
           layoutMode: data.layoutMode || prev.layoutMode || 'timeline',
           layoutImageUrl: data.full ? (data.layoutImageUrl || '') : '',
+          timelineStart: data.full ? (data.timelineStart || '') : (prev.timelineStart || ''),
+          timelineEnd: data.full ? (data.timelineEnd || '') : (prev.timelineEnd || ''),
+          correctIndexes: data.full ? (data.correctIndexes || []) : [],
           suggestedPoints: data.suggestedPoints || prev.suggestedPoints
         } : prev
       ));
@@ -327,7 +333,10 @@ function App() {
           answerImageUrl: data.full ? (data.answerImageUrl || '') : '',
           answerVideoUrl: data.full ? (data.answerVideoUrl || '') : '',
           solutionItems: data.full ? (data.solutionItems || []) : [],
-          layoutImageUrl: data.full ? (data.layoutImageUrl || '') : ''
+          layoutImageUrl: data.full ? (data.layoutImageUrl || '') : '',
+          timelineStart: data.full ? (data.timelineStart || '') : (prev.timelineStart || ''),
+          timelineEnd: data.full ? (data.timelineEnd || '') : (prev.timelineEnd || ''),
+          correctIndexes: data.full ? (data.correctIndexes || []) : []
         } : prev
       ));
     });
@@ -349,6 +358,8 @@ function App() {
           solutionItems: data.solutionItems || prev.solutionItems || [],
           layoutMode: data.layoutMode || prev.layoutMode || 'timeline',
           layoutImageUrl: data.layoutImageUrl || prev.layoutImageUrl || '',
+          timelineStart: data.timelineStart || prev.timelineStart || '',
+          timelineEnd: data.timelineEnd || prev.timelineEnd || '',
           players: data.players,
           hostId: data.hostId || prev.hostId
         } : prev

@@ -137,6 +137,8 @@ export const PlaceBoard = ({
   imageUrl = '',
   items = [],
   places = [],
+  timelineStart = '',
+  timelineEnd = '',
   readOnly = false,
   onChange
 }) => {
@@ -261,6 +263,12 @@ export const PlaceBoard = ({
           );
         })}
       </div>
+      {mode === 'timeline' && (timelineStart || timelineEnd) && (
+        <div className="place-bounds">
+          <span>{timelineStart}</span>
+          <span>{timelineEnd}</span>
+        </div>
+      )}
       {tray.length > 0 && (
         <div className="place-tray">
           {tray.map((item) => {
@@ -286,7 +294,7 @@ export const PlaceBoard = ({
   );
 };
 
-export const PlaceAnswer = ({ items, mode, imageUrl, onSubmit }) => {
+export const PlaceAnswer = ({ items, mode, imageUrl, timelineStart = '', timelineEnd = '', onSubmit }) => {
   const [places, setPlaces] = useState([]);
 
   return (
@@ -301,6 +309,8 @@ export const PlaceAnswer = ({ items, mode, imageUrl, onSubmit }) => {
         imageUrl={imageUrl}
         items={items}
         places={places}
+        timelineStart={timelineStart}
+        timelineEnd={timelineEnd}
         onChange={setPlaces}
       />
       <button type="button" className="btn btn-success" onClick={() => onSubmit(places)}>

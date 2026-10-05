@@ -240,7 +240,7 @@ const Lobby = ({
           {isQuiz ? (
             <ul style={{ textAlign: 'left', lineHeight: '1.6' }}>
               <li>Le chef ne joue pas : il lance la partie et passe à la question suivante</li>
-              <li>Choix multiple, vrai/faux, texte libre, blind test, classement ou placement sur une frise et un schéma</li>
+              <li>Choix multiple, choix d'images, vrai/faux, texte libre, blind test, classement ou placement sur une frise et un schéma</li>
               <li>Rien n'est corrigé tout seul : le chef valide chaque réponse</li>
               <li>Il choisit les points, et peut ajouter +1 pour une blague</li>
               <li>Un seul indice par question : −1 pt, sauf avec la carte Indice gratuit. Le chef peut envoyer plusieurs messages à ce joueur</li>
