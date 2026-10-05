@@ -120,6 +120,26 @@ h1, h2, h3 {
   box-shadow: 8px 8px 0 #1f6dff;
 }
 
+.lobby-joker-switch {
+  position: absolute;
+  top: 32px;
+  right: 16px;
+  z-index: 2;
+  margin: 0;
+  padding: 8px 12px;
+  font-weight: 700;
+  background: #111318;
+  color: #d5d5e2;
+  border: 3px solid #d5d5e2;
+  border-radius: 4px;
+  box-shadow: 3px 3px 0 #111318;
+}
+
+.lobby-joker-switch.is-on {
+  color: #ffd000;
+  border-color: #ffd000;
+}
+
 .card::before,
 .admin-panel::before {
   content: '';
@@ -171,6 +191,28 @@ h1, h2, h3 {
   margin: 10px;
 }
 
+.btn.lobby-joker-switch {
+  position: absolute;
+  top: 32px;
+  right: 16px;
+  z-index: 2;
+  margin: 0;
+  background: #111318;
+  color: #d5d5e2;
+  border-color: #d5d5e2;
+  box-shadow: 3px 3px 0 #111318;
+}
+
+.btn.lobby-joker-switch.is-on {
+  color: #ffd000;
+  border-color: #ffd000;
+  box-shadow: 3px 3px 0 #111318;
+}
+
+.btn.lobby-joker-switch:hover:not(:disabled) {
+  box-shadow: 5px 5px 0 #111318;
+}
+
 .btn:hover:not(:disabled) {
   transform: skewX(-8deg) translate(-2px, -2px);
   box-shadow: 7px 7px 0 #ff2347;
@@ -181,13 +223,38 @@ h1, h2, h3 {
   cursor: not-allowed;
 }
 
+.btn.btn-quiet {
+  background: #111318;
+  color: #d5d5e2;
+  border-color: #d5d5e2;
+  box-shadow: 3px 3px 0 #111318;
+}
+
+.btn.btn-quiet:hover:not(:disabled) {
+  box-shadow: 5px 5px 0 #111318;
+}
+
 .btn-danger {
-  background: #ff2347;
-  color: #111318;
-  box-shadow: 4px 4px 0 #1f6dff;
+  background: #111318;
+  color: #ffd000;
+  border-color: #ffd000;
+  box-shadow: 4px 4px 0 #111318;
 }
 
 .btn-danger:hover:not(:disabled) {
+  box-shadow: 7px 7px 0 #111318;
+}
+
+.team-column .btn.btn-danger,
+.btn.btn-team-shadow {
+  background: #ff2347;
+  color: #111318;
+  border-color: #111318;
+  box-shadow: 4px 4px 0 #1f6dff;
+}
+
+.team-column .btn.btn-danger:hover:not(:disabled),
+.btn.btn-team-shadow:hover:not(:disabled) {
   box-shadow: 7px 7px 0 #1f6dff;
 }
 
@@ -536,6 +603,16 @@ h1, h2, h3 {
   white-space: pre-wrap;
 }
 
+h2.quiz-prompt {
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-shadow: 2px 2px 0 #111318;
+}
+
 .quiz-score-actions {
   display: flex;
   flex-wrap: wrap;
@@ -622,10 +699,11 @@ h1, h2, h3 {
 }
 
 .image-choice-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 12px;
-  width: min(100%, 860px);
+  width: 100%;
   margin: 16px auto;
 }
 
@@ -634,6 +712,8 @@ h1, h2, h3 {
   flex-direction: column;
   gap: 8px;
   align-items: center;
+  flex: 0 1 156px;
+  width: 156px;
   background: #14141c;
   color: white;
   border: 3px solid #111318;
@@ -669,8 +749,10 @@ h1, h2, h3 {
 .answer-thumbs {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
-  margin: 6px 0;
+  width: 100%;
+  margin: 6px auto;
 }
 
 .answer-thumb {
@@ -810,15 +892,28 @@ h4 .arcade-icon {
   flex-wrap: wrap;
 }
 
-.admin-tabs .btn {
+.admin-tabs .btn,
+.type-picker .btn {
   margin: 0;
+  background: #111318;
+  color: #d5d5e2;
+  border-color: #d5d5e2;
+  box-shadow: 3px 3px 0 #111318;
+}
+
+.admin-tabs .btn:hover:not(:disabled),
+.type-picker .btn:hover:not(:disabled) {
+  box-shadow: 5px 5px 0 #111318;
 }
 
 .admin-tabs .btn.tab-active,
-.admin-tabs .btn.tab-active:hover {
-  background: #ff2347;
-  color: #111318;
-  box-shadow: 4px 4px 0 #1f6dff;
+.admin-tabs .btn.tab-active:hover,
+.type-picker .btn.is-on,
+.type-picker .btn.is-on:hover {
+  background: #111318;
+  color: #ffd000;
+  border-color: #ffd000;
+  box-shadow: 3px 3px 0 #111318;
 }
 
 textarea.input {
@@ -1712,8 +1807,26 @@ textarea.input {
   gap: 14px;
 }
 
-.rules-tools .btn {
+.rules-tools .btn,
+.rules-nav .btn {
   margin: 0;
+  background: #111318;
+  color: #d5d5e2;
+  border-color: #d5d5e2;
+  box-shadow: 3px 3px 0 #111318;
+}
+
+.rules-tools .btn:hover:not(:disabled),
+.rules-nav .btn:hover:not(:disabled) {
+  box-shadow: 5px 5px 0 #111318;
+}
+
+.rules-nav .btn.btn-success,
+.rules-nav .btn.btn-success:hover:not(:disabled) {
+  background: #1f6dff;
+  color: #111318;
+  border-color: #111318;
+  box-shadow: 4px 4px 0 #ff2347;
 }
 
 .rules-stage:fullscreen,
@@ -1865,10 +1978,6 @@ textarea.input {
 .rules-dots button.is-on::before {
   background: #ff2347;
   border-color: #ff2347;
-}
-
-.rules-nav .btn {
-  margin: 0;
 }
 
 @media (max-width: 720px) {

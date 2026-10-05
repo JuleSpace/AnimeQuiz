@@ -395,45 +395,15 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                     <button
                       onClick={() => setShowPopup(room)}
                       className="btn"
-                      style={{ 
-                        padding: '8px 16px', 
-                        fontSize: '0.9rem',
-                        background: 'linear-gradient(135deg, #00d4ff, #1e3a8a)',
-                        border: '2px solid rgba(0, 212, 255, 0.5)',
-                        boxShadow: '0 2px 10px rgba(0, 212, 255, 0.3)',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 212, 255, 0.5)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 2px 10px rgba(0, 212, 255, 0.3)';
-                      }}
+                      style={{ padding: '8px 16px', fontSize: '0.9rem' }}
                     >
                       Voir Détails
                     </button>
                     
                     <button
                       onClick={() => setSelectedRoom(selectedRoom === room._id ? null : room._id)}
-                      className="btn"
-                      style={{ 
-                        padding: '8px 16px', 
-                        fontSize: '0.9rem',
-                        background: '#1f6dff',
-                        border: '2px solid rgba(255, 217, 61, 0.5)',
-                        boxShadow: '0 2px 10px rgba(255, 152, 0, 0.3)',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 152, 0, 0.5)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 2px 10px rgba(255, 152, 0, 0.3)';
-                      }}
+                      className="btn btn-quiet"
+                      style={{ padding: '8px 16px', fontSize: '0.9rem' }}
                     >
                       <Icon name="pencil" />Modifier
                     </button>
@@ -441,22 +411,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                     <button
                       onClick={() => deleteRoom(room._id)}
                       className="btn btn-danger"
-                      style={{ 
-                        padding: '8px 16px', 
-                        fontSize: '0.9rem',
-                        background: 'linear-gradient(135deg, #ff6b6b, #c92a2a)',
-                        border: '2px solid rgba(255, 107, 107, 0.5)',
-                        boxShadow: '0 2px 10px rgba(201, 42, 42, 0.3)',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(201, 42, 42, 0.5)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 2px 10px rgba(201, 42, 42, 0.3)';
-                      }}
+                      style={{ padding: '8px 16px', fontSize: '0.9rem' }}
                     >
                       <Icon name="trash" bare />
                     </button>
@@ -626,23 +581,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                             <button
                               onClick={() => removeMusicLink(room._id, index)}
                               className="btn btn-danger"
-                              style={{ 
-                                padding: '8px 12px', 
-                                fontSize: '0.8rem',
-                                width: '100%',
-                                background: 'linear-gradient(135deg, #ff6b6b, #c92a2a)',
-                                border: '2px solid rgba(255, 107, 107, 0.5)',
-                                boxShadow: '0 2px 8px rgba(201, 42, 42, 0.3)',
-                                transition: 'all 0.3s ease'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'scale(1.02)';
-                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(201, 42, 42, 0.5)';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'scale(1)';
-                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(201, 42, 42, 0.3)';
-                              }}
+                              style={{ padding: '8px 12px', fontSize: '0.8rem', width: '100%' }}
                             >
                               <Icon name="trash" />Supprimer
                             </button>
@@ -685,21 +624,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                     <button
                       onClick={() => setSelectedRoom(null)}
                       className="btn btn-danger"
-                      style={{ 
-                        padding: '12px 24px',
-                        background: 'linear-gradient(135deg, #ff6b6b, #c92a2a)',
-                        border: '2px solid rgba(255, 107, 107, 0.5)',
-                        boxShadow: '0 4px 15px rgba(201, 42, 42, 0.3)',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(201, 42, 42, 0.5)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(201, 42, 42, 0.3)';
-                      }}
+                      style={{ padding: '12px 24px' }}
                     >
                       <Icon name="cross" />Annuler
                     </button>

@@ -172,6 +172,7 @@ function App() {
         totalQuestions: data.totalQuestions,
         players: data.players,
         teamMode: Boolean(data.teamMode),
+        jokersEnabled: data.jokersEnabled !== false,
         teams: data.teams || [],
         teamChat: [],
         deadline: data.deadline,
@@ -958,6 +959,7 @@ function App() {
             onLeave={resetGame}
             onTransferLeadership={handleTransferLeadership}
             onSetTeamMode={(enabled) => socket.emit('set-team-mode', { enabled })}
+            onSetJokers={(enabled) => socket.emit('set-jokers', { enabled })}
             onChooseTeam={(team) => socket.emit('choose-team', { team })}
           />
         );

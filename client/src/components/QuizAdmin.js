@@ -24,6 +24,7 @@ const emptyDraft = () => ({
   options: ['', '', '', ''],
   correctIndexes: [0],
   multiple: false,
+  choice: false,
   correctBoolean: true,
   acceptedText: '',
   points: 1,
@@ -46,6 +47,7 @@ const questionToApi = (draft) => ({
   options: draft.options,
   correctIndexes: draft.multiple ? draft.correctIndexes : draft.correctIndexes.slice(0, 1),
   multiple: Boolean(draft.multiple),
+  choice: draft.type === 'music' && Boolean(draft.choice),
   correctBoolean: draft.correctBoolean,
   acceptedAnswers: draft.acceptedText.split('\n').map((line) => line.trim()).filter(Boolean),
   points: Number(draft.points) || 1,
@@ -68,6 +70,7 @@ const questionFromApi = (question) => ({
   options: question.options?.length ? [...question.options] : ['', ''],
   correctIndexes: question.correctIndexes?.length ? [...question.correctIndexes] : [0],
   multiple: (question.correctIndexes || []).length > 1,
+  choice: Boolean(question.choice),
   correctBoolean: question.correctBoolean !== false,
   acceptedText: (question.acceptedAnswers || []).join('\n'),
   points: question.points || 1,
@@ -125,17 +128,13 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
       padding: '18px',
       marginTop: '16px'
     }}>
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+      <div className="type-picker" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
         {TYPE_OPTIONS.map((option) => (
           <button
             key={option.id}
             type="button"
-            className="btn"
-            style={{
-              margin: 0,
-              background: draft.type === option.id ? 'linear-gradient(90deg, #1f6dff, #ff2347)' : undefined,
-              color: draft.type === option.id ? '#1a1a1a' : 'white'
-            }}
+            className={`btn${draft.type === option.id ? ' is-on' : ''}`}
+            style={{ margin: 0 }}
             onClick={() => setDraft((current) => {
               if (current.type === option.id) return current;
               const next = {
@@ -174,7 +173,32 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         onChange={(event) => setDraft({ ...draft, prompt: event.target.value })}
       />
 
-      {draft.type === 'qcm' && (
+      {draft.type === 'music' && (
+        <>
+          <input
+            className="input"
+            placeholder="Lien MP3, YouTube ou Spotify"
+            value={draft.musicUrl}
+            onChange={(event) => setDraft({ ...draft, musicUrl: event.target.value })}
+          />
+          <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0' }}>
+            <input
+              type="checkbox"
+              checked={Boolean(draft.choice)}
+              onChange={(event) => setDraft((current) => ({
+                ...current,
+                choice: event.target.checked,
+                options: event.target.checked && (current.options || []).filter((option) => String(option).trim()).length < 2
+                  ? ['', '', '', '']
+                  : current.options
+              }))}
+            />
+            Réponse en choix multiple
+          </label>
+        </>
+      )}
+
+      { (draft.type === 'qcm' || (draft.type === 'music' && draft.choice)) && (
         <div>
           <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0' }}>
             <input
@@ -413,19 +437,18 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
 
       {draft.type === 'music' && (
         <>
-          <input
-            className="input"
-            placeholder="Lien MP3, YouTube ou Spotify"
-            value={draft.musicUrl}
-            onChange={(event) => setDraft({ ...draft, musicUrl: event.target.value })}
-          />
-          <textarea
-            className="input"
-            rows={2}
-            placeholder={'Réponse attendue, facultatif, une par ligne\nTank!\nCowboy Bebop'}
-            value={draft.acceptedText}
-            onChange={(event) => setDraft({ ...draft, acceptedText: event.target.value })}
-          />
+          {!draft.choice && (
+            <>
+              <textarea
+                className="input"
+                rows={2}
+                placeholder={'Réponse attendue, facultatif, une par ligne\nTank!\nCowboy Bebop'}
+                value={draft.acceptedText}
+                onChange={(event) => setDraft({ ...draft, acceptedText: event.target.value })}
+              />
+              <p className="blind-hint">Tu peux laisser vide. Le chef corrigera à la main.</p>
+            </>
+          )}
           <p style={{ opacity: 0.8, fontSize: '0.9rem' }}>
             L'extrait est masqué. Le chef attribue les points à la main, comme pour les autres questions.
             Mets 0 seconde pour laisser le chef décider du moment.

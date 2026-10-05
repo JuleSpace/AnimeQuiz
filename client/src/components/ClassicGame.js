@@ -403,7 +403,8 @@ const ClassicGame = ({
       );
     }
 
-    if (question.type === 'qcm') {
+    const musicChoices = question.type === 'music' && (question.options || []).length > 0;
+    if (question.type === 'qcm' || musicChoices) {
       return (
         <div className="choice-grid">
           {question.options.map((option, index) => {
@@ -623,7 +624,7 @@ const ClassicGame = ({
           <div style={{ textAlign: 'center', margin: '14px 0' }}>
             <div style={{ marginBottom: 10 }}>Choisis Team Shadow ou Team Sonic.</div>
             <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button type="button" className="btn btn-danger" onClick={() => onChooseTeam && onChooseTeam('shadow')}>
+              <button type="button" className="btn btn-danger btn-team-shadow" onClick={() => onChooseTeam && onChooseTeam('shadow')}>
                 Team Shadow
               </button>
               <button type="button" className="btn" onClick={() => onChooseTeam && onChooseTeam('sonic')}>
@@ -633,7 +634,7 @@ const ClassicGame = ({
           </div>
         )}
 
-        {isHost && !teamMode && (
+        {isHost && gameData.jokersEnabled !== false && !teamMode && (
           <HostJokerBoard players={gameData.jokerRoster || []} />
         )}
 
@@ -649,7 +650,7 @@ const ClassicGame = ({
         )}
 
         {question.prompt && (
-          <h2 className="quiz-answer" style={{ fontSize: '1.6rem', margin: '10px auto 6px', maxWidth: '760px' }}>
+          <h2 className="quiz-prompt" style={{ fontSize: '1.45rem', margin: '10px auto 6px', maxWidth: '760px' }}>
             {question.prompt}
           </h2>
         )}
@@ -938,7 +939,7 @@ const ClassicGame = ({
               </div>
             )}
 
-            {question.type === 'qcm' && (
+            {(question.type === 'qcm' || (question.type === 'music' && (question.options || []).length > 0)) && (
               <div className="choice-grid">
                 {(question.options || []).map((option, index) => {
                   const isCorrect = (reveal.correctIndexes || []).includes(index);
@@ -1017,7 +1018,7 @@ const ClassicGame = ({
 
         {!isHost && (
           <div className="player-dock">
-            {!teamMode && (
+            {gameData.jokersEnabled !== false && !teamMode && (
               <PlayerJokerBar
                 joker={myJoker}
                 phase={phase}

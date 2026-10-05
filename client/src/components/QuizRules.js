@@ -26,6 +26,7 @@ const SLIDES = [
     title: 'Les formes',
     points: [
       'Choix multiple, choix d\'images, vrai/faux, texte libre, blind test masqué.',
+      'Un blind test peut se répondre en choix multiple.',
       'Classement, ou placement sur une frise et un schéma. Un seul élément à placer suffit.',
       'La frise peut afficher une date de début et une date de fin.',
       'L’image et la vidéo de la réponse n’apparaissent qu’avec les points.',

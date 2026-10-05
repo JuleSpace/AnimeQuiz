@@ -8,6 +8,7 @@ const Lobby = ({
   onLeave,
   onTransferLeadership,
   onSetTeamMode,
+  onSetJokers,
   onChooseTeam,
   variant = 'music'
 }) => {
@@ -27,6 +28,7 @@ const Lobby = ({
 
   const isLeader = isQuiz ? lobby.hostId === player.id : lobby.players[0]?.id === player.id;
   const teamMode = Boolean(isQuiz && lobby.teamMode);
+  const jokersOn = lobby.jokersEnabled !== false;
   const shadowPlayers = lobby.players.filter((entry) => entry.team === 'shadow');
   const sonicPlayers = lobby.players.filter((entry) => entry.team === 'sonic');
   const unassigned = lobby.players.filter((entry) => entry.team !== 'shadow' && entry.team !== 'sonic');
@@ -44,7 +46,22 @@ const Lobby = ({
   return (
     <div className="container">
       <div className="card">
-        <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>
+        {isQuiz && !lobby.isGameStarted && (
+          teamMode ? (
+            <div className="lobby-joker-switch">Sans jokers</div>
+          ) : isLeader ? (
+            <button
+              type="button"
+              className={`btn lobby-joker-switch${jokersOn ? ' is-on' : ''}`}
+              onClick={() => onSetJokers && onSetJokers(!jokersOn)}
+            >
+              {jokersOn ? 'Jokers' : 'Sans jokers'}
+            </button>
+          ) : (
+            <div className={`lobby-joker-switch${jokersOn ? ' is-on' : ''}`}>{jokersOn ? 'Jokers' : 'Sans jokers'}</div>
+          )
+        )}
+        <h2 style={{ textAlign: 'center', marginBottom: '30px', padding: isQuiz ? '0 140px' : undefined }}>
           <Icon name="pad" tone="mark" />
           {isQuiz ? `Lobby — ${lobby.quizName || 'Quiz'}` : `Lobby — Salle ${player.roomId}`}
         </h2>
@@ -240,11 +257,11 @@ const Lobby = ({
           {isQuiz ? (
             <ul style={{ textAlign: 'left', lineHeight: '1.6' }}>
               <li>Le chef ne joue pas : il lance la partie et passe à la question suivante</li>
-              <li>Choix multiple, choix d'images, vrai/faux, texte libre, blind test, classement ou placement sur une frise et un schéma</li>
+              <li>Choix multiple, choix d'images, vrai/faux, texte libre, blind test en écoute libre ou en choix multiple, classement ou placement sur une frise et un schéma</li>
               <li>Rien n'est corrigé tout seul : le chef valide chaque réponse</li>
               <li>Il choisit les points, et peut ajouter +1 pour une blague</li>
               <li>Un seul indice par question : −1 pt, sauf avec la carte Indice gratuit. Le chef peut envoyer plusieurs messages à ce joueur</li>
-              <li>Dès 20 questions, cinq boosters (tous les 20 %). De 10 à 19, deux. En dessous, un seul. Pas de jokers en équipe</li>
+              <li>Dès 20 questions, cinq boosters (tous les 20 %). De 10 à 19, deux. En dessous, un seul. Le chef peut couper les jokers avant de lancer. Pas de jokers en équipe</li>
               <li>Un joueur peut rejoindre en cours de route. Il pioche un booster tout de suite, puis les suivants avec les autres. En équipe, il choisit seulement son équipe</li>
               <li>Le chef voit les cartes, si elles sont jouées, et qui est visé. Les autres joueurs non</li>
               <li>Le chef peut lancer une partie en équipe. Team Shadow et Team Sonic se forment toutes seules, le premier arrivé envoie la réponse</li>

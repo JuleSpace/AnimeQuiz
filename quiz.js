@@ -28,6 +28,7 @@ const QuizQuestionSchema = new mongoose.Schema({
   correctIndexes: { type: [Number], default: [] },
   correctBoolean: { type: Boolean, default: true },
   acceptedAnswers: { type: [String], default: [] },
+  choice: { type: Boolean, default: false },
   blanks: { type: [String], default: [] },
   points: { type: Number, default: 1 },
   timeLimit: { type: Number, default: 20 },
@@ -101,6 +102,18 @@ function blankSlots(prompt) {
   return matches ? matches.length : 0;
 }
 
+function usesChoices(question) {
+  return Boolean(question) && (
+    question.type === 'qcm'
+    || question.type === 'imageqcm'
+    || (question.type === 'music' && question.choice)
+  );
+}
+
+function jokersActive(lobby) {
+  return Boolean(lobby) && lobby.jokersEnabled !== false && !lobby.teamMode;
+}
+
 function isHttpUrl(value) {
   return /^https?:\/\//i.test(String(value || '').trim());
 }
@@ -108,7 +121,7 @@ function isHttpUrl(value) {
 function isObjectiveCorrect(question, answer) {
   if (answer == null) return false;
 
-  if (question.type === 'qcm' || question.type === 'imageqcm') {
+  if (question.type === 'qcm' || question.type === 'imageqcm' || (question.type === 'music' && question.choice)) {
     const selected = (Array.isArray(answer) ? answer : [answer])
       .map((value) => Number(value))
       .sort((a, b) => a - b);
@@ -138,7 +151,7 @@ function isObjectiveCorrect(question, answer) {
 }
 
 function correctLabel(question) {
-  if (question.type === 'qcm') {
+  if (question.type === 'qcm' || (question.type === 'music' && question.choice)) {
     return (question.correctIndexes || [])
       .map((index) => question.options[index])
       .filter(Boolean)
@@ -199,7 +212,7 @@ function answerSnapshot(question, player, index) {
 
 function formatPlayerAnswer(question, answer) {
   if (answer == null || answer === '') return 'Pas de réponse';
-  if (question.type === 'qcm') {
+  if (question.type === 'qcm' || (question.type === 'music' && question.choice)) {
     const options = question.options || [];
     const indexes = Array.isArray(answer) ? answer : [answer];
     return indexes.map((index) => options[index] || '?').join(', ');
@@ -322,8 +335,9 @@ function publicQuestion(question, index, total) {
     imageUrl: question.imageUrl || '',
     videoUrl: question.type === 'music' ? '' : (question.videoUrl || ''),
     musicUrl: question.type === 'music' ? (question.musicUrl || '') : '',
-    options: (question.type === 'qcm' || question.type === 'imageqcm') ? (question.options || []) : [],
-    multiple: question.type === 'qcm' && (question.correctIndexes || []).length > 1,
+    options: usesChoices(question) ? (question.options || []) : [],
+    multiple: (question.type === 'qcm' || (question.type === 'music' && question.choice))
+      && (question.correctIndexes || []).length > 1,
     blankCount: question.type === 'blank' ? (question.blanks || []).length : 0,
     points: question.points || 1,
     timeLimit: question.timeLimit || 0,
@@ -385,6 +399,9 @@ function sanitizeQuestion(raw) {
     .map((value) => String(value ?? '').trim())
     .filter((value) => value.length > 0);
 
+  const musicChoice = type === 'music' && Boolean(raw.choice);
+  const keepsOptions = type === 'qcm' || type === 'imageqcm' || musicChoice;
+
   return {
     type,
     prompt: String(raw.prompt || '').trim(),
@@ -393,12 +410,13 @@ function sanitizeQuestion(raw) {
     answerImageUrl: String(raw.answerImageUrl || '').trim(),
     answerVideoUrl: String(raw.answerVideoUrl || '').trim(),
     musicUrl: type === 'music' ? String(raw.musicUrl || '').trim() : '',
-    options: (type === 'qcm' || type === 'imageqcm') ? options : [],
-    correctIndexes: type === 'qcm'
-      ? correctIndexes
-      : (type === 'imageqcm' ? correctIndexes.slice(0, 1) : []),
+    options: keepsOptions ? options : [],
+    correctIndexes: type === 'imageqcm'
+      ? correctIndexes.slice(0, 1)
+      : (keepsOptions ? correctIndexes : []),
+    choice: musicChoice,
     correctBoolean: raw.correctBoolean !== false,
-    acceptedAnswers: (type === 'text' || type === 'music') ? acceptedAnswers : [],
+    acceptedAnswers: (type === 'text' || (type === 'music' && !musicChoice)) ? acceptedAnswers : [],
     blanks: type === 'blank' ? blanks : [],
     points: Math.max(1, Number(raw.points) || 1),
     timeLimit: Math.max(0, Number(raw.timeLimit) || 0),
@@ -448,6 +466,11 @@ function validateQuestion(question, position) {
     if ((question.blanks || []).length !== slots) {
       return `${label} : ${slots} trou(s) dans le texte, ${(question.blanks || []).length} réponse(s)`;
     }
+  }
+
+  if (question.type === 'music' && question.choice) {
+    if ((question.options || []).length < 2) return `${label} : au moins 2 choix`;
+    if (!(question.correctIndexes || []).length) return `${label} : indique la bonne réponse`;
   }
 
   if (question.type === 'music' && !String(question.musicUrl || '').trim()) {
@@ -665,6 +688,7 @@ function publicLobby(lobby) {
     hostId: lobby.host?.id || null,
     hostName: lobby.host?.username || lobby.hostName || '',
     teamMode: Boolean(lobby.teamMode),
+    jokersEnabled: lobby.jokersEnabled !== false,
     players: playerSnapshot(lobby),
     isGameStarted: lobby.isGameStarted,
     totalQuestions: total,
@@ -742,7 +766,7 @@ function emitReveal(io, lobby, question, index) {
     layoutImageUrl: question.layoutImageUrl || '',
     timelineStart: question.timelineStart || '',
     timelineEnd: question.timelineEnd || '',
-    correctIndexes: question.type === 'qcm' || question.type === 'imageqcm' ? (question.correctIndexes || []) : [],
+    correctIndexes: usesChoices(question) ? (question.correctIndexes || []) : [],
     correctBoolean: question.type === 'boolean' ? Boolean(question.correctBoolean) : null,
     teamMode: Boolean(lobby.teamMode),
     teams: lobby.teamMode ? teamRevealRows(lobby, index) : [],
@@ -800,6 +824,7 @@ function questionPayload(lobby) {
     totalQuestions: lobby.questions.length,
     players: playerSnapshot(lobby),
     teamMode: Boolean(lobby.teamMode),
+    jokersEnabled: jokersActive(lobby),
     teams: lobby.teamMode ? teamScoreRows(lobby, index) : [],
     deadline: lobby.deadline,
     ...answerProgress(lobby, index)
@@ -1004,7 +1029,7 @@ function dealBoosters(io, lobby) {
 
 function openRound(io, lobby) {
   lobby.io = io;
-  if (!lobby.teamMode && isPackQuestion(lobby.questions.length, lobby.currentQuestion)) {
+  if (jokersActive(lobby) && isPackQuestion(lobby.questions.length, lobby.currentQuestion)) {
     dealBoosters(io, lobby);
     return true;
   }
@@ -1384,6 +1409,7 @@ function attachQuiz(app, io) {
             host: null,
             hostName: '',
             teamMode: false,
+            jokersEnabled: true,
             teamOrder: { shadow: [], sonic: [] },
             teamChat: { shadow: [], sonic: [] }
           });
@@ -1471,7 +1497,7 @@ function attachQuiz(app, io) {
           if (lobby.phase !== 'answering' && lobby.phase !== 'booster') {
             player.satOutIndex = lobby.currentQuestion;
           }
-          if (!lobby.teamMode) {
+          if (jokersActive(lobby)) {
             player.joker = freshJoker(drawJoker());
           }
           lobby.players.push(player);
@@ -1483,7 +1509,7 @@ function attachQuiz(app, io) {
           });
           io.to(quizId).emit('lobby-updated', publicLobby(lobby));
           syncQuizSocket(io, socket, lobby);
-          if (!lobby.teamMode && player.joker && lobby.phase !== 'booster') {
+          if (jokersActive(lobby) && player.joker && lobby.phase !== 'booster') {
             const range = activePackRange(lobby.questions.length, lobby.currentQuestion);
             socket.emit('quiz-catchup-booster', {
               card: player.joker.card,
@@ -1572,6 +1598,15 @@ function attachQuiz(app, io) {
       const lobby = quizLobbies.get(player.roomId);
       if (!lobby || !isHostSocket(lobby, socket.id) || lobby.isGameStarted) return;
       lobby.teamMode = Boolean(data?.enabled);
+      io.to(lobby.quizId).emit('lobby-updated', publicLobby(lobby));
+    });
+
+    socket.on('set-jokers', (data) => {
+      const player = quizPlayers.get(socket.id);
+      if (!player) return;
+      const lobby = quizLobbies.get(player.roomId);
+      if (!lobby || !isHostSocket(lobby, socket.id) || lobby.isGameStarted || lobby.teamMode) return;
+      lobby.jokersEnabled = Boolean(data?.enabled);
       io.to(lobby.quizId).emit('lobby-updated', publicLobby(lobby));
     });
 
@@ -1905,8 +1940,8 @@ function attachQuiz(app, io) {
       if (!player || player.isHost) return;
       const lobby = quizLobbies.get(player.roomId);
       if (!lobby) return;
-      if (lobby.teamMode) {
-        socket.emit('quiz-error', { message: 'Pas de jokers en équipe' });
+      if (!jokersActive(lobby)) {
+        socket.emit('quiz-error', { message: lobby.teamMode ? 'Pas de jokers en équipe' : 'Les jokers sont coupés pour cette partie' });
         return;
       }
       if (player.satOutIndex === lobby.currentQuestion) {
