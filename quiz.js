@@ -49,6 +49,7 @@ const QuizSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String, default: '' },
   shuffle: { type: Boolean, default: false },
+  isPrivate: { type: Boolean, default: false },
   questions: { type: [QuizQuestionSchema], default: [] },
   createdAt: { type: Date, default: Date.now }
 });
@@ -1187,7 +1188,7 @@ function attachQuiz(app, io) {
         res.json(quizzes);
         return;
       }
-      res.json(quizzes.map((quiz) => ({
+      res.json(quizzes.filter((quiz) => !quiz.isPrivate).map((quiz) => ({
         _id: quiz._id,
         name: quiz.name,
         description: quiz.description,
@@ -1207,6 +1208,10 @@ function attachQuiz(app, io) {
         return;
       }
       if (req.query.edit !== '1') {
+        if (quiz.isPrivate) {
+          res.status(404).json({ error: 'Quiz introuvable' });
+          return;
+        }
         res.json({
           _id: quiz._id,
           name: quiz.name,
@@ -1232,6 +1237,7 @@ function attachQuiz(app, io) {
         name,
         description: String(req.body.description || '').trim(),
         shuffle: Boolean(req.body.shuffle),
+        isPrivate: Boolean(req.body.isPrivate),
         questions: []
       });
       await quiz.save();
@@ -1266,6 +1272,7 @@ function attachQuiz(app, io) {
           name,
           description: String(req.body.description || '').trim(),
           shuffle: Boolean(req.body.shuffle),
+          isPrivate: Boolean(req.body.isPrivate),
           questions
         },
         { new: true }
@@ -1308,6 +1315,10 @@ function attachQuiz(app, io) {
         const playable = playableQuestions(quiz.questions);
         if (!playable.length) {
           socket.emit('join-error', { message: 'Ce quiz ne contient aucune question' });
+          return;
+        }
+        if (quiz.isPrivate && !quizLobbies.has(quizId)) {
+          socket.emit('join-error', { message: 'Ce quiz n\'est pas disponible' });
           return;
         }
 

@@ -407,7 +407,7 @@ const QuizAdmin = () => {
   const [quiz, setQuiz] = useState(null);
   const [draft, setDraft] = useState(null);
   const [draftIndex, setDraftIndex] = useState(null);
-  const [newQuiz, setNewQuiz] = useState({ name: '', description: '' });
+  const [newQuiz, setNewQuiz] = useState({ name: '', description: '', isPrivate: false });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -456,6 +456,7 @@ const QuizAdmin = () => {
         name: next.name,
         description: next.description,
         shuffle: Boolean(next.shuffle),
+        isPrivate: Boolean(next.isPrivate),
         questions: (next.questions || []).map(({ clientKey, ...question }) => question)
       });
       setQuiz(stampQuestions(response.data));
@@ -479,7 +480,7 @@ const QuizAdmin = () => {
     setError('');
     try {
       const response = await axios.post('/api/quizzes', newQuiz);
-      setNewQuiz({ name: '', description: '' });
+      setNewQuiz({ name: '', description: '', isPrivate: false });
       setQuiz(stampQuestions(response.data));
       setDraft(emptyDraft());
       setDraftIndex(null);
@@ -601,6 +602,14 @@ const QuizAdmin = () => {
             value={newQuiz.description}
             onChange={(event) => setNewQuiz({ ...newQuiz, description: event.target.value })}
           />
+          <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0 16px' }}>
+            <input
+              type="checkbox"
+              checked={Boolean(newQuiz.isPrivate)}
+              onChange={(event) => setNewQuiz({ ...newQuiz, isPrivate: event.target.checked })}
+            />
+            Privé — masqué dans le menu des quiz
+          </label>
           <button type="button" className="btn btn-success" onClick={createQuiz} disabled={loading}>
             Créer
           </button>
@@ -616,6 +625,9 @@ const QuizAdmin = () => {
             {quizzes.map((item) => (
               <div key={item._id} className="score-card">
                 <h3 style={{ color: '#ff2347' }}>{item.name}</h3>
+                {item.isPrivate && (
+                  <div style={{ color: '#ff2347', fontWeight: 'bold', marginBottom: 6 }}>Privé</div>
+                )}
                 <p style={{ minHeight: 40, opacity: 0.85 }}>{item.description}</p>
                 <div>{item.questions?.length || 0} questions</div>
                 <button type="button" className="btn" onClick={() => openQuiz(item._id)}><Icon name="pencil" />Modifier</button>
@@ -653,6 +665,14 @@ const QuizAdmin = () => {
           onChange={(event) => setQuiz({ ...quiz, shuffle: event.target.checked })}
         />
         Mélanger les questions à chaque partie
+      </label>
+      <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0 16px' }}>
+        <input
+          type="checkbox"
+          checked={Boolean(quiz.isPrivate)}
+          onChange={(event) => setQuiz({ ...quiz, isPrivate: event.target.checked })}
+        />
+        Privé — masqué dans le menu des quiz
       </label>
       <button
         type="button"
