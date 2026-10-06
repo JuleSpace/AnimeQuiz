@@ -582,9 +582,13 @@ function App() {
     }
   };
 
-  const handleStartQuiz = (numberOfQuestions) => {
+  const handleStartQuiz = (numberOfQuestions, options = {}) => {
     if (lobby && player) {
-      socket.emit('start-quiz', { quizId: player.roomId, numberOfQuestions });
+      socket.emit('start-quiz', {
+        quizId: player.roomId,
+        numberOfQuestions,
+        solo: Boolean(options.solo)
+      });
     }
   };
 
