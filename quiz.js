@@ -21,6 +21,7 @@ const QuizQuestionSchema = new mongoose.Schema({
   },
   prompt: { type: String, default: '' },
   imageUrl: { type: String, default: '' },
+  imageSize: { type: Number, default: 100 },
   videoUrl: { type: String, default: '' },
   answerImageUrl: { type: String, default: '' },
   answerVideoUrl: { type: String, default: '' },
@@ -389,6 +390,7 @@ function publicQuestion(question, index, total) {
     type: question.type,
     prompt: question.prompt || '',
     imageUrl: question.imageUrl || '',
+    imageSize: imageSizeValue(question.imageSize),
     videoUrl: question.type === 'music' || question.type === 'lyrics' || question.type === 'whos' ? '' : (question.videoUrl || ''),
     musicUrl: question.type === 'music' || question.type === 'lyrics' || question.type === 'whos' ? (question.musicUrl || '') : '',
     options: usesChoices(question) ? (question.options || []) : [],
@@ -475,6 +477,12 @@ function cleanItems(rawItems) {
   }).filter((item) => item.text || item.imageUrl);
 }
 
+function imageSizeValue(raw) {
+  const number = Math.round(Number(raw));
+  if (!Number.isFinite(number)) return 100;
+  return Math.max(50, Math.min(200, Math.round(number / 10) * 10));
+}
+
 function sanitizeQuestion(raw) {
   const type = raw.type;
   const rawOptions = Array.isArray(raw.options) ? raw.options : [];
@@ -513,6 +521,7 @@ function sanitizeQuestion(raw) {
     type,
     prompt: String(raw.prompt || '').trim(),
     imageUrl: String(raw.imageUrl || '').trim(),
+    imageSize: imageSizeValue(raw.imageSize),
     videoUrl: type === 'music' || type === 'lyrics' || type === 'whos' ? '' : String(raw.videoUrl || '').trim(),
     answerImageUrl: String(raw.answerImageUrl || '').trim(),
     answerVideoUrl: String(raw.answerVideoUrl || '').trim(),

@@ -23,6 +23,7 @@ const emptyDraft = () => ({
   type: 'qcm',
   prompt: '',
   imageUrl: '',
+  imageSize: 100,
   videoUrl: '',
   answerImageUrl: '',
   answerVideoUrl: '',
@@ -51,6 +52,7 @@ const questionToApi = (draft) => ({
   type: draft.type,
   prompt: draft.prompt,
   imageUrl: draft.imageUrl,
+  imageSize: draft.imageSize,
   videoUrl: draft.type === 'music' || draft.type === 'lyrics' || draft.type === 'whos' ? '' : draft.videoUrl,
   answerImageUrl: draft.answerImageUrl,
   answerVideoUrl: draft.answerVideoUrl,
@@ -94,6 +96,7 @@ const questionFromApi = (question) => ({
   type: question.type,
   prompt: question.prompt || '',
   imageUrl: question.imageUrl || '',
+  imageSize: question.imageSize || 100,
   videoUrl: question.videoUrl || '',
   answerImageUrl: question.answerImageUrl || '',
   answerVideoUrl: question.answerVideoUrl || '',
@@ -594,6 +597,38 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         value={draft.answerVideoUrl}
         onChange={(event) => setDraft({ ...draft, answerVideoUrl: event.target.value })}
       />
+
+      <label className="image-size">
+        Taille des images
+        <input
+          type="range"
+          min="50"
+          max="200"
+          step="10"
+          value={draft.imageSize || 100}
+          aria-label="Taille des images"
+          onChange={(event) => setDraft({ ...draft, imageSize: Number(event.target.value) })}
+        />
+        <span>{draft.imageSize || 100}%</span>
+      </label>
+      {draft.type === 'whos' && (
+        <p className="blind-hint">Le portrait sur le template garde sa place.</p>
+      )}
+      {draft.type !== 'whos' && /^https?:\/\//i.test(String(draft.imageUrl || '').trim()) && (
+        <div className="quiz-media" style={{ '--image-scale': (draft.imageSize || 100) / 100 }}>
+          <img src={draft.imageUrl} alt="" />
+        </div>
+      )}
+      {draft.type === 'imageqcm' && (draft.options || []).some((url) => /^https?:\/\//i.test(String(url || '').trim())) && (
+        <div className="image-choice-grid" style={{ '--image-scale': (draft.imageSize || 100) / 100 }}>
+          {(draft.options || []).filter((url) => /^https?:\/\//i.test(String(url || '').trim())).map((url, index) => (
+            <div key={`${url}-${index}`} className="image-choice" style={{ cursor: 'default' }}>
+              <img src={url} alt="" />
+              <span>Image {index + 1}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
         <label style={{ flex: 1 }}>

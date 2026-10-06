@@ -10,7 +10,13 @@ import Icon from './ArcadeIcon';
 const CHOICE_COLORS = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#8e44ad', '#e67e22'];
 const CHOICE_SHAPES = ['▲', '◆', '●', '■', '★', '✚'];
 
-const QuestionMedia = ({ imageUrl, videoUrl }) => {
+const imageScaleOf = (size) => {
+  const number = Number(size);
+  if (!Number.isFinite(number)) return 1;
+  return Math.max(0.5, Math.min(2, number / 100));
+};
+
+const QuestionMedia = ({ imageUrl, videoUrl, imageSize = 100 }) => {
   const [imageFailed, setImageFailed] = useState(false);
   const youtubeId = extractYouTubeId(videoUrl);
 
@@ -21,7 +27,7 @@ const QuestionMedia = ({ imageUrl, videoUrl }) => {
   if (!imageUrl && !videoUrl) return null;
 
   return (
-    <div className="quiz-media">
+    <div className="quiz-media" style={{ '--image-scale': imageScaleOf(imageSize) }}>
       {imageUrl && !imageFailed && (
         <img
           src={imageUrl}
@@ -127,8 +133,8 @@ const TeamChat = ({ messages, onSend, accent }) => {
   );
 };
 
-const ImageChoices = ({ options, correctIndexes, pickedIndex, onPick, readOnly = false }) => (
-  <div className="image-choice-grid">
+const ImageChoices = ({ options, correctIndexes, pickedIndex, onPick, readOnly = false, imageSize = 100 }) => (
+  <div className="image-choice-grid" style={{ '--image-scale': imageScaleOf(imageSize) }}>
     {(options || []).map((url, index) => {
       const correct = (correctIndexes || []).includes(index);
       const picked = pickedIndex === index;
@@ -403,6 +409,7 @@ const ClassicGame = ({
       return (
         <ImageChoices
           options={question.options}
+          imageSize={question.imageSize}
           onPick={(index) => send(index)}
         />
       );
@@ -628,10 +635,11 @@ const ClassicGame = ({
         <ImageChoices
           options={question.options}
           correctIndexes={gameData.correctIndexes}
+          imageSize={question.imageSize}
           readOnly
         />
       )}
-      <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} />
+      <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} imageSize={question.imageSize} />
     </div>
   );
 
@@ -757,13 +765,13 @@ const ClassicGame = ({
             portrait={question.imageUrl}
           />
         ) : (
-          <QuestionMedia imageUrl={question.imageUrl} videoUrl={question.videoUrl} />
+          <QuestionMedia imageUrl={question.imageUrl} videoUrl={question.videoUrl} imageSize={question.imageSize} />
         )}
         {question.type === 'music' && question.imageUrl && (
-          <QuestionMedia imageUrl={question.imageUrl} videoUrl="" />
+          <QuestionMedia imageUrl={question.imageUrl} videoUrl="" imageSize={question.imageSize} />
         )}
         {phase === 'reveal' && (
-          <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} />
+          <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} imageSize={question.imageSize} />
         )}
 
         {phase === 'answering' && isHost && !solo && (
@@ -792,6 +800,7 @@ const ClassicGame = ({
               <ImageChoices
                 options={gameData.hostSolution.options}
                 correctIndexes={gameData.hostSolution.correctIndexes}
+                imageSize={question.imageSize}
                 readOnly
               />
             )}
@@ -1051,6 +1060,7 @@ const ClassicGame = ({
               <ImageChoices
                 options={question.options}
                 correctIndexes={reveal.correctIndexes}
+                imageSize={question.imageSize}
                 readOnly
               />
             )}
