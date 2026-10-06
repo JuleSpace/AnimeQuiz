@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { ItemEditor, PlaceBoard } from './InteractQuestion';
+import LyricsEditor from './LyricsEditor';
+import LyricsPlayer from './LyricsPlayer';
 import Icon from './ArcadeIcon';
+import { WHOS_TEMPLATE_URL } from '../utils/media';
 
 const TYPE_OPTIONS = [
   { id: 'qcm', label: 'Choix multiple' },
@@ -9,6 +12,8 @@ const TYPE_OPTIONS = [
   { id: 'boolean', label: 'Vrai / Faux' },
   { id: 'text', label: 'Réponse libre' },
   { id: 'music', label: 'Blind test' },
+  { id: 'lyrics', label: 'Paroles' },
+  { id: 'whos', label: "Who's that" },
   { id: 'order', label: 'Classer' },
   { id: 'layout', label: 'Frise / schéma' }
 ];
@@ -33,30 +38,55 @@ const emptyDraft = () => ({
   layoutMode: 'timeline',
   layoutImageUrl: '',
   timelineStart: '',
-  timelineEnd: ''
+  timelineEnd: '',
+  clipMuteStart: 0,
+  clipMuteEnd: 0,
+  clipEndAt: 0,
+  clipLine: '',
+  clipMasks: []
 });
 
 const questionToApi = (draft) => ({
   type: draft.type,
   prompt: draft.prompt,
   imageUrl: draft.imageUrl,
-  videoUrl: draft.type === 'music' ? '' : draft.videoUrl,
+  videoUrl: draft.type === 'music' || draft.type === 'lyrics' || draft.type === 'whos' ? '' : draft.videoUrl,
   answerImageUrl: draft.answerImageUrl,
   answerVideoUrl: draft.answerVideoUrl,
-  musicUrl: draft.type === 'music' ? draft.musicUrl : '',
+  musicUrl: draft.type === 'whos'
+    ? WHOS_TEMPLATE_URL
+    : (draft.type === 'music' || draft.type === 'lyrics' ? draft.musicUrl : ''),
   options: draft.options,
   correctIndexes: draft.multiple ? draft.correctIndexes : draft.correctIndexes.slice(0, 1),
   multiple: Boolean(draft.multiple),
-  choice: draft.type === 'music' && Boolean(draft.choice),
+  choice: (draft.type === 'music' || draft.type === 'lyrics' || draft.type === 'whos') && Boolean(draft.choice),
   correctBoolean: draft.correctBoolean,
-  acceptedAnswers: draft.acceptedText.split('\n').map((line) => line.trim()).filter(Boolean),
+  acceptedAnswers: draft.type === 'lyrics' || (draft.type === 'whos' && draft.choice)
+    ? []
+    : draft.acceptedText.split('\n').map((line) => line.trim()).filter(Boolean),
+  blanks: draft.type === 'lyrics' && !draft.choice
+    ? draft.acceptedText.split('\n').map((line) => line.trim()).filter(Boolean)
+    : [],
   points: Number(draft.points) || 1,
   timeLimit: draft.timeLimit === '' ? 0 : Number(draft.timeLimit) || 0,
   items: draft.items || [],
   layoutMode: draft.layoutMode === 'schema' ? 'schema' : 'timeline',
   layoutImageUrl: draft.layoutImageUrl || '',
   timelineStart: draft.timelineStart || '',
-  timelineEnd: draft.timelineEnd || ''
+  timelineEnd: draft.timelineEnd || '',
+  clip: draft.type === 'lyrics' ? {
+    muteStart: Number(draft.clipMuteStart) || 0,
+    muteEnd: Number(draft.clipMuteEnd) || 0,
+    endAt: Number(draft.clipEndAt) || 0,
+    line: draft.clipLine || '',
+    masks: draft.clipMasks || []
+  } : draft.type === 'whos' ? {
+    muteStart: 0,
+    muteEnd: 0,
+    endAt: 6,
+    line: '',
+    masks: []
+  } : undefined
 });
 
 const questionFromApi = (question) => ({
@@ -72,7 +102,9 @@ const questionFromApi = (question) => ({
   multiple: (question.correctIndexes || []).length > 1,
   choice: Boolean(question.choice),
   correctBoolean: question.correctBoolean !== false,
-  acceptedText: (question.acceptedAnswers || []).join('\n'),
+  acceptedText: question.type === 'lyrics'
+    ? (question.blanks || []).join('\n')
+    : (question.acceptedAnswers || []).join('\n'),
   points: question.points || 1,
   timeLimit: question.timeLimit ?? 0,
   items: (question.items || []).map((item) => ({
@@ -85,7 +117,17 @@ const questionFromApi = (question) => ({
   layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
   layoutImageUrl: question.layoutImageUrl || '',
   timelineStart: question.timelineStart || '',
-  timelineEnd: question.timelineEnd || ''
+  timelineEnd: question.timelineEnd || '',
+  clipMuteStart: question.clip?.muteStart || 0,
+  clipMuteEnd: question.clip?.muteEnd || 0,
+  clipEndAt: question.clip?.endAt || 0,
+  clipLine: question.clip?.line || '',
+  clipMasks: (question.clip?.masks || []).map((mask) => ({
+    x: Number(mask.x) || 0,
+    y: Number(mask.y) || 0,
+    w: Number(mask.w) || 0,
+    h: Number(mask.h) || 0
+  }))
 });
 
 const typeLabel = (type) => TYPE_OPTIONS.find((option) => option.id === type)?.label || type;
@@ -140,12 +182,19 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
               const next = {
                 ...current,
                 type: option.id,
-                timeLimit: option.id === 'music' && Number(current.timeLimit) === 20 ? 0 : current.timeLimit
+                timeLimit: (option.id === 'music' || option.id === 'lyrics' || option.id === 'whos') && Number(current.timeLimit) === 20 ? 0 : current.timeLimit
               };
               if (option.id === 'imageqcm') {
                 next.options = ['', ''];
                 next.correctIndexes = [0];
                 next.multiple = false;
+              }
+              if (option.id === 'whos') {
+                next.choice = true;
+                next.musicUrl = WHOS_TEMPLATE_URL;
+                if ((current.options || []).filter((optionText) => String(optionText).trim()).length < 2) {
+                  next.options = ['', '', '', ''];
+                }
               }
               return next;
             })}
@@ -161,6 +210,10 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         placeholder={
           draft.type === 'music'
             ? 'Consigne (optionnel), ex. Quel est ce générique ?'
+            : draft.type === 'lyrics'
+              ? 'Consigne (optionnel), ex. Complète les paroles'
+            : draft.type === 'whos'
+              ? 'Consigne (optionnel), ex. Qui est-ce ?'
             : draft.type === 'order'
               ? 'Consigne, ex. Classe ces images de ta préférée à la moins aimée'
               : draft.type === 'layout'
@@ -198,7 +251,53 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         </>
       )}
 
-      { (draft.type === 'qcm' || (draft.type === 'music' && draft.choice)) && (
+      {draft.type === 'lyrics' && (
+        <LyricsEditor draft={draft} setDraft={setDraft} />
+      )}
+
+      {draft.type === 'whos' && (
+        <>
+          <p className="blind-hint">Template Who's that, coupé à 6 secondes. L'image se place sur l'ombre.</p>
+          <input
+            className="input"
+            placeholder="Lien de l'image du personnage"
+            value={draft.imageUrl}
+            onChange={(event) => setDraft({ ...draft, imageUrl: event.target.value })}
+          />
+          <LyricsPlayer
+            editing
+            previewAt={3}
+            url={WHOS_TEMPLATE_URL}
+            clip={{ muteStart: 0, muteEnd: 0, endAt: 6, line: '', masks: [] }}
+            portrait={draft.imageUrl}
+          />
+          <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0' }}>
+            <input
+              type="checkbox"
+              checked={Boolean(draft.choice)}
+              onChange={(event) => setDraft((current) => ({
+                ...current,
+                choice: event.target.checked,
+                options: event.target.checked && (current.options || []).filter((option) => String(option).trim()).length < 2
+                  ? ['', '', '', '']
+                  : current.options
+              }))}
+            />
+            Réponse en choix multiple
+          </label>
+          {!draft.choice && (
+            <textarea
+              className="input"
+              rows={2}
+              placeholder={'Réponse attendue, une par ligne\nTails'}
+              value={draft.acceptedText}
+              onChange={(event) => setDraft({ ...draft, acceptedText: event.target.value })}
+            />
+          )}
+        </>
+      )}
+
+      { (draft.type === 'qcm' || ((draft.type === 'music' || draft.type === 'lyrics' || draft.type === 'whos') && draft.choice)) && (
         <div>
           <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0' }}>
             <input
@@ -456,7 +555,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         </>
       )}
 
-      {draft.type !== 'music' && draft.type !== 'order' && draft.type !== 'layout' && (
+      {draft.type !== 'music' && draft.type !== 'lyrics' && draft.type !== 'whos' && draft.type !== 'order' && draft.type !== 'layout' && (
         <>
           <input
             className="input"

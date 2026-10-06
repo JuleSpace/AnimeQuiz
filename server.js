@@ -5,6 +5,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
 const axios = require('axios');
+const multer = require('multer');
 const { attachQuiz } = require('./quiz');
 require('dotenv').config();
 
@@ -312,6 +313,106 @@ app.get('/api/youtube-audio/:videoId', async (req, res) => {
     console.error('Erreur générale YouTube:', error.message);
     res.status(500).json({ error: error.message });
   }
+});
+
+const clipUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 80 * 1024 * 1024 },
+  fileFilter: (req, file, callback) => {
+    const name = String(file.originalname || '').toLowerCase();
+    const type = String(file.mimetype || '');
+    const ok = type === 'video/mp4' || type === 'video/webm' || name.endsWith('.mp4') || name.endsWith('.webm');
+    callback(ok ? null : new Error('Envoie un MP4'), ok);
+  }
+});
+
+function clipBucket() {
+  if (mongoose.connection.readyState !== 1) return null;
+  return new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'clips' });
+}
+
+app.post('/api/clips', (req, res) => {
+  clipUpload.single('clip')(req, res, (error) => {
+    if (error) {
+      const tooBig = error.code === 'LIMIT_FILE_SIZE';
+      res.status(400).json({ error: tooBig ? 'La vidéo dépasse 80 Mo' : (error.message || 'Vidéo refusée') });
+      return;
+    }
+    if (!req.file) {
+      res.status(400).json({ error: 'Aucune vidéo' });
+      return;
+    }
+    const bucket = clipBucket();
+    if (!bucket) {
+      res.status(503).json({ error: 'La base n\'est pas prête' });
+      return;
+    }
+    const stream = bucket.openUploadStream(req.file.originalname || 'clip.mp4', {
+      contentType: req.file.mimetype || 'video/mp4'
+    });
+    stream.on('error', () => {
+      if (!res.headersSent) res.status(500).json({ error: 'Import impossible' });
+    });
+    stream.on('finish', () => {
+      res.json({ url: `/api/clips/${stream.id}` });
+    });
+    stream.end(req.file.buffer);
+  });
+});
+
+app.get('/api/clips/:id', async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    res.status(404).end();
+    return;
+  }
+  const bucket = clipBucket();
+  if (!bucket) {
+    res.status(503).end();
+    return;
+  }
+  const id = new mongoose.Types.ObjectId(req.params.id);
+  let file;
+  try {
+    const files = await bucket.find({ _id: id }).toArray();
+    file = files[0];
+  } catch (error) {
+    res.status(404).end();
+    return;
+  }
+  if (!file) {
+    res.status(404).end();
+    return;
+  }
+  const size = file.length;
+  const contentType = file.contentType || 'video/mp4';
+  const range = req.headers.range;
+  if (!range) {
+    res.writeHead(200, {
+      'Content-Length': size,
+      'Content-Type': contentType,
+      'Accept-Ranges': 'bytes'
+    });
+    bucket.openDownloadStream(id).pipe(res);
+    return;
+  }
+  const match = /^bytes=(\d+)-(\d*)$/.exec(range);
+  if (!match) {
+    res.status(416).end();
+    return;
+  }
+  const start = Number(match[1]);
+  const end = match[2] ? Number(match[2]) : Math.min(start + 1024 * 1024 - 1, size - 1);
+  if (start >= size || end < start) {
+    res.status(416).set('Content-Range', `bytes */${size}`).end();
+    return;
+  }
+  res.writeHead(206, {
+    'Content-Range': `bytes ${start}-${end}/${size}`,
+    'Accept-Ranges': 'bytes',
+    'Content-Length': end - start + 1,
+    'Content-Type': contentType
+  });
+  bucket.openDownloadStream(id, { start, end: end + 1 }).pipe(res);
 });
 
 attachQuiz(app, io);

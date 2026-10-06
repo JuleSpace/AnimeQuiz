@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { extractSpotifyId, extractYouTubeId, extractYouTubeTimestamp } from '../utils/media';
+import { extractSpotifyId, extractYouTubeId, extractYouTubeTimestamp, readPlaybackVolume, writePlaybackVolume } from '../utils/media';
 
 const formatTime = (seconds) => {
   if (!Number.isFinite(seconds)) return '0:00';
@@ -53,12 +53,12 @@ const PlayerControls = ({
 const BlindMusicPlayer = ({ url, revealed = false }) => {
   const audioRef = useRef(null);
   const iframeRef = useRef(null);
-  const volumeRef = useRef(80);
+  const volumeRef = useRef(readPlaybackVolume());
   const [audioUrl, setAudioUrl] = useState('');
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(80);
+  const [volume, setVolume] = useState(readPlaybackVolume);
 
   const youtubeId = extractYouTubeId(url);
   const spotifyId = extractSpotifyId(url);
@@ -75,7 +75,7 @@ const BlindMusicPlayer = ({ url, revealed = false }) => {
   };
 
   const applyVolume = (next) => {
-    const value = Math.max(0, Math.min(100, Math.round(next)));
+    const value = writePlaybackVolume(next);
     volumeRef.current = value;
     setVolume(value);
     if (audioRef.current) audioRef.current.volume = value / 100;
@@ -99,7 +99,7 @@ const BlindMusicPlayer = ({ url, revealed = false }) => {
   }, [audioUrl]);
 
   useEffect(() => {
-    if (!youtubeId || revealed) return undefined;
+    if (!youtubeId) return undefined;
 
     let ready = false;
     const arm = () => {
@@ -201,17 +201,32 @@ const BlindMusicPlayer = ({ url, revealed = false }) => {
   }
 
   if (youtubeId && revealed) {
+    const origin = encodeURIComponent(window.location.origin);
     return (
       <div className="audio-player">
         <div style={{ position: 'relative', width: '100%', paddingBottom: '56.25%', borderRadius: '12px', overflow: 'hidden' }}>
           <iframe
+            ref={iframeRef}
+            id="blind-test"
             title="Vidéo YouTube"
-            src={`https://www.youtube.com/embed/${youtubeId}?start=${start}&rel=0`}
+            src={`https://www.youtube.com/embed/${youtubeId}?enablejsapi=1&start=${start}&rel=0&origin=${origin}`}
             style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
         </div>
+        <label className="blind-volume" style={{ marginTop: 10 }}>
+          <span>Volume</span>
+          <input
+            className="blind-range"
+            type="range"
+            min="0"
+            max="100"
+            value={volume}
+            aria-label="Volume"
+            onChange={(event) => applyVolume(Number(event.target.value))}
+          />
+        </label>
       </div>
     );
   }

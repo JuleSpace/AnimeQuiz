@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BlindMusicPlayer from './BlindMusicPlayer';
+import LyricsPlayer, { lyricHoleLengths } from './LyricsPlayer';
+import { WHOS_TEMPLATE_URL } from '../utils/media';
 import { OrderAnswer, OrderReview, PlaceAnswer, PlaceBoard } from './InteractQuestion';
 import { extractYouTubeId } from '../utils/media';
 import { BoosterOpening, HostJokerBoard, JokerCard, PlayerJokerBar } from './JokerCards';
@@ -175,6 +177,7 @@ const ClassicGame = ({
   onStartQuestion
 }) => {
   const [textAnswer, setTextAnswer] = useState('');
+  const [holes, setHoles] = useState(['']);
   const [selected, setSelected] = useState([]);
   const [locked, setLocked] = useState(false);
   const [now, setNow] = useState(Date.now());
@@ -189,6 +192,7 @@ const ClassicGame = ({
 
   useEffect(() => {
     setTextAnswer('');
+    setHoles(['']);
     setSelected([]);
     setRedoTick(0);
     setSecondDraft(false);
@@ -404,7 +408,7 @@ const ClassicGame = ({
       );
     }
 
-    const musicChoices = question.type === 'music' && (question.options || []).length > 0;
+    const musicChoices = (question.type === 'music' || question.type === 'lyrics' || question.type === 'whos') && (question.options || []).length > 0;
     if (question.type === 'qcm' || musicChoices) {
       return (
         <div className="choice-grid">
@@ -475,6 +479,45 @@ const ClassicGame = ({
       );
     }
 
+    if (question.type === 'lyrics' && (question.blankCount || 0) > 1) {
+      const count = question.blankCount;
+      const lengths = lyricHoleLengths(question.clip?.line);
+      const ready = holes.length === count && holes.every((value) => String(value).trim());
+      return (
+        <div className="answer-input">
+          {Array.from({ length: count }, (_, index) => {
+            const length = lengths[index] || 0;
+            const value = holes[index] || '';
+            return (
+              <div key={index} className="lyrics-blank">
+                <input
+                  type="text"
+                  className="input"
+                  placeholder={length ? `${length} caractères` : `Trou ${index + 1}`}
+                  maxLength={length || undefined}
+                  value={value}
+                  onChange={(event) => setHoles((current) => {
+                    const next = [...current];
+                    next[index] = length ? event.target.value.slice(0, length) : event.target.value;
+                    return next;
+                  })}
+                />
+                {length > 0 && <span className="lyrics-count">{value.length}/{length}</span>}
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            className="btn btn-success"
+            disabled={!ready}
+            onClick={() => send(holes.map((value) => value.trim()))}
+          >
+            <Icon name="go" />Envoyer
+          </button>
+        </div>
+      );
+    }
+
     if (question.type === 'boolean') {
       return (
         <div className="choice-grid">
@@ -488,18 +531,28 @@ const ClassicGame = ({
       );
     }
 
+    const lyricLength = question.type === 'lyrics' ? (lyricHoleLengths(question.clip?.line)[0] || 0) : 0;
+    const freeField = (
+      <input
+        type="text"
+        className="input"
+        placeholder={question.type === 'music' ? 'Titre, artiste, anime...' : (lyricLength ? `${lyricLength} caractères` : 'Ta réponse')}
+        maxLength={lyricLength || undefined}
+        value={textAnswer}
+        onChange={(event) => setTextAnswer(lyricLength ? event.target.value.slice(0, lyricLength) : event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' && textAnswer.trim()) send(textAnswer.trim());
+        }}
+      />
+    );
     return (
       <div className="answer-input">
-        <input
-          type="text"
-          className="input"
-          placeholder={question.type === 'music' ? 'Titre, artiste, anime...' : 'Ta réponse'}
-          value={textAnswer}
-          onChange={(event) => setTextAnswer(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && textAnswer.trim()) send(textAnswer.trim());
-          }}
-        />
+        {lyricLength > 0 ? (
+          <div className="lyrics-blank">
+            {freeField}
+            <span className="lyrics-count">{textAnswer.length}/{lyricLength}</span>
+          </div>
+        ) : freeField}
         <button
           type="button"
           className="btn btn-success"
@@ -686,6 +739,22 @@ const ClassicGame = ({
             key={`${question.musicUrl}-${phase}`}
             url={question.musicUrl}
             revealed={phase === 'reveal' || (isHost && phase !== 'answering')}
+          />
+        ) : question.type === 'lyrics' ? (
+          <LyricsPlayer
+            key={`${question.musicUrl}-${phase}`}
+            url={question.musicUrl}
+            clip={question.clip}
+            filled={phase === 'correction' || phase === 'reveal'
+              ? (gameData.expectedAnswer || gameData.reveal?.correctAnswer || '')
+              : ''}
+          />
+        ) : question.type === 'whos' ? (
+          <LyricsPlayer
+            key={`${question.imageUrl || 'whos'}`}
+            url={question.musicUrl || WHOS_TEMPLATE_URL}
+            clip={question.clip || { endAt: 6, line: '', masks: [] }}
+            portrait={question.imageUrl}
           />
         ) : (
           <QuestionMedia imageUrl={question.imageUrl} videoUrl={question.videoUrl} />
@@ -957,7 +1026,7 @@ const ClassicGame = ({
               </div>
             )}
 
-            {(question.type === 'qcm' || (question.type === 'music' && (question.options || []).length > 0)) && (
+            {(question.type === 'qcm' || ((question.type === 'music' || question.type === 'lyrics' || question.type === 'whos') && (question.options || []).length > 0)) && (
               <div className="choice-grid">
                 {(question.options || []).map((option, index) => {
                   const isCorrect = (reveal.correctIndexes || []).includes(index);

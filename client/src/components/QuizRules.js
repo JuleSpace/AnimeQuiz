@@ -25,8 +25,10 @@ const SLIDES = [
     kicker: 'Les questions',
     title: 'Les formes',
     points: [
-      'Choix multiple, choix d\'images, vrai/faux, texte libre, blind test masqué.',
+      'Choix multiple, choix d\'images, vrai/faux, texte libre, blind test masqué, paroles.',
       'Un blind test peut se répondre en choix multiple.',
+      'Paroles : extrait YouTube ou MP4, son coupé, cache sur l\'image, écran de fin à trou (un _ par caractère) ou en choix multiple.',
+      'Who\'s that : le template est coupé à 6 secondes, l\'image du personnage se place sur l\'ombre, en choix multiple si tu veux.',
       'Classement, ou placement sur une frise et un schéma. Un seul élément à placer suffit.',
       'La frise peut afficher une date de début et une date de fin.',
       'L’image et la vidéo de la réponse n’apparaissent qu’avec les points.',

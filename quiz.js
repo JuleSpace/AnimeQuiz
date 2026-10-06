@@ -15,7 +15,7 @@ const {
 const QuizQuestionSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['qcm', 'imageqcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout'],
+    enum: ['qcm', 'imageqcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout', 'lyrics', 'whos'],
     required: true
   },
   prompt: { type: String, default: '' },
@@ -45,6 +45,21 @@ const QuizQuestionSchema = new mongoose.Schema({
       y: { type: Number, default: 50 }
     }],
     default: []
+  },
+  clip: {
+    muteStart: { type: Number, default: 0 },
+    muteEnd: { type: Number, default: 0 },
+    endAt: { type: Number, default: 0 },
+    line: { type: String, default: '' },
+    masks: {
+      type: [{
+        x: { type: Number, default: 0 },
+        y: { type: Number, default: 0 },
+        w: { type: Number, default: 0 },
+        h: { type: Number, default: 0 }
+      }],
+      default: []
+    }
   }
 }, { _id: false });
 
@@ -62,6 +77,8 @@ const Quiz = mongoose.models.Quiz || mongoose.model('Quiz', QuizSchema);
 const quizLobbies = new Map();
 const quizPlayers = new Map();
 const quizTimers = new Map();
+
+const WHOS_TEMPLATE_URL = 'https://www.youtube.com/watch?v=vu_zg45ONA0';
 
 function normalizeAnswer(value) {
   return String(value ?? '')
@@ -102,11 +119,18 @@ function blankSlots(prompt) {
   return matches ? matches.length : 0;
 }
 
+function lyricHoleLengths(line) {
+  const matches = String(line || '').match(/_+/g);
+  return matches ? matches.map((run) => run.length) : [];
+}
+
 function usesChoices(question) {
   return Boolean(question) && (
     question.type === 'qcm'
     || question.type === 'imageqcm'
     || (question.type === 'music' && question.choice)
+    || (question.type === 'lyrics' && question.choice)
+    || (question.type === 'whos' && question.choice)
   );
 }
 
@@ -118,10 +142,14 @@ function isHttpUrl(value) {
   return /^https?:\/\//i.test(String(value || '').trim());
 }
 
+function isClipPath(value) {
+  return /^\/api\/clips\/[a-f\d]{24}$/i.test(String(value || '').trim());
+}
+
 function isObjectiveCorrect(question, answer) {
   if (answer == null) return false;
 
-  if (question.type === 'qcm' || question.type === 'imageqcm' || (question.type === 'music' && question.choice)) {
+  if (usesChoices(question)) {
     const selected = (Array.isArray(answer) ? answer : [answer])
       .map((value) => Number(value))
       .sort((a, b) => a - b);
@@ -136,8 +164,15 @@ function isObjectiveCorrect(question, answer) {
     return Boolean(answer) === Boolean(question.correctBoolean);
   }
 
-  if (question.type === 'text' || question.type === 'music') {
+  if (question.type === 'text' || question.type === 'music' || (question.type === 'whos' && !question.choice)) {
     return matchesAny(answer, question.acceptedAnswers);
+  }
+
+  if (question.type === 'lyrics') {
+    const given = Array.isArray(answer) ? answer : [answer];
+    const expected = question.blanks || [];
+    if (!expected.length || given.length !== expected.length) return false;
+    return expected.every((slot, index) => matchesAny(given[index], [slot]));
   }
 
   if (question.type === 'blank') {
@@ -151,7 +186,7 @@ function isObjectiveCorrect(question, answer) {
 }
 
 function correctLabel(question) {
-  if (question.type === 'qcm' || (question.type === 'music' && question.choice)) {
+  if (question.type === 'qcm' || (question.type === 'music' && question.choice) || (question.type === 'lyrics' && question.choice) || (question.type === 'whos' && question.choice)) {
     return (question.correctIndexes || [])
       .map((index) => question.options[index])
       .filter(Boolean)
@@ -162,9 +197,28 @@ function correctLabel(question) {
     return Number.isInteger(index) && index >= 0 ? `Image ${index + 1}` : 'Image';
   }
   if (question.type === 'boolean') return question.correctBoolean ? 'Vrai' : 'Faux';
-  if (question.type === 'text' || question.type === 'music') {
+  if (question.type === 'text' || question.type === 'music' || (question.type === 'whos' && !question.choice)) {
     const answers = acceptedList(question.acceptedAnswers);
     return answers.length ? answers.join(' / ') : 'Correction du chef';
+  }
+  if (question.type === 'lyrics') {
+    if (question.choice) {
+      const word = (question.correctIndexes || [])
+        .map((index) => question.options[index])
+        .filter(Boolean)
+        .join(' · ');
+      const line = String(question.clip?.line || '');
+      if (!line) return word || 'Correction du chef';
+      return line.replace(/_+/, word || '…');
+    }
+    const line = String(question.clip?.line || '');
+    let cursor = 0;
+    const filled = line.replace(/_+/g, () => {
+      const value = splitAlternatives(question.blanks?.[cursor] || '…')[0] || '…';
+      cursor += 1;
+      return value;
+    });
+    return filled || 'Correction du chef';
   }
   if (question.type === 'blank') {
     let cursor = 0;
@@ -212,7 +266,7 @@ function answerSnapshot(question, player, index) {
 
 function formatPlayerAnswer(question, answer) {
   if (answer == null || answer === '') return 'Pas de réponse';
-  if (question.type === 'qcm' || (question.type === 'music' && question.choice)) {
+  if (question.type === 'qcm' || (question.type === 'music' && question.choice) || (question.type === 'lyrics' && question.choice) || (question.type === 'whos' && question.choice)) {
     const options = question.options || [];
     const indexes = Array.isArray(answer) ? answer : [answer];
     return indexes.map((index) => options[index] || '?').join(', ');
@@ -225,7 +279,7 @@ function formatPlayerAnswer(question, answer) {
     }).join(', ');
   }
   if (question.type === 'boolean') return answer ? 'Vrai' : 'Faux';
-  if (question.type === 'blank') {
+  if (question.type === 'blank' || question.type === 'lyrics') {
     return (Array.isArray(answer) ? answer : []).map((value) => value || '…').join(' | ');
   }
   if (question.type === 'order') {
@@ -333,15 +387,18 @@ function publicQuestion(question, index, total) {
     type: question.type,
     prompt: question.prompt || '',
     imageUrl: question.imageUrl || '',
-    videoUrl: question.type === 'music' ? '' : (question.videoUrl || ''),
-    musicUrl: question.type === 'music' ? (question.musicUrl || '') : '',
+    videoUrl: question.type === 'music' || question.type === 'lyrics' || question.type === 'whos' ? '' : (question.videoUrl || ''),
+    musicUrl: question.type === 'music' || question.type === 'lyrics' || question.type === 'whos' ? (question.musicUrl || '') : '',
     options: usesChoices(question) ? (question.options || []) : [],
-    multiple: (question.type === 'qcm' || (question.type === 'music' && question.choice))
+    multiple: usesChoices(question) && question.type !== 'imageqcm'
       && (question.correctIndexes || []).length > 1,
-    blankCount: question.type === 'blank' ? (question.blanks || []).length : 0,
+    blankCount: question.type === 'blank' || (question.type === 'lyrics' && !question.choice)
+      ? (question.blanks || []).length
+      : 0,
     points: question.points || 1,
     timeLimit: question.timeLimit || 0,
     items: publicItems(question),
+    clip: question.type === 'lyrics' || question.type === 'whos' ? publicClip(question.clip) : undefined,
     layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
     layoutImageUrl: question.type === 'layout' && question.layoutMode === 'schema'
       ? (question.layoutImageUrl || '')
@@ -352,6 +409,49 @@ function publicQuestion(question, index, total) {
     timelineEnd: question.type === 'layout' && question.layoutMode !== 'schema'
       ? (question.timelineEnd || '')
       : ''
+  };
+}
+
+function publicClip(clip) {
+  const source = clip || {};
+  return {
+    muteStart: Number(source.muteStart) || 0,
+    muteEnd: Number(source.muteEnd) || 0,
+    endAt: Number(source.endAt) || 0,
+    line: String(source.line || ''),
+    masks: (source.masks || []).map((mask) => ({
+      x: Number(mask.x) || 0,
+      y: Number(mask.y) || 0,
+      w: Number(mask.w) || 0,
+      h: Number(mask.h) || 0
+    }))
+  };
+}
+
+function cleanClip(raw) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  const seconds = (value) => {
+    const number = Number(value);
+    if (!Number.isFinite(number) || number < 0) return 0;
+    return Math.round(Math.min(number, 60 * 60) * 10) / 10;
+  };
+  const percent = (value) => {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return 0;
+    return Math.max(0, Math.min(100, Math.round(number * 10) / 10));
+  };
+  const masks = (Array.isArray(source.masks) ? source.masks : []).slice(0, 4).map((mask) => ({
+    x: percent(mask?.x),
+    y: percent(mask?.y),
+    w: percent(mask?.w),
+    h: percent(mask?.h)
+  })).filter((mask) => mask.w >= 2 && mask.h >= 2);
+  return {
+    muteStart: seconds(source.muteStart),
+    muteEnd: seconds(source.muteEnd),
+    endAt: seconds(source.endAt),
+    line: String(source.line || '').trim().slice(0, 400),
+    masks
   };
 }
 
@@ -400,42 +500,50 @@ function sanitizeQuestion(raw) {
     .filter((value) => value.length > 0);
 
   const musicChoice = type === 'music' && Boolean(raw.choice);
-  const keepsOptions = type === 'qcm' || type === 'imageqcm' || musicChoice;
+  const lyricsChoice = type === 'lyrics' && Boolean(raw.choice);
+  const whosChoice = type === 'whos' && Boolean(raw.choice);
+  const keepsOptions = type === 'qcm' || type === 'imageqcm' || musicChoice || lyricsChoice || whosChoice;
+  const clip = type === 'whos'
+    ? { muteStart: 0, muteEnd: 0, endAt: 6, line: '', masks: [] }
+    : cleanClip(raw.clip);
 
   return {
     type,
     prompt: String(raw.prompt || '').trim(),
     imageUrl: String(raw.imageUrl || '').trim(),
-    videoUrl: type === 'music' ? '' : String(raw.videoUrl || '').trim(),
+    videoUrl: type === 'music' || type === 'lyrics' || type === 'whos' ? '' : String(raw.videoUrl || '').trim(),
     answerImageUrl: String(raw.answerImageUrl || '').trim(),
     answerVideoUrl: String(raw.answerVideoUrl || '').trim(),
-    musicUrl: type === 'music' ? String(raw.musicUrl || '').trim() : '',
+    musicUrl: type === 'whos'
+      ? WHOS_TEMPLATE_URL
+      : (type === 'music' || type === 'lyrics' ? String(raw.musicUrl || '').trim() : ''),
     options: keepsOptions ? options : [],
     correctIndexes: type === 'imageqcm'
       ? correctIndexes.slice(0, 1)
       : (keepsOptions ? correctIndexes : []),
-    choice: musicChoice,
+    choice: musicChoice || lyricsChoice || whosChoice,
     correctBoolean: raw.correctBoolean !== false,
-    acceptedAnswers: (type === 'text' || (type === 'music' && !musicChoice)) ? acceptedAnswers : [],
-    blanks: type === 'blank' ? blanks : [],
+    acceptedAnswers: (type === 'text' || (type === 'music' && !musicChoice) || (type === 'whos' && !whosChoice)) ? acceptedAnswers : [],
+    blanks: type === 'blank' || (type === 'lyrics' && !lyricsChoice) ? blanks : [],
     points: Math.max(1, Number(raw.points) || 1),
     timeLimit: Math.max(0, Number(raw.timeLimit) || 0),
     layoutMode: raw.layoutMode === 'schema' ? 'schema' : 'timeline',
     layoutImageUrl: String(raw.layoutImageUrl || '').trim(),
     timelineStart: String(raw.timelineStart || '').trim().slice(0, 80),
     timelineEnd: String(raw.timelineEnd || '').trim().slice(0, 80),
-    items: cleanItems(raw.items)
+    items: cleanItems(raw.items),
+    clip
   };
 }
 
 function validateQuestion(question, position) {
   const label = `Question ${position}`;
-  const types = ['qcm', 'imageqcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout'];
+  const types = ['qcm', 'imageqcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout', 'lyrics', 'whos'];
   if (!types.includes(question.type)) return `${label} : type invalide`;
 
   const urlError = ['imageUrl', 'videoUrl', 'answerImageUrl', 'answerVideoUrl', 'musicUrl', 'layoutImageUrl'].map((field) => {
     const value = question[field];
-    if (value && !isHttpUrl(value)) {
+    if (value && !isHttpUrl(value) && !(field === 'musicUrl' && isClipPath(value))) {
       return `${label} : le lien doit commencer par http:// ou https://`;
     }
     return null;
@@ -444,7 +552,7 @@ function validateQuestion(question, position) {
 
   const hasPrompt = String(question.prompt || '').trim();
   const hasImage = String(question.imageUrl || '').trim();
-  if (!hasPrompt && !hasImage && !['music', 'order', 'layout'].includes(question.type)) {
+  if (!hasPrompt && !hasImage && !['music', 'order', 'layout', 'lyrics'].includes(question.type)) {
     return `${label} : ajoute un énoncé ou une image`;
   }
 
@@ -471,6 +579,37 @@ function validateQuestion(question, position) {
   if (question.type === 'music' && question.choice) {
     if ((question.options || []).length < 2) return `${label} : au moins 2 choix`;
     if (!(question.correctIndexes || []).length) return `${label} : indique la bonne réponse`;
+  }
+
+  if (question.type === 'whos') {
+    if (!isHttpUrl(question.imageUrl)) return `${label} : ajoute l'image du personnage`;
+    if (question.choice) {
+      if ((question.options || []).length < 2) return `${label} : au moins 2 choix`;
+      if (!(question.correctIndexes || []).length) return `${label} : indique la bonne réponse`;
+    }
+  }
+
+  if (question.type === 'lyrics') {
+    const source = String(question.musicUrl || '');
+    if (!isHttpUrl(source) && !isClipPath(source)) {
+      return `${label} : ajoute un lien YouTube ou une vidéo MP4`;
+    }
+    if (/spotify\.com/i.test(source)) {
+      return `${label} : Spotify ne se découpe pas, mets YouTube ou un MP4`;
+    }
+    const slots = lyricHoleLengths(question.clip?.line).length;
+    if (slots < 1) return `${label} : écris un _ par caractère dans l'écran de fin`;
+    if (question.choice) {
+      if ((question.options || []).length < 2) return `${label} : au moins 2 choix`;
+      if (!(question.correctIndexes || []).length) return `${label} : indique la bonne réponse`;
+    } else if ((question.blanks || []).length !== slots) {
+      return `${label} : ${slots} trou(s) dans l'écran, ${(question.blanks || []).length} réponse(s)`;
+    }
+    const muteStart = Number(question.clip?.muteStart) || 0;
+    const muteEnd = Number(question.clip?.muteEnd) || 0;
+    if (muteEnd && muteEnd <= muteStart) {
+      return `${label} : le retour du son doit être après la coupure`;
+    }
   }
 
   if (question.type === 'music' && !String(question.musicUrl || '').trim()) {

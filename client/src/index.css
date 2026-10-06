@@ -2343,3 +2343,186 @@ textarea.input {
   }
 }
 
+.lyrics-player {
+  width: min(720px, 100%);
+  margin: 12px auto 0;
+}
+
+.lyrics-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #07070d;
+  border: 3px solid #ff2347;
+  box-shadow: 6px 6px 0 #1f6dff;
+  overflow: hidden;
+}
+
+.lyrics-frame,
+.lyrics-yt,
+.lyrics-frame video,
+.lyrics-frame iframe,
+.lyrics-yt iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.lyrics-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d5d5e2;
+}
+
+.lyrics-mask {
+  position: absolute;
+  z-index: 2;
+  background: #07070d;
+  border: 2px solid #ffd000;
+  pointer-events: none;
+}
+
+.lyrics-mask.is-draft {
+  background: rgba(255, 208, 0, 0.35);
+}
+
+.lyrics-card {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 28px 22px;
+  background:
+    linear-gradient(#ff2347, #ff2347) top / 100% 4px no-repeat,
+    linear-gradient(#1f6dff, #1f6dff) bottom / 100% 4px no-repeat,
+    #07070d;
+}
+
+.lyrics-line {
+  margin: 0;
+  max-width: 100%;
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+  font-size: clamp(1.15rem, 2.8vw, 1.9rem);
+  line-height: 1.5;
+  color: #f4f6ff;
+  white-space: pre-wrap;
+}
+
+.lyrics-hole {
+  display: inline-flex;
+  gap: 0.14em;
+  align-items: flex-end;
+  margin: 0 0.28em;
+  vertical-align: baseline;
+}
+
+.whos-portrait {
+  position: absolute;
+  z-index: 3;
+  left: 7.2%;
+  top: 6.9%;
+  width: 37.5%;
+  height: 66.1%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.lyrics-slot {
+  width: 0.62em;
+  height: 0.95em;
+  border-bottom: 4px solid #ffd000;
+}
+
+.lyrics-blank {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lyrics-blank .input {
+  flex: 1;
+}
+
+.lyrics-count {
+  min-width: 3.4em;
+  color: #ffd000;
+  font-family: Impact, 'Arial Black', sans-serif;
+  font-style: italic;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+}
+
+.lyrics-preview {
+  margin: 8px 0 12px;
+  padding: 16px 18px;
+  background:
+    linear-gradient(#ff2347, #ff2347) top / 100% 4px no-repeat,
+    linear-gradient(#1f6dff, #1f6dff) bottom / 100% 4px no-repeat,
+    #07070d;
+}
+
+.lyrics-draw {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.lyrics-controls {
+  margin-top: 10px;
+}
+
+.lyrics-upload {
+  display: inline-flex;
+  margin: 8px 0;
+}
+
+.lyrics-upload input {
+  display: none;
+}
+
+.lyrics-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.lyrics-marks label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 150px;
+  color: #d5d5e2;
+  font-size: 0.85rem;
+}
+
+.lyrics-marks .input {
+  width: 120px;
+  margin: 0;
+}
+
+.lyrics-marks .btn,
+.lyrics-mask-row .btn,
+.lyrics-replay {
+  margin: 0;
+}
+
+.lyrics-mask-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+

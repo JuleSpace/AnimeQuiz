@@ -267,7 +267,7 @@ const Lobby = ({
             <ul style={{ textAlign: 'left', lineHeight: '1.6' }}>
               <li>Seul dans la salle, le chef peut lancer un solo : il répond, puis se note avec la réponse prévue</li>
               <li>Le chef ne joue pas : il lance la partie et passe à la question suivante</li>
-              <li>Choix multiple, choix d'images, vrai/faux, texte libre, blind test en écoute libre ou en choix multiple, classement ou placement sur une frise et un schéma</li>
+              <li>Choix multiple, choix d'images, vrai/faux, texte libre, blind test en écoute libre ou en choix multiple, paroles sur un extrait, who's that, classement ou placement sur une frise et un schéma</li>
               <li>Rien n'est corrigé tout seul : le chef valide chaque réponse</li>
               <li>Il choisit les points, et peut ajouter +1 pour une blague</li>
               <li>Un seul indice par question : −1 pt, sauf avec la carte Indice gratuit. Le chef peut envoyer plusieurs messages à ce joueur</li>
