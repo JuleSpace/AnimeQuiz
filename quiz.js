@@ -11,6 +11,7 @@ const {
   jokerPlayed,
   resolveGains
 } = require('./jokers');
+const { requireAdmin, requireSuper, canEditQuiz } = require('./admins');
 
 const QuizQuestionSchema = new mongoose.Schema({
   type: {
@@ -69,6 +70,7 @@ const QuizSchema = new mongoose.Schema({
   shuffle: { type: Boolean, default: false },
   isPrivate: { type: Boolean, default: false },
   questions: { type: [QuizQuestionSchema], default: [] },
+  owner: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -1394,12 +1396,28 @@ function removeQuizPlayer(io, socket) {
   quizPlayers.delete(socket.id);
 }
 
+function quizSummary(quiz, locked) {
+  return {
+    _id: quiz._id,
+    name: quiz.name,
+    description: quiz.description,
+    isPrivate: Boolean(quiz.isPrivate),
+    owner: quiz.owner || '',
+    questionCount: playableQuestions(quiz.questions).length,
+    locked
+  };
+}
+
 function attachQuiz(app, io) {
   app.get('/api/quizzes', async (req, res) => {
     try {
       const quizzes = await Quiz.find().sort({ createdAt: -1 });
       if (req.query.edit === '1') {
-        res.json(quizzes);
+        requireAdmin(req, res, () => {
+          res.json(quizzes.map((quiz) => (
+            canEditQuiz(req.admin, quiz) ? quiz : quizSummary(quiz, true)
+          )));
+        });
         return;
       }
       res.json(quizzes.filter((quiz) => !quiz.isPrivate).map((quiz) => ({
@@ -1434,13 +1452,19 @@ function attachQuiz(app, io) {
         });
         return;
       }
-      res.json(quiz);
+      requireAdmin(req, res, () => {
+        if (!canEditQuiz(req.admin, quiz)) {
+          res.status(403).json({ error: 'Ce quiz est attribué à quelqu\'un d\'autre' });
+          return;
+        }
+        res.json(quiz);
+      });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post('/api/quizzes', async (req, res) => {
+  app.post('/api/quizzes', requireAdmin, async (req, res) => {
     try {
       const name = String(req.body.name || '').trim();
       if (!name) {
@@ -1452,6 +1476,7 @@ function attachQuiz(app, io) {
         description: String(req.body.description || '').trim(),
         shuffle: Boolean(req.body.shuffle),
         isPrivate: Boolean(req.body.isPrivate),
+        owner: req.admin.username,
         questions: []
       });
       await quiz.save();
@@ -1461,8 +1486,43 @@ function attachQuiz(app, io) {
     }
   });
 
-  app.put('/api/quizzes/:id', async (req, res) => {
+  app.put('/api/quizzes/:id/owner', requireSuper, async (req, res) => {
     try {
+      const quiz = await Quiz.findById(req.params.id);
+      if (!quiz) {
+        res.status(404).json({ error: 'Quiz introuvable' });
+        return;
+      }
+      const owner = String(req.body.owner || '').trim().replace(/\s+/g, ' ');
+      if (owner) {
+        const Admin = mongoose.model('Admin');
+        const admin = await Admin.findOne({ usernameKey: owner.toLowerCase() });
+        if (!admin) {
+          res.status(400).json({ error: 'Cet admin n\'existe pas' });
+          return;
+        }
+        quiz.owner = admin.username;
+      } else {
+        quiz.owner = '';
+      }
+      await quiz.save();
+      res.json({ _id: quiz._id, owner: quiz.owner });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put('/api/quizzes/:id', requireAdmin, async (req, res) => {
+    try {
+      const existing = await Quiz.findById(req.params.id);
+      if (!existing) {
+        res.status(404).json({ error: 'Quiz introuvable' });
+        return;
+      }
+      if (!canEditQuiz(req.admin, existing)) {
+        res.status(403).json({ error: 'Ce quiz est attribué à quelqu\'un d\'autre' });
+        return;
+      }
       const name = String(req.body.name || '').trim();
       if (!name) {
         res.status(400).json({ error: 'Le nom du quiz est requis' });
@@ -1502,9 +1562,18 @@ function attachQuiz(app, io) {
     }
   });
 
-  app.delete('/api/quizzes/:id', async (req, res) => {
+  app.delete('/api/quizzes/:id', requireAdmin, async (req, res) => {
     try {
-      await Quiz.findByIdAndDelete(req.params.id);
+      const quiz = await Quiz.findById(req.params.id);
+      if (!quiz) {
+        res.status(404).json({ error: 'Quiz introuvable' });
+        return;
+      }
+      if (!canEditQuiz(req.admin, quiz)) {
+        res.status(403).json({ error: 'Ce quiz est attribué à quelqu\'un d\'autre' });
+        return;
+      }
+      await quiz.deleteOne();
       res.json({ message: 'Quiz supprimé' });
     } catch (error) {
       res.status(500).json({ error: error.message });

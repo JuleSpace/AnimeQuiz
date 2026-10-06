@@ -5,6 +5,7 @@ import LyricsEditor from './LyricsEditor';
 import LyricsPlayer from './LyricsPlayer';
 import Icon from './ArcadeIcon';
 import { WHOS_TEMPLATE_URL } from '../utils/media';
+import ConfirmPopup from './ConfirmPopup';
 
 const TYPE_OPTIONS = [
   { id: 'qcm', label: 'Choix multiple' },
@@ -627,7 +628,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
   );
 };
 
-const QuizAdmin = () => {
+const QuizAdmin = ({ admin }) => {
   const [quizzes, setQuizzes] = useState([]);
   const [quiz, setQuiz] = useState(null);
   const [draft, setDraft] = useState(null);
@@ -637,6 +638,8 @@ const QuizAdmin = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [dragIndex, setDragIndex] = useState(null);
+  const [admins, setAdmins] = useState([]);
+  const [confirm, setConfirm] = useState(null);
   const quizRef = useRef(null);
   const dragIndexRef = useRef(null);
   const dragSnapshotRef = useRef(null);
@@ -668,9 +671,21 @@ const QuizAdmin = () => {
     setQuizzes(response.data);
   };
 
+  const loadAdmins = async () => {
+    if (admin?.role !== 'super') return;
+    const response = await axios.get('/api/admins');
+    setAdmins(response.data);
+  };
+
   useEffect(() => {
     loadQuizzes().catch(() => setError('Impossible de charger les quiz'));
+    loadAdmins().catch(() => setError('Impossible de charger les admins'));
   }, []);
+
+  const canEdit = (item) => (
+    admin?.role === 'super'
+    || (item?.owner && item.owner.toLowerCase() === String(admin?.username || '').toLowerCase())
+  );
 
   const persist = async (next) => {
     setLoading(true);
@@ -717,8 +732,18 @@ const QuizAdmin = () => {
     }
   };
 
+  const assignOwner = async (quizId, owner) => {
+    setError('');
+    try {
+      await axios.put(`/api/quizzes/${quizId}/owner`, { owner });
+      await loadQuizzes();
+      setSuccess(owner ? `Quiz donné à ${owner}` : 'Quiz retiré');
+    } catch (requestError) {
+      setError(errorMessage(requestError, 'Attribution impossible'));
+    }
+  };
+
   const removeQuiz = async (quizId) => {
-    if (!window.confirm('Supprimer ce quiz ?')) return;
     setLoading(true);
     try {
       await axios.delete(`/api/quizzes/${quizId}`);
@@ -838,6 +863,11 @@ const QuizAdmin = () => {
           <button type="button" className="btn btn-success" onClick={createQuiz} disabled={loading}>
             Créer
           </button>
+          <p className="blind-hint">
+            {admin?.role === 'super'
+              ? 'Un quiz créé t\'est attribué. Tu peux le donner à un admin : lui et toi seuls pourrez le modifier ou le supprimer.'
+              : 'Un quiz que tu crées t\'est attribué. Tu modifies et tu supprimes seulement les tiens.'}
+          </p>
         </div>
 
         {quizzes.length === 0 ? (
@@ -847,22 +877,68 @@ const QuizAdmin = () => {
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
-            {quizzes.map((item) => (
-              <div key={item._id} className="score-card">
-                <h3 style={{ color: '#ff2347' }}>{item.name}</h3>
-                {item.isPrivate && (
-                  <div style={{ color: '#ff2347', fontWeight: 'bold', marginBottom: 6 }}>Privé</div>
-                )}
-                <p style={{ minHeight: 40, opacity: 0.85 }}>{item.description}</p>
-                <div>{item.questions?.length || 0} questions</div>
-                <button type="button" className="btn" onClick={() => openQuiz(item._id)}><Icon name="pencil" />Modifier</button>
-                <button type="button" className="btn btn-danger" onClick={() => removeQuiz(item._id)}><Icon name="trash" />Supprimer</button>
-              </div>
-            ))}
+            {quizzes.map((item) => {
+              const editable = canEdit(item) && !item.locked;
+              const count = item.questions ? item.questions.length : (item.questionCount || 0);
+              return (
+                <div key={item._id} className="score-card">
+                  <h3 style={{ color: '#ff2347' }}>{item.name}</h3>
+                  {item.isPrivate && (
+                    <div style={{ color: '#ff2347', fontWeight: 'bold', marginBottom: 6 }}>Privé</div>
+                  )}
+                  <p style={{ minHeight: 40, opacity: 0.85 }}>{item.description}</p>
+                  <div>{count} questions</div>
+                  <div style={{ color: '#ffd000', margin: '8px 0' }}>
+                    {item.owner ? item.owner : 'Non attribué'}
+                  </div>
+                  {admin?.role === 'super' && (
+                    <select
+                      className="input"
+                      value={item.owner || ''}
+                      onChange={(event) => assignOwner(item._id, event.target.value)}
+                    >
+                      <option value="">Personne</option>
+                      {admins.map((account) => (
+                        <option key={account.username} value={account.username}>{account.username}</option>
+                      ))}
+                    </select>
+                  )}
+                  {editable && (
+                    <>
+                      <button type="button" className="btn" onClick={() => openQuiz(item._id)}><Icon name="pencil" />Modifier</button>
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        onClick={() => setConfirm({
+                          title: 'Supprimer ce quiz ?',
+                          message: `« ${item.name} » disparaît pour de bon.`,
+                          run: () => removeQuiz(item._id)
+                        })}
+                      >
+                        <Icon name="trash" />Supprimer
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
         {error && <div className="error">{error}</div>}
         {success && <div className="success">{success}</div>}
+        {confirm && (
+          <ConfirmPopup
+            title={confirm.title}
+            message={confirm.message}
+            confirmLabel={confirm.confirmLabel}
+            onCancel={() => setConfirm(null)}
+            onConfirm={() => {
+              const run = confirm.run;
+              setConfirm(null);
+              run();
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -937,7 +1013,17 @@ const QuizAdmin = () => {
             <button type="button" className="btn" onClick={() => { setDraft(questionFromApi(question)); setDraftIndex(index); }}>
               Modifier
             </button>
-            <button type="button" className="btn btn-danger" onClick={() => deleteQuestion(index)}>Supprimer</button>
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={() => setConfirm({
+                title: 'Supprimer cette question ?',
+                message: `La question ${index + 1} sera retirée du quiz.`,
+                run: () => deleteQuestion(index)
+              })}
+            >
+              Supprimer
+            </button>
           </div>
         </div>
       ))}
@@ -959,6 +1045,19 @@ const QuizAdmin = () => {
 
       {error && <div className="error">{error}</div>}
       {success && <div className="success">{success}</div>}
+      {confirm && (
+        <ConfirmPopup
+          title={confirm.title}
+          message={confirm.message}
+          confirmLabel={confirm.confirmLabel}
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => {
+            const run = confirm.run;
+            setConfirm(null);
+            run();
+          }}
+        />
+      )}
     </div>
   );
 };

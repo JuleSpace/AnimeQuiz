@@ -6,6 +6,7 @@ import Game from './components/Game';
 import ClassicGame from './components/ClassicGame';
 import AdminPanel from './components/AdminPanel';
 import Icon from './components/ArcadeIcon';
+import { readAdminSession, storeAdminSession, clearAdminSession } from './utils/adminSession';
 import './index.css';
 
 const socket = io(process.env.REACT_APP_SERVER_URL || window.location.origin);
@@ -43,7 +44,8 @@ function App() {
   const [quizzes, setQuizzes] = useState([]);
   const [playMode, setPlayMode] = useState('music');
   const [adminAuth, setAdminAuth] = useState({ username: '', password: '' });
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminSession, setAdminSession] = useState(readAdminSession);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => Boolean(readAdminSession()));
 
   // Vérifier si un utilisateur est déjà connecté au chargement
   useEffect(() => {
@@ -558,13 +560,19 @@ function App() {
     socket.emit('join-quiz-lobby', { username: username.trim(), quizId });
   };
 
-  const handleAdminAuth = () => {
-    if (adminAuth.username === 'admin' && adminAuth.password === 'admin') {
+  const handleAdminAuth = async () => {
+    try {
+      const response = await axios.post('/api/admin/login', {
+        username: adminAuth.username.trim(),
+        password: adminAuth.password
+      });
+      const session = storeAdminSession(response.data);
+      setAdminSession(session);
       setIsAdminAuthenticated(true);
       setCurrentView('admin');
       setError('');
-    } else {
-      setError('Identifiants admin incorrects');
+    } catch (requestError) {
+      setError(requestError.response?.data?.error || 'Identifiants incorrects');
     }
   };
 
@@ -619,8 +627,6 @@ function App() {
     setGameData(null);
     setError('');
     setSuccess('');
-    setIsAdminAuthenticated(false);
-    setAdminAuth({ username: '', password: '' });
     fetchRooms();
     fetchQuizzes();
   };
@@ -704,7 +710,11 @@ function App() {
                 </button>
 
                 <div className="login-split">
-                  <button type="button" className="btn btn-danger" onClick={() => setCurrentView('admin-login')}>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={() => setCurrentView(adminSession?.token ? 'admin' : 'admin-login')}
+                  >
                     <Icon name="lock" />Connexion Admin
                   </button>
                 </div>
@@ -729,6 +739,15 @@ function App() {
                 <button type="button" className="mode-card" onClick={() => chooseMode('music')}>
                   <span className="mode-card-title"><Icon name="music" tone="cyan" />Music Quiz</span>
                   <span>Extraits masqués. Tout le monde écrit, le chef corrige.</span>
+                </button>
+              </div>
+              <div style={{ textAlign: 'center', marginTop: 20 }}>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => setCurrentView(adminSession?.token ? 'admin' : 'admin-login')}
+                >
+                  <Icon name="lock" />Connexion Admin
                 </button>
               </div>
             </div>
@@ -955,16 +974,22 @@ function App() {
               <div style={{ maxWidth: '400px', margin: '0 auto' }}>
                 <input
                   type="text"
-                  placeholder="Nom d'utilisateur admin"
+                  placeholder="Nom"
                   value={adminAuth.username}
                   onChange={(e) => setAdminAuth({ ...adminAuth, username: e.target.value })}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') handleAdminAuth();
+                  }}
                   className="input"
                 />
                 <input
                   type="password"
-                  placeholder="Mot de passe admin"
+                  placeholder="Mot de passe"
                   value={adminAuth.password}
                   onChange={(e) => setAdminAuth({ ...adminAuth, password: e.target.value })}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') handleAdminAuth();
+                  }}
                   className="input"
                 />
                 <button onClick={handleAdminAuth} className="btn btn-success">
@@ -980,9 +1005,11 @@ function App() {
 
       case 'admin':
         return (
-          <AdminPanel 
+          <AdminPanel
+            admin={adminSession}
             onBack={() => {
-              // Réinitialiser l'authentification admin et retourner à la page de connexion
+              clearAdminSession();
+              setAdminSession(null);
               setIsAdminAuthenticated(false);
               setAdminAuth({ username: '', password: '' });
               setCurrentView('login');

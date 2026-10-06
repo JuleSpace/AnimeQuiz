@@ -4,8 +4,123 @@ import QuizAdmin from './QuizAdmin';
 import QuizRules from './QuizRules';
 import { BoosterPlayground } from './JokerCards';
 import Icon from './ArcadeIcon';
+import ConfirmPopup from './ConfirmPopup';
 
-const AdminPanel = ({ onBack, onRoomUpdate }) => {
+const Accounts = ({ admin }) => {
+  const [accounts, setAccounts] = useState([]);
+  const [draft, setDraft] = useState({ username: '', password: '' });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [confirm, setConfirm] = useState(null);
+
+  const load = async () => {
+    const response = await axios.get('/api/admins');
+    setAccounts(response.data);
+  };
+
+  useEffect(() => {
+    load().catch(() => setError('Impossible de charger les comptes'));
+  }, []);
+
+  const createAccount = async () => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await axios.post('/api/admins', draft);
+      setDraft({ username: '', password: '' });
+      setSuccess('Admin créé');
+      await load();
+    } catch (requestError) {
+      setError(requestError.response?.data?.error || 'Création impossible');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeAccount = async (username) => {
+    setConfirm(null);
+    setError('');
+    try {
+      await axios.delete(`/api/admins/${encodeURIComponent(username)}`);
+      setSuccess(`${username} retiré`);
+      await load();
+    } catch (requestError) {
+      setError(requestError.response?.data?.error || 'Retrait impossible');
+    }
+  };
+
+  return (
+    <div>
+      <p style={{ opacity: 0.85 }}>
+        {admin.username}, tu es le seul superadmin. Un admin ne modifie et ne supprime que les quiz et les salles musique qui lui sont attribués.
+      </p>
+      <div style={{
+        background: 'rgba(81,207,102,0.12)',
+        border: '1px solid rgba(81,207,102,0.35)',
+        borderRadius: '16px',
+        padding: '18px',
+        marginBottom: '20px'
+      }}>
+        <h3 style={{ marginTop: 0 }}>Nouvel admin</h3>
+        <input
+          className="input"
+          placeholder="Nom"
+          value={draft.username}
+          onChange={(event) => setDraft({ ...draft, username: event.target.value })}
+        />
+        <input
+          className="input"
+          type="password"
+          placeholder="Mot de passe"
+          value={draft.password}
+          onChange={(event) => setDraft({ ...draft, password: event.target.value })}
+        />
+        <button type="button" className="btn btn-success" onClick={createAccount} disabled={loading}>
+          Créer l'admin
+        </button>
+      </div>
+      {accounts.map((account) => (
+        <div key={account.username} className="score-card" style={{ marginBottom: 12 }}>
+          <h3 style={{ color: account.role === 'super' ? '#ffd000' : '#f4f6ff' }}>{account.username}</h3>
+          <div>{account.role === 'super' ? 'Superadmin' : 'Admin'}</div>
+          {account.role !== 'super' && (
+            <button
+              type="button"
+              className="btn btn-danger"
+              onClick={() => setConfirm({
+                title: `Retirer ${account.username} ?`,
+                message: 'Ses quiz et ses salles musique redeviennent non attribués.',
+                confirmLabel: 'Retirer',
+                run: () => removeAccount(account.username)
+              })}
+            >
+              <Icon name="trash" />Retirer
+            </button>
+          )}
+        </div>
+      ))}
+      {error && <div className="error">{error}</div>}
+      {success && <div className="success">{success}</div>}
+      {confirm && (
+        <ConfirmPopup
+          title={confirm.title}
+          message={confirm.message}
+          confirmLabel={confirm.confirmLabel}
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => {
+            const run = confirm.run;
+            setConfirm(null);
+            run();
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+const AdminPanel = ({ onBack, onRoomUpdate, admin }) => {
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [newRoom, setNewRoom] = useState({ name: '', description: '', musicLinks: [] });
@@ -18,9 +133,20 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [section, setSection] = useState('music');
   const [importing, setImporting] = useState(false);
+  const [admins, setAdmins] = useState([]);
+  const [confirm, setConfirm] = useState(null);
+
+  const canEditRoom = (room) => (
+    admin?.role === 'super'
+    || (room?.owner && room.owner.toLowerCase() === String(admin?.username || '').toLowerCase())
+  );
 
   useEffect(() => {
     fetchRooms();
+    if (admin?.role !== 'super') return;
+    axios.get('/api/admins')
+      .then((response) => setAdmins(response.data))
+      .catch(() => setError('Impossible de charger les admins'));
   }, []);
 
   const fetchRooms = async () => {
@@ -181,9 +307,18 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
     }
   };
 
-  const deleteRoom = async (roomId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette salle ?')) return;
+  const assignRoomOwner = async (roomId, owner) => {
+    setError('');
+    try {
+      await axios.put(`/api/rooms/${roomId}/owner`, { owner });
+      setSuccess(owner ? `Salle donnée à ${owner}` : 'Salle retirée');
+      await fetchRooms();
+    } catch (requestError) {
+      setError(requestError.response?.data?.error || 'Attribution impossible');
+    }
+  };
 
+  const deleteRoom = async (roomId) => {
     try {
       setLoading(true);
       await axios.delete(`/api/rooms/${roomId}`);
@@ -212,6 +347,11 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
       <button type="button" className={`btn ${section === 'boosters' ? 'tab-active' : ''}`} onClick={() => setSection('boosters')}>
         <Icon name="booster" />Boosters
       </button>
+      {admin?.role === 'super' && (
+        <button type="button" className={`btn ${section === 'accounts' ? 'tab-active' : ''}`} onClick={() => setSection('accounts')}>
+          <Icon name="crown" />Comptes
+        </button>
+      )}
     </div>
   );
 
@@ -221,7 +361,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
         <div className="admin-panel">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <button onClick={onBack} className="btn btn-danger"><Icon name="back" />Retour</button>
-            <h2 style={{ margin: 0 }}><Icon name="tools" tone="mark" />Panneau administrateur</h2>
+            <h2 style={{ margin: 0 }}><Icon name="tools" tone="mark" />{admin?.username || 'Admin'}</h2>
             <div style={{ width: 110 }} />
           </div>
           {sectionTabs}
@@ -237,11 +377,27 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
         <div className="admin-panel">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <button onClick={onBack} className="btn btn-danger"><Icon name="back" />Retour</button>
-            <h2 style={{ margin: 0 }}><Icon name="tools" tone="mark" />Panneau administrateur</h2>
+            <h2 style={{ margin: 0 }}><Icon name="tools" tone="mark" />{admin?.username || 'Admin'}</h2>
             <div style={{ width: 110 }} />
           </div>
           {sectionTabs}
           <QuizRules />
+        </div>
+      </div>
+    );
+  }
+
+  if (section === 'accounts' && admin?.role === 'super') {
+    return (
+      <div className="container">
+        <div className="admin-panel">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <button onClick={onBack} className="btn btn-danger"><Icon name="back" />Retour</button>
+            <h2 style={{ margin: 0 }}><Icon name="tools" tone="mark" />{admin.username}</h2>
+            <div style={{ width: 110 }} />
+          </div>
+          {sectionTabs}
+          <Accounts admin={admin} />
         </div>
       </div>
     );
@@ -253,11 +409,11 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
         <div className="admin-panel">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
             <button onClick={onBack} className="btn btn-danger"><Icon name="back" />Retour</button>
-            <h2 style={{ margin: 0 }}><Icon name="tools" tone="mark" />Panneau administrateur</h2>
+            <h2 style={{ margin: 0 }}><Icon name="tools" tone="mark" />{admin?.username || 'Admin'}</h2>
             <div style={{ width: 110 }} />
           </div>
           {sectionTabs}
-          <QuizAdmin />
+          <QuizAdmin admin={admin} />
         </div>
       </div>
     );
@@ -287,7 +443,7 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
           </button>
           
           <h2 style={{ margin: 0, textAlign: 'center' }}>
-            <Icon name="tools" tone="mark" />Panneau administrateur
+            <Icon name="tools" tone="mark" />{admin?.username || 'Admin'}
           </h2>
           
           <button type="button" onClick={() => setShowCreateForm(!showCreateForm)} className="btn btn-success">
@@ -323,6 +479,11 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
               className="input"
               style={{ marginBottom: '15px' }}
             />
+            <p style={{ opacity: 0.85, marginTop: 0 }}>
+              {admin?.role === 'super'
+                ? 'Une salle créée t\'est attribuée. Tu peux la donner à un admin : lui et toi seuls pourrez la modifier ou la supprimer.'
+                : 'Une salle que tu crées t\'est attribuée. Tu modifies et tu supprimes seulement les tiennes.'}
+            </p>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button onClick={createRoom} className="btn btn-success" style={{ flex: 1 }}>
                 Créer la salle
@@ -360,7 +521,9 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
               gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
               gap: '20px' 
             }}>
-              {rooms.map(room => (
+              {rooms.map(room => {
+                const editable = canEditRoom(room);
+                return (
                 <div 
                   key={room._id} 
                   style={{ 
@@ -438,6 +601,23 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                     )}
                   </div>
 
+                  <div style={{ color: '#ffd000', marginBottom: 12, textAlign: 'center' }}>
+                    {room.owner ? room.owner : 'Non attribuée'}
+                  </div>
+                  {admin?.role === 'super' && (
+                    <select
+                      className="input"
+                      value={room.owner || ''}
+                      onChange={(event) => assignRoomOwner(room._id, event.target.value)}
+                      style={{ marginBottom: 12 }}
+                    >
+                      <option value="">Personne</option>
+                      {admins.map((account) => (
+                        <option key={account.username} value={account.username}>{account.username}</option>
+                      ))}
+                    </select>
+                  )}
+
                   {/* Boutons d'action */}
                   <div style={{ 
                     display: 'flex', 
@@ -453,30 +633,39 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                       Voir Détails
                     </button>
                     
-                    <button
-                      onClick={() => setSelectedRoom(selectedRoom === room._id ? null : room._id)}
-                      className="btn btn-quiet"
-                      style={{ padding: '8px 16px', fontSize: '0.9rem' }}
-                    >
-                      <Icon name="pencil" />Modifier
-                    </button>
+                    {editable && (
+                      <button
+                        onClick={() => setSelectedRoom(selectedRoom === room._id ? null : room._id)}
+                        className="btn btn-quiet"
+                        style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+                      >
+                        <Icon name="pencil" />Modifier
+                      </button>
+                    )}
                     
-                    <button
-                      onClick={() => deleteRoom(room._id)}
-                      className="btn btn-danger"
-                      style={{ padding: '8px 16px', fontSize: '0.9rem' }}
-                    >
-                      <Icon name="trash" bare />
-                    </button>
+                    {editable && (
+                      <button
+                        onClick={() => setConfirm({
+                          title: 'Supprimer cette salle ?',
+                          message: `« ${room.name} » et ses musiques disparaissent.`,
+                          run: () => deleteRoom(room._id)
+                        })}
+                        className="btn btn-danger"
+                        style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+                      >
+                        <Icon name="trash" bare />
+                      </button>
+                    )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
         {/* Section d'édition avec système de cartes */}
-        {selectedRoom && rooms.find(r => r._id === selectedRoom) && (
+        {selectedRoom && rooms.find(r => r._id === selectedRoom) && canEditRoom(rooms.find(r => r._id === selectedRoom)) && (
           <div style={{ marginBottom: '30px' }}>
             <h3 style={{ textAlign: 'center', color: '#ff2347', marginBottom: '25px' }}>
               <Icon name="pencil" tone="mark" />Modification de la salle
@@ -605,7 +794,11 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
                             />
                             
                             <button
-                              onClick={() => removeMusicLink(room._id, index)}
+                              onClick={() => setConfirm({
+                                title: 'Retirer cette musique ?',
+                                message: 'Elle sort de la salle. Il reste à sauvegarder pour que ce soit définitif.',
+                                run: () => removeMusicLink(room._id, index)
+                              })}
                               className="btn btn-danger"
                               style={{ padding: '8px 12px', fontSize: '0.8rem', width: '100%' }}
                             >
@@ -769,6 +962,19 @@ const AdminPanel = ({ onBack, onRoomUpdate }) => {
           <div className="success" style={{ textAlign: 'center' }}>
             <Icon name="check" />{success}
           </div>
+        )}
+        {confirm && (
+          <ConfirmPopup
+            title={confirm.title}
+            message={confirm.message}
+            confirmLabel={confirm.confirmLabel}
+            onCancel={() => setConfirm(null)}
+            onConfirm={() => {
+              const run = confirm.run;
+              setConfirm(null);
+              run();
+            }}
+          />
         )}
       </div>
     </div>

@@ -2525,4 +2525,50 @@ textarea.input {
   margin: 8px 0;
 }
 
+.confirm-pop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(7, 7, 13, 0.82);
+}
+
+.confirm-card {
+  width: min(440px, 100%);
+  background: #12121a;
+  border: 3px solid #111318;
+  box-shadow: 6px 6px 0 #ff2347;
+  border-radius: 8px;
+  padding: 22px 22px 8px;
+}
+
+.confirm-card h3 {
+  font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #ffd000;
+  text-shadow: 2px 2px 0 #111318, 3px 3px 0 #1f6dff;
+  margin-bottom: 12px;
+}
+
+.confirm-card p {
+  color: #f4f6ff;
+  line-height: 1.45;
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.confirm-actions .btn {
+  margin: 12px 0;
+}
+
 

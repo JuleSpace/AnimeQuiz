@@ -7,6 +7,7 @@ const path = require('path');
 const axios = require('axios');
 const multer = require('multer');
 const { attachQuiz } = require('./quiz');
+const { attachAdmins, ensureSuperadmin, requireAdmin, requireSuper, canEditQuiz } = require('./admins');
 require('dotenv').config();
 
 const app = express();
@@ -34,6 +35,10 @@ console.log('🔗 Tentative de connexion MongoDB:', mongoUri.replace(/\/\/.*@/, 
 mongoose.connect(mongoUri)
 .then(() => {
   console.log('✅ Connexion MongoDB réussie');
+  return ensureSuperadmin();
+})
+.then(() => {
+  console.log('✅ Superadmin prêt');
 })
 .catch((error) => {
   console.error('❌ Erreur connexion MongoDB:', error.message);
@@ -50,6 +55,7 @@ const RoomSchema = new mongoose.Schema({
     answer: String
   }],
   isActive: { type: Boolean, default: false },
+  owner: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -106,10 +112,15 @@ app.get('/api/rooms', async (req, res) => {
   }
 });
 
-app.post('/api/rooms', async (req, res) => {
+app.post('/api/rooms', requireAdmin, async (req, res) => {
   try {
     const { name, description, musicLinks } = req.body;
-    const room = new Room({ name, description, musicLinks });
+    const room = new Room({
+      name,
+      description,
+      musicLinks,
+      owner: req.admin.username
+    });
     await room.save();
     res.json(room);
   } catch (error) {
@@ -117,15 +128,50 @@ app.post('/api/rooms', async (req, res) => {
   }
 });
 
-app.put('/api/rooms/:id', async (req, res) => {
+app.put('/api/rooms/:id/owner', requireSuper, async (req, res) => {
   try {
+    const room = await Room.findById(req.params.id);
+    if (!room) {
+      res.status(404).json({ error: 'Salle introuvable' });
+      return;
+    }
+    const owner = String(req.body.owner || '').trim().replace(/\s+/g, ' ');
+    if (owner) {
+      const Admin = mongoose.model('Admin');
+      const admin = await Admin.findOne({ usernameKey: owner.toLowerCase() });
+      if (!admin) {
+        res.status(400).json({ error: 'Cet admin n\'existe pas' });
+        return;
+      }
+      room.owner = admin.username;
+    } else {
+      room.owner = '';
+    }
+    await room.save();
+    res.json({ _id: room._id, owner: room.owner });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/rooms/:id', requireAdmin, async (req, res) => {
+  try {
+    const existing = await Room.findById(req.params.id);
+    if (!existing) {
+      res.status(404).json({ error: 'Salle introuvable' });
+      return;
+    }
+    if (!canEditQuiz(req.admin, existing)) {
+      res.status(403).json({ error: 'Cette salle est attribuée à quelqu\'un d\'autre' });
+      return;
+    }
     const { musicLinks, name, description } = req.body;
     const updates = {};
-    
+
     if (musicLinks !== undefined) updates.musicLinks = musicLinks;
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
-    
+
     const room = await Room.findByIdAndUpdate(req.params.id, updates, { new: true });
     res.json(room);
   } catch (error) {
@@ -133,9 +179,18 @@ app.put('/api/rooms/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/rooms/:id', async (req, res) => {
+app.delete('/api/rooms/:id', requireAdmin, async (req, res) => {
   try {
-    await Room.findByIdAndDelete(req.params.id);
+    const room = await Room.findById(req.params.id);
+    if (!room) {
+      res.status(404).json({ error: 'Salle introuvable' });
+      return;
+    }
+    if (!canEditQuiz(req.admin, room)) {
+      res.status(403).json({ error: 'Cette salle est attribuée à quelqu\'un d\'autre' });
+      return;
+    }
+    await room.deleteOne();
     res.json({ message: 'Salle supprimée' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -331,7 +386,7 @@ function clipBucket() {
   return new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'clips' });
 }
 
-app.post('/api/clips', (req, res) => {
+app.post('/api/clips', requireAdmin, (req, res) => {
   clipUpload.single('clip')(req, res, (error) => {
     if (error) {
       const tooBig = error.code === 'LIMIT_FILE_SIZE';
@@ -415,6 +470,7 @@ app.get('/api/clips/:id', async (req, res) => {
   bucket.openDownloadStream(id, { start, end: end + 1 }).pipe(res);
 });
 
+attachAdmins(app);
 attachQuiz(app, io);
 
 // Route de test pour vérifier que l'app fonctionne
