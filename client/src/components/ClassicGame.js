@@ -672,7 +672,7 @@ const ClassicGame = ({
       {gameData.tableShow && (
         <div className="melange-burst" role="status">
           <div className="melange-burst-card">
-            <JokerCard cardId={gameData.tableShow.card} size="full" />
+            <JokerCard cardId={gameData.tableShow.card} size="full" slam />
           </div>
           <p className="melange-burst-caption">
             {gameData.tableShow.card === 'pot'

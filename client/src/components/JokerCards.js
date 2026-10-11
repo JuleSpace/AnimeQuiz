@@ -105,6 +105,59 @@ const CARD_ART = {
   bouclier: '/bouclier.png'
 };
 
+const TABLE_DROP = new Set(['melange', 'pot', 'renversement']);
+
+// Un fichier par carte, ou `drop` pour le son commun.
+// Ex. double: '/sounds/jokers/double.mp3'
+const DROP_SOUNDS = {
+  silence: '/sounds/jokers/silence.mp3'
+};
+
+function soundSrc(cardId) {
+  return DROP_SOUNDS[cardId] || DROP_SOUNDS.drop || '';
+}
+
+// Démarre le fichier pendant le clic, puis le met en pause.
+// Le play() du reveal arrive trop tard pour être accepté tout seul.
+export function armDropSound(cardId) {
+  const src = soundSrc(cardId);
+  if (!src) return null;
+  const audio = new Audio(src);
+  audio.preload = 'auto';
+  audio.volume = 0;
+  const pending = audio.play();
+  if (pending && pending.then) {
+    pending.then(() => {
+      if (audio.dataset.live === '1') {
+        audio.volume = 0.85;
+        return;
+      }
+      audio.pause();
+      audio.currentTime = 0;
+    }).catch(() => {});
+  }
+  return audio;
+}
+
+export function playDropSound(cardId, armed) {
+  if (armed) {
+    armed.dataset.live = '1';
+    armed.volume = 0.85;
+    try {
+      armed.currentTime = 0;
+    } catch {
+      /* le fichier n'est pas encore cherchable */
+    }
+    armed.play().catch(() => {});
+    return;
+  }
+  const src = soundSrc(cardId);
+  if (!src) return;
+  const audio = new Audio(src);
+  audio.volume = 0.85;
+  audio.play().catch(() => {});
+}
+
 const Mark = ({ cardId }) => {
   const src = CARD_ART[cardId];
   if (!src) return null;
@@ -112,20 +165,71 @@ const Mark = ({ cardId }) => {
   return <img className={fit ? 'tcg-photo tcg-photo-fit' : 'tcg-photo'} src={src} alt="" />;
 };
 
-export const JokerCard = ({ cardId, used = false, size = 'full' }) => {
+export const JokerCard = ({ cardId, used = false, size = 'full', slam = false, reveal = false }) => {
   const card = JOKERS[cardId];
+  const played = useRef(used);
+  const [dropping, setDropping] = useState(false);
+  const [impact, setImpact] = useState(false);
+
+  useEffect(() => {
+    if (!card) return undefined;
+    const justPlayed = used && !played.current;
+    played.current = used;
+    if (!slam && !justPlayed) return undefined;
+    setDropping(true);
+    const onTable = slam || size !== 'hand' || TABLE_DROP.has(cardId);
+    if (slam || (size === 'hand' && !onTable)) playDropSound(cardId);
+    const timer = setTimeout(() => setDropping(false), slam ? 1400 : 1200);
+    return () => clearTimeout(timer);
+  }, [used, slam, cardId, size, card]);
+
+  useEffect(() => {
+    if (!reveal) return undefined;
+    setImpact(true);
+    const timer = setTimeout(() => setImpact(false), 1300);
+    return () => clearTimeout(timer);
+  }, [reveal]);
+
   if (!card) return null;
+
+  const tilt = (event) => {
+    const node = event.currentTarget;
+    const rect = node.getBoundingClientRect();
+    const px = (event.clientX - rect.left) / rect.width;
+    const py = (event.clientY - rect.top) / rect.height;
+    node.style.setProperty('--mx', `${px * 100}%`);
+    node.style.setProperty('--my', `${py * 100}%`);
+    node.style.setProperty('--ry', `${(px - 0.5) * 14}deg`);
+    node.style.setProperty('--rx', `${(0.5 - py) * 12}deg`);
+  };
+
+  const untilt = (event) => {
+    const node = event.currentTarget;
+    node.style.removeProperty('--rx');
+    node.style.removeProperty('--ry');
+  };
 
   return (
     <article
-      className={`tcg-card tcg-${size} ${used ? 'is-used' : ''}`}
+      className={`tcg-card tcg-${size} ${used ? 'is-used' : ''} ${dropping && slam ? 'is-slam' : ''} ${dropping && !slam ? 'is-drop' : ''} ${impact ? 'is-reveal' : ''}`}
+      data-card={cardId}
       style={{ '--tcg-accent': card.accent, '--tcg-mate': card.mate }}
+      onMouseMove={tilt}
+      onMouseLeave={untilt}
     >
-      <div className="tcg-name">{card.name}</div>
-      <div className="tcg-art">
-        <Mark cardId={cardId} />
+      <div className="tcg-float">
+        <div className="tcg-name"><span>{card.name}</span></div>
+        <div className="tcg-art">
+          <Mark cardId={cardId} />
+          <span className="tcg-sheen" />
+          <span className="tcg-sweep" />
+          <span className={`tcg-fx tcg-fx-${cardId}`} />
+        </div>
+        {size === 'full' && <p className="tcg-rule">{card.rule}</p>}
       </div>
-      {size === 'full' && <p className="tcg-rule">{card.rule}</p>}
+      <span className="tcg-flash" />
+      <span className="tcg-burst" />
+      <span className="tcg-shock" />
       {used && <div className="tcg-stamp">Jouée</div>}
     </article>
   );
@@ -140,15 +244,24 @@ const CardBack = () => (
 export const BoosterOpening = ({ cardId }) => {
   const [stage, setStage] = useState('sealed');
   const timers = useRef([]);
+  const armedSound = useRef(null);
 
   useEffect(() => () => {
     timers.current.forEach(clearTimeout);
   }, []);
 
+  useEffect(() => {
+    if (stage !== 'flip') return undefined;
+    playDropSound(cardId, armedSound.current);
+    return undefined;
+  }, [stage, cardId]);
+
   const openPack = () => {
     if (stage !== 'sealed' || !cardId) return;
+    armedSound.current = armDropSound(cardId);
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduce) {
+      playDropSound(cardId, armedSound.current);
       setStage('show');
       return;
     }
@@ -177,7 +290,7 @@ export const BoosterOpening = ({ cardId }) => {
             <div className="rising-inner">
               <CardBack />
               <div className="rising-front">
-                {cardId && <JokerCard cardId={cardId} size="full" />}
+                {cardId && <JokerCard cardId={cardId} size="full" reveal={stage === 'show'} />}
               </div>
             </div>
           </div>

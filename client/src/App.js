@@ -6,6 +6,7 @@ import Game from './components/Game';
 import ClassicGame from './components/ClassicGame';
 import AdminPanel from './components/AdminPanel';
 import Icon from './components/ArcadeIcon';
+import { playDropSound } from './components/JokerCards';
 import { readAdminSession, storeAdminSession, clearAdminSession } from './utils/adminSession';
 import './index.css';
 
@@ -302,6 +303,7 @@ function App() {
     });
 
     socket.on('quiz-silenced', (data) => {
+      playDropSound('silence');
       setGameData((prev) => (
         prev && prev.questionIndex === data.questionIndex ? { ...prev, silenced: true } : prev
       ));

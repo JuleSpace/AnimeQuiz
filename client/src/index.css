@@ -1683,7 +1683,22 @@ textarea.input {
 }
 
 .is-show .rising-front .tcg-card {
-  animation: card-glint 0.7s ease;
+  animation: tcg-foil 8s linear infinite, tcg-aura 3.4s ease-in-out infinite, tcg-hover 5s ease-in-out infinite;
+}
+
+.is-show .pack-stage::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  width: 240px;
+  height: 240px;
+  margin: -120px 0 0 -120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent 36%, rgba(255, 255, 255, 0.95) 48%, rgba(255, 214, 110, 0.55) 58%, transparent 72%);
+  animation: pack-bloom 0.9s ease-out both;
+  pointer-events: none;
+  z-index: 4;
 }
 
 .booster-caption {
@@ -1693,18 +1708,63 @@ textarea.input {
   max-width: 420px;
 }
 
+@property --foil-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
 .tcg-card {
   --tcg-accent: #ff2347;
   --tcg-mate: #1f6dff;
   position: relative;
   width: 210px;
-  padding: 7px;
-  border-radius: 4px;
-  background: #07070d;
-  border: 3px solid var(--tcg-accent);
-  box-shadow: 6px 6px 0 var(--tcg-mate);
+  padding: 3px;
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f3d37a, #fff6d2);
+  background: conic-gradient(
+    from var(--foil-angle),
+    #4a2e08,
+    #fff8d4,
+    #ff2d55,
+    #ffe14a,
+    #3d9bff,
+    #fff,
+    #ff6ec7,
+    #f0b429,
+    #4a2e08
+  );
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.55),
+    0 0 22px rgba(255, 210, 90, 0.5);
   text-align: left;
   color: #f4f6ff;
+  animation: tcg-foil 9s linear infinite, tcg-aura 3.6s ease-in-out infinite;
+  isolation: isolate;
+  perspective: 900px;
+}
+
+.tcg-card.tcg-full {
+  padding: 8px;
+  animation: tcg-foil 8s linear infinite, tcg-aura 3.4s ease-in-out infinite, tcg-hover 5s ease-in-out infinite;
+}
+
+.tcg-float {
+  position: relative;
+  border-radius: 12px;
+  padding: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 236, 190, 0.16), transparent 18%),
+    linear-gradient(180deg, #24180c, #0c0b10 46%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 214, 0.45),
+    inset 0 0 0 1px rgba(255, 214, 140, 0.28),
+    inset 0 -10px 16px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 0.16s ease;
 }
 
 .tcg-card.tcg-hand {
@@ -1718,20 +1778,40 @@ textarea.input {
 }
 
 .tcg-name {
-  background: var(--tcg-accent);
-  color: #111318;
+  position: relative;
+  background: linear-gradient(100deg, #6e5316, #ffe7a4 42%, #fff 50%, #e2b44a 78%, #8a6a22);
+  color: #2a1c08;
   font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif;
   font-weight: 400;
   font-style: italic;
   font-size: 0.95rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   line-height: 1.05;
-  padding: 5px 8px 6px;
-  border: 2px solid #111318;
-  margin-bottom: 5px;
-  transform: skewX(-8deg);
-  box-shadow: 3px 3px 0 var(--tcg-mate);
+  padding: 6px 10px 7px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 248, 220, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -3px 0 rgba(92, 58, 12, 0.55),
+    0 2px 0 #3a2508,
+    0 0 14px rgba(255, 210, 90, 0.4);
+}
+
+.tcg-name::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 32%, rgba(255, 255, 255, 0.9) 50%, transparent 68%);
+  transform: translateX(-130%);
+  animation: tcg-name-glint 6.2s ease-in-out infinite;
+}
+
+.tcg-name span {
+  position: relative;
+  z-index: 1;
 }
 
 .tcg-hand .tcg-name,
@@ -1747,14 +1827,19 @@ textarea.input {
 .tcg-art {
   position: relative;
   height: 132px;
-  border: 3px solid #111318;
-  background:
-    repeating-linear-gradient(-16deg, transparent 0 16px, rgba(255, 255, 255, 0.07) 16px 17px),
-    #07070d;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 228, 170, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(70, 42, 8, 0.95),
+    inset 0 0 0 1px rgba(255, 248, 220, 0.45),
+    inset 0 0 0 5px rgba(18, 12, 6, 0.72),
+    inset 0 0 22px rgba(0, 0, 0, 0.4);
+  background: #07070d;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  container-type: size;
 }
 
 .tcg-art:has(.tcg-photo) {
@@ -1762,7 +1847,7 @@ textarea.input {
 }
 
 .tcg-art:has(.tcg-photo-fit) {
-  height: 184px;
+  height: 220px;
 }
 
 .tcg-photo {
@@ -1779,12 +1864,378 @@ textarea.input {
   object-position: center;
 }
 
-.tcg-hand .tcg-art {
-  height: 62px;
+.tcg-hand .tcg-art,
+.tcg-hand .tcg-art:has(.tcg-photo),
+.tcg-hand .tcg-art:has(.tcg-photo-fit) {
+  height: 96px;
 }
 
-.tcg-mini .tcg-art {
-  height: 52px;
+.tcg-mini .tcg-art,
+.tcg-mini .tcg-art:has(.tcg-photo),
+.tcg-mini .tcg-art:has(.tcg-photo-fit) {
+  height: 72px;
+}
+
+.tcg-art::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  z-index: 4;
+  pointer-events: none;
+  background:
+    linear-gradient(#fff6d4, #fff6d4) left top / 18px 2px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) left top / 2px 18px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) right top / 18px 2px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) right top / 2px 18px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) left bottom / 18px 2px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) left bottom / 2px 18px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) right bottom / 18px 2px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) right bottom / 2px 18px no-repeat;
+}
+
+.tcg-hand .tcg-art::before,
+.tcg-mini .tcg-art::before {
+  inset: 4px;
+  background:
+    linear-gradient(#fff6d4, #fff6d4) left top / 9px 1px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) left top / 1px 9px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) right top / 9px 1px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) right top / 1px 9px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) left bottom / 9px 1px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) left bottom / 1px 9px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) right bottom / 9px 1px no-repeat,
+    linear-gradient(#fff6d4, #fff6d4) right bottom / 1px 9px no-repeat;
+}
+
+.tcg-sheen,
+.tcg-sweep,
+.tcg-fx,
+.tcg-flash,
+.tcg-burst,
+.tcg-shock {
+  pointer-events: none;
+}
+
+.tcg-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 30%), rgba(255, 255, 255, 0.45), transparent 46%);
+  mix-blend-mode: screen;
+  opacity: 0.8;
+}
+
+.tcg-sweep {
+  position: absolute;
+  inset: -30%;
+  z-index: 3;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.15) 46%, rgba(255, 255, 255, 0.85) 50%, rgba(255, 220, 140, 0.35) 54%, transparent 62%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: tcg-sweep 5.6s ease-in-out infinite;
+}
+
+.tcg-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.95), transparent 46%),
+    linear-gradient(115deg, transparent 20%, rgba(255, 255, 255, 0.55) 48%, transparent 76%);
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+.tcg-burst {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: 18px;
+  border: 3px solid #fff;
+  box-shadow: 0 0 18px #fff, 0 0 36px var(--tcg-accent), 0 0 64px var(--tcg-mate);
+  opacity: 0;
+}
+
+.tcg-burst::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid rgba(255, 230, 160, 0.95);
+  box-shadow: 0 0 28px var(--tcg-accent);
+  opacity: 0;
+}
+
+.tcg-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.tcg-fx-double::before,
+.tcg-fx-double::after {
+  content: '×2';
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif;
+  font-size: clamp(1.7rem, 40cqh, 3.4rem);
+  color: #fff;
+  background: rgba(10, 6, 12, 0.62);
+  border: 2px solid #fff;
+  border-radius: 8px;
+  padding: 0.02em 0.16em 0.08em;
+  text-shadow: 0 0 12px #ff2347, 0 0 28px #ff2347;
+  box-shadow: 0 0 18px rgba(255, 35, 71, 0.85);
+  opacity: 0;
+}
+
+.tcg-fx-double::before { animation: fx-double-a 6.4s ease-in-out infinite; }
+.tcg-fx-double::after { animation: fx-double-b 6.4s ease-in-out infinite; }
+
+.tcg-fx-filet {
+  background:
+    linear-gradient(rgba(170, 215, 255, 0.9) 2px, transparent 2px) 0 0 / 100% 14px,
+    linear-gradient(90deg, rgba(170, 215, 255, 0.9) 2px, transparent 2px) 0 0 / 14px 100%;
+  opacity: 0;
+  filter: drop-shadow(0 0 6px rgba(80, 160, 255, 0.9));
+  animation: fx-net 6.4s ease-in-out infinite;
+}
+
+.tcg-fx-seconde::before {
+  content: '';
+  position: absolute;
+  inset: 12% 10%;
+  border: 3px solid #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.85), inset 0 0 18px rgba(255, 255, 255, 0.2);
+  opacity: 0;
+  animation: fx-second 6.4s ease-in-out infinite;
+}
+
+.tcg-fx-copie::before {
+  content: '';
+  position: absolute;
+  inset: 14% 12%;
+  border: 3px solid #d7ecff;
+  border-radius: 6px;
+  box-shadow: 0 0 16px rgba(120, 185, 255, 0.95), inset 0 0 0 6px rgba(120, 185, 255, 0.18);
+  opacity: 0;
+  animation: fx-copy-a 6.4s ease-in-out infinite;
+}
+
+.tcg-fx-indice::before {
+  content: '✦';
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  color: #fff8d0;
+  font-size: clamp(2rem, 42cqh, 3.6rem);
+  text-shadow: 0 0 8px #fff, 0 0 22px #ffe14a, 0 2px 0 #3a2508;
+  opacity: 0;
+  animation: fx-star 6.4s ease-in-out infinite;
+}
+
+.tcg-fx-silence::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46%;
+  height: 54%;
+  border: 4px solid #fff;
+  box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.18), 0 0 22px rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  opacity: 0;
+  animation: fx-mute 6.4s ease-out infinite;
+}
+
+.tcg-fx-vol::before {
+  content: '';
+  position: absolute;
+  top: 40%;
+  left: -30%;
+  width: 60%;
+  height: 22%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+  filter: drop-shadow(0 0 8px #fff);
+  opacity: 0;
+  animation: fx-steal 6.4s ease-in infinite;
+}
+
+.tcg-fx-melange {
+  background: linear-gradient(100deg, transparent 28%, rgba(255, 255, 255, 0.82) 50%, transparent 72%);
+  opacity: 0;
+  animation: fx-shuffle 6.4s ease-in-out infinite;
+}
+
+.tcg-fx-pot::before {
+  content: '';
+  position: absolute;
+  left: 38%;
+  bottom: 8%;
+  width: 22%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid #ffe9a8;
+  box-shadow: 0 0 14px rgba(255, 210, 90, 0.95), inset 0 0 10px rgba(255, 226, 140, 0.45);
+  opacity: 0;
+  animation: fx-bubble 6.4s ease-in infinite;
+}
+
+.tcg-fx-renversement::before {
+  content: '↻';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(2rem, 48cqh, 4rem);
+  color: #fff;
+  text-shadow: 0 0 16px #7eb6ff, 0 0 32px #1f6dff;
+  opacity: 0;
+  animation: fx-spin 6.4s ease-in-out infinite;
+}
+
+.tcg-fx-toutourien {
+  background: radial-gradient(circle, rgba(255, 236, 140, 0.85), rgba(255, 35, 71, 0.25) 42%, transparent 68%);
+  opacity: 0;
+  animation: fx-allin 6.4s ease-in-out infinite;
+}
+
+.tcg-fx-gambling::before {
+  content: '7';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 36%;
+  text-align: center;
+  font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif;
+  font-size: clamp(1.6rem, 36cqh, 3.2rem);
+  color: #ffe14a;
+  text-shadow: 0 0 14px #ffe14a, 0 0 28px #ff2347, 0 3px 0 #3a2508;
+  opacity: 0;
+  animation: fx-slots 6.4s ease-in-out infinite;
+}
+
+.tcg-fx-rumeur::before {
+  content: '…';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 34%;
+  text-align: center;
+  font-size: clamp(2.2rem, 46cqh, 4rem);
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 12px #fff, 0 3px 0 #1a140c;
+  color: #fff;
+  opacity: 0;
+  animation: fx-whisper 6.4s ease-in-out infinite;
+}
+
+.tcg-fx-bouclier::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46%;
+  height: 58%;
+  background: linear-gradient(180deg, rgba(190, 225, 255, 0.72), rgba(40, 110, 255, 0.28));
+  box-shadow: 0 0 18px rgba(120, 185, 255, 0.8);
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  opacity: 0;
+  animation: fx-shield 6.4s ease-in-out infinite;
+}
+
+.tcg-card.is-drop .tcg-fx-double::before,
+.tcg-card.is-slam .tcg-fx-double::before,
+.tcg-card.is-reveal .tcg-fx-double::before { animation: fx-double-a-play 1.05s ease-out 1 both; }
+.tcg-card.is-drop .tcg-fx-double::after,
+.tcg-card.is-slam .tcg-fx-double::after,
+.tcg-card.is-reveal .tcg-fx-double::after { animation: fx-double-b-play 1.05s ease-out 1 both; }
+.tcg-card.is-drop .tcg-fx-filet,
+.tcg-card.is-slam .tcg-fx-filet,
+.tcg-card.is-reveal .tcg-fx-filet { animation: fx-net-play 1.05s ease-out 1 both; }
+.tcg-card.is-drop .tcg-fx-seconde::before,
+.tcg-card.is-slam .tcg-fx-seconde::before,
+.tcg-card.is-reveal .tcg-fx-seconde::before { animation: fx-second-play 1.05s ease-out 1 both; }
+.tcg-card.is-drop .tcg-fx-copie::before,
+.tcg-card.is-slam .tcg-fx-copie::before,
+.tcg-card.is-reveal .tcg-fx-copie::before { animation: fx-copy-play 1.05s ease-out 1 both; }
+.tcg-card.is-drop .tcg-fx-indice::before,
+.tcg-card.is-slam .tcg-fx-indice::before,
+.tcg-card.is-reveal .tcg-fx-indice::before { animation: fx-star-play 1.05s ease-out 1 both; }
+.tcg-card.is-drop .tcg-fx-silence::before,
+.tcg-card.is-slam .tcg-fx-silence::before,
+.tcg-card.is-reveal .tcg-fx-silence::before { animation: fx-mute-play 1.05s ease-out 1 both; }
+.tcg-card.is-drop .tcg-fx-vol::before,
+.tcg-card.is-slam .tcg-fx-vol::before,
+.tcg-card.is-reveal .tcg-fx-vol::before { animation: fx-steal-play 0.85s ease-in 1 both; }
+.tcg-card.is-drop .tcg-fx-melange,
+.tcg-card.is-slam .tcg-fx-melange,
+.tcg-card.is-reveal .tcg-fx-melange { animation: fx-shuffle-play 0.9s linear 1 both; }
+.tcg-card.is-drop .tcg-fx-pot::before,
+.tcg-card.is-slam .tcg-fx-pot::before,
+.tcg-card.is-reveal .tcg-fx-pot::before { animation: fx-bubble-play 1.05s ease-in 1 both; }
+.tcg-card.is-drop .tcg-fx-renversement::before,
+.tcg-card.is-slam .tcg-fx-renversement::before,
+.tcg-card.is-reveal .tcg-fx-renversement::before { animation: fx-spin-play 1.05s ease-in-out 1 both; }
+.tcg-card.is-drop .tcg-fx-toutourien,
+.tcg-card.is-slam .tcg-fx-toutourien,
+.tcg-card.is-reveal .tcg-fx-toutourien { animation: fx-allin-play 1.05s ease-in-out 1 both; }
+.tcg-card.is-drop .tcg-fx-gambling::before,
+.tcg-card.is-slam .tcg-fx-gambling::before,
+.tcg-card.is-reveal .tcg-fx-gambling::before { animation: fx-slots-play 0.9s ease-out 1 both; }
+.tcg-card.is-drop .tcg-fx-rumeur::before,
+.tcg-card.is-slam .tcg-fx-rumeur::before,
+.tcg-card.is-reveal .tcg-fx-rumeur::before { animation: fx-whisper-play 1.05s ease-out 1 both; }
+.tcg-card.is-drop .tcg-fx-bouclier::before,
+.tcg-card.is-slam .tcg-fx-bouclier::before,
+.tcg-card.is-reveal .tcg-fx-bouclier::before { animation: fx-shield-play 1.05s ease-in-out 1 both; }
+
+.tcg-card.is-drop .tcg-flash,
+.tcg-card.is-slam .tcg-flash,
+.tcg-card.is-reveal .tcg-flash {
+  animation: tcg-flash 0.85s ease-out both;
+}
+
+.tcg-card.is-drop .tcg-burst,
+.tcg-card.is-slam .tcg-burst,
+.tcg-card.is-reveal .tcg-burst {
+  animation: tcg-burst 0.95s cubic-bezier(0.12, 0.7, 0.2, 1) both;
+}
+
+.tcg-card.is-drop .tcg-burst::after,
+.tcg-card.is-slam .tcg-burst::after,
+.tcg-card.is-reveal .tcg-burst::after {
+  animation: tcg-burst 1.05s cubic-bezier(0.12, 0.7, 0.2, 1) 0.12s both;
+}
+
+.tcg-card.is-drop .tcg-sweep,
+.tcg-card.is-slam .tcg-sweep,
+.tcg-card.is-reveal .tcg-sweep {
+  animation: tcg-sweep-hit 0.72s ease-out both;
+}
+
+.tcg-card.is-drop .tcg-art,
+.tcg-card.is-slam .tcg-art,
+.tcg-card.is-reveal .tcg-art {
+  animation: tcg-art-hit 0.9s ease-out both;
+}
+
+.tcg-shock {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 72%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 22px #fff, 0 0 40px var(--tcg-accent);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.35);
+  z-index: 6;
 }
 
 .tcg-art svg {
@@ -1794,28 +2245,31 @@ textarea.input {
 }
 
 .tcg-rule {
-  margin: 5px 0 0;
-  padding: 6px;
-  background: #07070d;
+  margin: 6px 0 0;
+  padding: 7px 8px;
+  background: rgba(255, 255, 255, 0.04);
   color: #f4f6ff;
-  border: 2px solid var(--tcg-mate);
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--tcg-mate) 70%, white);
   font-size: 0.75rem;
-  line-height: 1.3;
+  line-height: 1.35;
   font-weight: 700;
 }
 
-.tcg-card.is-used {
-  opacity: 0.72;
+.tcg-card.is-used:not(.is-drop):not(.is-slam):not(.is-reveal) .tcg-float {
+  filter: saturate(0.72) brightness(0.92);
 }
 
 .tcg-stamp {
   position: absolute;
-  top: 46px;
+  top: 46%;
   left: 50%;
-  transform: translateX(-50%) rotate(-8deg);
+  z-index: 4;
+  transform: translate(-50%, -50%) rotate(-8deg);
   background: #ff2347;
-  box-shadow: 3px 3px 0 #1f6dff;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.4), 4px 4px 0 #1f6dff;
   color: #111318;
+  border-radius: 8px;
   border: 2px solid #111318;
   font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif;
   font-weight: 400;
@@ -1823,7 +2277,7 @@ textarea.input {
   font-size: 0.85rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 2px 8px;
+  padding: 3px 10px;
 }
 
 .tcg-hand .tcg-stamp,
@@ -1857,7 +2311,7 @@ textarea.input {
 
 .host-joker-slot {
   flex: 0 0 auto;
-  width: 108px;
+  width: 120px;
   text-align: center;
 }
 
@@ -1899,6 +2353,7 @@ textarea.input {
   align-items: center;
   justify-content: center;
   margin: 0;
+  overflow: visible;
 }
 
 .player-joker-body {
@@ -1978,17 +2433,311 @@ textarea.input {
   75% { transform: translateX(-50%) rotate(3deg); }
 }
 
+@keyframes pack-bloom {
+  0% { transform: scale(0.15); opacity: 1; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
 @keyframes card-glint {
   0% { filter: brightness(1); }
   40% { filter: brightness(1.25); }
   100% { filter: brightness(1); }
 }
 
+@keyframes tcg-foil {
+  to { --foil-angle: 360deg; }
+}
+
+@keyframes tcg-foil-burst {
+  to { --foil-angle: 720deg; }
+}
+
+@keyframes tcg-aura {
+  0%, 100% {
+    box-shadow:
+      0 16px 34px rgba(0, 0, 0, 0.55),
+      0 0 18px rgba(255, 210, 90, 0.4);
+  }
+  50% {
+    box-shadow:
+      0 24px 52px rgba(0, 0, 0, 0.62),
+      0 0 34px rgba(255, 220, 130, 0.95),
+      0 0 78px color-mix(in srgb, var(--tcg-accent) 62%, transparent);
+  }
+}
+
+@keyframes tcg-hover {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes tcg-reveal {
+  0% { transform: scale(0.72) rotate(-8deg); filter: brightness(2.8) saturate(1.8); }
+  38% { transform: scale(1.18) rotate(3deg); filter: brightness(1.7) saturate(1.45); }
+  68% { transform: scale(0.96) rotate(-1deg); filter: brightness(1.25); }
+  100% { transform: none; filter: none; }
+}
+
+@keyframes tcg-sweep {
+  0%, 62% { transform: translateX(-55%) rotate(8deg); opacity: 0; }
+  74% { opacity: 1; }
+  88%, 100% { transform: translateX(55%) rotate(8deg); opacity: 0; }
+}
+
+@keyframes tcg-sweep-hit {
+  0% { transform: translateX(-70%) rotate(8deg); opacity: 0; }
+  35% { opacity: 1; }
+  100% { transform: translateX(70%) rotate(8deg); opacity: 0; }
+}
+
+@keyframes tcg-flash {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes tcg-burst {
+  0% { opacity: 1; transform: scale(0.72); }
+  100% { opacity: 0; transform: scale(1.75); }
+}
+
+@keyframes tcg-art-hit {
+  0% { filter: brightness(1.7) saturate(1.45) contrast(1.08); }
+  100% { filter: none; }
+}
+
+@keyframes tcg-name-glint {
+  0%, 68% { transform: translateX(-130%); }
+  86%, 100% { transform: translateX(130%); }
+}
+
+@keyframes tcg-sheen {
+  0%, 18% { transform: translateX(-78%) rotate(8deg); }
+  62%, 100% { transform: translateX(78%) rotate(8deg); }
+}
+
+@keyframes tcg-spark {
+  0%, 100% { opacity: 0.15; transform: scale(0.8); }
+  45% { opacity: 1; transform: scale(1.25); }
+}
+
+@keyframes tcg-shock {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(0.4); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.85); }
+}
+
+@keyframes tcg-hand-drop {
+  0% { transform: translateY(-64px) rotate(-14deg) scale(1.42); filter: brightness(2.3) saturate(1.5); }
+  46% { transform: translateY(12px) rotate(4deg) scale(0.9); filter: brightness(1.15); }
+  72% { transform: translateY(-16px) rotate(-2deg) scale(1.1); filter: brightness(1.55); }
+  100% { transform: none; filter: none; }
+}
+
+@keyframes tcg-mini-drop {
+  0% { transform: translateY(-28px) scale(1.28); filter: brightness(1.8); }
+  55% { transform: translateY(6px) scale(0.94); filter: brightness(1.1); }
+  100% { transform: none; filter: none; }
+}
+
+@keyframes tcg-table-drop {
+  0% { transform: translateY(-56vh) rotate(-18deg) scale(0.6); opacity: 0; filter: brightness(2.4); }
+  58% { transform: translateY(16px) rotate(4deg) scale(1.12); opacity: 1; filter: brightness(1.5); }
+  78% { transform: translateY(-12px) rotate(-2deg) scale(0.97); filter: brightness(1.2); }
+  100% { transform: none; opacity: 1; filter: none; }
+}
+
+@keyframes fx-double-a {
+  0%, 48%, 100% { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+  58%, 80% { transform: translate(-78%, -50%) scale(1); opacity: 1; }
+  92% { transform: translate(-96%, -50%) scale(0.9); opacity: 0; }
+}
+@keyframes fx-double-a-play {
+  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+  32% { transform: translate(-88%, -50%) scale(1.7); opacity: 1; }
+  100% { transform: translate(-130%, -50%) scale(0.85); opacity: 0; }
+}
+@keyframes fx-double-b {
+  0%, 48%, 100% { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+  58%, 80% { transform: translate(-18%, -50%) scale(1); opacity: 1; }
+  92% { transform: translate(4%, -50%) scale(0.9); opacity: 0; }
+}
+@keyframes fx-double-b-play {
+  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+  32% { transform: translate(-8%, -50%) scale(1.7); opacity: 1; }
+  100% { transform: translate(18%, -50%) scale(0.85); opacity: 0; }
+}
+@keyframes fx-net {
+  0%, 50%, 100% { opacity: 0; }
+  60%, 82% { opacity: 1; }
+}
+@keyframes fx-net-play {
+  0% { opacity: 0; transform: scale(1.4); }
+  30% { opacity: 1; transform: scale(0.88); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+@keyframes fx-second {
+  0%, 50%, 100% { transform: translate(18%, 12%); opacity: 0; }
+  60%, 82% { transform: translate(0, 0); opacity: 1; }
+}
+@keyframes fx-second-play {
+  0% { transform: translate(36%, 22%) rotate(10deg) scale(1.15); opacity: 0; }
+  40% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translate(-10%, -8%) scale(0.92); opacity: 0; }
+}
+@keyframes fx-copy-a {
+  0%, 50%, 100% { transform: translate(-14%, 0); opacity: 0; }
+  60%, 82% { transform: translate(0, 0); opacity: 1; }
+}
+@keyframes fx-copy-play {
+  0% { transform: translate(-28%, 0) scale(1.08); opacity: 0; }
+  36% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(22%, 8%); opacity: 0; }
+}
+@keyframes fx-star {
+  0%, 50%, 100% { transform: translate(-50%, -50%) scale(0.45); opacity: 0; }
+  60%, 82% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+}
+@keyframes fx-star-play {
+  0% { transform: translate(-50%, -50%) scale(0.2) rotate(-20deg); opacity: 0; }
+  35% { transform: translate(-50%, -50%) scale(1.7) rotate(18deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.7) rotate(40deg); opacity: 0; }
+}
+@keyframes fx-mute {
+  0%, 48% { transform: translate(-50%, -50%) scale(0.72); opacity: 0; }
+  58%, 78% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.45); opacity: 0; }
+}
+@keyframes fx-mute-play {
+  0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(6); opacity: 0; }
+}
+@keyframes fx-steal {
+  0%, 48% { transform: translateX(-40%) rotate(-18deg); opacity: 0; }
+  58%, 70% { opacity: 1; }
+  88%, 100% { transform: translateX(110%) rotate(-18deg); opacity: 0; }
+}
+@keyframes fx-steal-play {
+  0% { transform: translateX(-40%) rotate(-18deg) scaleY(1.8); opacity: 0; }
+  22% { opacity: 1; }
+  100% { transform: translateX(190%) rotate(-18deg) scaleY(1.8); opacity: 0; }
+}
+@keyframes fx-shuffle {
+  0%, 48%, 100% { opacity: 0; transform: translateX(-36%); }
+  58%, 80% { opacity: 1; transform: translateX(0); }
+}
+@keyframes fx-shuffle-play {
+  0% { opacity: 0; transform: translateX(-60%); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(70%); }
+}
+@keyframes fx-bubble {
+  0%, 46% { transform: translateY(16px) scale(0.7); opacity: 0; }
+  56%, 74% { transform: translateY(-20%) scale(1); opacity: 1; }
+  100% { transform: translateY(-160%) scale(1.15); opacity: 0; }
+}
+@keyframes fx-bubble-play {
+  0% { transform: translateY(12px) scale(0.5); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-320%) scale(1.6); opacity: 0; }
+}
+@keyframes fx-spin {
+  0%, 48%, 100% { transform: rotate(0deg) scale(0.75); opacity: 0; }
+  58%, 82% { transform: rotate(160deg) scale(1); opacity: 1; }
+}
+@keyframes fx-spin-play {
+  0% { transform: rotate(0deg) scale(0.5); opacity: 0; }
+  45% { transform: rotate(200deg) scale(1.35); opacity: 1; }
+  100% { transform: rotate(420deg) scale(0.7); opacity: 0; }
+}
+@keyframes fx-allin {
+  0%, 48%, 100% { opacity: 0; transform: scale(0.75); }
+  58%, 82% { opacity: 0.95; transform: scale(1); }
+}
+@keyframes fx-allin-play {
+  0% { opacity: 0; transform: scale(0.4); }
+  28%, 62% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+@keyframes fx-slots {
+  0%, 48%, 100% { transform: translateY(40%); opacity: 0; }
+  58%, 82% { transform: translateY(0); opacity: 1; }
+}
+@keyframes fx-slots-play {
+  0% { transform: translateY(80%) scale(0.7); opacity: 0; }
+  40% { transform: translateY(0) scale(1.35); opacity: 1; }
+  100% { transform: translateY(-50%) scale(0.9); opacity: 0; }
+}
+@keyframes fx-whisper {
+  0%, 48% { transform: translateY(40%); opacity: 0; }
+  58%, 80% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-36%); opacity: 0; }
+}
+@keyframes fx-whisper-play {
+  0% { transform: translateY(90%) scale(0.8); opacity: 0; }
+  28% { opacity: 1; transform: translateY(10%) scale(1.2); }
+  100% { transform: translateY(-110%) scale(1); opacity: 0; }
+}
+@keyframes fx-shield {
+  0%, 48%, 100% { transform: translate(-50%, -50%) scale(0.72); opacity: 0; }
+  58%, 82% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+@keyframes fx-shield-play {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+  40% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.28); opacity: 0; }
+}
+
+.tcg-card[data-card='renversement'].is-slam .tcg-float,
+.tcg-card[data-card='renversement'].is-drop .tcg-float {
+  animation: fx-card-flip 0.85s ease both;
+}
+
+@keyframes fx-card-flip {
+  0% { transform: rotateX(0deg); }
+  48% { transform: rotateX(180deg); }
+  100% { transform: rotateX(360deg); }
+}
+
+.tcg-card.is-drop {
+  animation: tcg-foil-burst 1.05s linear 1, tcg-hand-drop 1.05s cubic-bezier(0.16, 0.9, 0.2, 1) both;
+}
+
+.tcg-card.tcg-mini.is-drop {
+  animation: tcg-foil-burst 0.9s linear 1, tcg-mini-drop 0.85s ease both;
+}
+
+.tcg-card.is-slam {
+  animation: tcg-foil-burst 1.15s linear 1, tcg-table-drop 1.15s cubic-bezier(0.16, 0.84, 0.24, 1) both;
+}
+
+.is-show .rising-front .tcg-card.is-reveal {
+  animation: tcg-foil-burst 1.05s linear 1, tcg-reveal 1.15s cubic-bezier(0.16, 0.9, 0.2, 1) both;
+}
+
+.tcg-card.is-drop .tcg-shock,
+.tcg-card.is-slam .tcg-shock,
+.tcg-card.is-reveal .tcg-shock {
+  animation: tcg-shock 0.85s ease-out 0.05s both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rising-card,
   .rising-inner,
   .pack,
-  .pack-top {
+  .pack-top,
+  .tcg-card,
+  .tcg-float,
+  .tcg-sheen,
+  .tcg-sweep,
+  .tcg-flash,
+  .tcg-burst,
+  .tcg-burst::after,
+  .tcg-art,
+  .tcg-fx,
+  .tcg-fx::before,
+  .tcg-fx::after,
+  .tcg-name::after,
+  .tcg-shock,
+  .tcg-photo {
     transition: none !important;
     animation: none !important;
   }
@@ -2335,7 +3084,7 @@ textarea.input {
 }
 
 .melange-burst-card {
-  animation: melange-pop 0.55s cubic-bezier(0.16, 1.2, 0.4, 1) both;
+  animation: none;
 }
 
 .melange-burst-card .tcg-card {
