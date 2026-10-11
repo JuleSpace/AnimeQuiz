@@ -7,6 +7,7 @@ import ClassicGame from './components/ClassicGame';
 import AdminPanel from './components/AdminPanel';
 import Icon from './components/ArcadeIcon';
 import { playDropSound } from './components/JokerCards';
+import CardVault, { RELIC_HASH } from './components/CardVault';
 import { readAdminSession, storeAdminSession, clearAdminSession } from './utils/adminSession';
 import './index.css';
 
@@ -32,7 +33,9 @@ function clearSeat() {
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState('login');
+  const [currentView, setCurrentView] = useState(() => (
+    window.location.hash === RELIC_HASH ? 'reliques' : 'login'
+  ));
   const [username, setUsername] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -50,6 +53,10 @@ function App() {
 
   // Vérifier si un utilisateur est déjà connecté au chargement
   useEffect(() => {
+    if (window.location.hash === RELIC_HASH) {
+      setCurrentView('reliques');
+      return undefined;
+    }
     const savedUsername = localStorage.getItem('animeQuizUsername');
     const seat = readSeat();
 
@@ -75,6 +82,14 @@ function App() {
       setIsLoggedIn(true);
       setCurrentView('modes');
     }
+  }, []);
+
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash === RELIC_HASH) setCurrentView('reliques');
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
   useEffect(() => {
@@ -1007,6 +1022,14 @@ function App() {
               </div>
             </div>
           </div>
+        );
+
+      case 'reliques':
+        return (
+          <CardVault onClose={() => {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            setCurrentView('login');
+          }} />
         );
 
       case 'admin':

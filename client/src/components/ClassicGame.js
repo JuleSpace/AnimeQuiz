@@ -4,7 +4,7 @@ import LyricsPlayer, { lyricHoleLengths } from './LyricsPlayer';
 import { WHOS_TEMPLATE_URL } from '../utils/media';
 import { OrderAnswer, OrderReview, PlaceAnswer, PlaceBoard } from './InteractQuestion';
 import { extractYouTubeId } from '../utils/media';
-import { BoosterOpening, HostJokerBoard, JokerCard, PlayerJokerBar } from './JokerCards';
+import { BoosterOpening, HostJokerBoard, JokerCard, PlayerJokerBar, TableDrop } from './JokerCards';
 import Icon from './ArcadeIcon';
 
 const CHOICE_COLORS = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#8e44ad', '#e67e22'];
@@ -670,18 +670,7 @@ const ClassicGame = ({
   return (
     <div className="container">
       {gameData.tableShow && (
-        <div className="melange-burst" role="status">
-          <div className="melange-burst-card">
-            <JokerCard cardId={gameData.tableShow.card} size="full" slam />
-          </div>
-          <p className="melange-burst-caption">
-            {gameData.tableShow.card === 'pot'
-              ? `${gameData.tableShow.username} met les points au pot`
-              : gameData.tableShow.card === 'renversement'
-                ? `${gameData.tableShow.username} renverse le classement`
-                : `${gameData.tableShow.username} mélange les réponses`}
-          </p>
-        </div>
+        <TableDrop cardId={gameData.tableShow.card} username={gameData.tableShow.username} />
       )}
       <div className="card">
         <div className="quiz-stage">
