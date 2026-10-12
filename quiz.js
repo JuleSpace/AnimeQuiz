@@ -16,7 +16,7 @@ const { requireAdmin, requireSuper, canEditQuiz } = require('./admins');
 const QuizQuestionSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['qcm', 'imageqcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout', 'lyrics', 'whos'],
+    enum: ['qcm', 'imageqcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout', 'lyrics', 'whos', 'gaps'],
     required: true
   },
   prompt: { type: String, default: '' },
@@ -34,6 +34,7 @@ const QuizQuestionSchema = new mongoose.Schema({
   blanks: { type: [String], default: [] },
   points: { type: Number, default: 1 },
   timeLimit: { type: Number, default: 20 },
+  stopOnFirstAnswer: { type: Boolean, default: false },
   layoutMode: { type: String, enum: ['timeline', 'schema'], default: 'timeline' },
   layoutImageUrl: { type: String, default: '' },
   timelineStart: { type: String, default: '' },
@@ -171,7 +172,7 @@ function isObjectiveCorrect(question, answer) {
     return matchesAny(answer, question.acceptedAnswers);
   }
 
-  if (question.type === 'lyrics') {
+  if (question.type === 'lyrics' || question.type === 'gaps') {
     const given = Array.isArray(answer) ? answer : [answer];
     const expected = question.blanks || [];
     if (!expected.length || given.length !== expected.length) return false;
@@ -204,8 +205,8 @@ function correctLabel(question) {
     const answers = acceptedList(question.acceptedAnswers);
     return answers.length ? answers.join(' / ') : 'Correction du chef';
   }
-  if (question.type === 'lyrics') {
-    if (question.choice) {
+  if (question.type === 'lyrics' || question.type === 'gaps') {
+    if (question.type === 'lyrics' && question.choice) {
       const word = (question.correctIndexes || [])
         .map((index) => question.options[index])
         .filter(Boolean)
@@ -282,8 +283,8 @@ function formatPlayerAnswer(question, answer) {
     }).join(', ');
   }
   if (question.type === 'boolean') return answer ? 'Vrai' : 'Faux';
-  if (question.type === 'blank' || question.type === 'lyrics') {
-    return (Array.isArray(answer) ? answer : []).map((value) => value || '…').join(' | ');
+  if (question.type === 'blank' || question.type === 'lyrics' || question.type === 'gaps') {
+    return (Array.isArray(answer) ? answer : [answer]).map((value) => value || '…').join(' | ');
   }
   if (question.type === 'order') {
     const ids = Array.isArray(answer?.ids) ? answer.ids : [];
@@ -396,13 +397,16 @@ function publicQuestion(question, index, total) {
     options: usesChoices(question) ? (question.options || []) : [],
     multiple: usesChoices(question) && question.type !== 'imageqcm'
       && (question.correctIndexes || []).length > 1,
-    blankCount: question.type === 'blank' || (question.type === 'lyrics' && !question.choice)
+    blankCount: question.type === 'blank' || question.type === 'gaps'
+      || (question.type === 'lyrics' && !question.choice)
       ? (question.blanks || []).length
       : 0,
     points: question.points || 1,
     timeLimit: question.timeLimit || 0,
     items: publicItems(question),
-    clip: question.type === 'lyrics' || question.type === 'whos' ? publicClip(question.clip) : undefined,
+    clip: question.type === 'lyrics' || question.type === 'whos' || question.type === 'gaps'
+      ? publicClip(question.clip)
+      : undefined,
     layoutMode: question.layoutMode === 'schema' ? 'schema' : 'timeline',
     layoutImageUrl: question.type === 'layout' && question.layoutMode === 'schema'
       ? (question.layoutImageUrl || '')
@@ -515,14 +519,24 @@ function sanitizeQuestion(raw) {
   const keepsOptions = type === 'qcm' || type === 'imageqcm' || musicChoice || lyricsChoice || whosChoice;
   const clip = type === 'whos'
     ? { muteStart: 0, muteEnd: 0, endAt: 6, line: '', masks: [] }
-    : cleanClip(raw.clip);
+    : type === 'gaps'
+      ? {
+        muteStart: 0,
+        muteEnd: 0,
+        endAt: 0,
+        line: String(raw.clip?.line || '').replace(/\r\n/g, '\n'),
+        masks: []
+      }
+      : cleanClip(raw.clip);
 
   return {
     type,
     prompt: String(raw.prompt || '').trim(),
     imageUrl: String(raw.imageUrl || '').trim(),
     imageSize: imageSizeValue(raw.imageSize),
-    videoUrl: type === 'music' || type === 'lyrics' || type === 'whos' ? '' : String(raw.videoUrl || '').trim(),
+    videoUrl: type === 'music' || type === 'lyrics' || type === 'whos' || type === 'gaps'
+      ? ''
+      : String(raw.videoUrl || '').trim(),
     answerImageUrl: String(raw.answerImageUrl || '').trim(),
     answerVideoUrl: String(raw.answerVideoUrl || '').trim(),
     musicUrl: type === 'whos'
@@ -535,9 +549,10 @@ function sanitizeQuestion(raw) {
     choice: musicChoice || lyricsChoice || whosChoice,
     correctBoolean: raw.correctBoolean !== false,
     acceptedAnswers: (type === 'text' || (type === 'music' && !musicChoice) || (type === 'whos' && !whosChoice)) ? acceptedAnswers : [],
-    blanks: type === 'blank' || (type === 'lyrics' && !lyricsChoice) ? blanks : [],
+    blanks: type === 'blank' || type === 'gaps' || (type === 'lyrics' && !lyricsChoice) ? blanks : [],
     points: Math.max(1, Number(raw.points) || 1),
     timeLimit: Math.max(0, Number(raw.timeLimit) || 0),
+    stopOnFirstAnswer: Boolean(raw.stopOnFirstAnswer),
     layoutMode: raw.layoutMode === 'schema' ? 'schema' : 'timeline',
     layoutImageUrl: String(raw.layoutImageUrl || '').trim(),
     timelineStart: String(raw.timelineStart || '').trim().slice(0, 80),
@@ -549,7 +564,7 @@ function sanitizeQuestion(raw) {
 
 function validateQuestion(question, position) {
   const label = `Question ${position}`;
-  const types = ['qcm', 'imageqcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout', 'lyrics', 'whos'];
+  const types = ['qcm', 'imageqcm', 'boolean', 'text', 'blank', 'music', 'order', 'layout', 'lyrics', 'whos', 'gaps'];
   if (!types.includes(question.type)) return `${label} : type invalide`;
 
   const urlError = ['imageUrl', 'videoUrl', 'answerImageUrl', 'answerVideoUrl', 'musicUrl', 'layoutImageUrl'].map((field) => {
@@ -563,7 +578,7 @@ function validateQuestion(question, position) {
 
   const hasPrompt = String(question.prompt || '').trim();
   const hasImage = String(question.imageUrl || '').trim();
-  if (!hasPrompt && !hasImage && !['music', 'order', 'layout', 'lyrics'].includes(question.type)) {
+  if (!hasPrompt && !hasImage && !['music', 'order', 'layout', 'lyrics', 'gaps'].includes(question.type)) {
     return `${label} : ajoute un énoncé ou une image`;
   }
 
@@ -620,6 +635,14 @@ function validateQuestion(question, position) {
     const muteEnd = Number(question.clip?.muteEnd) || 0;
     if (muteEnd && muteEnd <= muteStart) {
       return `${label} : le retour du son doit être après la coupure`;
+    }
+  }
+
+  if (question.type === 'gaps') {
+    const slots = lyricHoleLengths(question.clip?.line).length;
+    if (slots < 1) return `${label} : écris un _ par caractère manquant`;
+    if ((question.blanks || []).length !== slots) {
+      return `${label} : ${slots} trou(s) dans le texte, ${(question.blanks || []).length} réponse(s)`;
     }
   }
 
@@ -1262,6 +1285,11 @@ function maybeCloseIfComplete(io, lobby) {
   if (lobby.phase !== 'answering') return;
   const progress = answerProgress(lobby, index);
   if (progress.totalPlayers > 0 && progress.answered >= progress.totalPlayers) {
+    closeQuestion(io, lobby.quizId);
+    return;
+  }
+  const question = lobby.questions[index];
+  if (question?.stopOnFirstAnswer && progress.answered >= 1) {
     closeQuestion(io, lobby.quizId);
   }
 }

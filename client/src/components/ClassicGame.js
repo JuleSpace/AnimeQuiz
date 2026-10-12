@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BlindMusicPlayer from './BlindMusicPlayer';
 import LyricsPlayer, { lyricHoleLengths } from './LyricsPlayer';
+import GapsBoard from './GapsBoard';
 import { WHOS_TEMPLATE_URL } from '../utils/media';
 import { OrderAnswer, OrderReview, PlaceAnswer, PlaceBoard } from './InteractQuestion';
 import { extractYouTubeId } from '../utils/media';
@@ -486,7 +487,7 @@ const ClassicGame = ({
       );
     }
 
-    if (question.type === 'lyrics' && (question.blankCount || 0) > 1) {
+    if ((question.type === 'lyrics' || question.type === 'gaps') && (question.blankCount || 0) > 1) {
       const count = question.blankCount;
       const lengths = lyricHoleLengths(question.clip?.line);
       const ready = holes.length === count && holes.every((value) => String(value).trim());
@@ -538,7 +539,9 @@ const ClassicGame = ({
       );
     }
 
-    const lyricLength = question.type === 'lyrics' ? (lyricHoleLengths(question.clip?.line)[0] || 0) : 0;
+    const lyricLength = (question.type === 'lyrics' || question.type === 'gaps')
+      ? (lyricHoleLengths(question.clip?.line)[0] || 0)
+      : 0;
     const freeField = (
       <input
         type="text"
@@ -742,6 +745,15 @@ const ClassicGame = ({
             key={`${question.musicUrl}-${phase}`}
             url={question.musicUrl}
             clip={question.clip}
+            filled={phase === 'correction' || phase === 'reveal'
+              ? (gameData.expectedAnswer || gameData.reveal?.correctAnswer || '')
+              : ''}
+          />
+        ) : question.type === 'gaps' ? (
+          <GapsBoard
+            key={`gaps-${question.index}-${phase}`}
+            line={question.clip?.line || ''}
+            imageUrl={question.imageUrl || ''}
             filled={phase === 'correction' || phase === 'reveal'
               ? (gameData.expectedAnswer || gameData.reveal?.correctAnswer || '')
               : ''}

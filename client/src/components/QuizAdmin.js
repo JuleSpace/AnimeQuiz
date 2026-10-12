@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { ItemEditor, PlaceBoard } from './InteractQuestion';
-import LyricsEditor from './LyricsEditor';
+import LyricsEditor, { HoleHint } from './LyricsEditor';
 import LyricsPlayer from './LyricsPlayer';
+import GapsBoard from './GapsBoard';
 import Icon from './ArcadeIcon';
 import { WHOS_TEMPLATE_URL } from '../utils/media';
 import ConfirmPopup from './ConfirmPopup';
@@ -12,6 +13,7 @@ const TYPE_OPTIONS = [
   { id: 'imageqcm', label: 'Choix d\'images' },
   { id: 'boolean', label: 'Vrai / Faux' },
   { id: 'text', label: 'Réponse libre' },
+  { id: 'gaps', label: 'Texte à trous' },
   { id: 'music', label: 'Blind test' },
   { id: 'lyrics', label: 'Paroles' },
   { id: 'whos', label: "Who's that" },
@@ -36,6 +38,7 @@ const emptyDraft = () => ({
   acceptedText: '',
   points: 1,
   timeLimit: 20,
+  stopOnFirstAnswer: false,
   items: [],
   layoutMode: 'timeline',
   layoutImageUrl: '',
@@ -53,7 +56,9 @@ const questionToApi = (draft) => ({
   prompt: draft.prompt,
   imageUrl: draft.imageUrl,
   imageSize: draft.imageSize,
-  videoUrl: draft.type === 'music' || draft.type === 'lyrics' || draft.type === 'whos' ? '' : draft.videoUrl,
+  videoUrl: draft.type === 'music' || draft.type === 'lyrics' || draft.type === 'whos' || draft.type === 'gaps'
+    ? ''
+    : draft.videoUrl,
   answerImageUrl: draft.answerImageUrl,
   answerVideoUrl: draft.answerVideoUrl,
   musicUrl: draft.type === 'whos'
@@ -64,14 +69,15 @@ const questionToApi = (draft) => ({
   multiple: Boolean(draft.multiple),
   choice: (draft.type === 'music' || draft.type === 'lyrics' || draft.type === 'whos') && Boolean(draft.choice),
   correctBoolean: draft.correctBoolean,
-  acceptedAnswers: draft.type === 'lyrics' || (draft.type === 'whos' && draft.choice)
+  acceptedAnswers: draft.type === 'lyrics' || draft.type === 'gaps' || (draft.type === 'whos' && draft.choice)
     ? []
     : draft.acceptedText.split('\n').map((line) => line.trim()).filter(Boolean),
-  blanks: draft.type === 'lyrics' && !draft.choice
+  blanks: (draft.type === 'lyrics' && !draft.choice) || draft.type === 'gaps'
     ? draft.acceptedText.split('\n').map((line) => line.trim()).filter(Boolean)
     : [],
   points: Number(draft.points) || 1,
   timeLimit: draft.timeLimit === '' ? 0 : Number(draft.timeLimit) || 0,
+  stopOnFirstAnswer: Boolean(draft.stopOnFirstAnswer),
   items: draft.items || [],
   layoutMode: draft.layoutMode === 'schema' ? 'schema' : 'timeline',
   layoutImageUrl: draft.layoutImageUrl || '',
@@ -83,6 +89,12 @@ const questionToApi = (draft) => ({
     endAt: Number(draft.clipEndAt) || 0,
     line: draft.clipLine || '',
     masks: draft.clipMasks || []
+  } : draft.type === 'gaps' ? {
+    muteStart: 0,
+    muteEnd: 0,
+    endAt: 0,
+    line: draft.clipLine || '',
+    masks: []
   } : draft.type === 'whos' ? {
     muteStart: 0,
     muteEnd: 0,
@@ -106,11 +118,12 @@ const questionFromApi = (question) => ({
   multiple: (question.correctIndexes || []).length > 1,
   choice: Boolean(question.choice),
   correctBoolean: question.correctBoolean !== false,
-  acceptedText: question.type === 'lyrics'
+  acceptedText: question.type === 'lyrics' || question.type === 'gaps'
     ? (question.blanks || []).join('\n')
     : (question.acceptedAnswers || []).join('\n'),
   points: question.points || 1,
   timeLimit: question.timeLimit ?? 0,
+  stopOnFirstAnswer: Boolean(question.stopOnFirstAnswer),
   items: (question.items || []).map((item) => ({
     id: item.id,
     text: item.text || '',
@@ -216,6 +229,8 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
             ? 'Consigne (optionnel), ex. Quel est ce générique ?'
             : draft.type === 'lyrics'
               ? 'Consigne (optionnel), ex. Complète les paroles'
+            : draft.type === 'gaps'
+              ? 'Consigne (optionnel), ex. Complète la phrase'
             : draft.type === 'whos'
               ? 'Consigne (optionnel), ex. Qui est-ce ?'
             : draft.type === 'order'
@@ -257,6 +272,39 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
 
       {draft.type === 'lyrics' && (
         <LyricsEditor draft={draft} setDraft={setDraft} />
+      )}
+
+      {draft.type === 'gaps' && (
+        <>
+          <p className="blind-hint">
+            Un _ par caractère manquant. L&apos;écran reprend le look des paroles, sans vidéo.
+          </p>
+          <input
+            className="input"
+            placeholder="Image de fond (optionnel), elle sera floutée"
+            value={draft.imageUrl}
+            onChange={(event) => setDraft({ ...draft, imageUrl: event.target.value })}
+          />
+          <textarea
+            className="input"
+            rows={3}
+            placeholder={'Texte à compléter : un _ par caractère\nJe suis ____ dans la ville'}
+            value={draft.clipLine}
+            onChange={(event) => setDraft({ ...draft, clipLine: event.target.value })}
+          />
+          <HoleHint line={draft.clipLine} answers={draft.acceptedText} />
+          {draft.clipLine && (
+            <GapsBoard line={draft.clipLine} imageUrl={draft.imageUrl} />
+          )}
+          <textarea
+            className="input"
+            rows={2}
+            placeholder={'Une réponse par trou, une ligne par trou\nperdu\nville|la ville'}
+            value={draft.acceptedText}
+            onChange={(event) => setDraft({ ...draft, acceptedText: event.target.value })}
+          />
+          <p className="blind-hint">Le | sépare plusieurs orthographes acceptées pour le même trou.</p>
+        </>
       )}
 
       {draft.type === 'whos' && (
@@ -559,7 +607,8 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         </>
       )}
 
-      {draft.type !== 'music' && draft.type !== 'lyrics' && draft.type !== 'whos' && draft.type !== 'order' && draft.type !== 'layout' && (
+      {draft.type !== 'music' && draft.type !== 'lyrics' && draft.type !== 'whos'
+        && draft.type !== 'order' && draft.type !== 'layout' && draft.type !== 'gaps' && (
         <>
           <input
             className="input"
@@ -614,7 +663,8 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
       {draft.type === 'whos' && (
         <p className="blind-hint">Le portrait sur le template garde sa place.</p>
       )}
-      {draft.type !== 'whos' && /^https?:\/\//i.test(String(draft.imageUrl || '').trim()) && (
+      {draft.type !== 'whos' && draft.type !== 'gaps'
+        && /^https?:\/\//i.test(String(draft.imageUrl || '').trim()) && (
         <div className="quiz-media" style={{ '--image-scale': (draft.imageSize || 100) / 100 }}>
           <img src={draft.imageUrl} alt="" />
         </div>
@@ -652,6 +702,15 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
           />
         </label>
       </div>
+
+      <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '4px 0 0' }}>
+        <input
+          type="checkbox"
+          checked={Boolean(draft.stopOnFirstAnswer)}
+          onChange={(event) => setDraft({ ...draft, stopOnFirstAnswer: event.target.checked })}
+        />
+        Fermer dès la première réponse (joueur ou équipe)
+      </label>
 
       <div style={{ display: 'flex', gap: '8px' }}>
         <button type="button" className="btn btn-success" onClick={onSubmit} disabled={busy}>{submitLabel}</button>
@@ -1039,6 +1098,7 @@ const QuizAdmin = ({ admin }) => {
               <div style={{ opacity: 0.85 }}>{question.prompt || question.musicUrl || 'Sans énoncé'}</div>
               <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>
                 {question.points || 1} pt · {question.timeLimit ? `${question.timeLimit}s` : 'temps libre'}
+                {question.stopOnFirstAnswer ? ' · 1ʳᵉ réponse' : ''}
               </div>
             </div>
           </div>

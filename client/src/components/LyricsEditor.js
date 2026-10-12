@@ -4,7 +4,7 @@ import LyricsPlayer, { lyricHoleLengths, LyricLine } from './LyricsPlayer';
 
 const mark = (value) => Math.round((Number(value) || 0) * 10) / 10;
 
-const HoleHint = ({ line, answers }) => {
+export const HoleHint = ({ line, answers }) => {
   const lengths = lyricHoleLengths(line);
   if (!lengths.length) return null;
   const written = String(answers || '').split(/\r?\n/).map((entry) => entry.split('|')[0].trim()).filter(Boolean);
