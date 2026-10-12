@@ -4232,47 +4232,6 @@ textarea.input {
   margin: 12px auto 0;
 }
 
-.gaps-stage.has-bg {
-  background: #101018;
-}
-
-.gaps-bg {
-  position: absolute;
-  inset: -36px;
-  width: calc(100% + 72px);
-  height: calc(100% + 72px);
-  object-fit: cover;
-  filter: blur(22px) saturate(1.08) brightness(0.62);
-  transform: scale(1.12);
-  pointer-events: none;
-}
-
-.gaps-veil {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background:
-    radial-gradient(ellipse at 50% 45%, rgba(7, 7, 13, 0.18), rgba(7, 7, 13, 0.58) 72%),
-    linear-gradient(180deg, rgba(7, 7, 13, 0.22), rgba(7, 7, 13, 0.55));
-  pointer-events: none;
-}
-
-.gaps-card {
-  z-index: 2;
-  background:
-    linear-gradient(#ff2347, #ff2347) top / 100% 4px no-repeat,
-    linear-gradient(#1f6dff, #1f6dff) bottom / 100% 4px no-repeat,
-    rgba(7, 7, 13, 0.38);
-  backdrop-filter: blur(2px);
-}
-
-.gaps-stage:not(.has-bg) .gaps-card {
-  background:
-    linear-gradient(#ff2347, #ff2347) top / 100% 4px no-repeat,
-    linear-gradient(#1f6dff, #1f6dff) bottom / 100% 4px no-repeat,
-    #07070d;
-}
-
 .lyrics-stage {
   position: relative;
   width: 100%;
@@ -4326,6 +4285,51 @@ textarea.input {
   justify-content: center;
   gap: 16px;
   padding: 28px 22px;
+  background:
+    linear-gradient(#ff2347, #ff2347) top / 100% 4px no-repeat,
+    linear-gradient(#1f6dff, #1f6dff) bottom / 100% 4px no-repeat,
+    #07070d;
+}
+
+.gaps-stage.has-bg {
+  background: #101018;
+}
+
+.gaps-bg {
+  position: absolute;
+  inset: -40px;
+  z-index: 0;
+  width: calc(100% + 80px);
+  height: calc(100% + 80px);
+  object-fit: cover;
+  filter: blur(26px) saturate(1.15) brightness(0.78);
+  transform: scale(1.14);
+  pointer-events: none;
+}
+
+.gaps-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(7, 7, 13, 0.12), rgba(7, 7, 13, 0.42) 74%),
+    linear-gradient(180deg, rgba(7, 7, 13, 0.16), rgba(7, 7, 13, 0.4));
+  pointer-events: none;
+}
+
+.gaps-stage.has-bg .gaps-card {
+  background:
+    linear-gradient(#ff2347, #ff2347) top / 100% 4px no-repeat,
+    linear-gradient(#1f6dff, #1f6dff) bottom / 100% 4px no-repeat,
+    rgba(7, 7, 13, 0.28);
+  backdrop-filter: blur(1.5px);
+}
+
+.gaps-stage.has-bg .lyrics-line {
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9), 0 0 3px rgba(0, 0, 0, 0.95);
+}
+
+.gaps-stage:not(.has-bg) .gaps-card {
   background:
     linear-gradient(#ff2347, #ff2347) top / 100% 4px no-repeat,
     linear-gradient(#1f6dff, #1f6dff) bottom / 100% 4px no-repeat,
