@@ -8,11 +8,18 @@ import AdminPanel from './components/AdminPanel';
 import Icon from './components/ArcadeIcon';
 import { playDropSound } from './components/JokerCards';
 import CardVault, { RELIC_HASH } from './components/CardVault';
+import AcademyGuide, { ACADEMY_HASH } from './components/AcademyGuide';
 import { readAdminSession, storeAdminSession, clearAdminSession } from './utils/adminSession';
 import './index.css';
 
 const socket = io(process.env.REACT_APP_SERVER_URL || window.location.origin);
 const SEAT_KEY = 'animeQuizSeat';
+
+const secretViewFromHash = () => {
+  if (window.location.hash === RELIC_HASH) return 'reliques';
+  if (window.location.hash === ACADEMY_HASH) return 'academy';
+  return null;
+};
 
 function readSeat() {
   try {
@@ -33,9 +40,7 @@ function clearSeat() {
 }
 
 function App() {
-  const [currentView, setCurrentView] = useState(() => (
-    window.location.hash === RELIC_HASH ? 'reliques' : 'login'
-  ));
+  const [currentView, setCurrentView] = useState(() => secretViewFromHash() || 'login');
   const [username, setUsername] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -53,8 +58,9 @@ function App() {
 
   // Vérifier si un utilisateur est déjà connecté au chargement
   useEffect(() => {
-    if (window.location.hash === RELIC_HASH) {
-      setCurrentView('reliques');
+    const secret = secretViewFromHash();
+    if (secret) {
+      setCurrentView(secret);
       return undefined;
     }
     const savedUsername = localStorage.getItem('animeQuizUsername');
@@ -86,7 +92,8 @@ function App() {
 
   useEffect(() => {
     const onHash = () => {
-      if (window.location.hash === RELIC_HASH) setCurrentView('reliques');
+      const secret = secretViewFromHash();
+      if (secret) setCurrentView(secret);
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
@@ -1027,6 +1034,14 @@ function App() {
       case 'reliques':
         return (
           <CardVault onClose={() => {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            setCurrentView('login');
+          }} />
+        );
+
+      case 'academy':
+        return (
+          <AcademyGuide onClose={() => {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
             setCurrentView('login');
           }} />

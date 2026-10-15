@@ -1472,6 +1472,47 @@ textarea.input {
   margin-top: 10px;
 }
 
+.academy-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: #f4f6ff;
+}
+
+.academy-top {
+  width: min(1120px, calc(100% - 24px));
+  margin: 0 auto;
+  padding: 22px 0 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.academy-kicker {
+  margin: 0 0 4px;
+  font-family: Impact, Haettenschweiler, 'Arial Black', sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffe14a;
+}
+
+.academy-top h1 {
+  margin: 0;
+  font-size: clamp(1.45rem, 3.2vw, 2.15rem);
+}
+
+.academy-frame {
+  flex: 1;
+  width: min(1120px, calc(100% - 24px));
+  min-height: calc(100vh - 108px);
+  margin: 0 auto 20px;
+  border: 3px solid #ff2347;
+  box-shadow: 8px 8px 0 #1f6dff;
+  border-radius: 4px;
+  background: #07070d;
+}
+
 .vault {
   width: min(1120px, calc(100% - 24px));
   margin: 0 auto;
