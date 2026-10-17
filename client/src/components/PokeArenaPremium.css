@@ -332,3 +332,8 @@
 .pa-root.skin-premium .ui-trainer em { color: var(--muted, #b9a68d); }
 .pa-root.skin-premium .pa-music-pop { background: #241c17; border-color: rgba(222, 184, 120, 0.35); color: #f3e6cf; }
 .pa-root.skin-premium .pa-music-src { color: var(--gold-hi); }
+.pa-root.skin-premium .ui-crafts-pop,
+.pa-root.skin-premium .ui-combo-pop { background: #241c17; border-color: rgba(222, 184, 120, 0.35); color: #f3e6cf; }
+.pa-root.skin-premium .ui-crafts-pop li { background: #2f251e; }
+.pa-root.skin-premium .ui-crafts-pop li.is-owned { box-shadow: inset 0 0 0 2px var(--gold-hi); }
+.pa-root.skin-premium :is(.ui-crafts-txt small, .ui-combo-pop p, .ui-crafts-none) { color: #d9c7a8; }

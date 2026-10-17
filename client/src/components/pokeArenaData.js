@@ -1816,6 +1816,12 @@ export const RECIPE_LIST = Object.entries(RECIPE_TABLE).map(([key, resultId]) =>
   return { a, b, result: ITEM_MAP[resultId] };
 });
 
+/** Toutes les recettes qui utilisent cet objet : [{ other, result }]. */
+export const craftsWith = (itemId) => RECIPE_LIST
+  .filter((r) => r.a === itemId || r.b === itemId)
+  .map((r) => ({ other: r.a === itemId ? r.b : r.a, result: r.result }))
+  .filter((r) => r.result && ITEM_MAP[r.other]);
+
 export const SHOP_ODDS = {
   1: { 1: 100, 2: 0, 3: 0, 4: 0, 5: 0 },
   2: { 1: 75, 2: 25, 3: 0, 4: 0, 5: 0 },

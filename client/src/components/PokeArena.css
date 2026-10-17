@@ -1760,3 +1760,43 @@
 .pa-music-levels .ui-btn { flex: 1; padding: 4px 0; }
 .pa-music-btn { min-width: 30px; font-size: 15px !important; }
 .pa-music-btn:not(.is-on) { opacity: 0.55; }
+
+/* ———————————— Recettes d’un objet (clic droit) et aperçu de combinaison ———————————— */
+.ui-crafts-pop,
+.ui-combo-pop {
+  position: fixed;
+  z-index: 360;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  box-shadow: var(--lift-lg, 0 12px 30px rgba(0, 0, 0, 0.25));
+  color: var(--ink);
+  text-align: left;
+}
+.ui-crafts-pop { width: 320px; max-height: 460px; overflow-y: auto; }
+.ui-crafts-pop header { display: flex; gap: 10px; align-items: center; }
+.ui-crafts-pop header div { display: grid; }
+.ui-crafts-pop header strong { font-size: 15px; }
+.ui-crafts-pop header span { font-size: 12px; color: var(--muted); font-weight: 700; }
+.ui-crafts-pop ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ui-crafts-pop li { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; padding: 6px; border-radius: 8px; background: var(--paper-2); }
+.ui-crafts-pop li.is-owned { box-shadow: inset 0 0 0 2px var(--grass-d, #4c9a3f); }
+.ui-crafts-eq { display: flex; align-items: center; gap: 2px; }
+.ui-crafts-plus, .ui-crafts-arrow { font-weight: 900; color: var(--muted); padding: 0 2px; }
+.ui-crafts-txt { display: grid; line-height: 1.25; min-width: 0; }
+.ui-crafts-txt b { font-size: 13px; }
+.ui-crafts-txt em { font-style: normal; font-size: 11px; color: var(--muted); font-weight: 700; }
+.ui-crafts-txt small { font-size: 11px; color: var(--ink-2); }
+.ui-crafts-none, .ui-crafts-foot { margin: 0; font-size: 12px; color: var(--ink-2); }
+.ui-crafts-foot { color: var(--muted); }
+.ui-combo-pop { width: 280px; pointer-events: none; }
+.ui-combo-eq { display: flex; align-items: center; gap: 6px; font-weight: 900; color: var(--muted); }
+.ui-combo-x { font-size: 22px; color: var(--red, #d1495b); }
+.ui-combo-pop strong { font-size: 14px; }
+.ui-combo-pop p { margin: 0; font-size: 12px; color: var(--ink-2); }
+.ui-combo-pop.is-none strong { display: none; }
+.pa-bag-item.is-locked { opacity: 0.6; cursor: default; }
+.pa-bag-hint { margin: 6px 0 0; font-size: 11px; color: var(--muted); }

@@ -72,6 +72,8 @@ import {
 import {
   CodexScreen,
   EventScreen,
+  ComboPreview,
+  ItemCraftsPopover,
   ItemIcon,
   MapScreen,
   MartScreen,
@@ -302,6 +304,15 @@ const PokeArena = ({ onClose }) => {
   const [toast, setToast] = useState('');
   const [selectedUid, setSelectedUid] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedIdx, setSelectedIdx] = useState(-1);
+  const [itemMenu, setItemMenu] = useState(null);
+  const [comboHover, setComboHover] = useState(null);
+  const openItemMenu = (itemId, e) => {
+    e.preventDefault();
+    setComboHover(null);
+    setItemMenu({ itemId, rect: e.currentTarget.getBoundingClientRect() });
+  };
+  const closeItemMenu = useCallback(() => setItemMenu(null), []);
   const [hoverUnit, setHoverUnit] = useState(null);
   const [traitPop, setTraitPop] = useState(null);
   const [showRecipes, setShowRecipes] = useState(false);
@@ -1507,7 +1518,8 @@ const PokeArena = ({ onClose }) => {
     return (
       <div className={`pa-root ${skinCls} pa-screen`}>
         {topBar(null)}
-        <MartScreen stock={stock} gold={gold} bag={bag} onBuy={buyWare} onReroll={rerollMart} onLeave={() => advance(node.id)} hud={null} />
+        <MartScreen stock={stock} gold={gold} bag={bag} onBuy={buyWare} onReroll={rerollMart} onLeave={() => advance(node.id)} hud={null} onItemMenu={openItemMenu} />
+        {itemMenu && <ItemCraftsPopover itemId={itemMenu.itemId} rect={itemMenu.rect} owned={bag} onClose={closeItemMenu} />}
         {toastEl}
       </div>
     );
@@ -1659,10 +1671,26 @@ const PokeArena = ({ onClose }) => {
                 <button
                   key={`${id}-${i}`}
                   type="button"
-                  className={`pa-bag-item${selectedItem === id ? ' is-on' : ''}${it.component ? ' is-comp' : ''}`}
-                  title={`${it.name} : ${it.desc}`}
-                  disabled={!canEdit}
-                  onPointerDown={(e) => beginDrag(e, { kind: 'item', itemId: id, onClick: () => setSelectedItem(selectedItem === id ? null : id) })}
+                  className={`pa-bag-item${selectedItem === id && (selectedIdx === i || bag[selectedIdx] !== id) ? ' is-on' : ''}${it.component ? ' is-comp' : ''}${canEdit ? '' : ' is-locked'}`}
+                  title={selectedItem && selectedIdx !== i ? undefined : `${it.name} : ${it.desc} (clic droit : recettes)`}
+                  aria-disabled={!canEdit}
+                  onContextMenu={(e) => openItemMenu(id, e)}
+                  onPointerEnter={(e) => { if (selectedItem && selectedIdx !== i) setComboHover({ id, rect: e.currentTarget.getBoundingClientRect() }); }}
+                  onPointerLeave={() => setComboHover(null)}
+                  onPointerDown={(e) => beginDrag(e, {
+                    kind: 'item',
+                    itemId: id,
+                    onClick: () => {
+                      setComboHover(null);
+                      if (selectedItem === id && selectedIdx === i) {
+                        setSelectedItem(null);
+                        setSelectedIdx(-1);
+                      } else {
+                        setSelectedItem(id);
+                        setSelectedIdx(i);
+                      }
+                    }
+                  })}
                 >
                   <ItemIcon item={it} size={30} />
                 </button>
@@ -1670,8 +1698,9 @@ const PokeArena = ({ onClose }) => {
             })}
           </div>
           {selectedItem && ITEM_MAP[selectedItem] && (
-            <p className="pa-bag-tip"><b>{ITEM_MAP[selectedItem].name}</b> {ITEM_MAP[selectedItem].desc} Clique sur un Pokémon pour l’utiliser.</p>
+            <p className="pa-bag-tip"><b>{ITEM_MAP[selectedItem].name}</b> {ITEM_MAP[selectedItem].desc} Clique sur un Pokémon pour l’utiliser, ou survole un autre objet pour voir leur combinaison.</p>
           )}
+          {bag.length > 0 && !selectedItem && <p className="pa-bag-hint">Clic droit sur un objet : toutes ses recettes.</p>}
         </div>
       </aside>
 
@@ -1816,6 +1845,8 @@ const PokeArena = ({ onClose }) => {
         />
       )}
       {rewardOpts && <RewardModal choices={rewardOpts} onPick={pickReward} />}
+      {itemMenu && <ItemCraftsPopover itemId={itemMenu.itemId} rect={itemMenu.rect} owned={bag} onClose={closeItemMenu} />}
+      {comboHover && selectedItem && !itemMenu && <ComboPreview a={selectedItem} b={comboHover.id} rect={comboHover.rect} />}
       {showRecipes && <RecipeModal onClose={() => setShowRecipes(false)} />}
       <TraitPopup pop={traitPop} />
       {toastEl}

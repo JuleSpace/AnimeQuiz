@@ -17,6 +17,8 @@ import {
   traitCap,
   traitDossier,
   canMegaEvolve,
+  craftResult,
+  craftsWith,
   unitFromLine
 } from './pokeArenaData';
 import { NODE_INFO, isFightKind, regionAt, regionsOf, trainerSprite } from './pokeArenaCampaign';
@@ -505,9 +507,113 @@ export const MapScreen = ({ map, floor, path, onEnter, hud, team }) => {
   );
 };
 
+/* ———————————————— Recettes d’un objet ———————————————— */
+
+/** Place une bulle fixe à côté d’un élément (à droite, sinon à gauche), dans l’écran. */
+const floatBeside = (rect, w, h) => {
+  if (!rect) return { left: 8, top: 8 };
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+  let left = rect.right + 10;
+  if (left + w > vw - 8) left = Math.max(8, rect.left - w - 10);
+  const top = Math.max(8, Math.min(vh - h - 8, rect.top - 8));
+  return { left, top };
+};
+
+/** Clic droit sur un objet : toutes les combinaisons possibles avec lui. */
+export const ItemCraftsPopover = ({ itemId, rect, owned = [], onClose }) => {
+  const item = ITEM_MAP[itemId];
+  const ref = React.useRef(null);
+  useEffect(() => {
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
+    const esc = (e) => { if (e.key === 'Escape') onClose(); };
+    const t = setTimeout(() => {
+      window.addEventListener('pointerdown', close, true);
+      window.addEventListener('contextmenu', close, true);
+    }, 0);
+    window.addEventListener('keydown', esc);
+    window.addEventListener('resize', onClose);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('pointerdown', close, true);
+      window.removeEventListener('contextmenu', close, true);
+      window.removeEventListener('keydown', esc);
+      window.removeEventListener('resize', onClose);
+    };
+  }, [onClose]);
+  if (!item) return null;
+  const list = craftsWith(itemId);
+  const count = (id) => owned.filter((x) => x === id).length;
+  const height = Math.min(460, 92 + list.length * 52);
+  return (
+    <div ref={ref} className="ui-crafts-pop" role="dialog" aria-label={`Recettes avec ${item.name}`} style={floatBeside(rect, 320, height)}>
+      <header>
+        <ItemIcon item={item} size={34} />
+        <div>
+          <strong>{item.name}</strong>
+          <span>{list.length ? `${list.length} recette${list.length > 1 ? 's' : ''} possible${list.length > 1 ? 's' : ''}` : 'Ne se combine pas'}</span>
+        </div>
+      </header>
+      {list.length ? (
+        <ul>
+          {list.map(({ other, result }) => {
+            const have = count(other) - (other === itemId ? 1 : 0);
+            return (
+              <li key={`${other}-${result.id}`} className={have > 0 ? 'is-owned' : ''}>
+                <span className="ui-crafts-eq">
+                  <span className="ui-crafts-plus">+</span>
+                  <ItemIcon item={ITEM_MAP[other]} size={26} />
+                  <span className="ui-crafts-arrow">→</span>
+                  <ItemIcon item={result} size={30} />
+                </span>
+                <span className="ui-crafts-txt">
+                  <b>{result.name}</b>
+                  <em>avec {ITEM_MAP[other].name}{have > 0 ? ' · dans ton sac' : ''}</em>
+                  <small>{result.desc}</small>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="ui-crafts-none">{item.desc} Il s’utilise tel quel.</p>
+      )}
+      <p className="ui-crafts-foot">Pour combiner : équipe les deux objets sur le même Pokémon.</p>
+    </div>
+  );
+};
+
+/** Objet sélectionné + objet survolé : résultat de la combinaison. */
+export const ComboPreview = ({ a, b, rect }) => {
+  const A = ITEM_MAP[a];
+  const B = ITEM_MAP[b];
+  if (!A || !B) return null;
+  const resultId = A.component && B.component ? craftResult(a, b) : null;
+  const R = resultId ? ITEM_MAP[resultId] : null;
+  return (
+    <div className={`ui-combo-pop${R ? '' : ' is-none'}`} role="tooltip" style={floatBeside(rect, 280, 120)}>
+      <div className="ui-combo-eq">
+        <ItemIcon item={A} size={28} />
+        <span>+</span>
+        <ItemIcon item={B} size={28} />
+        <span>→</span>
+        {R ? <ItemIcon item={R} size={36} /> : <span className="ui-combo-x">✕</span>}
+      </div>
+      {R ? (
+        <>
+          <strong>{R.name}</strong>
+          <p>{R.desc}</p>
+        </>
+      ) : (
+        <p>{A.component && B.component ? 'Ces deux objets ne se combinent pas.' : 'Seules deux vitamines (ou deux Pierres Clés) se combinent.'}</p>
+      )}
+    </div>
+  );
+};
+
 /* ———————————————— Poké Mart ———————————————— */
 
-export const MartScreen = ({ stock, gold, onBuy, onReroll, onLeave, bag, hud }) => (
+export const MartScreen = ({ stock, gold, onBuy, onReroll, onLeave, bag, hud, onItemMenu }) => (
   <div className="ui-mart">
     <header className="ui-screen-head">
       <div>
@@ -526,7 +632,7 @@ export const MartScreen = ({ stock, gold, onBuy, onReroll, onLeave, bag, hud }) 
         if (!it) return null;
         const kind = it.component ? 'Vitamine' : it.plate ? 'Plaque' : it.consumable ? 'Consommable' : 'Objet tenu';
         return (
-          <li key={slot.key} className={`ui-ware${slot.sold ? ' is-sold' : ''}`}>
+          <li key={slot.key} className={`ui-ware${slot.sold ? ' is-sold' : ''}`} onContextMenu={(e) => onItemMenu?.(slot.itemId, e)} title="Clic droit : recettes">
             <div className="ui-ware-icon"><ItemIcon item={it} size={48} /></div>
             <span className="ui-ware-kind">{kind}</span>
             <strong>{it.name}</strong>
@@ -541,7 +647,7 @@ export const MartScreen = ({ stock, gold, onBuy, onReroll, onLeave, bag, hud }) 
     <div className="ui-bag-preview">
       <h3>Ton sac</h3>
       <div className="ui-bag-row">
-        {bag.length ? bag.map((id, i) => <span key={`${id}-${i}`} title={ITEM_MAP[id]?.name}><ItemIcon item={ITEM_MAP[id]} size={30} /></span>) : <p className="ui-empty">Vide.</p>}
+        {bag.length ? bag.map((id, i) => <span key={`${id}-${i}`} title={`${ITEM_MAP[id]?.name} · clic droit : recettes`} onContextMenu={(e) => onItemMenu?.(id, e)}><ItemIcon item={ITEM_MAP[id]} size={30} /></span>) : <p className="ui-empty">Vide.</p>}
       </div>
     </div>
   </div>
