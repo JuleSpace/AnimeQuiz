@@ -3,8 +3,8 @@ import { BOARD_COLS, BOARD_ROWS_HALF, BOARD_SIZE, ITEM_MAP } from './pokeArenaDa
 import './ArenaBoard.css';
 
 /*
- * Terrain de combat façon anime : pelouse, terrain en terre battue tracé à la craie,
- * Poké Ball au centre. Les Pokémon sont des éléments DOM posés sur les cases
+ * Stade : tribunes et bannières, court à deux camps (bleu allié / rouge adverse),
+ * emblème Poké Ball au centre. Les Pokémon sont des éléments DOM posés sur les cases
  * (déplacements animés, attaques, projectiles typés, impacts, KO).
  */
 
@@ -55,154 +55,200 @@ const seeded = (seed) => {
 /* ———————————————— Décor (canvas) ———————————————— */
 
 const drawScenery = (ctx, w, h) => {
-  const sky = ctx.createLinearGradient(0, 0, 0, h * 0.5);
-  sky.addColorStop(0, '#7cc8f2');
-  sky.addColorStop(1, '#cfeefc');
+  // Ciel clair de fin d’après-midi
+  const sky = ctx.createLinearGradient(0, 0, 0, h * 0.42);
+  sky.addColorStop(0, '#cfd6f2');
+  sky.addColorStop(1, '#f3f1f6');
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, h);
 
+  // Tribunes en gradins
+  const standTop = h * 0.04;
+  const standBot = h * 0.33;
+  const stand = ctx.createLinearGradient(0, standTop, 0, standBot);
+  stand.addColorStop(0, '#2b3160');
+  stand.addColorStop(1, '#1d2246');
+  ctx.fillStyle = stand;
+  ctx.beginPath();
+  ctx.moveTo(-10, standBot);
+  ctx.lineTo(w * 0.06, standTop);
+  ctx.lineTo(w * 0.94, standTop);
+  ctx.lineTo(w + 10, standBot);
+  ctx.closePath();
+  ctx.fill();
+  // Toit
+  ctx.fillStyle = '#151933';
+  ctx.fillRect(w * 0.04, standTop - 8, w * 0.92, 10);
+  // Rangées + public
   const rnd = seeded(11);
-  // Collines lointaines
-  const hill = (base, amp, color, seed) => {
-    const r = seeded(seed);
-    ctx.fillStyle = color;
+  const crowd = ['#ff7a45', '#ffd23f', '#8fa2ff', '#ffffff', '#ff5f7e', '#9be3b8', '#c49bff'];
+  const rows = 7;
+  for (let r = 0; r < rows; r += 1) {
+    const t = (r + 0.5) / rows;
+    const y = standTop + (standBot - standTop) * t;
+    const inset = w * 0.06 * (1 - t);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(0, h);
-    ctx.lineTo(0, base);
-    for (let x = 0; x <= w; x += w / 6) {
-      ctx.quadraticCurveTo(x + w / 12, base - amp * (0.5 + r()), x + w / 6, base);
+    ctx.moveTo(inset, y + 4);
+    ctx.lineTo(w - inset, y + 4);
+    ctx.stroke();
+    const step = 7 + t * 3;
+    for (let x = inset + 4; x < w - inset - 4; x += step) {
+      if (rnd() < 0.18) continue;
+      ctx.fillStyle = crowd[Math.floor(rnd() * crowd.length)];
+      ctx.globalAlpha = 0.35 + t * 0.35;
+      ctx.beginPath();
+      ctx.arc(x + rnd() * 2, y - 1, 1.6 + t * 1.4, 0, Math.PI * 2);
+      ctx.fill();
     }
-    ctx.lineTo(w, h);
+  }
+  ctx.globalAlpha = 1;
+
+  // Mur de tribune : bannières en biais Écarlate / Violet
+  const wallY = standBot;
+  const wallH = h * 0.06;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, wallY, w, wallH);
+  const banners = 9;
+  for (let i = 0; i < banners; i += 1) {
+    const bx = (i / banners) * w;
+    const bw = w / banners;
+    ctx.fillStyle = i % 2 ? '#7b3ff2' : '#ff5a1f';
+    ctx.beginPath();
+    ctx.moveTo(bx + 10, wallY + 5);
+    ctx.lineTo(bx + bw - 4, wallY + 5);
+    ctx.lineTo(bx + bw - 14, wallY + wallH - 5);
+    ctx.lineTo(bx, wallY + wallH - 5);
     ctx.closePath();
     ctx.fill();
-  };
-  hill(h * 0.3, h * 0.08, '#a9d98c', 3);
-  hill(h * 0.36, h * 0.07, '#86c46b', 5);
-
-  // Arbres (rangée du fond)
-  for (let i = 0; i < 26; i += 1) {
-    const x = (i / 25) * w + (rnd() - 0.5) * 30;
-    const y = h * 0.37 + rnd() * h * 0.03;
-    const r = 16 + rnd() * 18;
-    ctx.fillStyle = '#4f9a45';
+    // Poké Ball stylisée sur la bannière
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 1.5;
+    const cx = bx + bw / 2 - 2;
+    const cy = wallY + wallH / 2;
+    const rr = wallH * 0.22;
     ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.beginPath();
-    ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.45, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+    ctx.moveTo(cx - rr, cy);
+    ctx.lineTo(cx + rr, cy);
+    ctx.stroke();
   }
+  ctx.fillStyle = 'rgba(23,26,51,0.18)';
+  ctx.fillRect(0, wallY + wallH, w, 4);
 
-  // Pelouse tondue en bandes
-  const lawnTop = h * 0.4;
-  ctx.fillStyle = '#6dbb4f';
-  ctx.fillRect(0, lawnTop, w, h - lawnTop);
-  const bands = 9;
-  for (let i = 0; i < bands; i += 1) {
-    if (i % 2) continue;
-    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+  // Sol du stade
+  const floorTop = wallY + wallH;
+  const floor = ctx.createLinearGradient(0, floorTop, 0, h);
+  floor.addColorStop(0, '#d9dcea');
+  floor.addColorStop(1, '#eceef6');
+  ctx.fillStyle = floor;
+  ctx.fillRect(0, floorTop, w, h - floorTop);
+  // Dalles en perspective
+  ctx.strokeStyle = 'rgba(23,26,51,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = -8; i <= 8; i += 1) {
     ctx.beginPath();
-    const x0 = (i / bands) * w;
-    const x1 = ((i + 1) / bands) * w;
-    ctx.moveTo(w / 2 + (x0 - w / 2) * 0.45, lawnTop);
-    ctx.lineTo(w / 2 + (x1 - w / 2) * 0.45, lawnTop);
-    ctx.lineTo(w / 2 + (x1 - w / 2) * 1.6, h);
-    ctx.lineTo(w / 2 + (x0 - w / 2) * 1.6, h);
-    ctx.closePath();
-    ctx.fill();
-  }
-  // Touffes d’herbe
-  for (let i = 0; i < 90; i += 1) {
-    const x = rnd() * w;
-    const y = lawnTop + 10 + rnd() * (h - lawnTop);
-    ctx.strokeStyle = 'rgba(40,110,40,0.35)';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x - 2, y - 6);
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + 2, y - 7);
+    ctx.moveTo(w / 2 + i * w * 0.05, floorTop);
+    ctx.lineTo(w / 2 + i * w * 0.16, h);
     ctx.stroke();
   }
 };
 
-/** Terrain en terre battue + lignes à la craie, dans l’espace « monde » écrasé (iso). */
+/** Court du stade (deux camps teintés, lignes blanches, emblème central), dans l’espace « monde » écrasé. */
 const drawField = (ctx, gridW, gridH) => {
   const pad = 38;
   const x0 = -pad;
   const y0 = -pad;
   const w = gridW + pad * 2;
   const h = gridH + pad * 2;
-  const r = 40;
-  const rounded = (dx = 0, dy = 0) => {
+  const r = 18;
+  const rounded = (dx = 0, dy = 0, grow = 0) => {
+    const X = x0 - grow + dx;
+    const Y = y0 - grow + dy;
+    const W = w + grow * 2;
+    const H = h + grow * 2;
     ctx.beginPath();
-    ctx.moveTo(x0 + r + dx, y0 + dy);
-    ctx.arcTo(x0 + w + dx, y0 + dy, x0 + w + dx, y0 + h + dy, r);
-    ctx.arcTo(x0 + w + dx, y0 + h + dy, x0 + dx, y0 + h + dy, r);
-    ctx.arcTo(x0 + dx, y0 + h + dy, x0 + dx, y0 + dy, r);
-    ctx.arcTo(x0 + dx, y0 + dy, x0 + w + dx, y0 + dy, r);
+    ctx.moveTo(X + r, Y);
+    ctx.arcTo(X + W, Y, X + W, Y + H, r);
+    ctx.arcTo(X + W, Y + H, X, Y + H, r);
+    ctx.arcTo(X, Y + H, X, Y, r);
+    ctx.arcTo(X, Y, X + W, Y, r);
     ctx.closePath();
   };
-  // bordure / épaisseur
-  rounded(0, 26);
-  ctx.fillStyle = '#9a6b3f';
+  const midY = gridH / 2 + SIZE * 0.25;
+
+  // Ombre portée + tranche
+  rounded(0, 34, 6);
+  ctx.fillStyle = 'rgba(23,26,51,0.22)';
   ctx.fill();
-  rounded(0, 0);
-  const clay = ctx.createLinearGradient(0, y0, 0, y0 + h);
-  clay.addColorStop(0, '#e2b27a');
-  clay.addColorStop(0.5, '#d9a56c');
-  clay.addColorStop(1, '#cf9860');
-  ctx.fillStyle = clay;
+  rounded(0, 22, 0);
+  ctx.fillStyle = '#1b2148';
+  ctx.fill();
+  // Liseré extérieur (bord du court)
+  rounded(0, 0, 10);
+  ctx.fillStyle = '#ffffff';
   ctx.fill();
 
-  // grain de la terre
-  const rnd = seeded(29);
+  // Deux camps
   ctx.save();
-  rounded(0, 0);
+  rounded(0, 0, 0);
   ctx.clip();
-  for (let i = 0; i < 520; i += 1) {
-    ctx.fillStyle = rnd() < 0.5 ? 'rgba(120,70,30,0.10)' : 'rgba(255,240,210,0.12)';
-    ctx.beginPath();
-    ctx.arc(x0 + rnd() * w, y0 + rnd() * h, 1 + rnd() * 2.5, 0, Math.PI * 2);
-    ctx.fill();
+  const foe = ctx.createLinearGradient(0, y0, 0, midY);
+  foe.addColorStop(0, '#c9433a');
+  foe.addColorStop(1, '#e0614a');
+  ctx.fillStyle = foe;
+  ctx.fillRect(x0, y0, w, midY - y0);
+  const ally = ctx.createLinearGradient(0, midY, 0, y0 + h);
+  ally.addColorStop(0, '#4b6fe0');
+  ally.addColorStop(1, '#3352bf');
+  ctx.fillStyle = ally;
+  ctx.fillRect(x0, midY, w, y0 + h - midY);
+  // Bandes de tonte façon terrain synthétique
+  for (let i = 0; i < 12; i += 2) {
+    ctx.fillStyle = 'rgba(255,255,255,0.045)';
+    ctx.fillRect(x0 + (i / 12) * w, y0, w / 12, h);
   }
   ctx.restore();
 
-  // Craie
-  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
-  ctx.lineWidth = 5;
-  const inset = 16;
+  // Lignes
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = 4;
+  const inset = 14;
   ctx.strokeRect(x0 + inset, y0 + inset, w - inset * 2, h - inset * 2);
-  const midY = gridH / 2 + SIZE * 0.25;
   ctx.beginPath();
   ctx.moveTo(x0 + inset, midY);
   ctx.lineTo(x0 + w - inset, midY);
   ctx.stroke();
-  // Poké Ball centrale
+
+  // Emblème central : Poké Ball blanche
   const cx = gridW / 2;
+  const R = SIZE * 1.3;
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
   ctx.beginPath();
-  ctx.arc(cx, midY, SIZE * 1.25, 0, Math.PI * 2);
+  ctx.arc(cx, midY, R, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, midY, R, 0, Math.PI * 2);
   ctx.stroke();
+  ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  ctx.arc(cx, midY, SIZE * 0.36, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(227,53,13,0.16)';
+  ctx.arc(cx, midY, SIZE * 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#1b2148';
   ctx.beginPath();
-  ctx.arc(cx, midY, SIZE * 1.25, Math.PI, Math.PI * 2);
+  ctx.arc(cx, midY, SIZE * 0.2, 0, Math.PI * 2);
   ctx.fill();
 };
 
 const drawCell = (ctx, cx, cy, enemy) => {
-  const r = SIZE - 4;
+  const r = SIZE - 3;
   hexPath(ctx, cx, cy, r);
-  ctx.fillStyle = enemy ? 'rgba(227,53,13,0.07)' : 'rgba(59,91,167,0.08)';
+  ctx.fillStyle = enemy ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.08)';
   ctx.fill();
-  ctx.setLineDash([7, 6]);
-  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-  ctx.lineWidth = 2.2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.32)';
+  ctx.lineWidth = 2;
   ctx.stroke();
-  ctx.setLineDash([]);
 };
 
 /* ———————————————— Sprites ———————————————— */
@@ -385,9 +431,6 @@ export default function ArenaBoardIso({
       style={{ '--bd-unit': `${unitSize}px`, '--bd-cell': `${cellW}px`, '--bd-speed': speed }}
     >
       <canvas ref={canvasRef} className="bd-canvas" />
-      <div className="bd-clouds" aria-hidden>
-        <i /><i /><i />
-      </div>
 
       {/* Cases du joueur (clic / dépôt) */}
       {layout && !isFight && cells.filter((c) => !c.enemy).map((cell) => {

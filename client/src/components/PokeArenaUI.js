@@ -350,7 +350,7 @@ export const StarterScreen = ({ onPick, onBack, onTrait }) => {
               {evo.branches.length > 0 && (
                 <>
                   <span className="ui-evo-arrow" aria-hidden>›</span>
-                  <div className="ui-evo-branch">
+                  <div className={`ui-evo-branch${evo.branches.length > 3 ? ' is-wide' : ''}`}>
                     {evo.branches.map((st) => <MiniStage key={st.dex} stage={st} />)}
                   </div>
                 </>

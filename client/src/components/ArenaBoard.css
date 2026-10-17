@@ -1,19 +1,18 @@
 /* ——— Terrain de combat (ArenaBoardIso) ——— */
 
 .bd-stage {
-  --ink: #1d2340;
-  --ally: #3b5ba7;
-  --foe: #e3350d;
+  --ink: #171a33;
+  --ally: #8fb0ff;
+  --foe: #ffb19c;
   --dur: calc(1s / var(--bd-speed, 1));
   position: relative;
   width: 100%;
   height: 100%;
   min-height: 320px;
   overflow: hidden;
-  border-radius: 20px;
-  border: 3px solid var(--ink);
-  box-shadow: 0 5px 0 var(--ink);
-  background: #9fdcff;
+  border-radius: 14px;
+  box-shadow: 0 2px 4px rgba(23, 26, 51, 0.08), 0 14px 30px -14px rgba(23, 26, 51, 0.45);
+  background: #e6e8f3;
   user-select: none;
   touch-action: none;
 }
@@ -22,38 +21,6 @@
   position: absolute;
   inset: 0;
   display: block;
-}
-
-.bd-clouds {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 30%;
-  pointer-events: none;
-}
-.bd-clouds i {
-  position: absolute;
-  top: 12%;
-  width: 120px;
-  height: 34px;
-  border-radius: 40px;
-  background: rgba(255, 255, 255, 0.85);
-  filter: blur(0.5px);
-  animation: bd-cloud 70s linear infinite;
-}
-.bd-clouds i::before,
-.bd-clouds i::after {
-  content: '';
-  position: absolute;
-  background: inherit;
-  border-radius: 50%;
-}
-.bd-clouds i::before { width: 56px; height: 50px; left: 18px; top: -24px; }
-.bd-clouds i::after { width: 42px; height: 38px; left: 60px; top: -16px; }
-.bd-clouds i:nth-child(2) { top: 26%; transform: scale(0.7); animation-duration: 95s; animation-delay: -40s; opacity: 0.8; }
-.bd-clouds i:nth-child(3) { top: 6%; transform: scale(0.55); animation-duration: 120s; animation-delay: -80s; opacity: 0.7; }
-@keyframes bd-cloud {
-  from { left: -160px; }
-  to { left: 110%; }
 }
 
 /* Cases joueur (préparation) */
@@ -100,10 +67,10 @@
   height: 26%;
   transform: translateX(-50%);
   border-radius: 50%;
-  border: 3px solid var(--ally);
-  background: rgba(59, 91, 167, 0.18);
+  border: 2px solid var(--ally);
+  background: rgba(255, 255, 255, 0.16);
 }
-.bd-unit.is-enemy .bd-ring { border-color: var(--foe); background: rgba(227, 53, 13, 0.16); }
+.bd-unit.is-enemy .bd-ring { border-color: var(--foe); background: rgba(255, 255, 255, 0.12); }
 .bd-unit.is-selected .bd-ring { border-color: #ffcb05; background: rgba(255, 203, 5, 0.35); box-shadow: 0 0 0 3px rgba(255, 203, 5, 0.4); }
 .bd-unit.is-gold .bd-ring { border-color: #ffcb05; }
 .bd-shadow {
@@ -114,7 +81,7 @@
   height: 12%;
   transform: translateX(-50%);
   border-radius: 50%;
-  background: rgba(40, 25, 10, 0.35);
+  background: rgba(10, 14, 40, 0.45);
   filter: blur(2px);
 }
 
@@ -170,9 +137,10 @@
   position: relative;
   width: calc(var(--bd-unit) * 0.6);
   height: 7px;
-  border-radius: 6px;
-  background: #3a3f5c;
-  border: 2px solid var(--ink);
+  border-radius: 2px;
+  background: #2a2f55;
+  border: 1.5px solid #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   overflow: hidden;
 }
 .bd-hp i,
@@ -182,7 +150,7 @@
   transition: width calc(0.25s / var(--bd-speed, 1)) ease-out;
 }
 .bd-hp i { background: #fff; transition-duration: calc(0.9s / var(--bd-speed, 1)); transition-delay: 0.12s; }
-.bd-unit.is-enemy .bd-hp { border-color: #6b1606; }
+.bd-unit.is-enemy .bd-hp { border-color: #ffe1d8; }
 .bd-items {
   display: flex;
   gap: 1px;
@@ -193,7 +161,7 @@
   height: 18px;
   object-fit: contain;
   background: #fff;
-  border: 1.5px solid var(--ink);
+  border: 1px solid rgba(23, 26, 51, 0.3);
   border-radius: 50%;
 }
 
@@ -284,13 +252,12 @@
   top: -48%;
   transform: translateX(-50%);
   white-space: nowrap;
-  font: 700 12px/1 'Nunito', sans-serif;
-  font-style: normal;
+  font: italic 800 13px/1 'Barlow Condensed', sans-serif;
   color: #fff;
   background: var(--ink);
-  border: 2px solid var(--type);
-  padding: 3px 8px;
-  border-radius: 999px;
+  border-left: 4px solid var(--type);
+  padding: 4px 12px 4px 8px;
+  border-radius: 2px;
   animation: bd-tag calc(0.9s / var(--bd-speed, 1)) ease-out forwards;
 }
 @keyframes bd-aura {
@@ -333,7 +300,6 @@
   margin: -4px;
   border-radius: 2px;
   background: var(--fxc);
-  border: 1.5px solid var(--ink);
   transform: rotate(calc(var(--i) * 45deg)) translateY(0);
   animation: bd-shard calc(0.45s / var(--bd-speed, 1)) ease-out forwards;
 }
@@ -421,10 +387,9 @@
   left: 50%;
   top: 8%;
   transform: translateX(-50%);
-  font: 400 18px/1 'Lilita One', 'Nunito', sans-serif;
+  font: italic 800 20px/1 'Barlow Condensed', 'Barlow', sans-serif;
   color: #fff;
-  -webkit-text-stroke: 1px var(--ink);
-  text-shadow: 0 2px 0 var(--ink);
+  text-shadow: 0 0 3px #171a33, 0 2px 0 #171a33, 1px 1px 0 #171a33, -1px -1px 0 #171a33, 1px -1px 0 #171a33, -1px 1px 0 #171a33;
   white-space: nowrap;
   pointer-events: none;
   z-index: 6;
@@ -433,7 +398,7 @@
 .bd-float.is-heal { color: #8ff09a; }
 .bd-float.is-super { color: #ffb347; font-size: 21px; }
 .bd-float.is-crit { color: #ffcb05; font-size: 25px; }
-.bd-float.is-miss { color: #e8ecff; font: 700 13px/1 'Nunito', sans-serif; -webkit-text-stroke: 0; text-shadow: 0 1px 0 var(--ink), 0 0 4px var(--ink); }
+.bd-float.is-miss { color: #e8ecff; font: 700 13px/1 'Barlow', sans-serif; -webkit-text-stroke: 0; text-shadow: 0 1px 0 var(--ink), 0 0 4px var(--ink); }
 @keyframes bd-pop {
   0% { transform: translate(-50%, 6px) scale(0.4); opacity: 0; }
   25% { transform: translate(-50%, -10px) scale(1.15); opacity: 1; }
@@ -458,7 +423,7 @@
   height: 18px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #fff 0 18%, var(--shot) 45%, color-mix(in srgb, var(--shot) 60%, #000) 100%);
-  border: 2px solid var(--ink);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
   box-shadow: calc(cos(var(--angle)) * -10px) calc(sin(var(--angle)) * -10px) 0 -3px color-mix(in srgb, var(--shot) 70%, transparent),
     calc(cos(var(--angle)) * -20px) calc(sin(var(--angle)) * -20px) 0 -6px color-mix(in srgb, var(--shot) 40%, transparent);
 }
@@ -482,7 +447,6 @@
 @keyframes bd-shake-b { 25% { transform: translate(4px, 2px); } 50% { transform: translate(-4px, -2px); } 75% { transform: translate(2px, 1px); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .bd-clouds i,
   .bd-bob,
   .bd-stage.shake-0,
   .bd-stage.shake-1 { animation: none !important; }
