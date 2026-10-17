@@ -244,11 +244,12 @@ export const enemyTeam = (node) => {
 
 /* ——————————————————————— Récompenses, boutique, événements ——————————————————————— */
 
-export const PRICES = { component: 3, crafted: 7, plate: 5, magnet: 2, rarecandy: 7, expshare: 5, revive: 4, amuletcoin: 8 };
+export const PRICES = { keystone: 10, component: 3, crafted: 7, plate: 5, magnet: 2, rarecandy: 7, expshare: 5, revive: 4, amuletcoin: 8 };
 
 export const priceOf = (itemId) => {
   const item = ITEM_MAP[itemId];
   if (!item) return 99;
+  if (PRICES[itemId] != null && item.rare) return PRICES[itemId];
   if (item.component) return PRICES.component;
   if (item.plate) return PRICES.plate;
   if (PRICES[itemId] != null) return PRICES[itemId];
@@ -268,6 +269,8 @@ export const martStock = (floor) => {
     pick(PLATES).id,
     pick(consumables).id
   ];
+  // À partir du 2e chapitre, une Pierre Clé est parfois en vente (chère).
+  if (floor >= FLOORS_PER_CHAPTER && Math.random() < 0.3) slots[2] = 'keystone';
   return slots.map((id, i) => ({ key: `${floor}-${i}-${id}`, itemId: id, price: priceOf(id), sold: false }));
 };
 
@@ -277,6 +280,7 @@ export const fightLoot = (node) => {
   if (node.kind === 'elite') {
     loot.push(pick(COMPONENTS).id);
     if (Math.random() < 0.45) loot.push(pick(COMPONENTS).id);
+    if (Math.random() < 0.18) loot.push('keystone');
   } else if (node.kind === 'combat') {
     if (Math.random() < 0.35) loot.push(pick(COMPONENTS).id);
   }
@@ -286,7 +290,8 @@ export const fightLoot = (node) => {
 /** Récompense de champion : 3 objets au choix. */
 export const bossChoices = () => {
   const crafted = shuffle(CRAFTED).slice(0, 2).map((i) => i.id);
-  return [...crafted, pick(PLATES).id];
+  // Le coffre de champion propose toujours une Pierre Clé, au prix d’un objet fini.
+  return [...crafted, 'keystone'];
 };
 
 export const EVENT_POOL = [

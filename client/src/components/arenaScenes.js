@@ -464,6 +464,14 @@ const FIELDS = {
   }
 };
 
+/** Surcharges du terrain en style Premium (lignes et cases dorées). */
+const PREMIUM_FIELD = {
+  line: 'rgba(244,214,150,0.92)',
+  emblem: 'rgba(233,196,106,0.14)',
+  tileLine: 'rgba(246,223,165,0.42)',
+  tileTop: 'rgba(255,236,190,0.07)'
+};
+
 const sceneryFns = { prairie: sceneryPrairie, montagne: sceneryMontagne, ligue: sceneryLigue, plage: sceneryPlage };
 const GROUND = { prairie: '#86bd66', montagne: '#a29889', ligue: '#ddc9ad', plage: '#f0dfb5' };
 const HORIZON = 0.37;
@@ -482,6 +490,47 @@ export const drawScenery = (ctx, w, h, scene, horizon = h * HORIZON) => {
   ctx.translate(0, dy);
   ctx.scale(1, sy);
   fn(ctx, w, h / sy + Math.max(0, -dy) / sy);
+  ctx.restore();
+};
+
+/**
+ * Étalonnage « Premium » : lumière de fin de journée, ombres chaudes et vignettage brun
+ * pour que le plateau se fonde dans l’interface sombre et dorée. Appliqué sur tout le canvas.
+ */
+const GRADES = {
+  prairie: { sky: ['rgba(214,120,60,0.75)', 'rgba(246,190,120,0.65)'], top: 'rgba(255,150,50,0.85)', bottom: 'rgba(120,60,20,0.55)', warm: 'rgba(170,105,55,0.26)', sun: [0.82, 0.08, 'rgba(255,196,110,0.5)'] },
+  montagne: { sky: ['rgba(150,90,140,0.7)', 'rgba(240,150,140,0.65)'], top: 'rgba(255,120,120,0.8)', bottom: 'rgba(70,40,80,0.55)', warm: 'rgba(150,95,95,0.26)', sun: [0.15, 0.06, 'rgba(255,170,140,0.45)'] },
+  ligue: { top: 'rgba(110,60,90,0.75)', bottom: 'rgba(50,28,30,0.6)', warm: 'rgba(120,75,60,0.32)', sun: [0.5, 0.04, 'rgba(255,214,150,0.4)'] },
+  plage: { sky: ['rgba(220,100,70,0.75)', 'rgba(250,180,100,0.7)'], top: 'rgba(255,110,50,0.85)', bottom: 'rgba(130,60,40,0.5)', warm: 'rgba(170,100,60,0.22)', sun: [0.25, 0.18, 'rgba(255,180,100,0.55)'] }
+};
+export const applyPremiumGrade = (ctx, w, h, scene, horizon = h * 0.3) => {
+  const G = GRADES[scene] || GRADES.prairie;
+  ctx.save();
+  if (G.sky) {
+    // Ciel recoloré en fin de journée (garde la luminosité : les nuages restent clairs)
+    ctx.globalCompositeOperation = 'color';
+    ctx.fillStyle = vGrad(ctx, 0, horizon, G.sky);
+    ctx.fillRect(0, 0, w, horizon);
+  }
+  ctx.globalCompositeOperation = 'soft-light';
+  ctx.fillStyle = vGrad(ctx, 0, h, [G.top, G.bottom]);
+  ctx.fillRect(0, 0, w, h);
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = G.warm;
+  ctx.fillRect(0, 0, w, h);
+  ctx.globalCompositeOperation = 'screen';
+  const [sx, sy, sc] = G.sun;
+  const sun = ctx.createRadialGradient(w * sx, h * sy, 0, w * sx, h * sy, Math.max(w, h) * 0.55);
+  sun.addColorStop(0, sc);
+  sun.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = sun;
+  ctx.fillRect(0, 0, w, h);
+  ctx.globalCompositeOperation = 'source-over';
+  const v = ctx.createRadialGradient(w / 2, h * 0.55, Math.min(w, h) * 0.32, w / 2, h * 0.55, Math.max(w, h) * 0.78);
+  v.addColorStop(0, 'rgba(27,21,17,0)');
+  v.addColorStop(1, 'rgba(27,21,17,0.62)');
+  ctx.fillStyle = v;
+  ctx.fillRect(0, 0, w, h);
   ctx.restore();
 };
 
@@ -541,8 +590,8 @@ const drawBorder = (ctx, F, X, Y, W, H, pad) => {
 };
 
 /** Terrain (bordure + surface) en espace monde. gridW/gridH : taille de la grille, midY : ligne médiane. */
-export const drawField = (ctx, gridW, gridH, scene, SIZE) => {
-  const F = FIELDS[scene] || FIELDS.prairie;
+export const drawField = (ctx, gridW, gridH, scene, SIZE, premium = false) => {
+  const F = premium ? { ...(FIELDS[scene] || FIELDS.prairie), ...PREMIUM_FIELD } : (FIELDS[scene] || FIELDS.prairie);
   const pad = 44;
   const X = -pad;
   const Y = -pad;
@@ -569,6 +618,21 @@ export const drawField = (ctx, gridW, gridH, scene, SIZE) => {
     ctx.clip();
     drawBorder(ctx, F, X, Y, W, H, inner);
     ctx.restore();
+  }
+  if (premium) {
+    // Liseré doré extérieur + incrustation dorée autour de la surface
+    const gold = ctx.createLinearGradient(X, Y, X + W, Y + H);
+    gold.addColorStop(0, '#f6dfa5');
+    gold.addColorStop(0.45, '#b98532');
+    gold.addColorStop(0.6, '#f2d38c');
+    gold.addColorStop(1, '#a97a32');
+    ctx.strokeStyle = gold;
+    ctx.lineWidth = 3;
+    roundRect(ctx, X + 1.5, Y + 1.5, W - 3, H - 3, 23);
+    ctx.stroke();
+    ctx.lineWidth = 4;
+    roundRect(ctx, X + inner - 4, Y + inner - 4, W - (inner - 4) * 2, H - (inner - 4) * 2, 14);
+    ctx.stroke();
   }
 
   // Surface
@@ -666,11 +730,29 @@ export const drawField = (ctx, gridW, gridH, scene, SIZE) => {
   ctx.arc(cx, midY, R, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(cx, midY, SIZE * 0.32, 0, Math.PI * 2);
-  ctx.fillStyle = F.line;
-  ctx.fill();
-  if (F.emblemCore) {
+  if (!premium) {
+    ctx.beginPath();
+    ctx.arc(cx, midY, SIZE * 0.32, 0, Math.PI * 2);
+    ctx.fillStyle = F.line;
+    ctx.fill();
+  }
+  if (premium) {
+    // Emblème : anneau doré et étoile à quatre branches
+    ctx.strokeStyle = 'rgba(246,223,165,0.9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, midY, R * 0.78, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#e9c46a';
+    ctx.beginPath();
+    for (let k = 0; k < 8; k += 1) {
+      const a = (k / 8) * Math.PI * 2 - Math.PI / 2;
+      const rr = k % 2 ? SIZE * 0.12 : SIZE * 0.3;
+      ctx.lineTo(cx + Math.cos(a) * rr, midY + Math.sin(a) * rr);
+    }
+    ctx.closePath();
+    ctx.fill();
+  } else if (F.emblemCore) {
     ctx.beginPath();
     ctx.arc(cx, midY, SIZE * 0.15, 0, Math.PI * 2);
     ctx.fillStyle = F.emblemCore;
@@ -679,8 +761,8 @@ export const drawField = (ctx, gridW, gridH, scene, SIZE) => {
 };
 
 /** Case hexagonale « en relief » : tranche légère + dessus éclairci. */
-export const drawTile = (ctx, cx, cy, scene, SIZE, hexPath) => {
-  const F = FIELDS[scene] || FIELDS.prairie;
+export const drawTile = (ctx, cx, cy, scene, SIZE, hexPath, premium = false) => {
+  const F = premium ? { ...(FIELDS[scene] || FIELDS.prairie), ...PREMIUM_FIELD } : (FIELDS[scene] || FIELDS.prairie);
   const r = SIZE - 5;
   hexPath(ctx, cx, cy + 5, r);
   ctx.fillStyle = F.tileEdge;

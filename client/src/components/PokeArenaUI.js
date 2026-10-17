@@ -16,6 +16,7 @@ import {
   traitBonus,
   traitCap,
   traitDossier,
+  canMegaEvolve,
   unitFromLine
 } from './pokeArenaData';
 import { CHAPTERS, FLOORS_PER_CHAPTER, NODE_INFO, isFightKind } from './pokeArenaCampaign';
@@ -631,6 +632,31 @@ export const CodexScreen = ({ onBack, onTrait }) => {
                   </div>
                 </div>
               ))}
+              {(() => {
+                const formIds = detail.forms?.length ? detail.forms.map((f) => f.id) : [null];
+                const megas = formIds
+                  .filter((fid) => canMegaEvolve(detail.id, fid))
+                  .map((fid) => unitFromLine(detail.id, 3, `mega-${detail.id}-${fid}`, ['megaring'], fid, !fid))
+                  .filter((u) => u?.mega);
+                if (!megas.length) return null;
+                return (
+                  <div className="ui-codex-step is-mega">
+                    <span className="ui-stars" title="Avec le Bracelet Méga">✦</span>
+                    <div className="ui-codex-forms">
+                      {megas.map((u) => (
+                        <figure key={u.uid} style={{ '--t': tint(u.type) }}>
+                          <PokeSprite unit={u} size="lg" />
+                          <figcaption>
+                            <b>{displayName(u.name)}</b>
+                            <span className="ui-chips">{u.types.map((t) => <TypeChip key={t} type={t} small onHover={onTrait} />)}</span>
+                            <small>Avec le Bracelet Méga (2 Pierres Clés) · PV {u.hp} · ATK {u.atk}</small>
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
             <div className="ui-codex-text">
               <section className="ui-ability">

@@ -1346,6 +1346,43 @@ const MEGA_BY_DEX = {
   809: { name: 'Melmetal Gigamax', types: ['Acier'], dex: 10208 }
 };
 
+/**
+ * Mégas accessibles uniquement avec le Bracelet Méga (lignées à 3 stades) :
+ * dex de la forme finale → variantes (X / Y quand il y en a deux).
+ */
+export const MEGA_STONES = {
+  260: [{ name: 'Méga-Laggron', types: ['Eau', 'Sol'], dex: 10064 }],
+  609: [{ name: 'Méga-Lugulabre', types: ['Spectre', 'Feu'], dex: 10291 }],
+  181: [{ name: 'Méga-Pharamp', types: ['Électrik', 'Dragon'], dex: 10045 }],
+  94: [{ name: 'Méga-Ectoplasma', types: ['Spectre', 'Poison'], dex: 10038 }],
+  65: [{ name: 'Méga-Alakazam', types: ['Psy'], dex: 10037 }],
+  282: [{ name: 'Méga-Gardevoir', types: ['Psy', 'Fée'], dex: 10051 }],
+  475: [{ name: 'Méga-Gallame', types: ['Psy', 'Combat'], dex: 10068 }],
+  149: [{ name: 'Méga-Dracolosse', types: ['Dragon', 'Vol'], dex: 10281 }],
+  376: [{ name: 'Méga-Métalosse', types: ['Acier', 'Psy'], dex: 10076 }],
+  445: [{ name: 'Méga-Carchacrok', types: ['Dragon', 'Sol'], dex: 10058 }, { name: 'Méga-Carchacrok Z', types: ['Dragon'], dex: 10309 }],
+  998: [{ name: 'Méga-Glaivodo', types: ['Dragon', 'Glace'], dex: 10325 }],
+  658: [{ name: 'Méga-Amphinobi', types: ['Eau', 'Ténèbres'], dex: 10294 }],
+  6: [{ name: 'Méga-Dracaufeu X', types: ['Feu', 'Dragon'], dex: 10034 }, { name: 'Méga-Dracaufeu Y', types: ['Feu', 'Vol'], dex: 10035 }],
+  257: [{ name: 'Méga-Braségali', types: ['Feu', 'Combat'], dex: 10050 }],
+  160: [{ name: 'Méga-Aligatueur', types: ['Eau', 'Dragon'], dex: 10283 }],
+  306: [{ name: 'Méga-Galeking', types: ['Acier'], dex: 10053 }],
+  373: [{ name: 'Méga-Drattak', types: ['Dragon', 'Vol'], dex: 10089 }],
+  3: [{ name: 'Méga-Florizarre', types: ['Plante', 'Poison'], dex: 10033 }],
+  9: [{ name: 'Méga-Tortank', types: ['Eau'], dex: 10036 }],
+  18: [{ name: 'Méga-Roucarnage', types: ['Normal', 'Vol'], dex: 10073 }],
+  248: [{ name: 'Méga-Tyranocif', types: ['Roche', 'Ténèbres'], dex: 10049 }],
+  254: [{ name: 'Méga-Jungko', types: ['Plante', 'Dragon'], dex: 10065 }],
+  500: [{ name: 'Méga-Roitiflam', types: ['Feu', 'Combat'], dex: 10286 }],
+  545: [{ name: 'Méga-Brutapode', types: ['Insecte', 'Poison'], dex: 10288 }],
+  655: [{ name: 'Méga-Goupelin', types: ['Feu', 'Psy'], dex: 10293 }],
+  652: [{ name: 'Méga-Blindépique', types: ['Plante', 'Combat'], dex: 10292 }],
+  398: [{ name: 'Méga-Étouraptor', types: ['Combat', 'Vol'], dex: 10308 }],
+  604: [{ name: 'Méga-Ohmassacre', types: ['Électrik'], dex: 10290 }],
+  15: [{ name: 'Méga-Dardargnan', types: ['Insecte', 'Poison'], dex: 10090 }],
+  71: [{ name: 'Méga-Empiflor', types: ['Plante', 'Poison'], dex: 10279 }]
+};
+
 const promoteMegaStar = (stages) => {
   if (!stages || stages.length < 2) return;
   const prev = stages[stages.length - 2];
@@ -1687,7 +1724,8 @@ export const RECIPE_TABLE = {
   'carbos+ppup': 'quickclaw',
   'zinc+zinc': 'eviolite',
   'ppup+zinc': 'lightclay',
-  'ppup+ppup': 'ppmax'
+  'ppup+ppup': 'ppmax',
+  'keystone+keystone': 'megaring'
 };
 
 export const MAGNET = CONSUMABLES[0];
@@ -1745,7 +1783,16 @@ export const estimateIncome = (gold, streak, chapter = 1, win = true, bonus = 0)
   return { base, interest, streakBonus, winBonus, total, nextInterestGold, nextStreak };
 };
 
-export const ITEMS = [...COMPONENTS, ...CRAFTED, ...PLATES, ...CONSUMABLES];
+/** Objets rares (hors tirages aléatoires) : la Pierre Clé et le Bracelet Méga. */
+export const KEYSTONE = {
+  id: 'keystone', name: 'Pierre Clé', sprite: itemSprite('key-stone'), component: true, rare: true,
+  desc: 'Composant rare (élites, coffres de champion, Poké Mart avancé). Deux Pierres Clés sur un même Pokémon forment un Bracelet Méga.'
+};
+export const MEGA_RING = {
+  id: 'megaring', name: 'Bracelet Méga', sprite: itemSprite('mega-bracelet'), megaRing: true,
+  desc: 'À équiper sur un Pokémon dont la forme finale a une Méga-Évolution : il Méga-évolue en 3★ (+20% PV et ATK, types et apparence de la Méga).'
+};
+export const ITEMS = [...COMPONENTS, ...CRAFTED, ...PLATES, ...CONSUMABLES, KEYSTONE, MEGA_RING];
 export const ITEM_MAP = Object.fromEntries(ITEMS.map((item) => [item.id, item]));
 // Anciennes sauvegardes : objets renommés.
 ITEM_MAP.scopelens = ITEM_MAP.razorclaw;
@@ -1871,6 +1918,23 @@ const resolveStage = (line, star, formId, autoForm) => {
   return { base, formId: form.id, pending: false, stageN };
 };
 
+/** Variante de Méga pour une forme finale (X pour les attaquants au contact, Y sinon). */
+const pickMegaStone = (dex, range = 1) => {
+  const list = MEGA_STONES[dex];
+  if (!list?.length) return null;
+  return list.length > 1 && range > 1 ? list[1] : list[0];
+};
+
+/** La forme finale de cette lignée (ou de la forme choisie) peut-elle Méga-évoluer avec le Bracelet ? */
+export const canMegaEvolve = (lineId, formId = null) => {
+  const line = LINE_MAP[lineId];
+  if (!line) return false;
+  const finals = line.forms?.length
+    ? line.forms.filter((f) => !formId || f.id === formId).map((f) => f.stages[f.stages.length - 1])
+    : [line.stages[line.stages.length - 1]];
+  return finals.some((st) => st && MEGA_STONES[st.dex]);
+};
+
 export const unitFromLine = (lineId, star = 1, uid, items = [], formId = null, autoForm = false) => {
   const line = LINE_MAP[lineId];
   if (!line) return null;
@@ -1879,6 +1943,29 @@ export const unitFromLine = (lineId, star = 1, uid, items = [], formId = null, a
   if (!base) return null;
   const types = base.types || [base.type];
   const roles = (line.traits || []).filter((t) => ROLE_TRAITS.has(t));
+  const megaForm = items.includes('megaring') && resolved.stageN >= 3 ? pickMegaStone(base.dex, line.range) : null;
+  if (megaForm) {
+    const mTypes = megaForm.types;
+    const megaDex = megaForm.dex;
+    return {
+      ...unitFromLine(lineId, star, uid, items.filter((id) => id !== 'megaring'), formId, autoForm),
+      items: items.slice(0, ITEM_SLOTS),
+      name: megaForm.name,
+      type: mTypes[0],
+      types: mTypes,
+      traits: [...mTypes, ...roles],
+      hp: Math.round(base.hp * 1.2),
+      atk: Math.round(base.atk * 1.2),
+      dex: megaDex,
+      art: artworkUrl(megaDex),
+      home: homeUrl(megaDex),
+      sprite: spriteUrl(megaDex),
+      pixel: homeUrl(megaDex),
+      anim: animUrl(megaDex),
+      model: homeUrl(megaDex),
+      mega: true
+    };
+  }
   const dex = base.dex;
   return {
     uid: uid || `${lineId}-${resolved.stageN}-${Math.random().toString(36).slice(2, 8)}`,
@@ -2858,16 +2945,25 @@ export const equipItemOnUnit = (unit, itemId) => {
   if (!def || def.consumable) return null;
   const items = [...(unit.items || [])];
 
+  const rebuild = (nextItems) => unitFromLine(unit.lineId, unit.star, unit.uid, nextItems, unit.formId) || { ...unit, items: nextItems };
+  if (def.megaRing) {
+    if (items.includes('megaring') || !canMegaEvolve(unit.lineId, unit.formId)) return null;
+    if (items.length >= ITEM_SLOTS) return null;
+    items.push(itemId);
+    return { unit: rebuild(items), note: unit.star >= 3 ? `${unit.name} Méga-évolue !` : 'Bracelet Méga équipé : Méga-Évolution en 3★.' };
+  }
+
   if (def.component) {
-    const compIdx = items.findIndex((id) => ITEM_MAP[id]?.component);
+    const compIdx = items.findIndex((id) => ITEM_MAP[id]?.component && !!ITEM_MAP[id].rare === !!def.rare);
     if (compIdx >= 0) {
       const other = items[compIdx];
       const result = craftResult(other, itemId);
       if (!result) return null;
+      if (result === 'megaring' && !canMegaEvolve(unit.lineId, unit.formId)) return null;
       items.splice(compIdx, 1);
       items.push(result);
       return {
-        unit: { ...unit, items: items.slice(0, ITEM_SLOTS) },
+        unit: rebuild(items.slice(0, ITEM_SLOTS)),
         note: `${ITEM_MAP[other].name} + ${def.name} → ${ITEM_MAP[result].name} !`,
         crafted: result
       };
@@ -2886,5 +2982,6 @@ export const equipItemOnUnit = (unit, itemId) => {
 export const stripItems = (unit) => {
   if (!unit) return { unit, stripped: [] };
   const stripped = [...(unit.items || [])];
-  return { unit: { ...unit, items: [] }, stripped };
+  const bare = unitFromLine(unit.lineId, unit.star, unit.uid, [], unit.formId) || { ...unit, items: [] };
+  return { unit: bare, stripped };
 };

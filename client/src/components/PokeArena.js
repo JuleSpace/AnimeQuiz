@@ -1080,6 +1080,7 @@ const PokeArena = ({ onClose }) => {
           evolving={evolving}
           speed={speed}
           theme={resolveScene(boardTheme, chapter)}
+          premium={skin === 'premium'}
           stage={isFight ? 'fight' : 'prep'}
           onCellClick={onCellClick}
           onHoverUnit={(u) => { setHoverUnit(u); if (u) setTraitPop(null); }}

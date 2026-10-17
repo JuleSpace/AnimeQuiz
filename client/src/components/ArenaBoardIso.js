@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BOARD_COLS, BOARD_ROWS_HALF, BOARD_SIZE, ITEM_MAP } from './pokeArenaData';
 import './ArenaBoard.css';
-import { SCENES, SCENE_BY_CHAPTER, SCENE_LABELS, drawField, drawScenery, drawTile } from './arenaScenes';
+import { SCENES, SCENE_BY_CHAPTER, SCENE_LABELS, applyPremiumGrade, drawField, drawScenery, drawTile } from './arenaScenes';
 
 /*
  * Stade : tribunes et bannières, court à deux camps (bleu allié / rouge adverse),
@@ -104,6 +104,7 @@ export default function ArenaBoardIso({
   evolving = [],
   speed = 1,
   theme = DEFAULT_BOARD_THEME,
+  premium = false,
   stage,
   onCellClick,
   onHoverUnit,
@@ -159,13 +160,15 @@ export default function ArenaBoardIso({
       const oy = (cssH - grid.h * ISO_Y * scale) / 2 + 30 * scale;
       // Horizon du décor juste derrière le bord haut du terrain
       const fieldTop = oy - 44 * scale * ISO_Y;
-      drawScenery(ctx, cssW, cssH, scene, Math.max(cssH * 0.16, fieldTop + 6));
+      const horizonY = Math.max(cssH * 0.16, fieldTop + 6);
+      drawScenery(ctx, cssW, cssH, scene, horizonY);
       ctx.save();
       ctx.translate(ox, oy);
       ctx.scale(scale, scale * ISO_Y);
-      drawField(ctx, grid.w, grid.h, scene, SIZE);
-      cells.forEach((cell) => drawTile(ctx, cell.x + SIZE, cell.y + SIZE, scene, SIZE, hexPath));
+      drawField(ctx, grid.w, grid.h, scene, SIZE, premium);
+      cells.forEach((cell) => drawTile(ctx, cell.x + SIZE, cell.y + SIZE, scene, SIZE, hexPath, premium));
       ctx.restore();
+      if (premium) applyPremiumGrade(ctx, cssW, cssH, scene, horizonY);
       setLayout({ scale, ox, oy });
     };
     paint();
@@ -173,7 +176,7 @@ export default function ArenaBoardIso({
     const ro = RO ? new RO(paint) : null;
     ro?.observe(wrap);
     return () => ro?.disconnect();
-  }, [cells, grid, theme]);
+  }, [cells, grid, theme, premium]);
 
   const screenOf = (col, row) => {
     if (!layout) return { x: 0, y: 0 };
@@ -234,7 +237,7 @@ export default function ArenaBoardIso({
 
   return (
     <div
-      className={`bd-stage scene-${resolveScene(theme)}${isFight ? ' is-fight' : ''}${placing ? ' is-placing' : ''}${dragging ? ' is-dragging' : ''}${act?.crit ? ` shake-${actKey % 2}` : ''}`}
+      className={`bd-stage scene-${resolveScene(theme)}${premium ? ' is-premium' : ''}${isFight ? ' is-fight' : ''}${placing ? ' is-placing' : ''}${dragging ? ' is-dragging' : ''}${act?.crit ? ` shake-${actKey % 2}` : ''}`}
       ref={wrapRef}
       style={{ '--bd-unit': `${unitSize}px`, '--bd-cell': `${cellW}px`, '--bd-speed': speed }}
     >
