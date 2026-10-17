@@ -57,6 +57,7 @@ import {
   regionAt,
   rewardChoices
 } from './pokeArenaCampaign';
+import { TOWN_TRACKS, battleTrack, musicPlayer, regionTrack, versusTrack, victoryTrack } from './pokeArenaMusic';
 import {
   VERSUS_MAX_PLAYERS,
   rebuildBoard,
@@ -152,6 +153,16 @@ const readSkin = () => {
   }
 };
 const THEME_IDS = Object.keys(BOARD_THEMES);
+const MUSIC_KEY = 'poke-arena-music';
+const MUSIC_LEVELS = [0, 0.25, 0.5, 0.8];
+const readMusic = () => {
+  try {
+    const v = localStorage.getItem(MUSIC_KEY);
+    return v == null ? 0.5 : Math.max(0, Math.min(1, Number(v) || 0));
+  } catch {
+    return 0.5;
+  }
+};
 const SPEEDS = [1, 2, 4];
 
 const padBoard = (board) => {
@@ -217,6 +228,9 @@ const PokeArena = ({ onClose }) => {
   const [stock, setStock] = useState([]);
   const [eventOpts, setEventOpts] = useState([]);
   const [rewardOpts, setRewardOpts] = useState(null);
+  const [musicVol, setMusicVol] = useState(readMusic);
+  const [nowPlaying, setNowPlaying] = useState(null);
+  const [townTrack] = useState(() => TOWN_TRACKS[Math.floor(Math.random() * TOWN_TRACKS.length)]);
   const [wins, setWins] = useState(0);
   // Interface
   const [toast, setToast] = useState('');
@@ -300,6 +314,42 @@ const PokeArena = ({ onClose }) => {
   useEffect(() => {
     try { localStorage.setItem(THEME_KEY, boardTheme); } catch { /* stockage indisponible */ }
   }, [boardTheme]);
+
+  /* ———————————————— Musique ———————————————— */
+
+  useEffect(() => {
+    const player = musicPlayer();
+    const off = player.subscribe(setNowPlaying);
+    return () => { off(); player.stop(); };
+  }, []);
+  useEffect(() => {
+    musicPlayer().setVolume(musicVol);
+    try { localStorage.setItem(MUSIC_KEY, String(musicVol)); } catch { /* stockage indisponible */ }
+  }, [musicVol]);
+  const wonRun = floor >= totalFloors && hp > 0;
+  useEffect(() => {
+    let key = townTrack;
+    if (phase === 'map' || phase === 'mart' || phase === 'event') key = regionTrack(regionAt(map, floor));
+    else if (phase === 'battle' && mode === 'versus') key = result?.win ? 'victory-trainer-dp' : versusTrack(vsRound, vsRoom?.code);
+    else if (phase === 'battle') key = (result?.win || rewardOpts) ? victoryTrack(node) : battleTrack(node);
+    else if (phase === 'over') key = wonRun ? 'hall-of-fame-hgss' : townTrack;
+    else if (phase === 'vs-over') key = 'hall-of-fame-dp';
+    musicPlayer().play(key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, mode, node?.id, result?.win, !!rewardOpts, floor, map, vsRound, wonRun]);
+  const musicLabel = musicVol > 0 ? `♪ ${Math.round(musicVol * 100)} %` : '♪ Off';
+  const musicTitle = nowPlaying
+    ? `${nowPlaying.kind === 'file' ? nowPlaying.title : `Thème original (ajoute « ${nowPlaying.key}.mp3 » pour l’OST : ${nowPlaying.title})`} · clic : volume`
+    : 'Musique : clic pour régler le volume';
+  const cycleMusic = () => setMusicVol((v) => {
+    const i = MUSIC_LEVELS.findIndex((x) => Math.abs(x - v) < 0.01);
+    return MUSIC_LEVELS[(i + 1) % MUSIC_LEVELS.length];
+  });
+  const musicButton = (
+    <button type="button" className={`ui-btn is-small is-ghost pa-music-btn${musicVol > 0 ? ' is-on' : ''}`} title={musicTitle} aria-label={musicTitle} onClick={cycleMusic}>
+      {musicLabel}
+    </button>
+  );
 
   const openTrait = (trait, event, extra = {}) => {
     if (!trait || !event?.currentTarget) {
@@ -1245,6 +1295,7 @@ const PokeArena = ({ onClose }) => {
             <button type="button" className={`ui-btn is-big${canContinue ? '' : ' is-primary'}`} onClick={() => setPhase('starter')}>Nouvelle partie</button>
             <button type="button" className="ui-btn" onClick={() => { setVsError(''); setPhase('lobby'); }}>Salon multi</button>
             <button type="button" className="ui-btn" onClick={() => setPhase('codex')}>Pokédex</button>
+            {musicButton}
             <button type="button" className="ui-btn is-ghost" onClick={onClose}>Quitter</button>
           </div>
           <p className="pa-hub-foot">{ROSTER_LINES} lignées, {ROSTER_FORMS} formes, {TOTAL_FLOORS} étapes, 6 régions et plus de 100 dresseurs célèbres.</p>
@@ -1350,6 +1401,7 @@ const PokeArena = ({ onClose }) => {
       )}
       {extra}
       <div className="pa-top-actions">
+        {musicButton}
         <button
           type="button"
           className="ui-btn is-small is-ghost"
