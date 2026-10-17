@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ArenaBoardIso, { BOARD_THEMES, BOARD_THEME_LABELS, DEFAULT_BOARD_THEME, resolveScene } from './ArenaBoardIso';
 import './PokeArena.css';
+import './PokeArenaPremium.css';
 import {
   BENCH_CAP,
   BOARD_CAP,
@@ -76,6 +77,17 @@ export const ARENA_HASH = '#arena';
 
 const SPEED_KEY = 'poke-arena-speed';
 const THEME_KEY = 'poke-arena-board-theme';
+const SKIN_KEY = 'poke-arena-skin';
+const SKINS = ['premium', 'classique'];
+const SKIN_LABELS = { premium: 'Premium', classique: 'Classique' };
+const readSkin = () => {
+  try {
+    const v = localStorage.getItem(SKIN_KEY);
+    return SKINS.includes(v) ? v : 'premium';
+  } catch {
+    return 'premium';
+  }
+};
 const THEME_IDS = Object.keys(BOARD_THEMES);
 const SPEEDS = [1, 2, 4];
 
@@ -166,6 +178,11 @@ const PokeArena = ({ onClose }) => {
   const [banner, setBanner] = useState(null);
   const [speed, setSpeed] = useState(readSpeed);
   const [boardTheme, setBoardTheme] = useState(readTheme);
+  const [skin, setSkin] = useState(readSkin);
+  const skinCls = `skin-${skin}`;
+  useEffect(() => {
+    try { localStorage.setItem(SKIN_KEY, skin); } catch { /* stockage indisponible */ }
+  }, [skin]);
   const [saveTick, setSaveTick] = useState(0);
 
   const timers = useRef([]);
@@ -881,7 +898,7 @@ const PokeArena = ({ onClose }) => {
 
   if (phase === 'hub') {
     return (
-      <div className="pa-root pa-hub">
+      <div className={`pa-root ${skinCls} pa-hub`}>
         <div className="pa-hub-scene" aria-hidden>
           <span className="pa-hub-ball" />
         </div>
@@ -907,7 +924,7 @@ const PokeArena = ({ onClose }) => {
 
   if (phase === 'codex') {
     return (
-      <div className="pa-root pa-screen">
+      <div className={`pa-root ${skinCls} pa-screen`}>
         <CodexScreen onBack={() => setPhase('hub')} onTrait={(t, e) => openTrait(t, e)} />
         <TraitPopup pop={traitPop} />
       </div>
@@ -916,7 +933,7 @@ const PokeArena = ({ onClose }) => {
 
   if (phase === 'starter') {
     return (
-      <div className="pa-root pa-screen">
+      <div className={`pa-root ${skinCls} pa-screen`}>
         <StarterScreen onPick={startRun} onBack={() => setPhase('hub')} onTrait={(t, e) => openTrait(t, e)} />
         <TraitPopup pop={traitPop} />
       </div>
@@ -927,7 +944,7 @@ const PokeArena = ({ onClose }) => {
     const victory = floor >= TOTAL_FLOORS && hp > 0;
     const team = board.filter(Boolean);
     return (
-      <div className="pa-root pa-screen">
+      <div className={`pa-root ${skinCls} pa-screen`}>
         <div className={`pa-over${victory ? ' is-win' : ''}`}>
           {victory && <div className="ui-confetti" aria-hidden>{Array.from({ length: 40 }).map((_, i) => <i key={i} style={{ '--i': i }} />)}</div>}
           <h1>{victory ? 'Maître de la Ligue !' : 'Ton aventure s’arrête ici'}</h1>
@@ -961,6 +978,14 @@ const PokeArena = ({ onClose }) => {
         <button
           type="button"
           className="ui-btn is-small is-ghost"
+          title="Changer le style de l’interface"
+          onClick={() => setSkin((k) => SKINS[(SKINS.indexOf(k) + 1) % SKINS.length])}
+        >
+          Style : {SKIN_LABELS[skin]}
+        </button>
+        <button
+          type="button"
+          className="ui-btn is-small is-ghost"
           title="Changer l’ambiance du terrain"
           onClick={() => setBoardTheme((t) => THEME_IDS[(THEME_IDS.indexOf(t) + 1) % THEME_IDS.length])}
         >
@@ -977,7 +1002,7 @@ const PokeArena = ({ onClose }) => {
 
   if (phase === 'map') {
     return (
-      <div className="pa-root pa-screen">
+      <div className={`pa-root ${skinCls} pa-screen`}>
         {topBar(null)}
         <MapScreen
           map={map}
@@ -994,7 +1019,7 @@ const PokeArena = ({ onClose }) => {
 
   if (phase === 'mart') {
     return (
-      <div className="pa-root pa-screen">
+      <div className={`pa-root ${skinCls} pa-screen`}>
         {topBar(null)}
         <MartScreen stock={stock} gold={gold} bag={bag} onBuy={buyWare} onReroll={rerollMart} onLeave={() => advance(node.id)} hud={null} />
         {toastEl}
@@ -1004,7 +1029,7 @@ const PokeArena = ({ onClose }) => {
 
   if (phase === 'event') {
     return (
-      <div className="pa-root pa-screen">
+      <div className={`pa-root ${skinCls} pa-screen`}>
         {topBar(null)}
         <EventScreen options={eventOpts} onChoose={chooseEvent} hud={null} />
         {toastEl}
@@ -1028,7 +1053,7 @@ const PokeArena = ({ onClose }) => {
   const dragItem = drag?.kind === 'item' ? ITEM_MAP[drag.itemId] : null;
 
   return (
-    <div className={`pa-root pa-battle${isFight ? ' is-fighting' : ''}${drag ? ' is-dragging' : ''}`}>
+    <div className={`pa-root ${skinCls} pa-battle${isFight ? ' is-fighting' : ''}${drag ? ' is-dragging' : ''}`}>
       {topBar(trainer && (
         <div className="pa-foe">
           <span className="pa-foe-label">{node.kind === 'boss' ? 'Champion' : node.kind === 'elite' ? 'Élite' : 'Adversaire'}</span>

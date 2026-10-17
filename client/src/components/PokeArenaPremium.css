@@ -1,0 +1,313 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700;1,800&display=swap');
+
+/*
+ * Style « Premium » : l’interface comme une collection de cartes rares.
+ * Carton sombre et chaud, liserés dorés fins, cartes de boutique cadrées par rareté
+ * avec un reflet holographique. Playfair Display (italique) pour les titres.
+ * Activé par la classe .skin-premium sur .pa-root (bouton « Style » en jeu).
+ */
+
+.pa-root.skin-premium {
+  --ink: #f3e9d6;
+  --ink-2: #d9cbb1;
+  --muted: #a69779;
+  --line: rgba(222, 184, 120, 0.2);
+  --line-2: rgba(222, 184, 120, 0.4);
+  --paper: #2c231d;
+  --paper-2: #382d25;
+  --tint-base: #2c231d;
+  --gold: #dcb066;
+  --gold-hi: #f6dfa5;
+  --gold-lo: #a97a32;
+  --sel: #e9c46a;
+  --yellow: #e9c46a;
+  --scarlet: #c9573f;
+  --scarlet-2: #a8402b;
+  --violet: #5f4d8f;
+  --red: #d25a42;
+  --blue: #7b98dc;
+  --grass: #79b673;
+  --grass-d: #5a9a55;
+  --sky-1: #3a2e25;
+  --sky-2: #3a2e25;
+  --c1: #9d968b;
+  --c2: #63b27a;
+  --c3: #5e98da;
+  --c4: #a77bd9;
+  --c5: #e3b44f;
+  --frame: var(--c1);
+  --foil: linear-gradient(135deg, var(--gold-hi), #c9963f 42%, #f2d38c 58%, var(--gold-lo));
+  --lift-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --lift: inset 0 1px 0 rgba(255, 230, 180, 0.05), 0 14px 30px -16px rgba(0, 0, 0, 0.85);
+  --lift-lg: inset 0 1px 0 rgba(255, 230, 180, 0.06), 0 26px 50px -20px rgba(0, 0, 0, 0.95);
+  color: var(--ink);
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgba(255, 200, 130, 0.09), transparent 70%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px),
+    radial-gradient(120% 90% at 50% 20%, #33271f 0%, #1b1511 70%, #141009 100%);
+}
+
+/* ——— Panneaux : carton sombre, double liseré doré ——— */
+.pa-root.skin-premium :is(.pa-top, .ui-traits, .ui-card, .ui-help, .ui-meter, .pa-bag, .pa-shopbar, .pa-fightbar,
+  .ui-node-info, .ui-map-team, .ui-bag-preview, .ui-codex-list, .ui-codex-step, .ui-codex-text, .ui-chapter,
+  .ui-starter-detail, .ui-modal-card, .ui-result-card, .pa-over, .pa-hub-card, .ui-pop, .ui-event-card, .ui-ware, .ui-reward-card) {
+  background: linear-gradient(160deg, #31271f, #241c17);
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.42), inset 0 0 0 4px #241c17, inset 0 0 0 5px rgba(222, 184, 120, 0.12), var(--lift);
+}
+.pa-root.skin-premium :is(.pa-top, .pa-hub-card, .ui-result-card, .pa-over)::before { display: none; }
+
+/* ——— Titres ——— */
+.pa-root.skin-premium :is(.ui-traits h2, .pa-side h3, .ui-help h3, .ui-meter h3, .pa-bag h3, .ui-map-team h3, .ui-bag-preview h3) {
+  display: block;
+  clip-path: none;
+  padding: 0 0 6px;
+  margin-bottom: 8px !important;
+  background: none;
+  color: var(--gold);
+  font: italic 700 19px/1.1 'Playfair Display', Georgia, serif;
+  letter-spacing: 0.01em;
+  border-bottom: 1px solid transparent;
+  border-image: linear-gradient(90deg, rgba(222, 184, 120, 0.6), transparent) 1;
+}
+.pa-root.skin-premium :is(.ui-screen-head h1, .pa-top-where strong, .ui-chapter h2, .ui-node-info h3, .ui-card-id h3,
+  .ui-starter-detail h2, .ui-modal-card h2, .ui-result-card h2, .pa-over h1, .ui-ware strong, .ui-event-card strong, .ui-reward-card strong) {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.pa-root.skin-premium .ui-screen-head h1 { color: var(--gold-hi); font-size: clamp(30px, 4vw, 44px); }
+.pa-root.skin-premium .ui-screen-head h1::after { background: linear-gradient(90deg, var(--gold), transparent); transform: none; height: 2px; width: 160px; }
+.pa-root.skin-premium .ui-result-card h2,
+.pa-root.skin-premium .pa-over.is-win h1 { color: var(--gold-hi); }
+
+/* ——— Accueil ——— */
+.pa-root.skin-premium .pa-logo span:first-child {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  background: var(--foil);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  transform: none;
+}
+.pa-root.skin-premium .pa-logo span:last-child {
+  clip-path: none;
+  background: none;
+  color: var(--ink-2);
+  font: 600 15px/1.4 'Barlow', sans-serif;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  padding: 0;
+}
+.pa-root.skin-premium .pa-hub-ball { opacity: 0.35; border-color: rgba(222, 184, 120, 0.15); background: linear-gradient(rgba(201, 87, 63, 0.12) 0 47%, rgba(222, 184, 120, 0.12) 47% 53%, rgba(255, 255, 255, 0.03) 53%); }
+
+/* ——— Boutons ——— */
+.pa-root.skin-premium .ui-btn {
+  clip-path: none;
+  filter: none;
+  border-radius: 999px;
+  background: #3a2e25;
+  color: var(--ink);
+  box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.5), var(--lift-sm);
+  font-weight: 600;
+}
+.pa-root.skin-premium .ui-btn:hover:not(:disabled) { background: #483a2e; }
+.pa-root.skin-premium .ui-btn.is-ghost { background: transparent; box-shadow: none; color: var(--ink-2); }
+.pa-root.skin-premium .ui-btn.is-ghost:hover:not(:disabled) { background: rgba(222, 184, 120, 0.1); color: var(--ink); }
+.pa-root.skin-premium :is(.ui-btn.is-primary, .ui-btn.is-fight, .ui-btn.is-buy) {
+  background: var(--foil);
+  color: #2a1a0a;
+  box-shadow: 0 0 0 1px var(--gold-hi), 0 8px 20px -8px rgba(233, 196, 106, 0.55);
+  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6);
+}
+.pa-root.skin-premium :is(.ui-btn.is-primary, .ui-btn.is-fight, .ui-btn.is-buy):hover:not(:disabled) { background: var(--foil); filter: brightness(1.08); }
+.pa-root.skin-premium .ui-btn.is-big { font: italic 700 21px/1 'Playfair Display', Georgia, serif; }
+.pa-root.skin-premium .ui-btn.is-fight { border-radius: 14px; font: italic 800 28px/1 'Playfair Display', Georgia, serif; }
+.pa-root.skin-premium :is(.ui-btn.is-xp, .ui-btn.is-roll) { background: #241c17; border-radius: 10px; }
+.pa-root.skin-premium .pa-shop-actions .ui-btn { border-radius: 10px; }
+.pa-root.skin-premium .pa-shop-actions .ui-btn em { background: var(--foil); color: #2a1a0a; border-radius: 999px; }
+.pa-root.skin-premium .ui-btn.is-danger { background: rgba(201, 87, 63, 0.25); }
+
+.pa-root.skin-premium .ui-chip { background: #2c231d; border: 1px solid rgba(222, 184, 120, 0.3); border-radius: 999px; color: var(--ink-2); }
+.pa-root.skin-premium .ui-chip:hover { background: #3a2e25; color: var(--ink); }
+.pa-root.skin-premium .ui-chip.is-on { background: var(--foil); color: #2a1a0a; border-color: var(--gold-hi); }
+.pa-root.skin-premium .ui-type { clip-path: none; border-radius: 999px; padding: 1px 10px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25); }
+.pa-root.skin-premium .ui-cost { border-radius: 999px; }
+
+/* ——— Barre du haut ——— */
+.pa-root.skin-premium .pa-top { padding-left: 14px; }
+.pa-root.skin-premium :is(.pa-hud-hp, .pa-hud-gold, .pa-hud-level) {
+  background: #1d1713;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.25);
+}
+.pa-root.skin-premium :is(.pa-hud-hp strong, .pa-hud-gold strong, .pa-hud-level strong) {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  color: var(--gold-hi);
+}
+.pa-root.skin-premium :is(.pa-hud-hp i, .pa-hud-level i) { background: #3a2e25; }
+.pa-root.skin-premium .pa-hud-level b { background: linear-gradient(90deg, var(--gold-lo), var(--gold-hi)); }
+.pa-root.skin-premium .pa-heart { background: radial-gradient(circle at 35% 30%, #f08a72, var(--scarlet) 60%, #7a2a1a); }
+.pa-root.skin-premium .pa-foe { clip-path: none; border-radius: 999px; background: rgba(201, 87, 63, 0.18); box-shadow: inset 0 0 0 1px rgba(201, 87, 63, 0.45); }
+.pa-root.skin-premium .pa-foe-label { color: #f0a08e; }
+.pa-root.skin-premium .pa-income { color: #9fd49a; }
+
+/* ——— Synergies ——— */
+.pa-root.skin-premium .ui-traits li.is-active { background: color-mix(in srgb, var(--t) 16%, #2c231d); box-shadow: inset 2px 0 0 var(--t); }
+.pa-root.skin-premium .ui-pips i { background: #4a3d32; }
+.pa-root.skin-premium .ui-traits li:not(.is-active) .ui-trait-badge::before { background: #4a3d32; }
+
+/* ——— Fiche, compteur, sac ——— */
+.pa-root.skin-premium .ui-ability { background: #241c17; }
+.pa-root.skin-premium .ui-ability.is-talent { background: rgba(233, 196, 106, 0.1); }
+.pa-root.skin-premium :is(.ui-stat i, .ui-meter-row i) { background: #1d1713; }
+.pa-root.skin-premium .ui-meter-row b { background: linear-gradient(90deg, var(--gold-lo), var(--gold-hi)); }
+.pa-root.skin-premium .pa-bag-item { background: #241c17; border: 1px solid rgba(222, 184, 120, 0.22); }
+.pa-root.skin-premium .pa-bag-item.is-comp { background: #26241a; }
+.pa-root.skin-premium .pa-bag-item:hover { background: #3a2e25; }
+.pa-root.skin-premium .pa-bag-item.is-on { background: rgba(233, 196, 106, 0.3); }
+
+/* ——— Banc : pochettes de cartes ——— */
+.pa-root.skin-premium .pa-bench {
+  background: linear-gradient(180deg, #1d1713, #15100d);
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.3), inset 0 6px 16px rgba(0, 0, 0, 0.5);
+}
+.pa-root.skin-premium .pa-slot {
+  background: linear-gradient(180deg, #3a2e25, #2c231d);
+  border-radius: 8px;
+  border-bottom: 3px solid var(--c1);
+  box-shadow: inset 0 0 0 1px rgba(255, 230, 180, 0.08);
+}
+.pa-root.skin-premium .pa-slot.is-empty { background: rgba(255, 230, 180, 0.02); border: 1px dashed rgba(222, 184, 120, 0.18); box-shadow: none; }
+.pa-root.skin-premium .pa-slot.is-selected { background: rgba(233, 196, 106, 0.35); }
+
+/* ——— Cartes de boutique : vraies cartes, cadre de rareté, reflet holo ——— */
+.pa-root.skin-premium .pa-card { --frame: var(--c1); }
+.pa-root.skin-premium .pa-card.cost-2 { --frame: var(--c2); }
+.pa-root.skin-premium .pa-card.cost-3 { --frame: var(--c3); }
+.pa-root.skin-premium .pa-card.cost-4 { --frame: var(--c4); }
+.pa-root.skin-premium .pa-card.cost-5 { --frame: var(--c5); }
+.pa-root.skin-premium .pa-card {
+  overflow: hidden;
+  border-radius: 10px;
+  padding-top: 8px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--t) 50%, #2c231d) 0%, color-mix(in srgb, var(--t) 22%, #2c231d) 60%, #221a15 60.5%, #1c1612 100%);
+  box-shadow: 0 0 0 2px var(--frame), inset 0 0 0 3px #1c1612, inset 0 0 0 4px rgba(255, 230, 180, 0.22), var(--lift);
+}
+.pa-root.skin-premium .pa-card.cost-5 {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--t) 45%, #3a2c18) 0%, color-mix(in srgb, var(--t) 18%, #33271a) 60%, #2a2014 60.5%, #1c1612 100%);
+  box-shadow: 0 0 0 2px var(--gold-hi), 0 0 0 3px var(--gold-lo), inset 0 0 0 3px #1c1612, inset 0 0 0 4px rgba(246, 223, 165, 0.45), 0 0 22px -6px rgba(233, 196, 106, 0.6);
+}
+.pa-root.skin-premium .pa-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 32%, rgba(255, 255, 255, 0.18) 44%, rgba(170, 220, 255, 0.16) 50%, rgba(255, 200, 240, 0.12) 56%, transparent 68%);
+  background-size: 260% 100%;
+  background-position: 130% 0;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.pa-root.skin-premium :is(.pa-card.cost-4, .pa-card.cost-5)::after { opacity: 0.8; animation: pa-holo 5s ease-in-out infinite; }
+.pa-root.skin-premium .pa-card:hover:not(:disabled)::after { opacity: 1; animation: pa-holo 1.6s ease-in-out infinite; }
+@keyframes pa-holo { 0%, 100% { background-position: 130% 0; } 50% { background-position: -30% 0; } }
+.pa-root.skin-premium .pa-card:hover:not(:disabled) {
+  transform: translateY(-5px);
+  box-shadow: 0 0 0 2px var(--gold-hi), inset 0 0 0 3px #1c1612, inset 0 0 0 4px rgba(255, 230, 180, 0.3), var(--lift-lg);
+}
+.pa-root.skin-premium .pa-card.is-sold { background: transparent; box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.18); }
+.pa-root.skin-premium .pa-card.is-sold::after { display: none; }
+.pa-root.skin-premium .pa-card strong { color: var(--ink); font-weight: 700; }
+.pa-root.skin-premium .pa-card-types { color: var(--ink-2); }
+.pa-root.skin-premium .pa-card-cost { background: #1c1612; color: var(--gold-hi); box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.5); }
+.pa-root.skin-premium .pa-card-owned { background: #1c1612; box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.4); }
+.pa-root.skin-premium .pa-card-owned i { background: #4a3d32; }
+.pa-root.skin-premium .pa-card-owned i.is-have { background: var(--ink); }
+.pa-root.skin-premium .pa-sell-zone { background: rgba(40, 20, 15, 0.95); color: #f0a08e; border-color: var(--scarlet); }
+
+/* ——— Arène : cadre doré autour du plateau peint ——— */
+.pa-root.skin-premium .bd-stage {
+  border-radius: 14px;
+  box-shadow: 0 0 0 2px var(--gold), 0 0 0 6px #241c17, 0 0 0 7px rgba(222, 184, 120, 0.35), var(--lift-lg);
+}
+.pa-root.skin-premium .pa-arena-caption { background: rgba(28, 22, 18, 0.92); color: var(--ink); box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.45); }
+.pa-root.skin-premium .pa-banner { background: linear-gradient(90deg, transparent, rgba(20, 15, 12, 0.92) 12%, rgba(20, 15, 12, 0.92) 88%, transparent); }
+.pa-root.skin-premium .pa-banner strong { font-family: 'Playfair Display', Georgia, serif; font-style: italic; background: var(--foil); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* ——— Starter ——— */
+.pa-root.skin-premium .ui-starter-card {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--t) 34%, #2c231d), #241c17);
+  box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.3), var(--lift);
+}
+.pa-root.skin-premium .ui-starter-card::before { background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--t) 40%, transparent), transparent 60%); }
+.pa-root.skin-premium .ui-starter-card.is-on { background: linear-gradient(180deg, color-mix(in srgb, var(--t) 40%, #3a2c18), #2a2014); box-shadow: 0 0 0 2px var(--gold-hi), 0 0 24px -6px rgba(233, 196, 106, 0.6); }
+.pa-root.skin-premium .ui-starter-card.is-on::after { background: var(--foil); }
+.pa-root.skin-premium .ui-starter-hero {
+  background:
+    radial-gradient(circle at 50% 75%, color-mix(in srgb, var(--t) 45%, transparent) 0 32%, transparent 62%),
+    linear-gradient(180deg, color-mix(in srgb, var(--t) 35%, #2c231d), #1c1612);
+  box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.3);
+}
+.pa-root.skin-premium .ui-evo { background: #241c17; }
+
+/* ——— Carte de campagne ——— */
+.pa-root.skin-premium .ui-chapter::before { background: linear-gradient(118deg, rgba(121, 182, 115, 0.16) 0 80%, transparent 80.2%); }
+.pa-root.skin-premium .ui-chapter.biome-mountain::before { background: linear-gradient(118deg, rgba(150, 140, 210, 0.15) 0 80%, transparent 80.2%); }
+.pa-root.skin-premium .ui-chapter.biome-league::before { background: linear-gradient(118deg, rgba(227, 180, 79, 0.16) 0 80%, transparent 80.2%); }
+.pa-root.skin-premium .ui-node { background: #3a2e25; box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.4), var(--lift); }
+.pa-root.skin-premium .ui-node.kind-elite { background: #4a2a22; }
+.pa-root.skin-premium .ui-node.kind-mart { background: #263247; }
+.pa-root.skin-premium .ui-node.kind-center { background: #46283a; }
+.pa-root.skin-premium .ui-node.kind-event { background: #352a48; }
+.pa-root.skin-premium .ui-node.kind-boss { background: var(--foil); }
+.pa-root.skin-premium .ui-node.is-playable { box-shadow: 0 0 0 2px var(--gold-hi), 0 0 18px -4px rgba(233, 196, 106, 0.7); animation-name: pa-node-premium; }
+@keyframes pa-node-premium { 50% { transform: translateY(-4px); } }
+.pa-root.skin-premium .ui-node-tag { background: #1c1612; color: var(--gold-hi); box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.4); }
+.pa-root.skin-premium .ui-node-info .ui-node-icon { background: #241c17; }
+.pa-root.skin-premium .ui-team-mon { background: #241c17; }
+
+/* ——— Poké Mart, événements, récompenses ——— */
+.pa-root.skin-premium .ui-shelf {
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.015) 0 2px, transparent 2px 10px),
+    linear-gradient(160deg, #3b2830, #221920);
+  box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.35), var(--lift);
+}
+.pa-root.skin-premium :is(.ui-ware-icon, .ui-event-art) { background: #1c1612; box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.3); }
+.pa-root.skin-premium .ui-event-reward { background: var(--foil); color: #2a1a0a; }
+.pa-root.skin-premium :is(.ui-reward-card, .ui-event-card):hover { box-shadow: 0 0 0 2px var(--gold-hi), var(--lift-lg); }
+.pa-root.skin-premium .ui-result-lines li { background: #241c17; }
+.pa-root.skin-premium .ui-result-lines li.is-bad { background: rgba(201, 87, 63, 0.2); }
+.pa-root.skin-premium .ui-recipes li { background: #241c17; }
+
+/* ——— Pokédex ——— */
+.pa-root.skin-premium :is(.ui-search, .ui-select) { background: #1c1612; color: var(--ink); border-color: rgba(222, 184, 120, 0.3); }
+.pa-root.skin-premium .ui-codex-row:hover { background: #3a2e25; }
+
+/* ——— Petits éléments ——— */
+.pa-root.skin-premium .ui-modal,
+.pa-root.skin-premium .ui-result { background: rgba(10, 8, 6, 0.65); }
+.pa-root.skin-premium .pa-toast {
+  clip-path: none;
+  border-radius: 999px;
+  background: #1c1612;
+  color: var(--gold-hi);
+  box-shadow: 0 0 0 1px var(--gold), var(--lift-lg);
+}
+.pa-root.skin-premium .ui-pop { color: var(--ink); }
+.pa-root.skin-premium .ui-pop li.is-on { color: var(--gold-hi); }
+.pa-root.skin-premium .ui-confetti i { background: var(--gold-hi); }
+.pa-root.skin-premium .ui-pips i.on { background: var(--t); }
+.pa-root.skin-premium .pa-top { gap: 10px; }
+.pa-root.skin-premium .pa-top-actions { gap: 2px; flex-wrap: nowrap; }
+.pa-root.skin-premium .pa-top-actions .ui-btn.is-small { padding: 4px 10px; font-size: 12.5px; white-space: nowrap; }
