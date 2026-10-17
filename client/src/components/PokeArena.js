@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import ArenaBoardIso from './ArenaBoardIso';
+import ArenaBoardIso, { BOARD_THEMES, BOARD_THEME_LABELS, DEFAULT_BOARD_THEME } from './ArenaBoardIso';
 import './PokeArena.css';
 import {
   BENCH_CAP,
@@ -75,6 +75,8 @@ import {
 export const ARENA_HASH = '#arena';
 
 const SPEED_KEY = 'poke-arena-speed';
+const THEME_KEY = 'poke-arena-board-theme';
+const THEME_IDS = Object.keys(BOARD_THEMES);
 const SPEEDS = [1, 2, 4];
 
 const padBoard = (board) => {
@@ -102,6 +104,15 @@ const readSpeed = () => {
     return SPEEDS.includes(v) ? v : 2;
   } catch {
     return 2;
+  }
+};
+
+const readTheme = () => {
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    return THEME_IDS.includes(v) ? v : DEFAULT_BOARD_THEME;
+  } catch {
+    return DEFAULT_BOARD_THEME;
   }
 };
 
@@ -154,6 +165,7 @@ const PokeArena = ({ onClose }) => {
   const [result, setResult] = useState(null);
   const [banner, setBanner] = useState(null);
   const [speed, setSpeed] = useState(readSpeed);
+  const [boardTheme, setBoardTheme] = useState(readTheme);
   const [saveTick, setSaveTick] = useState(0);
 
   const timers = useRef([]);
@@ -187,6 +199,10 @@ const PokeArena = ({ onClose }) => {
     speedRef.current = speed;
     try { localStorage.setItem(SPEED_KEY, String(speed)); } catch { /* stockage indisponible */ }
   }, [speed]);
+
+  useEffect(() => {
+    try { localStorage.setItem(THEME_KEY, boardTheme); } catch { /* stockage indisponible */ }
+  }, [boardTheme]);
 
   const openTrait = (trait, event, extra = {}) => {
     if (!trait || !event?.currentTarget) {
@@ -942,6 +958,14 @@ const PokeArena = ({ onClose }) => {
       </div>
       {extra}
       <div className="pa-top-actions">
+        <button
+          type="button"
+          className="ui-btn is-small is-ghost"
+          title="Changer l’ambiance du terrain"
+          onClick={() => setBoardTheme((t) => THEME_IDS[(THEME_IDS.indexOf(t) + 1) % THEME_IDS.length])}
+        >
+          Terrain : {BOARD_THEME_LABELS[boardTheme]}
+        </button>
         <button type="button" className="ui-btn is-small" onClick={() => { persist(); say('Partie sauvegardée.'); }} disabled={phase === 'battle' && stage !== 'prep'}>Sauvegarder</button>
         <button type="button" className="ui-btn is-small is-ghost" onClick={() => setPhase('hub')} disabled={phase === 'battle' && stage !== 'prep'}>Menu</button>
         <button type="button" className="ui-btn is-small is-ghost" onClick={onClose}>Quitter</button>
@@ -1030,6 +1054,7 @@ const PokeArena = ({ onClose }) => {
           actKey={actKey}
           evolving={evolving}
           speed={speed}
+          theme={boardTheme}
           stage={isFight ? 'fight' : 'prep'}
           onCellClick={onCellClick}
           onHoverUnit={(u) => { setHoverUnit(u); if (u) setTraitPop(null); }}
@@ -1197,8 +1222,17 @@ const PokeArena = ({ onClose }) => {
                     {(unit.traits || []).slice(0, 3).map((t) => <i key={t} style={{ background: tint(t) }} title={t} />)}
                     <em>{(unit.traits || []).slice(0, 2).join(', ')}</em>
                   </span>
-                  <span className="pa-card-cost">{unit.cost}</span>
-                  {[...board, ...bench].some((u) => u?.lineId === unit.lineId && u.star < 3) && <span className="pa-card-owned" title="Tu en possèdes déjà">★</span>}
+                  <span className="pa-card-cost" title={`${unit.cost} or`}><i aria-hidden />{unit.cost}</span>
+                  {(() => {
+                    const owned = [...board, ...bench].filter((u) => u?.lineId === unit.lineId && u.star === 1).length;
+                    if (!owned) return null;
+                    const left = Math.max(0, 3 - owned);
+                    return (
+                      <span className="pa-card-owned" title={left <= 1 ? 'En l’achetant, tu fais évoluer ce Pokémon' : `Tu en as ${owned} : encore ${left} pour le faire évoluer`}>
+                        {[0, 1, 2].map((i) => <i key={i} className={i < owned ? 'is-have' : i === owned ? 'is-this' : ''} />)}
+                      </span>
+                    );
+                  })()}
                 </button>
               ) : <div key={`sold-${index}`} className="pa-card is-sold" aria-hidden />))}
             </div>
