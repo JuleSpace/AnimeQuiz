@@ -1,3 +1,5 @@
+import { TALENTS } from './pokeArenaTalents';
+
 export const TYPES = ['Feu', 'Eau', 'Plante', 'Électrik', 'Normal', 'Combat', 'Psy', 'Spectre', 'Dragon', 'Fée', 'Acier', 'Glace', 'Roche', 'Ténèbres', 'Vol', 'Sol', 'Insecte', 'Poison'];
 
 const TYPE_CHART = {
@@ -86,6 +88,9 @@ const line3 = (id, cost, a, b, c, range = 2, roles = []) => L(
   [S(a[0], a[1], a[2], a[3], a[4], a[5]), S(b[0], b[1], b[2], b[3], b[4], b[5]), S(c[0], c[1], c[2], c[3], c[4], c[5])]
 );
 
+/** Remplace le sort générique d’une lignée par un sort propre. */
+const withSpell = (line, spell) => ({ ...line, spell });
+
 /**
  * Grand roster multi-gén. Chaque run n’en tire qu’~30 pour le joueur ;
  * les ennemis piochent dans tout le catalogue.
@@ -119,7 +124,11 @@ export const LINES = [
     [S('Magicarpe', 'Eau', 280, 18, 20, 129), S('Léviator', ['Eau', 'Vol'], 900, 120, 14, 130), S('Léviator ★', ['Eau', 'Vol'], 1480, 185, 15, 130)]),
   L('litwick', 1, [], 3,
     { name: 'Feu Follet', desc: 'Tous les 3 tours : 165% ATK + brûle 8% PV max.', every: 3, mult: 1.65, aim: 'weak', shred: 0.08 },
-    [S('Funécire', ['Spectre', 'Feu'], 360, 48, 13, 607), S('Mélancolux', ['Spectre', 'Feu'], 680, 90, 14, 608), S('Lugulabre', ['Spectre', 'Feu'], 1120, 148, 15, 609)]),
+    [S('Funécire', ['Spectre', 'Feu'], 360, 48, 13, 607), S('Mélancolux', ['Spectre', 'Feu'], 680, 90, 14, 608)],
+    { at: 3, forms: [
+      { id: 'lugulabre', stages: [S('Lugulabre', ['Spectre', 'Feu'], 1120, 148, 15, 609)] },
+      { id: 'mega', stages: [S('Méga-Lugulabre', ['Spectre', 'Feu'], 1080, 160, 16, 10291)] }
+    ] }),
   L('bidoof', 1, ['Normal'], 1,
     { name: 'Mâchouille', desc: 'Tous les 3 tours : 155% ATK Normal.', every: 3, mult: 1.55, aim: 'front' },
     [S('Keunotor', 'Normal', 400, 36, 11, 399), S('Castorno', ['Normal', 'Eau'], 760, 70, 12, 400), S('Castorno ★', ['Normal', 'Eau'], 1200, 115, 13, 400)]),
@@ -128,7 +137,11 @@ export const LINES = [
     [S('Axoloto', ['Eau', 'Sol'], 420, 34, 10, 194), S('Maraiste', ['Eau', 'Sol'], 820, 78, 11, 195), S('Maraiste ★', ['Eau', 'Sol'], 1300, 125, 12, 195)]),
   L('mareep', 1, ['Électrik'], 3,
     { name: 'Tonnerre', desc: 'Tous les 3 tours : 165% ATK Électrik.', every: 3, mult: 1.65, aim: 'random' },
-    [S('Wattouat', 'Électrik', 360, 44, 12, 179), S('Lainergie', 'Électrik', 680, 82, 13, 180), S('Pharamp', 'Électrik', 1120, 135, 14, 181)]),
+    [S('Wattouat', 'Électrik', 360, 44, 12, 179), S('Lainergie', 'Électrik', 680, 82, 13, 180)],
+    { at: 3, forms: [
+      { id: 'pharamp', stages: [S('Pharamp', 'Électrik', 1120, 135, 14, 181)] },
+      { id: 'mega', stages: [S('Méga-Pharamp', ['Électrik', 'Dragon'], 1080, 145, 13, 10045)] }
+    ] }),
   L('azurill', 1, ['Fée', 'Eau'], 2,
     { name: 'Bulles d’O', desc: 'Tous les 3 tours : 150% ATK + soigne 6%.', every: 3, mult: 1.5, aim: 'front', healAlly: 0.06 },
     [S('Azurill', ['Normal', 'Fée'], 380, 32, 11, 298), S('Marill', ['Eau', 'Fée'], 720, 68, 12, 183), S('Azumarill', ['Eau', 'Fée'], 1220, 118, 13, 184)]),
@@ -170,7 +183,11 @@ export const LINES = [
     [S('Férosinge', 'Combat', 400, 58, 15, 56), S('Colossinge', 'Combat', 760, 105, 14, 57), S('Courrousinge', ['Combat', 'Spectre'], 1240, 170, 16, 979)]),
   L('growlithe', 2, ['Feu'], 1,
     { name: 'Lance-Flammes', desc: 'Tous les 3 tours : 175% ATK Feu.', every: 3, mult: 1.75, aim: 'front' },
-    [S('Caninos', 'Feu', 420, 56, 14, 58), S('Arcanin', 'Feu', 820, 110, 15, 59), S('Arcanin ★', 'Feu', 1340, 170, 16, 59)]),
+    [S('Caninos', 'Feu', 420, 56, 14, 58)],
+    { at: 2, forms: [
+      { id: 'kanto', stages: [S('Arcanin', 'Feu', 820, 110, 15, 59), S('Arcanin ★', 'Feu', 1340, 170, 16, 59)] },
+      { id: 'hisui', stages: [S('Arcanin de Hisui', ['Feu', 'Roche'], 860, 115, 14, 10230), S('Arcanin de Hisui ★', ['Feu', 'Roche'], 1400, 175, 15, 10230)] }
+    ] }),
   L('abra', 2, ['Psy', 'Mage'], 3,
     { name: 'Psyko', desc: 'Tous les 3 tours : 190% ATK Psy sur le faible.', every: 3, mult: 1.9, aim: 'weak' },
     [S('Abra', 'Psy', 300, 70, 18, 63), S('Kadabra', 'Psy', 560, 115, 20, 64), S('Alakazam', 'Psy', 920, 175, 22, 65)]),
@@ -279,7 +296,7 @@ export const LINES = [
     { name: 'Colère', desc: 'Tous les 3 tours : 220% ATK Dragon front.', every: 3, mult: 2.2, aim: 'front' },
     [S('Coupenotte', 'Dragon', 580, 88, 14, 610), S('Incisache', 'Dragon', 1020, 150, 15, 611), S('Tranchodon', 'Dragon', 1680, 220, 17, 612)]),
 
-  // —— Favoris / grille types (extra) ——
+  // —— Grille des types (extra) ——
   L('charmander', 2, ['Feu', 'Vol', 'Starter'], 1,
     { name: 'Déflagration', desc: 'Tous les 3 tours : 180% ATK Feu zone.', every: 3, mult: 1.8, aim: 'aoe2' },
     [S('Salamèche', 'Feu', 400, 54, 14, 4), S('Reptincel', 'Feu', 760, 98, 15, 5), S('Dracaufeu', ['Feu', 'Vol'], 1280, 160, 17, 6)]),
@@ -390,7 +407,7 @@ export const LINES = [
     { name: 'Poing Éclair', desc: 'Tous les 3 tours : 215% ATK Combat.', every: 3, mult: 2.15, aim: 'front' },
     [S('Paume-de-Fer', ['Combat', 'Électrik'], 820, 115, 12, 992), S('Paume-de-Fer ★', ['Combat', 'Électrik'], 1320, 180, 13, 992), S('Paume-de-Fer ★★', ['Combat', 'Électrik'], 1980, 250, 14, 992)]),
 
-  // —— Favoris de la grille (formes normales) ——
+  // —— Grille (formes normales) ——
   mono('lapras', 3, 'Lokhlass', ['Eau', 'Glace'], 620, 70, 12, 131, 2),
   line2('exegg', 2, ['Noeunoeuf', ['Plante', 'Psy'], 380, 48, 11, 102], ['Noadkoko', ['Plante', 'Psy'], 820, 110, 12, 103]),
   mono('articuno', 5, 'Artikodin', ['Glace', 'Vol'], 760, 110, 15, 144, 3),
@@ -422,7 +439,13 @@ export const LINES = [
   line3('togepi', 3, ['Togepi', 'Fée', 380, 40, 11, 175], ['Togetic', ['Fée', 'Vol'], 740, 90, 13, 176], ['Togekiss', ['Fée', 'Vol'], 1260, 155, 16, 468], 2),
   line3('treecko', 2, ['Arcko', 'Plante', 380, 50, 16, 252], ['Massko', 'Plante', 720, 95, 18, 253], ['Jungko', 'Plante', 1200, 155, 20, 254], 2, ['Starter']),
   line2('electrike', 2, ['Dynavolt', 'Électrik', 380, 55, 16, 309], ['Élecsprint', 'Électrik', 820, 125, 18, 310], 3),
-  line2('snorunt', 2, ['Stalgamin', 'Glace', 380, 48, 13, 361], ['Oniglali', 'Glace', 820, 110, 14, 362], 2),
+  L('snorunt', 2, [], 2,
+    { name: 'Vent Glace', desc: 'Tous les 3 tours : 165% ATK Glace sur 2 cibles + ralentit.', every: 3, mult: 1.65, aim: 'aoe2', slow: 2 },
+    [S('Stalgamin', 'Glace', 380, 48, 13, 361)],
+    { at: 2, forms: [
+      { id: 'glalie', stages: [S('Oniglali', 'Glace', 820, 110, 14, 362), S('Oniglali ★', 'Glace', 1320, 165, 15, 362)] },
+      { id: 'froslass', stages: [S('Momartik', ['Glace', 'Spectre'], 760, 115, 17, 478), S('Momartik ★', ['Glace', 'Spectre'], 1240, 170, 18, 478)] }
+    ] }),
   line2('taillow', 2, ['Nirondelle', ['Normal', 'Vol'], 340, 46, 18, 276], ['Hélédelle', ['Normal', 'Vol'], 760, 105, 20, 277], 2),
   L('nincada', 2, [], 2,
     { name: 'Taillade', desc: 'Tous les 3 tours : 170% ATK.', every: 3, mult: 1.7, aim: 'front' },
@@ -445,7 +468,13 @@ export const LINES = [
   mono('giratina', 5, 'Giratina', ['Spectre', 'Dragon'], 860, 120, 14, 487, 2),
   line2('minccino', 2, ['Chinchidou', 'Normal', 360, 48, 16, 572], ['Pashmilla', 'Normal', 780, 110, 18, 573], 2),
   line3('tepig', 3, ['Gruikui', 'Feu', 420, 55, 12, 498], ['Grotichon', ['Feu', 'Combat'], 780, 105, 13, 499], ['Roitiflam', ['Feu', 'Combat'], 1300, 170, 14, 500], 1, ['Starter']),
-  line3('oshawott', 3, ['Moustillon', 'Eau', 400, 52, 14, 501], ['Mateloutre', 'Eau', 760, 95, 15, 502], ['Clamiral', 'Eau', 1240, 155, 16, 503], 1, ['Starter']),
+  L('oshawott', 3, ['Starter'], 1,
+    { name: 'Coquilame', desc: 'Tous les 3 tours : 185% ATK sur le front, ignore 10% PV.', every: 3, mult: 1.85, aim: 'front', shred: 0.1 },
+    [S('Moustillon', 'Eau', 400, 52, 14, 501), S('Mateloutre', 'Eau', 760, 95, 15, 502)],
+    { at: 3, forms: [
+      { id: 'unys', stages: [S('Clamiral', 'Eau', 1240, 155, 16, 503)] },
+      { id: 'hisui', stages: [S('Clamiral de Hisui', ['Eau', 'Ténèbres'], 1220, 165, 17, 10236)] }
+    ] }),
   line2('blitzle', 2, ['Zébibron', 'Électrik', 380, 55, 17, 522], ['Zéblitz', 'Électrik', 800, 120, 18, 523], 2),
   line2('cubchoo', 2, ['Polarhume', 'Glace', 420, 50, 11, 613], ['Polagriffe', 'Glace', 920, 120, 12, 614], 1),
   line3('timburr', 3, ['Charpenti', 'Combat', 420, 55, 12, 532], ['Ouvrifier', 'Combat', 800, 105, 12, 533], ['Bétochef', 'Combat', 1320, 170, 13, 534], 1),
@@ -459,7 +488,13 @@ export const LINES = [
   line2('cottonee', 2, ['Doudouvet', ['Plante', 'Fée'], 360, 46, 15, 546], ['Farfaduvet', ['Plante', 'Fée'], 760, 105, 17, 547], 2),
   mono('kyurem', 5, 'Kyurem', ['Dragon', 'Glace'], 820, 125, 14, 646, 3),
   mono('meloetta', 5, 'Meloetta', ['Psy', 'Normal'], 700, 120, 16, 648, 3),
-  line3('fennekin', 3, ['Feunnec', 'Feu', 380, 55, 16, 653], ['Roussil', 'Feu', 720, 100, 17, 654], ['Goupelin', ['Feu', 'Psy'], 1200, 165, 18, 655], 3, ['Starter']),
+  L('fennekin', 3, ['Starter'], 3,
+    { name: 'Feu Mystique', desc: 'Tous les 3 tours : 180% ATK Feu + baisse l’ATK de 15%.', every: 3, mult: 1.8, aim: 'weak', atkBreak: 0.15 },
+    [S('Feunnec', 'Feu', 380, 55, 16, 653), S('Roussil', 'Feu', 720, 100, 17, 654)],
+    { at: 3, forms: [
+      { id: 'goupelin', stages: [S('Goupelin', ['Feu', 'Psy'], 1200, 165, 18, 655)] },
+      { id: 'mega', stages: [S('Méga-Goupelin', ['Feu', 'Psy'], 1160, 178, 19, 10293)] }
+    ] }),
   line3('chespin', 3, ['Marisson', 'Plante', 420, 52, 12, 650], ['Boguérisse', 'Plante', 800, 95, 12, 651], ['Blindépique', ['Plante', 'Combat'], 1320, 155, 13, 652], 1, ['Starter']),
   line2('helioptile', 2, ['Galvaran', ['Électrik', 'Normal'], 360, 52, 16, 694], ['Iguolta', ['Électrik', 'Normal'], 780, 120, 18, 695], 3),
   line2('bergmite', 3, ['Grelaçon', 'Glace', 460, 55, 10, 712], ['Séracrawl', 'Glace', 1000, 120, 11, 713], 1),
@@ -482,7 +517,13 @@ export const LINES = [
   line2('mudbray', 2, ['Tiboudet', 'Sol', 440, 55, 12, 749], ['Bourrinos', 'Sol', 960, 120, 12, 750], 1),
   mono('oricorio', 2, 'Plumeline', ['Vol', 'Feu'], 460, 85, 17, 741, 2),
   mono('oranguru', 3, 'Gouroutan', ['Normal', 'Psy'], 560, 95, 12, 765, 3),
-  line2('rockruff', 3, ['Rocabot', 'Roche', 400, 55, 15, 744], ['Lougaroc', 'Roche', 860, 125, 17, 745], 1),
+  L('rockruff', 3, [], 1,
+    { name: 'Lame de Roc', desc: 'Tous les 3 tours : 200% ATK Roche sur le front.', every: 3, mult: 2.0, aim: 'front' },
+    [S('Rocabot', 'Roche', 400, 55, 15, 744)],
+    { at: 2, forms: [
+      { id: 'jour', stages: [S('Lougaroc (Diurne)', 'Roche', 860, 125, 17, 745), S('Lougaroc (Diurne) ★', 'Roche', 1340, 180, 18, 745)] },
+      { id: 'nuit', stages: [S('Lougaroc (Nocturne)', 'Roche', 900, 130, 15, 10126), S('Lougaroc (Nocturne) ★', 'Roche', 1400, 185, 16, 10126)] }
+    ] }),
   line3('jangmo', 4, ['Bébécaille', 'Dragon', 420, 55, 13, 782], ['Écaïd', ['Dragon', 'Combat'], 820, 110, 14, 783], ['Ékaïser', ['Dragon', 'Combat'], 1400, 180, 15, 784], 1),
   line2('fomantis', 2, ['Mimantis', 'Plante', 380, 52, 14, 753], ['Floramantis', 'Plante', 820, 120, 15, 754], 2),
   mono('lunala', 5, 'Lunala', ['Psy', 'Spectre'], 820, 130, 15, 792, 3),
@@ -511,15 +552,113 @@ export const LINES = [
   line2('milcery', 2, ['Crèmy', 'Fée', 360, 42, 12, 868], ['Charmilly', 'Fée', 800, 100, 13, 869], 2),
   mono('furfrou', 2, 'Couafarel', 'Normal', 480, 80, 16, 676, 1),
   mono('vivillon', 2, 'Prismillon', ['Insecte', 'Vol'], 460, 85, 16, 666, 2),
-  mono('ogerpon', 5, 'Ogerpon', 'Plante', 680, 125, 18, 1017, 1),
+  L('ogerpon', 5, [], 1,
+    { name: 'Massue Furieuse', desc: 'Tous les 3 tours : 230% ATK sur le front, ignore 10% PV.', every: 3, mult: 2.3, aim: 'front', shred: 0.1 },
+    [S('Ogerpon', 'Plante', 680, 125, 18, 1017)],
+    { at: 2, forms: [
+      { id: 'turquoise', stages: [S('Ogerpon (Turquoise)', 'Plante', 1020, 185, 19, 1017), S('Ogerpon (Turquoise) ★', 'Plante', 1560, 250, 20, 1017)] },
+      { id: 'puits', stages: [S('Ogerpon (Masque du Puits)', ['Plante', 'Eau'], 1060, 180, 18, 10273), S('Ogerpon (Masque du Puits) ★', ['Plante', 'Eau'], 1620, 245, 19, 10273)] },
+      { id: 'fourneau', stages: [S('Ogerpon (Masque du Fourneau)', ['Plante', 'Feu'], 1000, 190, 19, 10274), S('Ogerpon (Masque du Fourneau) ★', ['Plante', 'Feu'], 1520, 255, 20, 10274)] }
+    ] }),
   mono('miraidon', 5, 'Miraidon', ['Électrik', 'Dragon'], 820, 135, 18, 1008, 3),
   mono('roaring', 5, 'Rugit-Lune', ['Dragon', 'Ténèbres'], 780, 145, 20, 1005, 2),
   line2('toedscool', 3, ['Terracool', ['Sol', 'Plante'], 400, 52, 13, 948], ['Terracruel', ['Sol', 'Plante'], 880, 120, 15, 949], 2),
   mono('bombirdier', 3, 'Lestombaile', ['Vol', 'Ténèbres'], 520, 95, 17, 962, 2),
   line2('tarountula', 1, ['Tissenboule', 'Insecte', 360, 42, 12, 917], ['Filentrappe', 'Insecte', 760, 95, 13, 918], 2),
   line3('nacli', 2, ['Selutin', 'Roche', 420, 46, 10, 932], ['Amassel', 'Roche', 800, 90, 11, 933], ['Gigansel', 'Roche', 1340, 145, 11, 934], 1),
-  line2('bellibolt', 2, ['Têtampoule', 'Électrik', 400, 48, 11, 938], ['Ampibidou', 'Électrik', 880, 115, 12, 939], 2)
+  line2('bellibolt', 2, ['Têtampoule', 'Électrik', 400, 48, 11, 938], ['Ampibidou', 'Électrik', 880, 115, 12, 939], 2),
+
+  // —— Grille : Pokémon restants ——
+  withSpell(line3('teddiursa', 1, ['Teddiursa', 'Normal', 420, 46, 11, 216], ['Ursaring', 'Normal', 820, 92, 11, 217], ['Ursaking', ['Sol', 'Normal'], 1340, 140, 11, 901], 1, ['Force']),
+    { name: 'Coup d’Boule', desc: 'Tous les 3 tours : 165% ATK + ralentit (SPD -2).', every: 3, mult: 1.65, aim: 'front', slow: 2 }),
+  withSpell(line2('swablu', 2, ['Tylton', ['Normal', 'Vol'], 360, 42, 14, 333], ['Altaria', ['Dragon', 'Vol'], 800, 95, 15, 334], 2),
+    { name: 'Chant Antique', desc: 'Tous les 3 tours : 150% ATK sur 2 cibles + soigne 8%.', every: 3, mult: 1.5, aim: 'aoe2', healAlly: 0.08 }),
+  withSpell(mono('chatot', 1, 'Pijako', ['Normal', 'Vol'], 380, 42, 16, 441, 3),
+    { name: 'Babil', desc: 'Tous les 3 tours : 150% ATK + étourdit la cible.', every: 3, mult: 1.5, aim: 'random', stun: true }),
+  withSpell(line3('lillipup', 1, ['Ponchiot', 'Normal', 400, 40, 13, 506], ['Ponchien', 'Normal', 760, 76, 13, 507], ['Mastouffe', 'Normal', 1260, 122, 14, 508], 1),
+    { name: 'Crocs Givre', desc: 'Tous les 3 tours : 160% ATK + ralentit (SPD -2).', every: 3, mult: 1.6, aim: 'front', slow: 2 }),
+  withSpell(mono('drampa', 3, 'Draïeul', ['Normal', 'Dragon'], 620, 85, 11, 780, 3),
+    { name: 'Draco-Souffle', desc: 'Tous les 3 tours : 180% ATK Dragon sur 2 cibles.', every: 3, mult: 1.8, aim: 'aoe2' }),
+  withSpell(mono('victini', 5, 'Victini', ['Psy', 'Feu'], 720, 125, 18, 494, 1),
+    { name: 'Coup Victoire', desc: 'Tous les 3 tours : 240% ATK Feu sur le front.', every: 3, mult: 2.4, aim: 'front' }),
+  withSpell(line2('remoraid', 2, ['Rémoraid', 'Eau', 360, 52, 12, 223], ['Octillery', 'Eau', 800, 115, 12, 224], 3, ['Mage']),
+    { name: 'Octazooka', desc: 'Tous les 3 tours : 175% ATK Eau + baisse l’ATK de 12%.', every: 3, mult: 1.75, aim: 'back', atkBreak: 0.12 }),
+  withSpell(line2('barboach', 1, ['Barloche', ['Eau', 'Sol'], 420, 40, 11, 339], ['Barbicha', ['Eau', 'Sol'], 900, 88, 11, 340], 1),
+    { name: 'Séisme', desc: 'Tous les 4 tours : 165% ATK Sol sur 2 cibles.', every: 4, mult: 1.65, aim: 'aoe2' }),
+  withSpell(mono('keldeo', 5, 'Keldeo', ['Eau', 'Combat'], 720, 130, 19, 647, 1),
+    { name: 'Lame Ointe', desc: 'Tous les 3 tours : 230% ATK Combat sur le front.', every: 3, mult: 2.3, aim: 'front' }),
+  withSpell(mono('tapu-fini', 5, 'Tokopisco', ['Eau', 'Fée'], 820, 110, 14, 788, 3),
+    { name: 'Ire de la Nature', desc: 'Tous les 4 tours : 200% ATK Fée, ignore 10% PV + soigne 20%.', every: 4, mult: 2.0, aim: 'tank', shred: 0.1, healAlly: 0.2 }),
+  withSpell(line2('pansage', 1, ['Feuillajou', 'Plante', 380, 44, 15, 511], ['Feuiloutan', 'Plante', 800, 95, 16, 512], 1),
+    { name: 'Balle Graine', desc: 'Tous les 2 tours : 140% ATK Plante.', every: 2, mult: 1.4, aim: 'front' }),
+  withSpell(line2('phantump', 1, ['Brocélôme', ['Spectre', 'Plante'], 420, 40, 10, 708], ['Desséliande', ['Spectre', 'Plante'], 900, 88, 10, 709], 1),
+    { name: 'Encornebois', desc: 'Tous les 3 tours : 155% ATK Plante + soigne 10%.', every: 3, mult: 1.55, aim: 'front', healAlly: 0.1 }),
+  withSpell(line3('tynamo', 2, ['Anchwatt', 'Électrik', 360, 46, 10, 602], ['Lampéroie', 'Électrik', 720, 92, 11, 603], ['Ohmassacre', 'Électrik', 1260, 155, 11, 604], 1),
+    { name: 'Crocs Éclair', desc: 'Tous les 3 tours : 180% ATK Électrik + ralentit.', every: 3, mult: 1.8, aim: 'front', slow: 2 }),
+  withSpell(mono('zeraora', 5, 'Zeraora', 'Électrik', 700, 130, 23, 807, 1),
+    { name: 'Plasma Punch', desc: 'Tous les 2 tours : 190% ATK Électrik.', every: 2, mult: 1.9, aim: 'front' }),
+  withSpell(mono('raging-bolt', 5, 'Ire-Foudre', ['Électrik', 'Dragon'], 860, 125, 13, 1021, 3),
+    { name: 'Tonnerre Croc', desc: 'Tous les 4 tours : 250% ATK Électrik sur le tank.', every: 4, mult: 2.5, aim: 'tank' }),
+  withSpell(line2('amaura', 2, ['Amagara', ['Roche', 'Glace'], 420, 46, 10, 698], ['Dragmara', ['Roche', 'Glace'], 920, 105, 10, 699], 3),
+    { name: 'Blizzard', desc: 'Tous les 4 tours : 175% ATK Glace sur 2 cibles + ralentit.', every: 4, mult: 1.75, aim: 'aoe2', slow: 2 }),
+  withSpell(line2('vulpix-a', 2, ['Goupix d’Alola', 'Glace', 360, 46, 16, 10103], ['Feunard d’Alola', ['Glace', 'Fée'], 800, 110, 17, 10104], 3),
+    { name: 'Aurore', desc: 'Tous les 3 tours : 150% ATK Glace sur 2 cibles.', every: 3, mult: 1.5, aim: 'aoe2' }),
+  withSpell(mono('iron-bundle', 4, 'Hotte-de-Fer', ['Glace', 'Eau'], 620, 115, 22, 991, 3),
+    { name: 'Lyophilisation', desc: 'Tous les 3 tours : 195% ATK Glace + ralentit (SPD -3).', every: 3, mult: 1.95, aim: 'random', slow: 3 }),
+  withSpell(line2('pancham', 2, ['Pandespiègle', 'Combat', 420, 50, 10, 674], ['Pandarbare', ['Combat', 'Ténèbres'], 920, 115, 10, 675], 1, ['Force']),
+    { name: 'Coup Bas', desc: 'Tous les 3 tours : 165% ATK Ténèbres sur le plus faible.', every: 3, mult: 1.65, aim: 'weak' }),
+  withSpell(line2('farfetchd-g', 2, ['Canarticho de Galar', 'Combat', 400, 52, 13, 10166], ['Palarticho', 'Combat', 860, 120, 13, 865], 1, ['Force']),
+    { name: 'Botte Sabre', desc: 'Tous les 3 tours : 195% ATK Combat sur le front.', every: 3, mult: 1.95, aim: 'front' }),
+  withSpell(line2('mareanie', 3, ['Vorastérie', ['Poison', 'Eau'], 440, 44, 8, 747], ['Prédastérie', ['Poison', 'Eau'], 1000, 85, 8, 748], 1),
+    { name: 'Baston Toxik', desc: 'Tous les 3 tours : 130% ATK sur 2 cibles + empoisonne + bouclier 10%.', every: 3, mult: 1.3, aim: 'aoe2', dot: { pct: 0.05, turns: 3 }, shield: 0.1 }),
+  withSpell(mono('zygarde', 5, 'Zygarde', ['Dragon', 'Sol'], 900, 115, 14, 718, 1),
+    { name: 'Force Chtonienne', desc: 'Tous les 4 tours : 220% ATK Sol à tous.', every: 4, mult: 2.2, aim: 'all' }),
+  withSpell(line2('sandygast', 2, ['Bacabouh', ['Spectre', 'Sol'], 460, 42, 9, 769], ['Trépassable', ['Spectre', 'Sol'], 1000, 90, 9, 770], 2),
+    { name: 'Draine-Sable', desc: 'Tous les 3 tours : 150% ATK + bouclier 12% PV.', every: 3, mult: 1.5, aim: 'front', shield: 0.12 }),
+  withSpell(line2('golett', 3, ['Gringolem', ['Sol', 'Spectre'], 460, 55, 10, 622], ['Golemastoc', ['Sol', 'Spectre'], 1000, 120, 10, 623], 1, ['Force']),
+    { name: 'Poing Ombre', desc: 'Tous les 3 tours : 200% ATK Spectre sur le front.', every: 3, mult: 2.0, aim: 'front' }),
+  withSpell(mono('aerodactyl', 3, 'Ptéra', ['Roche', 'Vol'], 560, 92, 21, 142, 1),
+    { name: 'Éboulement', desc: 'Tous les 3 tours : 175% ATK Roche sur 2 cibles + ralentit.', every: 3, mult: 1.75, aim: 'aoe2', slow: 2 }),
+  withSpell(mono('landorus', 5, 'Démétéros', ['Sol', 'Vol'], 800, 125, 15, 645, 2),
+    { name: 'Force Chtonienne', desc: 'Tous les 4 tours : 225% ATK Sol à tous.', every: 4, mult: 2.25, aim: 'all' }),
+  withSpell(line3('solosis', 3, ['Nucléos', 'Psy', 380, 48, 9, 577], ['Méios', 'Psy', 740, 95, 9, 578], ['Symbios', 'Psy', 1300, 150, 9, 579], 3, ['Mage']),
+    { name: 'Distorsion', desc: 'Tous les 4 tours : 150% ATK Psy sur 2 cibles + soigne 12%.', every: 4, mult: 1.5, aim: 'aoe2', healAlly: 0.12 }),
+  withSpell(mono('scream-tail', 4, 'Hurle-Queue', ['Fée', 'Psy'], 720, 100, 15, 985, 2),
+    { name: 'Bâillement', desc: 'Tous les 3 tours : 170% ATK Fée + étourdit + soigne 10%.', every: 3, mult: 1.7, aim: 'front', stun: true, healAlly: 0.1 }),
+  withSpell(line3('wurmple', 2, ['Chenipotte', 'Insecte', 340, 38, 12, 265], ['Armulys', 'Insecte', 640, 60, 8, 266], ['Charmillon', ['Insecte', 'Vol'], 1080, 150, 15, 267], 3),
+    { name: 'Vent Argenté', desc: 'Tous les 3 tours : 160% ATK Insecte sur 2 cibles.', every: 3, mult: 1.6, aim: 'aoe2' }),
+  withSpell(mono('slither-wing', 4, 'Rampe-Ailes', ['Insecte', 'Combat'], 700, 120, 13, 988, 1),
+    { name: 'Danse Flamme', desc: 'Tous les 3 tours : 200% ATK Combat + brûle (5%/tour).', every: 3, mult: 2.0, aim: 'front', dot: { pct: 0.05, turns: 3 } }),
+  withSpell(line2('kabuto', 3, ['Kabuto', ['Roche', 'Eau'], 400, 55, 14, 140], ['Kabutops', ['Roche', 'Eau'], 860, 130, 16, 141], 1),
+    { name: 'Tranche', desc: 'Tous les 3 tours : 195% ATK Roche sur le plus faible.', every: 3, mult: 1.95, aim: 'weak' }),
+  withSpell(line3('rhyhorn', 4, ['Rhinocorne', ['Sol', 'Roche'], 480, 62, 9, 111], ['Rhinoféros', ['Sol', 'Roche'], 920, 120, 9, 112], ['Rhinastoc', ['Sol', 'Roche'], 1560, 190, 9, 464], 1, ['Force']),
+    { name: 'Roc-Boulet', desc: 'Tous les 4 tours : 235% ATK Roche sur le front.', every: 4, mult: 2.35, aim: 'front' }),
+  withSpell(mono('terrakion', 5, 'Terrakium', ['Roche', 'Combat'], 800, 130, 16, 639, 1),
+    { name: 'Lame Sacrée', desc: 'Tous les 3 tours : 225% ATK Roche, ignore 12% PV.', every: 3, mult: 2.25, aim: 'front', shred: 0.12 }),
+  withSpell(line2('glimmet', 3, ['Germéclat', ['Roche', 'Poison'], 380, 52, 12, 969], ['Floréclat', ['Roche', 'Poison'], 840, 125, 12, 970], 3, ['Mage']),
+    { name: 'Rayon Météore', desc: 'Tous les 4 tours : 210% ATK Roche sur 2 cibles + empoisonne.', every: 4, mult: 2.1, aim: 'aoe2', dot: { pct: 0.04, turns: 3 } }),
+  withSpell(line2('shuppet', 3, ['Polichombr', 'Spectre', 360, 55, 12, 353], ['Branette', 'Spectre', 800, 125, 13, 354], 2),
+    { name: 'Griffe Ombre', desc: 'Tous les 3 tours : 190% ATK Spectre, ignore 10% PV.', every: 3, mult: 1.9, aim: 'random', shred: 0.1 }),
+  withSpell(line2('zorua', 2, ['Zorua', 'Ténèbres', 360, 55, 17, 570], ['Zoroark', 'Ténèbres', 780, 125, 18, 571], 2),
+    { name: 'Vibrobscur', desc: 'Tous les 3 tours : 185% ATK Ténèbres sur le plus faible.', every: 3, mult: 1.85, aim: 'weak' }),
+  withSpell(mono('morpeko', 2, 'Morpeko', ['Électrik', 'Ténèbres'], 440, 70, 20, 877, 1),
+    { name: 'Roue Libre', desc: 'Tous les 2 tours : 150% ATK Électrik sur le front.', every: 2, mult: 1.5, aim: 'front' }),
+  withSpell(mono('magearna', 5, 'Magearna', ['Acier', 'Fée'], 780, 120, 13, 801, 3),
+    { name: 'Rayon Floral', desc: 'Tous les 4 tours : 240% ATK Fée sur le plus faible.', every: 4, mult: 2.4, aim: 'weak' }),
+  withSpell(line3('igglybuff', 1, ['Toudoudou', ['Normal', 'Fée'], 420, 30, 10, 174], ['Rondoudou', ['Normal', 'Fée'], 820, 62, 10, 39], ['Grodoudou', ['Normal', 'Fée'], 1380, 100, 10, 40], 2),
+    { name: 'Berceuse', desc: 'Tous les 4 tours : 130% ATK + étourdit la cible.', every: 4, mult: 1.3, aim: 'tank', stun: true }),
+  withSpell(mono('xerneas', 5, 'Xerneas', 'Fée', 840, 120, 15, 716, 3),
+    { name: 'Géo-Contrôle', desc: 'Tous les 4 tours : 200% ATK Fée sur 2 cibles + 20% ATK d’équipe.', every: 4, mult: 2.0, aim: 'aoe2', teamAtk: 0.2 }),
+  withSpell(line2('koffing', 3, ['Smogo', 'Poison', 420, 46, 10, 109], ['Smogogo de Galar', ['Poison', 'Fée'], 960, 105, 10, 10167], 2),
+    { name: 'Vent Féérique', desc: 'Tous les 3 tours : 160% ATK Fée sur 2 cibles + empoisonne.', every: 3, mult: 1.6, aim: 'aoe2', dot: { pct: 0.04, turns: 3 } }),
+  withSpell(line2('munchlax', 4, ['Goinfrex', 'Normal', 560, 60, 8, 446], ['Ronflex', 'Normal', 1240, 125, 8, 143], 1, ['Force']),
+    { name: 'Plaquage', desc: 'Tous les 3 tours : 180% ATK + étourdit + soigne 10%.', every: 3, mult: 1.8, aim: 'front', stun: true, healAlly: 0.1 }),
+  withSpell(mono('groudon', 5, 'Groudon', 'Sol', 900, 125, 12, 383, 1),
+    { name: 'Lame Pangéenne', desc: 'Tous les 4 tours : 245% ATK Sol à tous.', every: 4, mult: 2.45, aim: 'all' }),
+  withSpell(mono('zacian', 5, 'Zacian', 'Fée', 760, 135, 20, 888, 1),
+    { name: 'Gladius Maximus', desc: 'Tous les 3 tours : 240% ATK Acier sur le front.', every: 3, mult: 2.4, aim: 'front' })
 ];
+
 
 /**
  * Si la forme de 2★ est répétée en 3★, le 3★ devient la Méga (types de la Méga seule).
@@ -538,7 +677,21 @@ const MEGA_BY_DEX = {
   303: { name: 'Méga-Mysdibule', types: ['Acier', 'Fée'], dex: 10052 },
   359: { name: 'Méga-Absol', types: ['Ténèbres'], dex: 10057 },
   719: { name: 'Méga-Diancie', types: ['Roche', 'Fée'], dex: 10075 },
-  384: { name: 'Méga-Rayquaza', types: ['Dragon', 'Vol'], dex: 10079 }
+  384: { name: 'Méga-Rayquaza', types: ['Dragon', 'Vol'], dex: 10079 },
+  334: { name: 'Méga-Altaria', types: ['Dragon', 'Fée'], dex: 10067 },
+  478: { name: 'Méga-Momartik', types: ['Glace', 'Spectre'], dex: 10285 },
+  780: { name: 'Méga-Draïeul', types: ['Normal', 'Dragon'], dex: 10302 },
+  26: { name: 'Méga-Raichu', types: ['Électrik'], dex: 10304 },
+  142: { name: 'Méga-Ptéra', types: ['Roche', 'Vol'], dex: 10042 },
+  354: { name: 'Méga-Branette', types: ['Spectre'], dex: 10056 },
+  143: { name: 'Ronflex Gigamax', types: ['Normal'], dex: 10206 },
+  483: { name: 'Dialga (Originel)', types: ['Acier', 'Dragon'], dex: 10245 },
+  487: { name: 'Giratina (Originel)', types: ['Spectre', 'Dragon'], dex: 10007 },
+  492: { name: 'Shaymin (Céleste)', types: ['Plante', 'Vol'], dex: 10006 },
+  718: { name: 'Zygarde (Forme Parfaite)', types: ['Dragon', 'Sol'], dex: 10120 },
+  645: { name: 'Démétéros (Totémique)', types: ['Sol', 'Vol'], dex: 10021 },
+  383: { name: 'Primo-Groudon', types: ['Sol', 'Feu'], dex: 10078 },
+  888: { name: 'Zacian (Épée Suprême)', types: ['Fée', 'Acier'], dex: 10188 }
 };
 
 const promoteMegaStar = (stages) => {
@@ -554,14 +707,27 @@ const promoteMegaStar = (stages) => {
 LINES.forEach((line) => {
   if (line.forms) line.forms.forEach((form) => promoteMegaStar(form.stages));
   else promoteMegaStar(line.stages);
+  line.ab = TALENTS[line.id] || null;
 });
+
+/** Starters jouables : toutes les lignées avec le rôle Starter. */
+export const STARTER_LINES = LINES.filter((line) => (line.traits || []).includes('Starter'));
+
+/** Le starter choisi + 2 autres starters tirés au hasard pour la boutique de la run. */
+export const starterTrio = (lineId) => {
+  const others = STARTER_LINES.filter((line) => line.id !== lineId)
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 2)
+    .map((line) => line.id);
+  return [lineId, ...others];
+};
 
 /** Carte de campagne solo — un nœud = une étape. */
 export const CAMPAIGN = [
   { id: 1, name: 'Clairière Mousse', biome: 'forest', blurb: 'Échauffement', boss: false },
   { id: 2, name: 'Ruisseau Lanturn', biome: 'water', blurb: 'Courant électrique', boss: false },
   { id: 3, name: 'Bois Noctali', biome: 'dark', blurb: 'Ombre amicale', boss: false },
-  { id: 4, name: 'Grotte Funécire', biome: 'ghost', blurb: 'Type favori', boss: false },
+  { id: 4, name: 'Grotte Funécire', biome: 'ghost', blurb: 'Feux follets', boss: false },
   { id: 5, name: 'Forge Cizayox', biome: 'steel', blurb: 'Mini-boss', boss: true },
   { id: 6, name: 'Val Gardevoir', biome: 'fairy', blurb: 'Lueurs psy', boss: false },
   { id: 7, name: 'Crête Hisui', biome: 'fire', blurb: 'Typhlosion', boss: false },
@@ -712,7 +878,7 @@ export const TRAIT_INFO = {
   Normal: { title: 'Normal', blurb: 'Polyvalent.', effect: '×2+ : léger +ATK. Faible vs Spectre / Roche.' },
   Combat: { title: 'Combat', blurb: 'Frontline bruiser.', effect: '×2+ : +7% PV. Fort vs Normal / Acier / Glace.' },
   Psy: { title: 'Psy', blurb: 'Mages.', effect: '×2+ : +ATK et +PV modérés. Fort vs Combat / Poison.' },
-  Spectre: { title: 'Spectre', blurb: 'Ton type favori.', effect: '×2+ : +ATK/+PV. Ignore souvent les tanks Normal. Fort vs Psy.' },
+  Spectre: { title: 'Spectre', blurb: 'Insaisissables.', effect: '×2+ : +ATK/+PV. Ignore souvent les tanks Normal. Fort vs Psy.' },
   Dragon: { title: 'Dragon', blurb: 'Scale late.', effect: '×2+ : +7% ATK. Fort vs Dragon, faible vs Fée.' },
   Fée: { title: 'Fée', blurb: 'Anti-dragon.', effect: '×2+ : +ATK/+PV. Excellent vs Dragon / Ténèbres / Combat.' },
   Acier: { title: 'Acier', blurb: 'Mur.', effect: '×2+ : +7% PV. Fort vs Fée / Roche / Glace.' },
@@ -943,6 +1109,7 @@ export const unitFromLine = (lineId, star = 1, uid, items = [], formId = null, a
     cost: line.cost,
     traits: [...types, ...roles],
     spell: line.spell,
+    ab: line.ab || null,
     range: line.range || 1,
     name: base.name,
     type: types[0],
@@ -1079,29 +1246,48 @@ const itemMods = (items = []) => {
   return mods;
 };
 
-export const buildFighters = (units) => {
+/* ——————————————————————————— Moteur de combat ——————————————————————————— */
+
+const has = (u, key) => !!(u && u.ab && u.ab[key]);
+const isStatused = (u) => !!(u.slowed || u.dot || u.stunSkip);
+const unitHasType = (u, type) => (u.types || [u.type]).includes(type);
+
+export const buildFighters = (units, opts = {}) => {
   const bonus = traitBonus(units);
   return units.map((unit) => {
     const im = itemMods(unit.items || []);
-    const maxHp = Math.round(unit.hp * bonus.hpMul * im.hpMul);
+    const ab = opts.neutralized ? null : (unit.ab || LINE_MAP[unit.lineId]?.ab || null);
+    const a = ab || {};
+    const maxHp = Math.round(unit.hp * bonus.hpMul * im.hpMul * (a.hpMul || 1));
     return {
       ...unit,
+      ab,
       maxHp,
       curHp: maxHp,
-      power: Math.round(unit.atk * bonus.atkMul * im.atkMul),
-      spd: Math.round(unit.spd * im.spdMul + im.spdFlat),
+      power: Math.round(unit.atk * bonus.atkMul * im.atkMul * (a.atkMul || 1)),
+      spd: Math.round(unit.spd * im.spdMul * (a.spdMul || 1) + im.spdFlat),
       range: unit.range || 1,
-      spellMul: im.spellMul,
-      regen: im.regen,
+      spellMul: im.spellMul * (a.spellMul || 1),
+      regen: im.regen + (a.regen || 0),
       selfHurt: im.selfHurt,
-      thorns: im.thorns,
+      thorns: im.thorns + (a.thorns || 0),
       lifesteal: im.lifesteal,
-      endure: im.endure,
+      endure: im.endure || !!a.endure,
       endured: false,
       opener: im.opener,
       stunSkip: false,
       alive: true,
-      cast: 0
+      cast: a.precharge || 0,
+      shieldHp: 0,
+      dot: null,
+      slowed: false,
+      vuln: 1,
+      guard: 1,
+      disguiseUsed: false,
+      spellShieldUsed: false,
+      berryUsed: false,
+      constructUsed: false,
+      surgeSpdOn: false
     };
   });
 };
@@ -1182,31 +1368,278 @@ const pickTargets = (aim, foes, allies, self, respectRange = false) => {
   return [live[Math.floor(Math.random() * live.length)]];
 };
 
-const applyDamage = (target, raw, attacker, log, turnIndex) => {
+const note = (ctx, line) => {
+  if (ctx.turn < 10 && ctx.log.length < 14) ctx.log.push(line);
+};
+
+/** Altérations : ralentissement, étourdissement, baisse d’ATK, poison / brûlure. */
+const applyStatus = (ctx, target, source, eff, reflected = false) => {
+  if (!target?.alive || !eff) return;
+  const ta = target.ab || {};
+  let lowered = false;
+  if (eff.slow && !ta.noCC) {
+    if (ta.contrary) target.spd += eff.slow;
+    else {
+      target.spd = Math.max(1, target.spd - eff.slow);
+      target.slowed = true;
+      lowered = true;
+    }
+  }
+  if (eff.stun && !ta.noCC) target.stunSkip = true;
+  if (eff.atkBreak && !ta.noCC) {
+    if (ta.contrary) target.power = Math.round(target.power * (1 + eff.atkBreak));
+    else {
+      target.power = Math.max(1, Math.round(target.power * (1 - eff.atkBreak)));
+      lowered = true;
+    }
+  }
+  if (eff.dot && !(ta.cleanse || ta.magicGuard || target.teamCleansed)) {
+    const pct = eff.dot.pct * ((source?.ab?.dotMul) || 1);
+    if (!target.dot || target.dot.pct <= pct) target.dot = { pct, turns: eff.dot.turns || 3 };
+  }
+  if (lowered && ta.defiant) {
+    target.power = Math.round(target.power * (1 + ta.defiant));
+    note(ctx, `${target.name} : ${ta.name} !`);
+  }
+  if (ta.synchro && source?.alive && !reflected && (eff.slow || eff.dot)) {
+    applyStatus(ctx, source, target, { slow: eff.slow, dot: eff.dot }, true);
+  }
+};
+
+const checkThresholds = (ctx, u) => {
+  if (!u.alive || !u.ab) return;
+  const ratio = u.curHp / u.maxHp;
+  if (u.ab.berry && !u.berryUsed && ratio < 0.5) {
+    u.berryUsed = true;
+    const heal = Math.round(u.maxHp * u.ab.berry);
+    u.curHp = Math.min(u.maxHp, u.curHp + heal);
+    ctx.floats.push({ uid: u.uid, text: `+${heal}`, kind: 'heal' });
+    note(ctx, `${u.name} : ${u.ab.name} !`);
+  }
+  if (u.ab.powerConstruct && !u.constructUsed && ratio < 0.5) {
+    u.constructUsed = true;
+    const extra = Math.round(u.maxHp * u.ab.powerConstruct);
+    u.maxHp += extra;
+    u.curHp += extra;
+    ctx.floats.push({ uid: u.uid, text: `+${extra}`, kind: 'heal' });
+    note(ctx, `${u.name} : ${u.ab.name} !`);
+  }
+};
+
+const onDeath = (ctx, dead, killer) => {
+  if (killer && killer !== dead && killer.alive && killer.ab?.onKo) {
+    killer.power = Math.round(killer.power * (1 + killer.ab.onKo));
+    if (killer.ab.onKoSpd) killer.spd += killer.ab.onKoSpd;
+  }
+  const friends = dead.side === 'foe' ? ctx.foes : ctx.allies;
+  friends.forEach((f) => {
+    if (f.alive && f.ab?.supreme) f.power = Math.round(f.power * (1 + f.ab.supreme));
+  });
+  [...ctx.allies, ...ctx.foes].forEach((u) => {
+    if (u.alive && u.ab?.anyKo) u.power = Math.round(u.power * (1 + u.ab.anyKo));
+  });
+  if (killer && killer !== dead) note(ctx, `${killer.name} KO ${dead.name}`);
+};
+
+const finish = (ctx, u, killer) => {
+  if (!u.alive) return;
+  if (u.curHp > 0) {
+    checkThresholds(ctx, u);
+    return;
+  }
+  if (u.endure && !u.endured) {
+    u.curHp = 1;
+    u.endured = true;
+    note(ctx, `${u.name} tient bon !`);
+    return;
+  }
+  u.curHp = 0;
+  u.alive = false;
+  onDeath(ctx, u, killer);
+};
+
+/** Calcule les dégâts d’un coup (auto ou sort) en tenant compte des talents des deux camps. */
+const resolveHit = (attacker, target, base, kind, turnIndex) => {
+  const ta = attacker.ab || {};
+  const da = ta.pierce ? {} : (target.ab || {});
+  const atkType = attacker.type;
+  if (da.dodge && Math.random() < da.dodge) return { result: 'dodge' };
+  if (da.disguise && !target.disguiseUsed) {
+    target.disguiseUsed = true;
+    return { result: 'disguise' };
+  }
+  if (kind === 'spell' && da.spellShield && !target.spellShieldUsed) {
+    target.spellShieldUsed = true;
+    return { result: 'spellShield' };
+  }
+  if (da.immune && da.immune.includes(atkType)) {
+    if (da.absorb) target.curHp = Math.min(target.maxHp, target.curHp + Math.round(target.maxHp * da.absorb));
+    if (da.immuneAtk) target.power = Math.round(target.power * (1 + da.immuneAtk));
+    return { result: 'immune' };
+  }
+  let mult = typeMult(atkType, target.type);
+  if (ta.protean || ta.tinted) mult = Math.max(1, mult);
+  if (ta.scrappy && unitHasType(target, 'Spectre')) mult = Math.max(1, mult);
+  let dmg = base * mult;
+  if (ta.lowHp && attacker.curHp / attacker.maxHp <= ta.lowHp.at) dmg *= 1 + ta.lowHp.atk;
+  if (ta.guts && isStatused(attacker)) dmg *= 1 + ta.guts;
+  if (ta.surge && turnIndex < ta.surge.turns) dmg *= 1 + (ta.surge.atk || 0);
+  if (ta.hunger && turnIndex % 2 === 0) dmg *= 1 + ta.hunger;
+  if (ta.vsType) Object.entries(ta.vsType).forEach(([t, m]) => { if (unitHasType(target, t)) dmg *= m; });
+  if (kind === 'auto' && ta.autoMul) dmg *= ta.autoMul;
+  let crit = false;
+  if (ta.crit && !da.noCrit && Math.random() < ta.crit.chance) {
+    dmg *= ta.crit.mult;
+    crit = true;
+  }
+  if (da.resist && da.resist[atkType]) dmg *= da.resist[atkType];
+  if (da.fullHpGuard && target.curHp >= target.maxHp) dmg *= da.fullHpGuard;
+  if (kind === 'auto' && da.autoGuard) dmg *= da.autoGuard;
+  if (kind === 'spell' && da.spellGuard) dmg *= da.spellGuard;
+  if (da.dmgTaken) dmg *= da.dmgTaken;
+  if (da.superGuard && mult > 1) dmg *= da.superGuard;
+  dmg *= (target.vuln || 1) * (target.guard || 1);
+  return { result: 'hit', dmg, crit };
+};
+
+const applyDamage = (ctx, target, raw, attacker) => {
   let dmg = Math.max(6, Math.round(raw));
+  const pierce = has(attacker, 'pierce');
+  if (target.shieldHp > 0 && !pierce) {
+    const absorbed = Math.min(target.shieldHp, dmg);
+    target.shieldHp -= absorbed;
+    dmg -= absorbed;
+  }
   target.curHp -= dmg;
+  const ta = attacker.ab || {};
   if (attacker.lifesteal) {
     attacker.curHp = Math.min(attacker.maxHp, attacker.curHp + Math.round(dmg * attacker.lifesteal));
   }
-  if (attacker.selfHurt) {
+  if (attacker.selfHurt && !ta.rockHead && !ta.magicGuard) {
     attacker.curHp -= Math.round(attacker.maxHp * attacker.selfHurt);
   }
-  if (target.thorns && attacker.alive) {
+  if (target.thorns && attacker.alive && !ta.rockHead && !ta.magicGuard) {
     attacker.curHp -= Math.round(dmg * target.thorns);
   }
-  const finish = (u) => {
-    if (u.curHp > 0) return;
-    if (u.endure && !u.endured) {
-      u.curHp = 1;
-      u.endured = true;
-      return;
+  // Réactions du défenseur
+  const da = pierce ? {} : (target.ab || {});
+  if (target.curHp > 0) {
+    if (da.onHitType && da.onHitType.type === attacker.type) {
+      if (da.onHitType.shield) target.shieldHp += Math.round(target.maxHp * da.onHitType.shield);
+      if (da.onHitType.atk) target.power = Math.round(target.power * (1 + da.onHitType.atk));
     }
-    u.curHp = 0;
-    u.alive = false;
-  };
-  finish(target);
-  finish(attacker);
-  if (!target.alive && turnIndex < 10) log.push(`${attacker.name} KO ${target.name}`);
+    if (da.onHitAtk) target.power = Math.round(target.power * (1 + da.onHitAtk));
+    if (da.stamina) target.guard = Math.max(0.7, (target.guard || 1) - 0.04);
+  }
+  if (da.contact && (attacker.range || 1) <= 1 && attacker.alive && Math.random() < da.contact.chance) {
+    applyStatus(ctx, attacker, target, da.contact);
+  }
+  if (ta.hitDot && target.curHp > 0 && Math.random() < ta.hitDot.chance) {
+    applyStatus(ctx, target, attacker, { dot: { pct: ta.hitDot.pct, turns: ta.hitDot.turns } });
+  }
+  finish(ctx, target, attacker);
+  finish(ctx, attacker, null);
+  return dmg;
+};
+
+/** Effets de début de combat d’un camp sur lui-même et sur l’adversaire. */
+const startEffects = (ctx, side, other) => {
+  side.forEach((u) => {
+    const a = u.ab;
+    if (!a?.trace) return;
+    const pool = other.filter((f) => f.ab && !f.ab.trace);
+    const src = pool[Math.floor(Math.random() * pool.length)];
+    if (!src) return;
+    u.ab = { ...src.ab, name: `${a.name} → ${src.ab.name}` };
+    if (src.ab.atkMul) u.power = Math.round(u.power * src.ab.atkMul);
+    if (src.ab.spdMul) u.spd = Math.round(u.spd * src.ab.spdMul);
+    if (src.ab.spellMul) u.spellMul *= src.ab.spellMul;
+    if (src.ab.regen) u.regen += src.ab.regen;
+    if (src.ab.thorns) u.thorns += src.ab.thorns;
+    if (src.ab.endure) u.endure = true;
+    if (src.ab.precharge) u.cast += src.ab.precharge;
+    note(ctx, `${u.name} copie ${src.ab.name} !`);
+  });
+  side.forEach((u) => {
+    const a = u.ab;
+    if (!a) return;
+    if (a.intimidate) {
+      other.forEach((f) => {
+        if (f.ab?.airLock) return;
+        if (f.ab?.contrary) {
+          f.power = Math.round(f.power * (1 + a.intimidate));
+          return;
+        }
+        f.power = Math.max(1, Math.round(f.power * (1 - a.intimidate)));
+        if (f.ab?.defiant) f.power = Math.round(f.power * (1 + f.ab.defiant));
+      });
+      note(ctx, `${u.name} : ${a.name} !`);
+    }
+    if (a.teamAtk) {
+      side.forEach((f) => {
+        if (!a.teamAtk.type || unitHasType(f, a.teamAtk.type)) f.power = Math.round(f.power * (1 + a.teamAtk.mult));
+      });
+    }
+    if (a.teamShield) {
+      side.forEach((f) => {
+        if (a.teamShield.types.some((t) => unitHasType(f, t))) f.shieldHp += Math.round(f.maxHp * a.teamShield.pct);
+      });
+    }
+    if (a.teamCleanse) side.forEach((f) => { f.teamCleansed = true; });
+    if (a.ruin) other.forEach((f) => { if (!f.ab?.airLock) f.vuln *= 1 + a.ruin; });
+    if (a.pressure) other.forEach((f) => { if (!f.ab?.airLock) f.cast -= a.pressure; });
+    if (a.surge?.spd) {
+      u.spd += a.surge.spd;
+      u.surgeSpdOn = true;
+    }
+  });
+};
+
+/** Effets de début de tour d’une unité. Retourne false si elle est tombée. */
+const turnStart = (ctx, u, friends, enemies, turnIndex) => {
+  const a = u.ab || {};
+  if (u.regen) u.curHp = Math.min(u.maxHp, u.curHp + Math.round(u.maxHp * u.regen));
+  if (u.dot) {
+    const tick = Math.round(u.maxHp * u.dot.pct);
+    u.curHp -= tick;
+    ctx.floats.push({ uid: u.uid, text: `-${tick}`, kind: 'dmg' });
+    u.dot.turns -= 1;
+    if (u.dot.turns <= 0) u.dot = null;
+    finish(ctx, u, null);
+    if (!u.alive) return false;
+  }
+  if (a.sunPower && !a.magicGuard) {
+    u.curHp -= Math.round(u.maxHp * 0.03);
+    finish(ctx, u, null);
+    if (!u.alive) return false;
+  }
+  if (a.badDreams) {
+    enemies.forEach((e) => {
+      if (e.alive && isStatused(e) && !e.ab?.magicGuard) {
+        e.curHp -= Math.round(e.maxHp * a.badDreams);
+        finish(ctx, e, u);
+      }
+    });
+  }
+  if (a.allyHeal) {
+    const wounded = friends.filter((f) => f.alive && f.curHp < f.maxHp)
+      .sort((x, y) => x.curHp / x.maxHp - y.curHp / y.maxHp)[0];
+    if (wounded) {
+      const heal = Math.round(wounded.maxHp * a.allyHeal);
+      wounded.curHp = Math.min(wounded.maxHp, wounded.curHp + heal);
+      ctx.floats.push({ uid: wounded.uid, text: `+${heal}`, kind: 'heal' });
+    }
+  }
+  if (a.spdUp) u.spd += a.spdUp;
+  if (a.moody) {
+    if (Math.random() < 0.5) u.power = Math.round(u.power * 1.08);
+    else u.spd += 2;
+  }
+  if (u.surgeSpdOn && a.surge && turnIndex >= a.surge.turns) {
+    u.spd = Math.max(1, u.spd - (a.surge.spd || 0));
+    u.surgeSpdOn = false;
+  }
+  return true;
 };
 
 export const enemyWave = (wave, level) => {
@@ -1242,25 +1675,42 @@ const snapshotHp = (allies, foes) => {
   return hp;
 };
 
+const HIT_NOTES = {
+  dodge: 'esquive',
+  disguise: 'le coup est absorbé',
+  spellShield: 'le sort est annulé',
+  immune: 'aucun effet'
+};
+
 export const simulateFight = (alliesIn, foesIn) => {
-  const allies = buildFighters(alliesIn.map((u) => ({ ...u, side: u.side || 'ally' })));
-  const foes = buildFighters(foesIn.map((u) => ({ ...u, side: u.side || 'foe' })));
+  const allyNeutral = foesIn.some((u) => (u.ab || LINE_MAP[u.lineId]?.ab)?.neutralize);
+  const foeNeutral = alliesIn.some((u) => (u.ab || LINE_MAP[u.lineId]?.ab)?.neutralize);
+  const allies = buildFighters(alliesIn.map((u) => ({ ...u, side: u.side || 'ally' })), { neutralized: allyNeutral && !foeNeutral });
+  const foes = buildFighters(foesIn.map((u) => ({ ...u, side: u.side || 'foe' })), { neutralized: foeNeutral && !allyNeutral });
   const log = [];
+  const ctx = { allies, foes, log, turn: 0, floats: [] };
   const frames = [];
   const pushFrame = (line, fx = {}, floats = []) => {
+    const all = [...floats, ...ctx.floats];
+    ctx.floats = [];
     frames.push({
       line,
       hp: snapshotHp(allies, foes),
       fx,
-      floats,
+      floats: all,
       pos: snapshotPos(allies, foes)
     });
   };
-  pushFrame('Combat !');
+  if (allyNeutral && !foeNeutral) log.push('Gaz Inhibiteur : tes talents sont neutralisés !');
+  if (foeNeutral && !allyNeutral) log.push('Gaz Inhibiteur : talents adverses neutralisés !');
+  startEffects(ctx, allies, foes);
+  startEffects(ctx, foes, allies);
+  pushFrame(log.length ? log[log.length - 1] : 'Combat !');
   let turn = 0;
   const maxTurns = 48;
 
   while (turn < maxTurns) {
+    ctx.turn = turn;
     const liveA = allies.filter((u) => u.alive);
     const liveF = foes.filter((u) => u.alive);
     if (!liveA.length || !liveF.length) break;
@@ -1274,24 +1724,28 @@ export const simulateFight = (alliesIn, foesIn) => {
     for (let qi = 0; qi < queue.length; qi += 1) {
       const { side, u } = queue[qi];
       if (!u.alive) continue;
+      const enemies = side === 'a' ? foes : allies;
+      const friends = side === 'a' ? allies : foes;
+      if (!turnStart(ctx, u, friends, enemies, turnIndex)) {
+        pushFrame(`${u.name} succombe à son altération`, { [u.uid]: 'ko' });
+        continue;
+      }
       if (u.stunSkip) {
         u.stunSkip = false;
         continue;
       }
-      if (u.regen) u.curHp = Math.min(u.maxHp, u.curHp + Math.round(u.maxHp * u.regen));
 
-      const enemies = side === 'a' ? foes : allies;
-      const friends = side === 'a' ? allies : foes;
       const targets = enemies.filter((t) => t.alive);
       if (!targets.length) continue;
 
       u.cast += 1;
       const spell = u.spell;
-      const useSpell = spell && spell.every && u.cast % spell.every === 0;
+      const useSpell = spell && spell.every && u.cast > 0 && u.cast % spell.every === 0;
       const openerExtra = turnIndex === 0 && u.opener && Math.random() < u.opener;
 
       const strikes = openerExtra ? 2 : 1;
       for (let s = 0; s < strikes; s += 1) {
+        if (!u.alive) break;
         if (useSpell && s === 0) {
           const spellRange = (u.range || 1) + 1;
           const prev = u.range;
@@ -1312,19 +1766,27 @@ export const simulateFight = (alliesIn, foesIn) => {
           }
           const fx = { [u.uid]: 'spell' };
           const floats = [];
+          const extras = [];
           const spellPower = u.power * (spell.mult || 1.5) * (u.spellMul || 1);
           picked.forEach((target) => {
-            let raw = spellPower * typeMult(u.type, target.type) * (0.92 + Math.random() * 0.2);
+            if (!target.alive) return;
+            const hit = resolveHit(u, target, spellPower * (0.92 + Math.random() * 0.2), 'spell', turnIndex);
+            if (hit.result !== 'hit') {
+              extras.push(`${target.name} : ${HIT_NOTES[hit.result]}`);
+              return;
+            }
+            let raw = hit.dmg;
             if (spell.shred) raw += target.maxHp * spell.shred;
             if (spell.stealAtk) raw = Math.max(raw, target.power * 1.1);
             const before = target.curHp;
-            applyDamage(target, raw, u, log, turnIndex);
+            applyDamage(ctx, target, raw, u);
             const dealt = Math.max(0, before - target.curHp);
             fx[target.uid] = target.alive ? 'hit' : 'ko';
-            if (dealt) floats.push({ uid: target.uid, text: `-${dealt}`, kind: 'dmg' });
-            if (spell.slow) target.spd = Math.max(1, target.spd - spell.slow);
-            if (spell.stun) target.stunSkip = true;
-            if (spell.atkBreak) target.power = Math.round(target.power * (1 - spell.atkBreak));
+            if (dealt) floats.push({ uid: target.uid, text: `-${dealt}${hit.crit ? '!' : ''}`, kind: 'dmg' });
+            if (target.alive) {
+              const stun = spell.stun || (u.ab?.serene && Math.random() < u.ab.serene);
+              applyStatus(ctx, target, u, { slow: spell.slow, stun, atkBreak: spell.atkBreak, dot: spell.dot });
+            }
           });
           if (spell.healAlly) {
             const wounded = friends.filter((f) => f.alive).sort((a, b) => a.curHp / a.maxHp - b.curHp / b.maxHp)[0];
@@ -1334,14 +1796,21 @@ export const simulateFight = (alliesIn, foesIn) => {
               floats.push({ uid: wounded.uid, text: `+${heal}`, kind: 'heal' });
             }
           }
-          if (spell.shield) u.curHp = Math.min(u.maxHp, u.curHp + Math.round(u.maxHp * spell.shield));
+          if (spell.shield) u.shieldHp += Math.round(u.maxHp * spell.shield);
+          if (u.ab?.stance) u.shieldHp += Math.round(u.maxHp * u.ab.stance);
           if (spell.selfAtk) u.power = Math.round(u.power * (1 + spell.selfAtk));
+          if (spell.selfSlow) u.spd = Math.max(1, u.spd - spell.selfSlow);
+          if (spell.recoil && u.alive && !u.ab?.rockHead && !u.ab?.magicGuard) {
+            u.curHp -= Math.round(u.maxHp * spell.recoil);
+            finish(ctx, u, null);
+          }
           if (spell.teamAtk) friends.forEach((f) => { if (f.alive) f.power = Math.round(f.power * (1 + spell.teamAtk)); });
           if (spell.allyBuff) {
             const slow = friends.filter((f) => f.alive).sort((a, b) => a.spd - b.spd)[0];
             if (slow) slow.spd += 3;
           }
-          const line = `${u.name} : ${spell.name}`;
+          friends.forEach((f) => { if (f !== u && f.alive && f.ab?.dancer) f.cast += 1; });
+          const line = `${u.name} : ${spell.name}${extras.length ? ` (${extras.join(', ')})` : ''}`;
           if (turnIndex < 10) log.push(line);
           pushFrame(line, fx, floats);
         } else {
@@ -1359,14 +1828,17 @@ export const simulateFight = (alliesIn, foesIn) => {
           const target = picked[0];
           const fx = { [u.uid]: 'strike' };
           const floats = [];
-          const mult = typeMult(u.type, target.type);
-          const dmg = u.power * mult * (0.88 + Math.random() * 0.28);
+          const hit = resolveHit(u, target, u.power * (0.88 + Math.random() * 0.28), 'auto', turnIndex);
+          if (hit.result !== 'hit') {
+            pushFrame(`${u.name} → ${target.name} : ${HIT_NOTES[hit.result]}`, fx);
+            continue;
+          }
           const before = target.curHp;
-          applyDamage(target, dmg, u, log, turnIndex);
+          applyDamage(ctx, target, hit.dmg, u);
           const dealt = Math.max(0, before - target.curHp);
           fx[target.uid] = target.alive ? 'hit' : 'ko';
-          if (dealt) floats.push({ uid: target.uid, text: `-${dealt}`, kind: 'dmg' });
-          pushFrame(`${u.name} → ${target.name}`, fx, floats);
+          if (dealt) floats.push({ uid: target.uid, text: `-${dealt}${hit.crit ? '!' : ''}`, kind: 'dmg' });
+          pushFrame(`${u.name} → ${target.name}${hit.crit ? ' (critique)' : ''}`, fx, floats);
         }
       }
     }

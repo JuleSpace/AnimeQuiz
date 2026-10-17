@@ -242,10 +242,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: safe center;
   gap: 18px;
   padding: 24px;
   animation: pa-rise 0.45s ease both;
+  overflow-y: auto;
 }
 
 .pa-starter h1 {
@@ -289,6 +290,33 @@
 
 .pa-starter-card strong {
   font-size: 1.05rem;
+}
+
+.pa-starter-row.is-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 12px;
+  width: min(1040px, 100%);
+}
+
+.pa-starter-card.is-compact {
+  width: auto;
+  padding: 12px 8px 10px;
+  gap: 4px;
+}
+
+.pa-starter-card.is-compact strong {
+  font-size: 0.9rem;
+}
+
+.pa-starter-card.is-compact em {
+  font-size: 0.62rem;
+}
+
+.pa-starter-final {
+  font-size: 0.7rem;
+  color: var(--pa-muted);
+  text-align: center;
 }
 
 .pa-starter-card em {
@@ -1867,4 +1895,12 @@
   .pa-starter-card {
     width: 120px;
   }
+}
+
+.pa-tip-talent b {
+  color: var(--pa-acid, #c8f542);
+}
+
+.pa-codex-talent h3 {
+  color: var(--pa-acid, #c8f542);
 }

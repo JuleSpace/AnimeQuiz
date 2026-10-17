@@ -20,6 +20,8 @@ import {
   SHOP_SIZE,
   START_GOLD,
   START_HP,
+  STARTER_LINES,
+  starterTrio,
   lineSynergyRows,
   traitDossier,
   applyEvolutionChoice,
@@ -72,12 +74,6 @@ const PokeSprite = ({ unit, size = 'md' }) => {
     />
   );
 };
-
-const STARTERS = [
-  { lineId: 'cynda', ring: '#ff7a3d' },
-  { lineId: 'mudkip', ring: '#3d9bff' },
-  { lineId: 'eevee', ring: '#6b5b8c' }
-];
 
 const pickPlayFrames = (frames) => {
   if (!frames?.length) return [];
@@ -209,6 +205,12 @@ const SpellTip = ({ unit, onTraitHover }) => {
           {unit.spell.desc}
         </p>
       )}
+      {unit.ab && (
+        <p className="pa-tip-spell pa-tip-talent">
+          <b>Talent · {unit.ab.name}</b>
+          {unit.ab.desc}
+        </p>
+      )}
       {(unit.items || []).length > 0 && (
         <ul className="pa-tip-items">
           {(unit.items || []).map((id) => {
@@ -326,7 +328,7 @@ const PokeArena = ({ onClose }) => {
       const names = line.stages.map((s) => s.name).join(' ');
       const forms = (line.forms || []).flatMap((form) => form.stages.map((s) => s.name)).join(' ');
       const traits = (line.traits || []).join(' ');
-      const hay = `${line.id} ${names} ${forms} ${traits} ${line.spell?.name || ''} ${line.spell?.desc || ''}`.toLowerCase();
+      const hay = `${line.id} ${names} ${forms} ${traits} ${line.spell?.name || ''} ${line.spell?.desc || ''} ${line.ab?.name || ''}`.toLowerCase();
       return hay.includes(q);
     }).sort((a, b) => a.cost - b.cost || (a.stages[0]?.name || '').localeCompare(b.stages[0]?.name || '', 'fr'));
   }, [codexCost, codexQuery]);
@@ -404,9 +406,11 @@ const PokeArena = ({ onClose }) => {
       .map((id) => LINE_MAP[id])
       .filter(Boolean);
     const restoredPool = pool.length ? pool : buildRunPool();
+    // Les sauvegardes d’avant les talents n’ont pas de champ ab : on le recharge depuis la lignée.
+    const withTalent = (u) => (u ? { ...u, ab: LINE_MAP[u.lineId]?.ab || null } : u);
     setRunPool(restoredPool);
-    setBench(data.bench || []);
-    setBoard(padBoard(data.board || emptyBoard()));
+    setBench((data.bench || []).map(withTalent));
+    setBoard(padBoard((data.board || emptyBoard()).map(withTalent)));
     setShop(data.shop?.length ? data.shop : rollShop(data.level || 1, SHOP_SIZE, restoredPool));
     setBag(data.bag || []);
     setGold(data.gold ?? START_GOLD);
@@ -494,13 +498,15 @@ const PokeArena = ({ onClose }) => {
 
   const pickStarter = (lineId) => {
     const starter = unitFromLine(lineId, 1);
-    const pool = buildRunPool([lineId]);
+    const trio = starterTrio(lineId);
+    const pool = buildRunPool(trio);
+    const partners = trio.slice(1).map((id) => LINE_MAP[id]?.stages[0]?.name).filter(Boolean);
     setRunPool(pool);
     setBench([starter]);
     setSelectedUid(starter.uid);
     setShop(rollShop(1, SHOP_SIZE, pool));
     setPhase('map');
-    setLog(`${starter.name} te rejoint ! Boutique : ${pool.length}/${RUN_POOL_SIZE} lignées tirées pour cette run.`);
+    setLog(`${starter.name} te rejoint ! Starters de la run : ${[starter.name, ...partners].join(', ')} · boutique ${pool.length}/${RUN_POOL_SIZE} lignées.`);
   };
 
   const enterNode = (nodeId) => {
@@ -1008,6 +1014,13 @@ const PokeArena = ({ onClose }) => {
                 </>
               )}
 
+              {detail.ab && (
+                <div className="pa-codex-spell pa-codex-talent">
+                  <h3>Talent — {detail.ab.name}</h3>
+                  <p>{detail.ab.desc}</p>
+                </div>
+              )}
+
               <div className="pa-codex-spell">
                 <h3>Sort — {detail.spell?.name}</h3>
                 <p>{detail.spell?.desc}</p>
@@ -1124,22 +1137,27 @@ const PokeArena = ({ onClose }) => {
       <div className="pa-root">
         <div className="pa-starter">
           <h1>Ton bully de départ</h1>
-          <p className="pa-starter-hint">Choisis un partenaire — survole pour stats, types et sort</p>
-          <div className="pa-starter-row">
-            {STARTERS.map(({ lineId, ring }) => {
-              const preview = unitFromLine(lineId, 1);
+          <p className="pa-starter-hint">
+            Choisis un partenaire — survole pour stats, sort et talent. Deux autres starters rejoindront la boutique de la run.
+          </p>
+          <div className="pa-starter-row is-grid">
+            {STARTER_LINES.map((line) => {
+              const preview = unitFromLine(line.id, 1);
+              if (!preview) return null;
               return (
                 <button
-                  key={lineId}
+                  key={line.id}
                   type="button"
-                  className="pa-starter-card"
-                  style={{ '--ring': ring }}
-                  onClick={() => pickStarter(lineId)}
+                  className="pa-starter-card is-compact"
+                  style={{ '--ring': TYPE_TINT[preview.type] || '#f0c14b' }}
+                  onClick={() => pickStarter(line.id)}
                   onMouseEnter={() => { setHoverUnit(preview); closeTrait(); }}
+                  onFocus={() => { setHoverUnit(preview); closeTrait(); }}
                 >
-                  <PokeSprite unit={preview} size="lg" />
+                  <PokeSprite unit={preview} size="md" />
                   <strong>{preview.name}</strong>
-                  <em>{(preview.types || [preview.type]).join(' · ')} · P{preview.range || 1}</em>
+                  <em>{(preview.types || [preview.type]).join(' · ')} · coût {line.cost}</em>
+                  <span className="pa-starter-final">→ {lineEndLabel(line)}</span>
                 </button>
               );
             })}
