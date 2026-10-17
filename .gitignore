@@ -86,6 +86,3 @@ Thumbs.db
 # Railway
 .railway/
 
-# Musiques PokeArena (fichiers fournis par chacun, non versionnés)
-client/public/music/*.mp3
-client/public/music/*.ogg

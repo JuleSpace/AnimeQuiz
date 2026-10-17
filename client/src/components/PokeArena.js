@@ -199,7 +199,7 @@ const MusicControl = ({ volume, onVolume, now }) => {
   useLayoutEffect(() => {
     if (open && pos) musicPlayer().showVideo(isYt && slot.current ? slot.current.getBoundingClientRect() : null);
   }, [open, pos, isYt, now?.key]);
-  const source = !now ? '' : isYt ? 'YouTube' : now.kind === 'file' ? 'Fichier' : 'Thème original (en attendant une piste)';
+  const source = now ? 'YouTube' : '';
   return (
     <div className="pa-music" ref={wrap}>
       <button
