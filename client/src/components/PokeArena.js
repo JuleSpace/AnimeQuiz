@@ -920,7 +920,7 @@ const PokeArena = ({ onClose }) => {
 
   const finishVersusFight = (res) => {
     const round = vsRef.current.round || vsRound;
-    const gains = estimateIncome(gold, streak, versusChapter(round), res.win, coin);
+    const gains = estimateIncome(gold, streak, versusChapter(round), res.win, coin, true);
     const xpNext = addXp(level, xp, 2);
     const loot = versusLoot(round);
     const hpLost = res.win ? 0 : Math.min(hp, versusLossDamage(round, vsRef.current.damageTaken || 0));

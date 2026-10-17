@@ -1775,7 +1775,15 @@ export const streakGold = (streak) => {
  * Gains d’un combat. chapter : 1..3 (base 5/6/7), win : +1 or,
  * intérêts : 1 par tranche de 10 or (max 5), série de victoires ou de défaites.
  */
-export const estimateIncome = (gold, streak, chapter = 1, win = true, bonus = 0) => {
+/**
+ * Or gagné après un combat.
+ * `paidOnLoss` : en solo une défaite ne rapporte rien (on peut retenter l’étape, sinon on farmerait l’or) ;
+ * en salon multi, le perdant touche quand même son revenu de base (rattrapage, comme dans les auto-battlers).
+ */
+export const estimateIncome = (gold, streak, chapter = 1, win = true, bonus = 0, paidOnLoss = false) => {
+  if (!win && !paidOnLoss) {
+    return { base: 0, interest: 0, streakBonus: 0, winBonus: 0, total: 0, nextInterestGold: null, nextStreak: streak < 0 ? streak - 1 : -1 };
+  }
   const base = 4 + Math.max(1, Math.min(3, chapter));
   const interest = Math.min(5, Math.floor(Math.max(0, gold) / 10));
   const nextStreak = win ? Math.max(1, (streak > 0 ? streak : 0) + 1) : Math.min(-1, (streak < 0 ? streak : 0) - 1);

@@ -708,7 +708,11 @@ export const ResultOverlay = ({ result, onContinue, continueLabel }) => {
         {boss && win && <p className="ui-result-sub">Tu as battu {boss} ! Choisis un objet en récompense.</p>}
         {!win && boss && <p className="ui-result-sub">Le champion bloque la route : retente ta chance.</p>}
         <ul className="ui-result-lines">
-          <li><span>Or gagné</span><strong>+{gains.total}</strong><em>base {gains.base}, intérêts {gains.interest}, série {gains.streakBonus}{gains.winBonus ? `, victoire ${gains.winBonus}` : ''}</em></li>
+          {gains.total > 0 ? (
+            <li><span>Or gagné</span><strong>+{gains.total}</strong><em>base {gains.base}, intérêts {gains.interest}, série {gains.streakBonus}{gains.winBonus ? `, victoire ${gains.winBonus}` : ''}</em></li>
+          ) : (
+            <li className="is-bad"><span>Or gagné</span><strong>0</strong><em>une défaite ne rapporte pas d’or</em></li>
+          )}
           <li><span>Expérience</span><strong>+2 XP</strong></li>
           {hpLost > 0 && <li className="is-bad"><span>PV de dresseur</span><strong>-{hpLost}</strong></li>}
           {loot.length > 0 && (
