@@ -1,58 +1,49 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BOARD_COLS, BOARD_ROWS_HALF, BOARD_SIZE, ITEM_MAP } from './pokeArenaData';
 import './ArenaBoard.css';
 
 /*
- * Plateau « Holo Stadium » : arène flottante de nuit, dalles hexagonales en relief,
- * camp allié cyan / camp adverse magenta, projectiles et impacts pendant les combats.
+ * Terrain de combat façon anime : pelouse, terrain en terre battue tracé à la craie,
+ * Poké Ball au centre. Les Pokémon sont des éléments DOM posés sur les cases
+ * (déplacements animés, attaques, projectiles typés, impacts, KO).
  */
 
 const COLS = BOARD_COLS;
-const ROWS = BOARD_ROWS_HALF * 2; // 6
+const ROWS = BOARD_ROWS_HALF * 2;
 const SIZE = 50;
-const ISO_Y = 0.56;
-const DEPTH = 11; // épaisseur des dalles (px monde)
+const ISO_Y = 0.62;
 
-const TYPE_GLOW = {
-  Feu: '#ff7a3d', Eau: '#3da5ff', Plante: '#46e07d', Électrik: '#ffe14a',
-  Normal: '#e6e3d8', Combat: '#ff8455', Psy: '#ff6bd6', Spectre: '#a07bff',
-  Dragon: '#7a8cff', Fée: '#ff9ad5', Acier: '#b8c8dc', Glace: '#9ee7ff',
-  Roche: '#d4b07a', Ténèbres: '#9a7fd0', Vol: '#a8d4ff', Poison: '#c26bff',
-  Sol: '#e0b072', Insecte: '#b4d84a'
-};
-
-const TEAM = {
-  ally: { top: '#163b55', mid: '#0f2a40', low: '#08182a', side: '#06101d', rim: '#45e9ff', glow: 'rgba(69,233,255,0.75)' },
-  foe: { top: '#4a1838', mid: '#33102a', low: '#1d0819', side: '#12040f', rim: '#ff4f8b', glow: 'rgba(255,79,139,0.75)' }
-};
-
-const hexCorner = (cx, cy, size, i) => {
-  const angle = (Math.PI / 180) * (60 * i - 30);
-  return [cx + size * Math.cos(angle), cy + size * Math.sin(angle)];
+export const TYPE_COLOR = {
+  Normal: '#A8A77A', Feu: '#EE8130', Eau: '#6390F0', Électrik: '#F7D02C', Plante: '#7AC74C',
+  Glace: '#96D9D6', Combat: '#C22E28', Poison: '#A33EA1', Sol: '#E2BF65', Vol: '#A98FF3',
+  Psy: '#F95587', Insecte: '#A6B91A', Roche: '#B6A136', Spectre: '#735797', Dragon: '#6F35FC',
+  Ténèbres: '#705746', Acier: '#B7B7CE', Fée: '#D685AD'
 };
 
 const hexPath = (ctx, cx, cy, size) => {
   ctx.beginPath();
   for (let i = 0; i < 6; i += 1) {
-    const [x, y] = hexCorner(cx, cy, size, i);
+    const a = (Math.PI / 180) * (60 * i - 30);
+    const x = cx + size * Math.cos(a);
+    const y = cy + size * Math.sin(a);
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   }
   ctx.closePath();
 };
 
-const axialToPixel = (col, row, size) => ({
-  x: size * Math.sqrt(3) * (col + 0.5 * (row % 2)),
-  y: size * 1.5 * row
+const cellPixel = (col, row) => ({
+  x: SIZE * Math.sqrt(3) * (col + 0.5 * (row % 2)),
+  y: SIZE * 1.5 * row
 });
 
-/** Index 0..20 dans le camp (ennemi = rangées 0-2, allié = 3-5). */
-const cellToIndex = (col, row) => {
-  if (row < BOARD_ROWS_HALF) return row * COLS + col;
-  return (row - BOARD_ROWS_HALF) * COLS + col;
+/** Index 0..20 d’un camp → case (col,row) du plateau complet. */
+const slotToCell = (index, enemy) => {
+  const col = index % COLS;
+  const rowLocal = Math.floor(index / COLS);
+  return { col, row: enemy ? rowLocal : BOARD_ROWS_HALF + rowLocal };
 };
 
-/** Petit générateur pseudo-aléatoire stable (décor identique à chaque rendu). */
 const seeded = (seed) => {
   let s = seed;
   return () => {
@@ -61,243 +52,169 @@ const seeded = (seed) => {
   };
 };
 
-const hashUid = (uid = '') => {
-  let h = 0;
-  for (let i = 0; i < uid.length; i += 1) h = (h * 31 + uid.charCodeAt(i)) % 997;
-  return h;
-};
+/* ———————————————— Décor (canvas) ———————————————— */
 
-/* ———————————————————————— Décor ———————————————————————— */
-
-const drawSky = (ctx, w, h) => {
-  const sky = ctx.createLinearGradient(0, 0, 0, h);
-  sky.addColorStop(0, '#05061a');
-  sky.addColorStop(0.45, '#0d0f33');
-  sky.addColorStop(0.8, '#1a0f33');
-  sky.addColorStop(1, '#090614');
+const drawScenery = (ctx, w, h) => {
+  const sky = ctx.createLinearGradient(0, 0, 0, h * 0.5);
+  sky.addColorStop(0, '#7cc8f2');
+  sky.addColorStop(1, '#cfeefc');
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, h);
 
-  const rnd = seeded(7);
-  for (let i = 0; i < 140; i += 1) {
-    const x = rnd() * w;
-    const y = rnd() * h * 0.55;
-    const r = rnd() * 1.3 + 0.2;
-    ctx.fillStyle = `rgba(255,255,255,${0.25 + rnd() * 0.6})`;
+  const rnd = seeded(11);
+  // Collines lointaines
+  const hill = (base, amp, color, seed) => {
+    const r = seeded(seed);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    ctx.lineTo(0, base);
+    for (let x = 0; x <= w; x += w / 6) {
+      ctx.quadraticCurveTo(x + w / 12, base - amp * (0.5 + r()), x + w / 6, base);
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fill();
+  };
+  hill(h * 0.3, h * 0.08, '#a9d98c', 3);
+  hill(h * 0.36, h * 0.07, '#86c46b', 5);
+
+  // Arbres (rangée du fond)
+  for (let i = 0; i < 26; i += 1) {
+    const x = (i / 25) * w + (rnd() - 0.5) * 30;
+    const y = h * 0.37 + rnd() * h * 0.03;
+    const r = 16 + rnd() * 18;
+    ctx.fillStyle = '#4f9a45';
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
-  }
-
-  // Aurores
-  [[0.22, '#3cf0ff', 0.16], [0.62, '#b25cff', 0.14], [0.85, '#ff4f8b', 0.08]].forEach(([fx, color, alpha]) => {
-    const g = ctx.createRadialGradient(w * fx, h * 0.18, 0, w * fx, h * 0.18, w * 0.38);
-    g.addColorStop(0, color);
-    g.addColorStop(1, 'transparent');
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h * 0.6);
-  });
-  ctx.globalAlpha = 1;
-
-  // Tribunes : silhouette + lumières de la foule
-  const standTop = h * 0.36;
-  ctx.fillStyle = '#070816';
-  ctx.beginPath();
-  ctx.moveTo(0, standTop + 40);
-  ctx.quadraticCurveTo(w * 0.5, standTop - 30, w, standTop + 40);
-  ctx.lineTo(w, h);
-  ctx.lineTo(0, h);
-  ctx.closePath();
-  ctx.fill();
-  for (let i = 0; i < 260; i += 1) {
-    const x = rnd() * w;
-    const t = x / w;
-    const curve = standTop + 40 - Math.sin(t * Math.PI) * 70;
-    const y = curve + rnd() * 70 + 8;
-    const hue = rnd();
-    ctx.fillStyle = hue < 0.5 ? 'rgba(69,233,255,0.55)' : hue < 0.8 ? 'rgba(255,204,77,0.5)' : 'rgba(255,79,139,0.5)';
-    ctx.fillRect(x, y, 1.6, 1.6);
-  }
-
-  // Projecteurs
-  [[0.08, -0.35], [0.92, 0.35]].forEach(([fx, tilt]) => {
-    const x = w * fx;
-    const beam = ctx.createLinearGradient(x, 0, w * 0.5, h * 0.7);
-    beam.addColorStop(0, 'rgba(200,230,255,0.22)');
-    beam.addColorStop(1, 'rgba(200,230,255,0)');
-    ctx.fillStyle = beam;
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
     ctx.beginPath();
-    ctx.moveTo(x - 6, 0);
-    ctx.lineTo(x + 6, 0);
-    ctx.lineTo(w * (0.5 + tilt * 0.35) + 140, h * 0.85);
-    ctx.lineTo(w * (0.5 + tilt * 0.35) - 140, h * 0.85);
+    ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Pelouse tondue en bandes
+  const lawnTop = h * 0.4;
+  ctx.fillStyle = '#6dbb4f';
+  ctx.fillRect(0, lawnTop, w, h - lawnTop);
+  const bands = 9;
+  for (let i = 0; i < bands; i += 1) {
+    if (i % 2) continue;
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    ctx.beginPath();
+    const x0 = (i / bands) * w;
+    const x1 = ((i + 1) / bands) * w;
+    ctx.moveTo(w / 2 + (x0 - w / 2) * 0.45, lawnTop);
+    ctx.lineTo(w / 2 + (x1 - w / 2) * 0.45, lawnTop);
+    ctx.lineTo(w / 2 + (x1 - w / 2) * 1.6, h);
+    ctx.lineTo(w / 2 + (x0 - w / 2) * 1.6, h);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#f2f6ff';
-    ctx.shadowColor = '#bfe4ff';
-    ctx.shadowBlur = 18;
+  }
+  // Touffes d’herbe
+  for (let i = 0; i < 90; i += 1) {
+    const x = rnd() * w;
+    const y = lawnTop + 10 + rnd() * (h - lawnTop);
+    ctx.strokeStyle = 'rgba(40,110,40,0.35)';
+    ctx.lineWidth = 1.4;
     ctx.beginPath();
-    ctx.arc(x, 6, 7, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-  });
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 2, y - 6);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 2, y - 7);
+    ctx.stroke();
+  }
 };
 
-/** Socle de l’arène (dans l’espace monde, avant écrasement iso). */
-const drawPlatform = (ctx, gridW, gridH) => {
-  const padX = 46;
-  const padY = 50;
-  const x0 = -padX;
-  const y0 = -padY;
-  const w = gridW + padX * 2;
-  const h = gridH + padY * 2;
-  const cut = 70;
-  const outline = () => {
+/** Terrain en terre battue + lignes à la craie, dans l’espace « monde » écrasé (iso). */
+const drawField = (ctx, gridW, gridH) => {
+  const pad = 38;
+  const x0 = -pad;
+  const y0 = -pad;
+  const w = gridW + pad * 2;
+  const h = gridH + pad * 2;
+  const r = 40;
+  const rounded = (dx = 0, dy = 0) => {
     ctx.beginPath();
-    ctx.moveTo(x0 + cut, y0);
-    ctx.lineTo(x0 + w - cut, y0);
-    ctx.lineTo(x0 + w, y0 + cut);
-    ctx.lineTo(x0 + w, y0 + h - cut);
-    ctx.lineTo(x0 + w - cut, y0 + h);
-    ctx.lineTo(x0 + cut, y0 + h);
-    ctx.lineTo(x0, y0 + h - cut);
-    ctx.lineTo(x0, y0 + cut);
+    ctx.moveTo(x0 + r + dx, y0 + dy);
+    ctx.arcTo(x0 + w + dx, y0 + dy, x0 + w + dx, y0 + h + dy, r);
+    ctx.arcTo(x0 + w + dx, y0 + h + dy, x0 + dx, y0 + h + dy, r);
+    ctx.arcTo(x0 + dx, y0 + h + dy, x0 + dx, y0 + dy, r);
+    ctx.arcTo(x0 + dx, y0 + dy, x0 + w + dx, y0 + dy, r);
     ctx.closePath();
   };
-
-  // Ombre portée + épaisseur
-  ctx.save();
-  ctx.translate(0, 70);
-  outline();
-  ctx.fillStyle = 'rgba(0,0,0,0.55)';
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = 50;
+  // bordure / épaisseur
+  rounded(0, 26);
+  ctx.fillStyle = '#9a6b3f';
   ctx.fill();
-  ctx.restore();
-  for (let d = 46; d > 0; d -= 2) {
-    ctx.save();
-    ctx.translate(0, d);
-    outline();
-    ctx.fillStyle = d > 40 ? '#05050f' : `rgb(${14 + d * 0.3},${14 + d * 0.2},${34 + d * 0.4})`;
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // Dessus
-  outline();
-  const top = ctx.createLinearGradient(0, y0, 0, y0 + h);
-  top.addColorStop(0, '#2a1230');
-  top.addColorStop(0.5, '#141433');
-  top.addColorStop(1, '#0c2236');
-  ctx.fillStyle = top;
+  rounded(0, 0);
+  const clay = ctx.createLinearGradient(0, y0, 0, y0 + h);
+  clay.addColorStop(0, '#e2b27a');
+  clay.addColorStop(0.5, '#d9a56c');
+  clay.addColorStop(1, '#cf9860');
+  ctx.fillStyle = clay;
   ctx.fill();
 
-  // Liserés lumineux (rouge en haut, cyan en bas)
+  // grain de la terre
+  const rnd = seeded(29);
   ctx.save();
-  outline();
+  rounded(0, 0);
   ctx.clip();
+  for (let i = 0; i < 520; i += 1) {
+    ctx.fillStyle = rnd() < 0.5 ? 'rgba(120,70,30,0.10)' : 'rgba(255,240,210,0.12)';
+    ctx.beginPath();
+    ctx.arc(x0 + rnd() * w, y0 + rnd() * h, 1 + rnd() * 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Craie
+  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
   ctx.lineWidth = 5;
-  const rim = ctx.createLinearGradient(0, y0, 0, y0 + h);
-  rim.addColorStop(0, TEAM.foe.rim);
-  rim.addColorStop(0.5, '#b25cff');
-  rim.addColorStop(1, TEAM.ally.rim);
-  ctx.strokeStyle = rim;
-  ctx.shadowColor = '#b25cff';
-  ctx.shadowBlur = 24;
-  outline();
+  const inset = 16;
+  ctx.strokeRect(x0 + inset, y0 + inset, w - inset * 2, h - inset * 2);
+  const midY = gridH / 2 + SIZE * 0.25;
+  ctx.beginPath();
+  ctx.moveTo(x0 + inset, midY);
+  ctx.lineTo(x0 + w - inset, midY);
   ctx.stroke();
-  ctx.restore();
-
-  // Rainure d’énergie au milieu
-  const midY = gridH / 2 + 6;
-  const river = ctx.createLinearGradient(x0, 0, x0 + w, 0);
-  river.addColorStop(0, 'rgba(178,92,255,0)');
-  river.addColorStop(0.5, 'rgba(178,92,255,0.9)');
-  river.addColorStop(1, 'rgba(178,92,255,0)');
-  ctx.fillStyle = river;
-  ctx.shadowColor = '#b25cff';
-  ctx.shadowBlur = 30;
-  ctx.fillRect(x0 + 20, midY - 3, w - 40, 6);
-  ctx.shadowBlur = 0;
-};
-
-const drawTile = (ctx, cx, cy, side, state) => {
-  const t = TEAM[side];
-  const r = SIZE - 2.5;
-
-  // Faces latérales (relief)
-  for (let d = DEPTH; d > 0; d -= 1.5) {
-    hexPath(ctx, cx, cy + d, r);
-    ctx.fillStyle = t.side;
-    ctx.fill();
-  }
-
-  // Dessus vitré
-  hexPath(ctx, cx, cy, r);
-  const g = ctx.createLinearGradient(cx, cy - r, cx, cy + r);
-  g.addColorStop(0, t.top);
-  g.addColorStop(0.55, t.mid);
-  g.addColorStop(1, t.low);
-  ctx.fillStyle = g;
+  // Poké Ball centrale
+  const cx = gridW / 2;
+  ctx.beginPath();
+  ctx.arc(cx, midY, SIZE * 1.25, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, midY, SIZE * 0.36, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(227,53,13,0.16)';
+  ctx.beginPath();
+  ctx.arc(cx, midY, SIZE * 1.25, Math.PI, Math.PI * 2);
   ctx.fill();
-
-  ctx.save();
-  hexPath(ctx, cx, cy, r);
-  ctx.clip();
-  const shine = ctx.createLinearGradient(cx - r, cy - r, cx + r * 0.2, cy);
-  shine.addColorStop(0, 'rgba(255,255,255,0.16)');
-  shine.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = shine;
-  ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
-  ctx.restore();
-
-  // Hexagone intérieur gravé
-  hexPath(ctx, cx, cy, r * 0.62);
-  ctx.strokeStyle = side === 'ally' ? 'rgba(69,233,255,0.14)' : 'rgba(255,79,139,0.14)';
-  ctx.lineWidth = 1.4;
-  ctx.stroke();
-
-  hexPath(ctx, cx, cy, r);
-  ctx.strokeStyle = side === 'ally' ? 'rgba(69,233,255,0.28)' : 'rgba(255,79,139,0.26)';
-  ctx.lineWidth = 1.6;
-  ctx.stroke();
-
-  if (state === 'occupied' || state === 'selected' || state === 'target') {
-    const color = state === 'selected' ? '#ffcc4d' : state === 'target' ? 'rgba(255,204,77,0.75)' : t.rim;
-    ctx.save();
-    hexPath(ctx, cx, cy, r - 1);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = state === 'target' ? 2.4 : 4;
-    ctx.shadowColor = state === 'occupied' ? t.glow : 'rgba(255,204,77,0.8)';
-    ctx.shadowBlur = 18;
-    ctx.stroke();
-    ctx.restore();
-    if (state !== 'target') {
-      ctx.save();
-      hexPath(ctx, cx, cy, r);
-      ctx.clip();
-      const pool = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-      pool.addColorStop(0, state === 'selected' ? 'rgba(255,204,77,0.35)' : t.glow.replace('0.75', '0.28'));
-      pool.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = pool;
-      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
-      ctx.restore();
-    }
-  }
 };
 
-/* ———————————————————————— Sprites ———————————————————————— */
+const drawCell = (ctx, cx, cy, enemy) => {
+  const r = SIZE - 4;
+  hexPath(ctx, cx, cy, r);
+  ctx.fillStyle = enemy ? 'rgba(227,53,13,0.07)' : 'rgba(59,91,167,0.08)';
+  ctx.fill();
+  ctx.setLineDash([7, 6]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+  ctx.setLineDash([]);
+};
 
-const PixelPoke = ({ unit, enemy }) => {
-  const chain = [unit.model, unit.home, unit.art, unit.anim, unit.pixel, unit.sprite].filter(Boolean);
+/* ———————————————— Sprites ———————————————— */
+
+const Sprite = ({ unit, enemy }) => {
+  const chain = [unit.home, unit.art, unit.sprite].filter(Boolean);
   const [idx, setIdx] = useState(0);
   useEffect(() => { setIdx(0); }, [unit.dex]);
-  const src = chain[Math.min(idx, chain.length - 1)];
   return (
     <img
-      className={`hx-sprite${enemy ? ' is-enemy' : ''}`}
-      src={src}
+      className={`bd-sprite${enemy ? ' is-enemy' : ''}`}
+      src={chain[Math.min(idx, chain.length - 1)]}
       alt={unit.name}
       draggable={false}
       onError={() => setIdx((i) => Math.min(i + 1, chain.length - 1))}
@@ -310,26 +227,40 @@ const ItemPip = ({ id }) => {
   const [fail, setFail] = useState(false);
   if (!item) return null;
   return item.sprite && !fail
-    ? <img src={item.sprite} alt={item.name} title={item.name} onError={() => setFail(true)} />
-    : <em title={item.name}>{item.icon}</em>;
+    ? <img src={item.sprite} alt={item.name} title={item.name} onError={() => setFail(true)} draggable={false} />
+    : <em title={item.name}>•</em>;
 };
 
+const hpColor = (ratio) => (ratio > 0.5 ? '#4cc35a' : ratio > 0.22 ? '#f2c230' : '#e2453a');
+
+/**
+ * Props :
+ *  board / enemyBoard : 21 cases par camp (unités ou null)
+ *  positions          : uid → {col,row} pendant un combat (sinon on lit les cases)
+ *  act / actKey       : action en cours (attaque, sort…) pour les animations
+ */
 export default function ArenaBoardIso({
   board,
   enemyBoard,
+  positions = null,
   selectedUid,
   placing,
+  dragging = false,
   fxMap = {},
   hpMap = {},
   floatFx = [],
+  act = null,
+  actKey = 0,
+  evolving = [],
+  speed = 1,
   stage,
   onCellClick,
-  onHoverUnit
+  onHoverUnit,
+  onUnitPointerDown
 }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
   const [layout, setLayout] = useState(null);
-  const fxTick = useRef(0);
 
   const safeBoard = board?.length === BOARD_SIZE ? board : Array(BOARD_SIZE).fill(null);
   const safeEnemy = enemyBoard?.length === BOARD_SIZE ? enemyBoard : Array(BOARD_SIZE).fill(null);
@@ -338,34 +269,26 @@ export default function ArenaBoardIso({
     const list = [];
     for (let row = 0; row < ROWS; row += 1) {
       for (let col = 0; col < COLS; col += 1) {
-        const { x, y } = axialToPixel(col, row, SIZE);
+        const { x, y } = cellPixel(col, row);
         const enemy = row < BOARD_ROWS_HALF;
-        const index = cellToIndex(col, row);
-        list.push({
-          col, row, x, y, enemy, index,
-          allyIndex: enemy ? null : index,
-          enemyIndex: enemy ? index : null
-        });
+        const index = (enemy ? row : row - BOARD_ROWS_HALF) * COLS + col;
+        list.push({ col, row, x, y, enemy, index });
       }
     }
     return list;
   }, []);
 
-  const metrics = useMemo(() => {
+  const grid = useMemo(() => {
     let maxX = 0;
     let maxY = 0;
-    cells.forEach((c) => {
-      maxX = Math.max(maxX, c.x);
-      maxY = Math.max(maxY, c.y);
-    });
-    return { gridW: maxX + SIZE * 2, gridH: maxY + SIZE * 2 };
+    cells.forEach((c) => { maxX = Math.max(maxX, c.x); maxY = Math.max(maxY, c.y); });
+    return { w: maxX + SIZE * 2, h: maxY + SIZE * 2 };
   }, [cells]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return undefined;
-
     const paint = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const cssW = wrap.clientWidth;
@@ -377,199 +300,201 @@ export default function ArenaBoardIso({
       canvas.style.height = `${cssH}px`;
       const ctx = canvas.getContext('2d');
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      drawSky(ctx, cssW, cssH);
-
-      const worldW = metrics.gridW + 100;
-      const worldH = (metrics.gridH + 110) * ISO_Y + 50;
-      const scale = Math.min((cssW - 24) / worldW, (cssH - 24) / worldH);
-      const ox = (cssW - metrics.gridW * scale) / 2;
-      const oy = (cssH - metrics.gridH * ISO_Y * scale) / 2 + 4;
-
+      drawScenery(ctx, cssW, cssH);
+      const worldW = grid.w + 70;
+      const worldH = (grid.h + 90) * ISO_Y + 60;
+      const scale = Math.min((cssW - 16) / worldW, (cssH - 16) / worldH);
+      const ox = (cssW - grid.w * scale) / 2;
+      const oy = (cssH - grid.h * ISO_Y * scale) / 2 + 14 * scale;
       ctx.save();
       ctx.translate(ox, oy);
       ctx.scale(scale, scale * ISO_Y);
-      drawPlatform(ctx, metrics.gridW, metrics.gridH);
-
-      cells.forEach((cell) => {
-        const cx = cell.x + SIZE;
-        const cy = cell.y + SIZE;
-        const unit = cell.enemy ? safeEnemy[cell.index] : safeBoard[cell.index];
-        let state = 'idle';
-        if (unit) state = !cell.enemy && unit.uid === selectedUid ? 'selected' : 'occupied';
-        else if (!cell.enemy && placing) state = 'target';
-        drawTile(ctx, cx, cy, cell.enemy ? 'foe' : 'ally', state);
-      });
+      drawField(ctx, grid.w, grid.h);
+      cells.forEach((cell) => drawCell(ctx, cell.x + SIZE, cell.y + SIZE, cell.enemy));
       ctx.restore();
-
-      setLayout({
-        scale,
-        overlays: cells.map((cell) => ({
-          ...cell,
-          screenX: ox + (cell.x + SIZE) * scale,
-          screenY: oy + (cell.y + SIZE) * scale * ISO_Y
-        }))
-      });
+      setLayout({ scale, ox, oy });
     };
-
     paint();
     const RO = typeof window !== 'undefined' ? window.ResizeObserver : undefined;
     const ro = RO ? new RO(paint) : null;
     ro?.observe(wrap);
     return () => ro?.disconnect();
-  }, [cells, metrics, safeBoard, safeEnemy, selectedUid, placing]);
+  }, [cells, grid]);
 
-  const hitTest = (clientX, clientY) => {
-    if (!layout || stage !== 'prep') return;
-    const rect = wrapRef.current.getBoundingClientRect();
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    let best = null;
-    let bestDist = SIZE * (layout.scale || 1) * 0.9;
-    layout.overlays.forEach((cell) => {
-      if (cell.allyIndex == null) return;
-      const dx = x - cell.screenX;
-      const dy = (y - cell.screenY) / ISO_Y;
-      const d = Math.sqrt(dx * dx + dy * dy);
-      if (d < bestDist) {
-        bestDist = d;
-        best = cell;
-      }
-    });
-    if (best) onCellClick?.(best.allyIndex);
+  const screenOf = (col, row) => {
+    if (!layout) return { x: 0, y: 0 };
+    const { x, y } = cellPixel(col, row);
+    return { x: layout.ox + (x + SIZE) * layout.scale, y: layout.oy + (y + SIZE) * layout.scale * ISO_Y };
   };
 
-  // Position écran de chaque unité (pour les projectiles).
-  const unitSpots = useMemo(() => {
-    const spots = {};
-    layout?.overlays.forEach((cell) => {
-      const unit = cell.enemy ? safeEnemy[cell.index] : safeBoard[cell.index];
-      if (unit) spots[unit.uid] = { x: cell.screenX, y: cell.screenY, unit, enemy: cell.enemy };
-    });
-    return spots;
-  }, [layout, safeBoard, safeEnemy]);
+  // Toutes les unités avec leur case actuelle.
+  const units = useMemo(() => {
+    const list = [];
+    safeBoard.forEach((u, i) => { if (u) list.push({ u, enemy: false, cell: positions?.[u.uid] || slotToCell(i, false) }); });
+    safeEnemy.forEach((u, i) => { if (u) list.push({ u, enemy: true, cell: positions?.[u.uid] || slotToCell(i, true) }); });
+    return list;
+  }, [safeBoard, safeEnemy, positions]);
 
-  // Projectiles : de l’attaquant (strike / spell) vers chaque cible touchée.
+  const spot = useMemo(() => {
+    const map = {};
+    units.forEach(({ u, cell, enemy }) => { map[u.uid] = { ...screenOf(cell.col, cell.row), enemy, unit: u }; });
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [units, layout]);
+
+  const unitSize = Math.max(48, Math.round(SIZE * 1.65 * (layout?.scale || 1)));
+  const cellW = Math.round(SIZE * 1.75 * (layout?.scale || 1));
+
+  // Projectiles et impacts de l’action courante.
   const shots = useMemo(() => {
-    fxTick.current += 1;
-    const entries = Object.entries(fxMap || {});
-    const attacker = entries.find(([, v]) => v === 'spell' || v === 'strike');
-    if (!attacker) return [];
-    const from = unitSpots[attacker[0]];
+    if (!act || !act.uid || (act.kind !== 'strike' && act.kind !== 'spell')) return [];
+    const from = spot[act.uid];
     if (!from) return [];
-    return entries
-      .filter(([uid, v]) => uid !== attacker[0] && (v === 'hit' || v === 'ko'))
-      .map(([uid]) => unitSpots[uid])
-      .filter(Boolean)
-      .map((to, i) => ({
-        key: `${fxTick.current}-${i}`,
-        kind: attacker[1],
-        x: from.x,
-        y: from.y,
-        dx: to.x - from.x,
-        dy: to.y - from.y,
-        color: TYPE_GLOW[from.unit.type] || '#ffffff'
-      }));
-  }, [fxMap, unitSpots]);
+    if (act.kind === 'strike' && !act.ranged) return [];
+    return (act.targets || []).map((t) => spot[t]).filter(Boolean).map((to, i) => ({
+      key: `${actKey}-${i}`,
+      x: from.x,
+      y: from.y - unitSize * 0.35,
+      dx: to.x - from.x,
+      dy: to.y - from.y,
+      color: TYPE_COLOR[act.type] || '#ffffff',
+      kind: act.kind,
+      type: act.type
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [actKey]);
 
-  const unitSize = Math.max(48, Math.round(SIZE * 1.5 * (layout?.scale || 1)));
+  const lunge = (uid) => {
+    if (!act || act.uid !== uid || act.kind !== 'strike' || act.ranged) return null;
+    const from = spot[uid];
+    const to = spot[act.targets?.[0]];
+    if (!from || !to) return null;
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const len = Math.max(1, Math.hypot(dx, dy));
+    return { '--lx': `${(dx / len) * unitSize * 0.45}px`, '--ly': `${(dy / len) * unitSize * 0.45}px` };
+  };
+
+  const isFight = stage === 'fight';
+  const evolvingSet = new Set(evolving);
 
   return (
     <div
-      className={`hx-stage${stage === 'fight' ? ' is-fight' : ''}${placing ? ' is-placing' : ''}`}
+      className={`bd-stage${isFight ? ' is-fight' : ''}${placing ? ' is-placing' : ''}${dragging ? ' is-dragging' : ''}${act?.crit ? ` shake-${actKey % 2}` : ''}`}
       ref={wrapRef}
-      style={{ '--hx-unit': `${unitSize}px` }}
+      style={{ '--bd-unit': `${unitSize}px`, '--bd-cell': `${cellW}px`, '--bd-speed': speed }}
     >
-      <canvas
-        ref={canvasRef}
-        className="hx-canvas"
-        onClick={(e) => hitTest(e.clientX, e.clientY)}
-      />
-      <div className="hx-aurora" aria-hidden />
-      <div className="hx-motes" aria-hidden>
-        {Array.from({ length: 18 }).map((_, i) => <i key={i} style={{ '--i': i }} />)}
+      <canvas ref={canvasRef} className="bd-canvas" />
+      <div className="bd-clouds" aria-hidden>
+        <i /><i /><i />
       </div>
 
-      {layout?.overlays.map((cell) => {
-        const unit = cell.enemy ? safeEnemy[cell.index] : safeBoard[cell.index];
-        if (!unit) return null;
-        const fx = fxMap[unit.uid];
-        const hpInfo = hpMap[unit.uid];
-        const ratio = hpInfo
-          ? Math.max(0, Math.min(1, hpInfo.cur / Math.max(1, hpInfo.max)))
-          : 1;
-        const floats = floatFx.filter((f) => f.uid === unit.uid);
-        const glow = TYPE_GLOW[unit.type] || '#ffffff';
+      {/* Cases du joueur (clic / dépôt) */}
+      {layout && !isFight && cells.filter((c) => !c.enemy).map((cell) => {
+        const p = screenOf(cell.col, cell.row);
+        const unit = safeBoard[cell.index];
+        return (
+          <button
+            key={`cell-${cell.index}`}
+            type="button"
+            className={`bd-cell${unit ? ' has-unit' : ''}${unit && unit.uid === selectedUid ? ' is-selected' : ''}`}
+            style={{ left: p.x, top: p.y }}
+            data-drop="cell"
+            data-index={cell.index}
+            aria-label={unit ? `${unit.name}, case ${cell.index + 1}` : `Case vide ${cell.index + 1}`}
+            onClick={() => onCellClick?.(cell.index)}
+          />
+        );
+      })}
+
+      {layout && units.map(({ u, enemy, cell }) => {
+        const p = screenOf(cell.col, cell.row);
+        const fx = fxMap[u.uid];
+        const hp = hpMap[u.uid];
+        const ratio = hp ? Math.max(0, Math.min(1, hp.cur / Math.max(1, hp.max))) : 1;
+        const down = hp && !hp.alive;
+        const floats = floatFx.filter((f) => f.uid === u.uid);
+        const isActor = act?.uid === u.uid;
+        const color = TYPE_COLOR[u.type] || '#ffffff';
         return (
           <div
-            key={unit.uid}
+            key={u.uid}
             className={[
-              'hx-unit',
-              cell.enemy ? 'is-enemy' : 'is-ally',
+              'bd-unit',
+              enemy ? 'is-enemy' : 'is-ally',
               fx ? `fx-${fx}` : '',
-              hpInfo && !hpInfo.alive ? 'is-down' : '',
-              !cell.enemy && unit.uid === selectedUid ? 'is-selected' : '',
-              unit.star >= 3 ? 'is-gold' : ''
+              isActor ? `act-${act.kind}` : '',
+              down ? 'is-down' : '',
+              !enemy && u.uid === selectedUid ? 'is-selected' : '',
+              u.star >= 3 ? 'is-gold' : '',
+              evolvingSet.has(u.uid) ? 'is-evolving' : ''
             ].filter(Boolean).join(' ')}
-            style={{
-              left: cell.screenX,
-              top: cell.screenY,
-              zIndex: 10 + cell.row,
-              '--glow': glow,
-              '--bob': `${(hashUid(unit.uid) % 9) * 0.17}s`
-            }}
-            onMouseEnter={() => onHoverUnit?.(unit)}
+            style={{ left: p.x, top: p.y, zIndex: 20 + cell.row * 2, '--type': color, ...(lunge(u.uid) || {}) }}
+            data-uid={u.uid}
+            data-drop={enemy ? undefined : 'unit'}
+            data-index={enemy ? undefined : safeBoard.findIndex((x) => x?.uid === u.uid)}
+            onMouseEnter={() => onHoverUnit?.(u)}
             onMouseLeave={() => onHoverUnit?.(null)}
-            onClick={() => {
-              if (!cell.enemy && stage === 'prep') onCellClick?.(cell.allyIndex);
-            }}
+            onPointerDown={(e) => { if (!enemy && !isFight) onUnitPointerDown?.(e, u); }}
             role="presentation"
           >
-            <span className="hx-ring" aria-hidden />
-            <span className="hx-shadow" aria-hidden />
-            <div className="hx-body">
-              <PixelPoke unit={unit} enemy={cell.enemy} />
+            <span className="bd-ring" aria-hidden />
+            <span className="bd-shadow" aria-hidden />
+            <div key={isActor ? `a-${actKey}` : 'idle'} className="bd-body">
+              <div className="bd-bob">
+                <Sprite unit={u} enemy={enemy} />
+              </div>
             </div>
-            <div className="hx-plate">
-              <span className="hx-stars">{'★'.repeat(unit.star)}</span>
-              <span className={`hx-hp${ratio < 0.3 ? ' is-low' : ''}`}>
+            <div className="bd-plate">
+              <span className="bd-stars">{'★'.repeat(u.star)}</span>
+              <span className="bd-hp">
                 <i style={{ width: `${ratio * 100}%` }} />
-                <b style={{ width: `${ratio * 100}%` }} />
+                <b style={{ width: `${ratio * 100}%`, background: hpColor(ratio) }} />
               </span>
-              {(unit.items || []).length > 0 && (
-                <span className="hx-items">
-                  {(unit.items || []).map((id, i) => <ItemPip key={`${id}-${i}`} id={id} />)}
+              {(u.items || []).length > 0 && (
+                <span className="bd-items">
+                  {(u.items || []).map((id, i) => <ItemPip key={`${id}-${i}`} id={id} />)}
                 </span>
               )}
             </div>
-            {fx === 'spell' && <span className="hx-cast" aria-hidden />}
-            {(fx === 'hit' || fx === 'ko') && <span className="hx-impact" aria-hidden />}
-            {floats.map((f) => (
-              <span key={f.key} className={`hx-float is-${f.kind || 'dmg'}${String(f.text).endsWith('!') ? ' is-crit' : ''}`}>
-                {f.text}
+            {isActor && act.kind === 'spell' && (
+              <span key={`cast-${actKey}`} className="bd-cast" aria-hidden>
+                <em>{act.name}</em>
               </span>
+            )}
+            {(fx === 'hit' || fx === 'ko') && (
+              <span key={`imp-${actKey}`} className={`bd-impact type-${act?.type || 'Normal'}`} style={{ '--fxc': TYPE_COLOR[act?.type] || '#fff' }} aria-hidden>
+                {Array.from({ length: 8 }).map((_, i) => <i key={i} style={{ '--i': i }} />)}
+              </span>
+            )}
+            {fx === 'heal' && <span key={`heal-${actKey}`} className="bd-heal" aria-hidden><i /><i /><i /></span>}
+            {fx === 'buff' && <span key={`buff-${actKey}`} className="bd-buff" aria-hidden />}
+            {fx === 'ko' && <span key={`ko-${actKey}`} className="bd-ko" aria-hidden />}
+            {evolvingSet.has(u.uid) && <span className="bd-evolve" aria-hidden>{Array.from({ length: 10 }).map((_, i) => <i key={i} style={{ '--i': i }} />)}</span>}
+            {floats.map((f) => (
+              <span key={f.key} className={`bd-float is-${f.kind || 'dmg'}`}>{f.text}</span>
             ))}
           </div>
         );
       })}
 
-      {shots.map((shot) => (
+      {shots.map((s) => (
         <span
-          key={shot.key}
-          className={`hx-shot is-${shot.kind}`}
+          key={s.key}
+          className={`bd-shot is-${s.kind} type-${s.type}`}
           style={{
-            left: shot.x,
-            top: shot.y,
-            '--dx': `${shot.dx}px`,
-            '--dy': `${shot.dy}px`,
-            '--shot': shot.color,
-            '--angle': `${Math.atan2(shot.dy, shot.dx)}rad`
+            left: s.x,
+            top: s.y,
+            '--dx': `${s.dx}px`,
+            '--dy': `${s.dy}px`,
+            '--shot': s.color,
+            '--angle': `${Math.atan2(s.dy, s.dx)}rad`
           }}
           aria-hidden
-        />
+        >
+          <i />
+        </span>
       ))}
-
-      {stage === 'fight' && <div className="hx-vignette" aria-hidden />}
     </div>
   );
 }

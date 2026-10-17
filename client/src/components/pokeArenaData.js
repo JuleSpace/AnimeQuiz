@@ -1,4 +1,5 @@
 import { FORM_TALENTS, TALENTS } from './pokeArenaTalents';
+import { BALANCE } from './pokeArenaBalance';
 
 export const TYPES = ['Feu', 'Eau', 'Plante', 'Électrik', 'Normal', 'Combat', 'Psy', 'Spectre', 'Dragon', 'Fée', 'Acier', 'Glace', 'Roche', 'Ténèbres', 'Vol', 'Sol', 'Insecte', 'Poison'];
 
@@ -30,7 +31,7 @@ export const BOARD_COLS = 7;
 export const BOARD_ROWS_HALF = 3;
 export const BOARD_SIZE = BOARD_COLS * BOARD_ROWS_HALF; // 21
 export const ITEM_SLOTS = 3;
-export const START_GOLD = 14;
+export const START_GOLD = 10;
 export const START_HP = 100;
 
 export const artworkUrl = (dex) =>
@@ -124,11 +125,7 @@ export const LINES = [
     [S('Magicarpe', 'Eau', 280, 18, 20, 129), S('Léviator', ['Eau', 'Vol'], 900, 120, 14, 130), S('Léviator ★', ['Eau', 'Vol'], 1480, 185, 15, 130)]),
   L('litwick', 1, [], 3,
     { name: 'Feu Follet', desc: 'Tous les 3 tours : 165% ATK + brûle 8% PV max.', every: 3, mult: 1.65, aim: 'weak', shred: 0.08 },
-    [S('Funécire', ['Spectre', 'Feu'], 360, 48, 13, 607), S('Mélancolux', ['Spectre', 'Feu'], 680, 90, 14, 608)],
-    { at: 3, forms: [
-      { id: 'lugulabre', stages: [S('Lugulabre', ['Spectre', 'Feu'], 1120, 148, 15, 609)] },
-      { id: 'mega', stages: [S('Méga-Lugulabre', ['Spectre', 'Feu'], 1080, 160, 16, 10291)] }
-    ] }),
+    [S('Funécire', ['Spectre', 'Feu'], 360, 48, 13, 607), S('Mélancolux', ['Spectre', 'Feu'], 680, 90, 14, 608), S('Lugulabre', ['Spectre', 'Feu'], 1120, 148, 15, 609)]),
   L('bidoof', 1, ['Normal'], 1,
     { name: 'Mâchouille', desc: 'Tous les 3 tours : 155% ATK Normal.', every: 3, mult: 1.55, aim: 'front' },
     [S('Keunotor', 'Normal', 400, 36, 11, 399), S('Castorno', ['Normal', 'Eau'], 760, 70, 12, 400), S('Castorno ★', ['Normal', 'Eau'], 1200, 115, 13, 400)]),
@@ -137,11 +134,7 @@ export const LINES = [
     [S('Axoloto', ['Eau', 'Sol'], 420, 34, 10, 194), S('Maraiste', ['Eau', 'Sol'], 820, 78, 11, 195), S('Maraiste ★', ['Eau', 'Sol'], 1300, 125, 12, 195)]),
   L('mareep', 1, ['Électrik'], 3,
     { name: 'Tonnerre', desc: 'Tous les 3 tours : 165% ATK Électrik.', every: 3, mult: 1.65, aim: 'random' },
-    [S('Wattouat', 'Électrik', 360, 44, 12, 179), S('Lainergie', 'Électrik', 680, 82, 13, 180)],
-    { at: 3, forms: [
-      { id: 'pharamp', stages: [S('Pharamp', 'Électrik', 1120, 135, 14, 181)] },
-      { id: 'mega', stages: [S('Méga-Pharamp', ['Électrik', 'Dragon'], 1080, 145, 13, 10045)] }
-    ] }),
+    [S('Wattouat', 'Électrik', 360, 44, 12, 179), S('Lainergie', 'Électrik', 680, 82, 13, 180), S('Pharamp', 'Électrik', 1120, 135, 14, 181)]),
   L('azurill', 1, ['Fée', 'Eau'], 2,
     { name: 'Bulles d’O', desc: 'Tous les 3 tours : 150% ATK + soigne 6%.', every: 3, mult: 1.5, aim: 'front', healAlly: 0.06 },
     [S('Azurill', ['Normal', 'Fée'], 380, 32, 11, 298), S('Marill', ['Eau', 'Fée'], 720, 68, 12, 183), S('Azumarill', ['Eau', 'Fée'], 1220, 118, 13, 184)]),
@@ -547,11 +540,7 @@ export const LINES = [
     ] }),
   L('fennekin', 3, ['Starter'], 3,
     { name: 'Feu Mystique', desc: 'Tous les 3 tours : 180% ATK Feu + baisse l’ATK de 15%.', every: 3, mult: 1.8, aim: 'weak', atkBreak: 0.15 },
-    [S('Feunnec', 'Feu', 380, 55, 16, 653), S('Roussil', 'Feu', 720, 100, 17, 654)],
-    { at: 3, forms: [
-      { id: 'goupelin', stages: [S('Goupelin', ['Feu', 'Psy'], 1200, 165, 18, 655)] },
-      { id: 'mega', stages: [S('Méga-Goupelin', ['Feu', 'Psy'], 1160, 178, 19, 10293)] }
-    ] }),
+    [S('Feunnec', 'Feu', 380, 55, 16, 653), S('Roussil', 'Feu', 720, 100, 17, 654), S('Goupelin', ['Feu', 'Psy'], 1200, 165, 18, 655)]),
   line3('chespin', 3, ['Marisson', 'Plante', 420, 52, 12, 650], ['Boguérisse', 'Plante', 800, 95, 12, 651], ['Blindépique', ['Plante', 'Combat'], 1320, 155, 13, 652], 1, ['Starter']),
   line2('helioptile', 2, ['Galvaran', ['Électrik', 'Normal'], 360, 52, 16, 694], ['Iguolta', ['Électrik', 'Normal'], 780, 120, 18, 695], 3),
   L('bergmite', 3, [], 1,
@@ -757,7 +746,197 @@ export const LINES = [
   withSpell(mono('groudon', 5, 'Groudon', 'Sol', 900, 125, 12, 383, 1),
     { name: 'Lame Pangéenne', desc: 'Tous les 4 tours : 245% ATK Sol à tous.', every: 4, mult: 2.45, aim: 'all' }),
   withSpell(mono('zacian', 5, 'Zacian', 'Fée', 760, 135, 20, 888, 1),
-    { name: 'Gladius Maximus', desc: 'Tous les 3 tours : 240% ATK Acier sur le front.', every: 3, mult: 2.4, aim: 'front' })
+    { name: 'Gladius Maximus', desc: 'Tous les 3 tours : 240% ATK Acier sur le front.', every: 3, mult: 2.4, aim: 'front' }),
+
+  /* ——— Nouvelles lignées ——— */
+  L('caterpie', 1, [], 3,
+    { name: 'Poudre Dodo', desc: 'Tous les 4 tours : 120% ATK sur 2 cibles + les endort (étourdit).', every: 4, mult: 1.2, aim: 'aoe2', stun: true },
+    [S('Chenipan', 'Insecte', 350, 39, 12, 10), S('Chrysacier', 'Insecte', 670, 76, 11, 11), S('Papilusion', ['Insecte', 'Vol'], 1080, 125, 14, 12)]),
+  L('rattata', 1, [], 1,
+    { name: 'Croc de Mort', desc: 'Tous les 3 tours : 185% ATK sur le plus faible.', every: 3, mult: 1.85, aim: 'weak' },
+    [S('Rattata', 'Normal', 350, 37, 13, 19), S('Rattatac', 'Normal', 660, 72, 14, 20), S('Rattatac ★', 'Normal', 1060, 119, 15, 20)]),
+  L('psyduck', 1, [], 2,
+    { name: 'Choc Mental', desc: 'Tous les 3 tours : 160% ATK Psy sur une cible au hasard + l’étourdit.', every: 3, mult: 1.6, aim: 'random', stun: true },
+    [S('Psykokwak', 'Eau', 400, 40, 12, 54), S('Akwakwak', 'Eau', 760, 78, 13, 55), S('Akwakwak ★', 'Eau', 1220, 128, 14, 55)]),
+  L('poliwag', 1, [], 1,
+    { name: 'Hypnose', desc: 'Tous les 3 tours : 150% ATK + étourdit la cible.', every: 3, mult: 1.5, aim: 'front', stun: true },
+    [S('Ptitard', 'Eau', 430, 40, 14, 60), S('Têtarte', 'Eau', 810, 78, 14, 61)],
+    { at: 3, forms: [
+      { id: 'tartard', stages: [S('Tartard', ['Eau', 'Combat'], 1300, 128, 14, 62)] },
+      { id: 'tarpaud', stages: [S('Tarpaud', 'Eau', 1300, 128, 14, 186)] }
+    ] }),
+  L('vulpix', 1, [], 3,
+    { name: 'Lance-Flammes', desc: 'Tous les 3 tours : 165% ATK Feu sur la cible la plus loin + brûle.', every: 3, mult: 1.65, aim: 'back', dot: { pct: 0.04, turns: 3 } },
+    [S('Goupix', 'Feu', 400, 37, 13, 37), S('Feunard', 'Feu', 760, 72, 14, 38), S('Feunard ★', 'Feu', 1220, 119, 15, 38)]),
+  L('ponyta', 1, [], 1,
+    { name: 'Nitrocharge', desc: 'Tous les 3 tours : 160% ATK + l’allié le plus lent gagne 3 SPD.', every: 3, mult: 1.6, aim: 'front', allyBuff: true },
+    [S('Ponyta', 'Feu', 370, 41, 14, 77)],
+    { at: 2, forms: [
+      { id: 'kanto', stages: [S('Galopa', 'Feu', 710, 80, 14, 78), S('Galopa ★', 'Feu', 1140, 132, 15, 78)] },
+      { id: 'galar', stages: [S('Galopa de Galar', ['Psy', 'Fée'], 710, 80, 14, 10163), S('Galopa de Galar ★', ['Psy', 'Fée'], 1140, 132, 15, 10163)] }
+    ] }),
+  L('krabby', 1, ['Force'], 1,
+    { name: 'Pince-Masse', desc: 'Tous les 3 tours : 200% ATK Eau sur le front.', every: 3, mult: 2.0, aim: 'front' },
+    [S('Krabby', 'Eau', 370, 47, 12, 98), S('Krabboss', 'Eau', 700, 91, 13, 99), S('Krabboss ★', 'Eau', 1130, 150, 14, 99)]),
+  L('pachirisu', 1, [], 2,
+    { name: 'Frotte-Frimousse', desc: 'Tous les 3 tours : 130% ATK Électrik + ralentit fortement.', every: 3, mult: 1.3, aim: 'front', slow: 4 },
+    [S('Pachirisu', 'Électrik', 370, 36, 14, 417), S('Pachirisu ★', 'Électrik', 710, 71, 14, 417), S('Pachirisu ★★', 'Électrik', 1140, 116, 15, 417)]),
+  L('poochyena', 1, [], 1,
+    { name: 'Mâchouille', desc: 'Tous les 3 tours : 165% ATK Ténèbres + baisse l’ATK de 15%.', every: 3, mult: 1.65, aim: 'front', atkBreak: 0.15 },
+    [S('Medhyèna', 'Ténèbres', 370, 39, 11, 261), S('Grahyèna', 'Ténèbres', 700, 76, 13, 262), S('Grahyèna ★', 'Ténèbres', 1120, 125, 14, 262)]),
+  L('lotad', 1, [], 2,
+    { name: 'Giga-Sangsue', desc: 'Tous les 3 tours : 150% ATK Plante + soigne l’allié le plus blessé de 8%.', every: 3, mult: 1.5, aim: 'front', healAlly: 0.08 },
+    [S('Nénupiot', ['Eau', 'Plante'], 410, 39, 11, 270), S('Lombre', ['Eau', 'Plante'], 770, 76, 12, 271), S('Ludicolo', ['Eau', 'Plante'], 1240, 125, 14, 272)]),
+  L('seedot', 1, [], 1,
+    { name: 'Tranch’Air', desc: 'Tous les 3 tours : 145% ATK sur 2 cibles proches.', every: 3, mult: 1.45, aim: 'aoe2' },
+    [S('Grainipiot', 'Plante', 390, 41, 11, 273), S('Pifeuil', ['Plante', 'Ténèbres'], 740, 80, 12, 274), S('Tengalice', ['Plante', 'Ténèbres'], 1180, 132, 14, 275)]),
+  L('pawmi', 1, ['Force'], 1,
+    { name: 'Poing Éclair', desc: 'Tous les 3 tours : 170% ATK Électrik + ralentit.', every: 3, mult: 1.7, aim: 'front', slow: 2 },
+    [S('Pohm', 'Électrik', 370, 44, 12, 921), S('Pohmotte', ['Électrik', 'Combat'], 700, 86, 13, 922), S('Pohmarmotte', ['Électrik', 'Combat'], 1120, 141, 15, 923)]),
+  L('fidough', 1, [], 1,
+    { name: 'Câlinerie', desc: 'Tous les 3 tours : 160% ATK Fée + baisse l’ATK de 10%.', every: 3, mult: 1.6, aim: 'front', atkBreak: 0.1 },
+    [S('Pâtachiot', 'Fée', 390, 37, 13, 926), S('Briochien', 'Fée', 750, 72, 14, 927), S('Briochien ★', 'Fée', 1200, 118, 15, 927)]),
+  L('slowpoke', 2, [], 2,
+    { name: 'Psyko', desc: 'Tous les 4 tours : 190% ATK Psy sur une cible au hasard + ralentit.', every: 4, mult: 1.9, aim: 'random', slow: 2 },
+    [S('Ramoloss', ['Eau', 'Psy'], 410, 49, 10, 79)],
+    { at: 2, forms: [
+      { id: 'flagadoss', stages: [S('Flagadoss', ['Eau', 'Psy'], 870, 102, 12, 80), S('Flagadoss ★', ['Eau', 'Psy'], 1350, 154, 13, 80)] },
+      { id: 'roigada', stages: [S('Roigada', ['Eau', 'Psy'], 870, 102, 12, 199), S('Roigada ★', ['Eau', 'Psy'], 1350, 154, 13, 199)] }
+    ] }),
+  L('ekans', 2, [], 1,
+    { name: 'Crochet Venin', desc: 'Tous les 3 tours : 150% ATK + empoisonne fort (6%/tour).', every: 3, mult: 1.5, aim: 'front', dot: { pct: 0.06, turns: 3 } },
+    [S('Abo', 'Poison', 350, 48, 12, 23), S('Arbok', 'Poison', 730, 100, 14, 24), S('Arbok ★', 'Poison', 1130, 150, 15, 24)]),
+  L('houndour', 2, [], 2,
+    { name: 'Crocs Feu', desc: 'Tous les 3 tours : 170% ATK Feu sur le plus faible + brûle.', every: 3, mult: 1.7, aim: 'weak', dot: { pct: 0.04, turns: 3 } },
+    [S('Malosse', ['Ténèbres', 'Feu'], 360, 51, 13, 228), S('Démolosse', ['Ténèbres', 'Feu'], 750, 107, 15, 229), S('Démolosse ★', ['Ténèbres', 'Feu'], 1160, 162, 16, 229)]),
+  L('phanpy', 2, ['Force'], 1,
+    { name: 'Séisme', desc: 'Tous les 4 tours : 150% ATK Sol sur 2 cibles + bouclier 10%.', every: 4, mult: 1.5, aim: 'aoe2', shield: 0.1 },
+    [S('Phanpy', 'Sol', 400, 53, 11, 231), S('Donphan', 'Sol', 850, 112, 13, 232), S('Donphan ★', 'Sol', 1320, 169, 14, 232)]),
+  L('carvanha', 2, [], 1,
+    { name: 'Aqua-Brèche', desc: 'Tous les 3 tours : 190% ATK Eau sur le plus faible.', every: 3, mult: 1.9, aim: 'weak' },
+    [S('Carvanha', ['Eau', 'Ténèbres'], 330, 53, 13, 318), S('Sharpedo', ['Eau', 'Ténèbres'], 690, 112, 15, 319), S('Sharpedo ★', ['Eau', 'Ténèbres'], 1070, 169, 16, 319)]),
+  L('croagunk', 2, ['Force'], 1,
+    { name: 'Direct Toxik', desc: 'Tous les 3 tours : 170% ATK + empoisonne.', every: 3, mult: 1.7, aim: 'front', dot: { pct: 0.04, turns: 3 } },
+    [S('Cradopaud', ['Poison', 'Combat'], 370, 50, 12, 453), S('Coatox', ['Poison', 'Combat'], 770, 105, 14, 454), S('Coatox ★', ['Poison', 'Combat'], 1190, 159, 15, 454)]),
+  L('hippopotas', 2, [], 1,
+    { name: 'Tempête de Sable', desc: 'Tous les 4 tours : 90% ATK à tous les ennemis + les ralentit.', every: 4, mult: 0.9, aim: 'all', slow: 1 },
+    [S('Hippopotas', 'Sol', 430, 52, 11, 449), S('Hippodocus', 'Sol', 900, 108, 13, 450), S('Hippodocus ★', 'Sol', 1400, 163, 14, 450)]),
+  L('nickit', 2, [], 2,
+    { name: 'Larcin', desc: 'Tous les 3 tours : frappe le plus faible et vole son ATK (min. 110% de son ATK).', every: 3, mult: 1.5, aim: 'weak', stealAtk: true },
+    [S('Goupilou', 'Ténèbres', 360, 46, 12, 827), S('Roublenard', 'Ténèbres', 760, 96, 15, 828), S('Roublenard ★', 'Ténèbres', 1180, 144, 16, 828)]),
+  L('yungoos', 2, [], 1,
+    { name: 'Hyper Croc', desc: 'Tous les 3 tours : 185% ATK sur le front.', every: 3, mult: 1.85, aim: 'front' },
+    [S('Manglouton', 'Normal', 370, 51, 12, 734), S('Argouste', 'Normal', 770, 107, 13, 735), S('Argouste ★', 'Normal', 1190, 162, 14, 735)]),
+  L('sinistea', 2, ['Mage'], 3,
+    { name: 'Ball’Ombre', desc: 'Tous les 3 tours : 175% ATK Spectre sur la cible la plus loin.', every: 3, mult: 1.75, aim: 'back' },
+    [S('Théffroi', 'Spectre', 370, 56, 12, 854), S('Polthégeist', 'Spectre', 770, 119, 14, 855), S('Polthégeist ★', 'Spectre', 1200, 178, 15, 855)]),
+  L('bounsweet', 2, [], 1,
+    { name: 'Tropi-Kick', desc: 'Tous les 3 tours : 170% ATK Plante + baisse l’ATK de 15%.', every: 3, mult: 1.7, aim: 'front', atkBreak: 0.15 },
+    [S('Croquine', 'Plante', 390, 53, 11, 761), S('Candine', 'Plante', 820, 112, 13, 762), S('Sucreine', 'Plante', 1280, 169, 15, 763)]),
+  L('wimpod', 2, ['Force'], 1,
+    { name: 'Première Impression', desc: 'Tous les 3 tours : 195% ATK Insecte sur le front.', every: 3, mult: 1.95, aim: 'front' },
+    [S('Sovkipou', ['Insecte', 'Eau'], 410, 55, 13, 767), S('Sarmuraï', ['Insecte', 'Eau'], 870, 115, 12, 768), S('Sarmuraï ★', ['Insecte', 'Eau'], 1350, 172, 13, 768)]),
+  L('numel', 2, [], 2,
+    { name: 'Éruption', desc: 'Tous les 4 tours : 170% ATK Feu sur 2 cibles.', every: 4, mult: 1.7, aim: 'aoe2' },
+    [S('Chamallot', ['Feu', 'Sol'], 360, 50, 11, 322), S('Camérupt', ['Feu', 'Sol'], 750, 105, 12, 323), S('Camérupt ★', ['Feu', 'Sol'], 1170, 158, 13, 323)]),
+  L('chingling', 2, ['Mage'], 3,
+    { name: 'Bruit Blanc', desc: 'Tous les 4 tours : 85% ATK Psy à tous les ennemis.', every: 4, mult: 0.85, aim: 'all' },
+    [S('Korillon', 'Psy', 380, 48, 12, 433), S('Éoko', 'Psy', 800, 100, 14, 358), S('Éoko ★', 'Psy', 1240, 150, 15, 358)]),
+  L('elekid', 3, ['Force'], 1,
+    { name: 'Poing Éclair', desc: 'Tous les 3 tours : 180% ATK Électrik + étourdit la cible.', every: 3, mult: 1.8, aim: 'front', stun: true },
+    [S('Élekid', 'Électrik', 390, 60, 14, 239), S('Élektek', 'Électrik', 800, 128, 15, 125), S('Élekable', 'Électrik', 1220, 188, 17, 466)]),
+  L('magby', 3, ['Mage'], 3,
+    { name: 'Déflagration', desc: 'Tous les 4 tours : 175% ATK Feu sur 2 cibles + brûle.', every: 4, mult: 1.75, aim: 'aoe2', dot: { pct: 0.04, turns: 3 } },
+    [S('Magby', 'Feu', 390, 60, 13, 240), S('Magmar', 'Feu', 810, 129, 15, 126), S('Maganon', 'Feu', 1240, 190, 16, 467)]),
+  L('porygon', 3, ['Mage'], 3,
+    { name: 'Ultralaser', desc: 'Tous les 4 tours : 260% ATK sur la cible la plus tanky, puis ralentit Porygon.', every: 4, mult: 2.6, aim: 'tank', selfSlow: 1 },
+    [S('Porygon', 'Normal', 400, 62, 11, 137), S('Porygon2', 'Normal', 810, 134, 13, 233), S('Porygon-Z', 'Normal', 1250, 197, 17, 474)]),
+  L('feebas', 3, [], 2,
+    { name: 'Anneau Hydro', desc: 'Tous les 3 tours : 150% ATK Eau + soigne l’allié le plus blessé de 12%.', every: 3, mult: 1.5, aim: 'front', healAlly: 0.12 },
+    [S('Barpau', 'Eau', 440, 54, 13, 349), S('Milobellus', 'Eau', 910, 115, 14, 350), S('Milobellus ★', 'Eau', 1400, 170, 16, 350)]),
+  L('duskull', 3, [], 1,
+    { name: 'Poing Ombre', desc: 'Tous les 3 tours : 180% ATK Spectre sur le plus faible, sans jamais rater.', every: 3, mult: 1.8, aim: 'weak' },
+    [S('Skelénox', 'Spectre', 420, 54, 11, 355), S('Téraclope', 'Spectre', 870, 115, 12, 356), S('Noctunoir', 'Spectre', 1340, 170, 15, 477)]),
+  L('rolycoly', 3, [], 1,
+    { name: 'Tir de Goudron', desc: 'Tous les 3 tours : 150% ATK + ralentit + brûle.', every: 3, mult: 1.5, aim: 'front', slow: 2, dot: { pct: 0.04, turns: 3 } },
+    [S('Charbi', 'Roche', 460, 48, 11, 837), S('Wagomine', ['Roche', 'Feu'], 950, 103, 13, 838), S('Monthracite', ['Roche', 'Feu'], 1460, 152, 14, 839)]),
+  L('flabebe', 3, ['Mage'], 3,
+    { name: 'Éclat Magique', desc: 'Tous les 3 tours : 140% ATK Fée sur 2 cibles + soigne un allié de 8%.', every: 3, mult: 1.4, aim: 'aoe2', healAlly: 0.08 },
+    [S('Flabébé', 'Fée', 430, 57, 11, 669), S('Floette', 'Fée', 890, 122, 13, 670), S('Florges', 'Fée', 1370, 180, 16, 671)]),
+  L('clamperl', 3, [], 2,
+    { name: 'Hydrocanon', desc: 'Tous les 4 tours : 220% ATK Eau sur la cible la plus loin.', every: 4, mult: 2.2, aim: 'back' },
+    [S('Coquiperl', 'Eau', 380, 55, 11, 366)],
+    { at: 2, forms: [
+      { id: 'serpang', stages: [S('Serpang', 'Eau', 780, 117, 13, 367), S('Serpang ★', 'Eau', 1200, 173, 15, 367)] },
+      { id: 'rosabyss', stages: [S('Rosabyss', 'Eau', 780, 117, 13, 368), S('Rosabyss ★', 'Eau', 1200, 173, 15, 368)] }
+    ] }),
+  L('mienfoo', 3, ['Force'], 1,
+    { name: 'Pied Voltige', desc: 'Tous les 3 tours : 215% ATK Combat, mais perd 6% de ses PV.', every: 3, mult: 2.15, aim: 'front', recoil: 0.06 },
+    [S('Kungfouine', 'Combat', 350, 60, 13, 619), S('Shaofouine', 'Combat', 720, 129, 15, 620), S('Shaofouine ★', 'Combat', 1110, 190, 17, 620)]),
+  L('meditite', 3, ['Force'], 1,
+    { name: 'Pied Voltige', desc: 'Tous les 3 tours : 200% ATK Combat sur le plus faible.', every: 3, mult: 2.0, aim: 'weak' },
+    [S('Méditikka', ['Combat', 'Psy'], 370, 47, 12, 307), S('Charmina', ['Combat', 'Psy'], 750, 101, 14, 308), S('Charmina ★', ['Combat', 'Psy'], 1160, 150, 16, 308)]),
+  L('staryu', 3, ['Mage'], 3,
+    { name: 'Météores', desc: 'Tous les 3 tours : 175% ATK sur le plus faible.', every: 3, mult: 1.75, aim: 'weak' },
+    [S('Stari', 'Eau', 380, 54, 13, 120), S('Staross', ['Eau', 'Psy'], 780, 115, 16, 121), S('Staross ★', ['Eau', 'Psy'], 1200, 170, 18, 121)]),
+  L('litleo', 4, [], 2,
+    { name: 'Rugissement Ardent', desc: 'Tous les 4 tours : 175% ATK Feu sur 2 cibles + 8% ATK d’équipe.', every: 4, mult: 1.75, aim: 'aoe2', teamAtk: 0.08 },
+    [S('Hélionceau', ['Feu', 'Normal'], 490, 73, 13, 667), S('Némélios', ['Feu', 'Normal'], 910, 134, 15, 668), S('Némélios ★', ['Feu', 'Normal'], 1460, 204, 16, 668)]),
+  L('duraludon', 4, [], 2,
+    { name: 'Laser Acier', desc: 'Tous les 4 tours : 230% ATK Acier sur la cible la plus tanky + bouclier 12%.', every: 4, mult: 2.3, aim: 'tank', shield: 0.12 },
+    [S('Duralugon', ['Acier', 'Dragon'], 540, 79, 13, 884), S('Pondralugon', ['Acier', 'Dragon'], 1000, 144, 14, 1018), S('Pondralugon ★', ['Acier', 'Dragon'], 1600, 218, 15, 1018)]),
+  L('kubfu', 4, ['Force'], 1,
+    { name: 'Poing Final', desc: 'Tous les 3 tours : 220% ATK Combat sur le plus faible.', every: 3, mult: 2.2, aim: 'weak' },
+    [S('Wushours', 'Combat', 530, 80, 13, 891)],
+    { at: 2, forms: [
+      { id: 'poing', stages: [S('Shifours (Poing Final)', ['Combat', 'Ténèbres'], 980, 147, 15, 892), S('Shifours (Poing Final) ★', ['Combat', 'Ténèbres'], 1570, 223, 16, 892)] },
+      { id: 'mille', stages: [S('Shifours (Mille Poings)', ['Combat', 'Eau'], 980, 147, 15, 10191), S('Shifours (Mille Poings) ★', ['Combat', 'Eau'], 1570, 223, 16, 10191)] }
+    ] }),
+  L('kangaskhan', 4, ['Force'], 1,
+    { name: 'Uppercut Parental', desc: 'Tous les 3 tours : 190% ATK + étourdit la cible.', every: 3, mult: 1.9, aim: 'front', stun: true },
+    [S('Kangourex', 'Normal', 540, 68, 14, 115), S('Kangourex ★', 'Normal', 990, 126, 15, 115), S('Kangourex ★★', 'Normal', 1590, 190, 16, 115)]),
+  L('tatsugiri', 4, [], 3,
+    { name: 'Ordre Ferme', desc: 'Tous les 4 tours : 190% ATK Dragon sur la cible la plus loin + 10% ATK d’équipe.', every: 4, mult: 1.9, aim: 'back', teamAtk: 0.1 },
+    [S('Nigirigon', ['Dragon', 'Eau'], 480, 77, 13, 978), S('Nigirigon ★', ['Dragon', 'Eau'], 880, 141, 14, 978), S('Nigirigon ★★', ['Dragon', 'Eau'], 1410, 214, 15, 978)]),
+  L('ho-oh', 5, [], 3,
+    { name: 'Feu Sacré', desc: 'Tous les 4 tours : 210% ATK Feu sur 2 cibles + brûle fort.', every: 4, mult: 2.1, aim: 'aoe2', dot: { pct: 0.06, turns: 3 } },
+    [S('Ho-Oh', ['Feu', 'Vol'], 900, 134, 17, 250), S('Ho-Oh ★', ['Feu', 'Vol'], 1380, 200, 18, 250), S('Ho-Oh ★★', ['Feu', 'Vol'], 1940, 273, 19, 250)]),
+  L('suicune', 5, [], 2,
+    { name: 'Aurore Pure', desc: 'Tous les 3 tours : 170% ATK Eau + soigne l’allié le plus blessé de 15%.', every: 3, mult: 1.7, aim: 'front', healAlly: 0.15 },
+    [S('Suicune', 'Eau', 880, 111, 16, 245), S('Suicune ★', 'Eau', 1360, 167, 17, 245), S('Suicune ★★', 'Eau', 1900, 227, 18, 245)]),
+  L('entei', 5, [], 1,
+    { name: 'Feu Sacré', desc: 'Tous les 3 tours : 220% ATK Feu + brûle.', every: 3, mult: 2.2, aim: 'front', dot: { pct: 0.05, turns: 3 } },
+    [S('Entei', 'Feu', 840, 126, 17, 244), S('Entei ★', 'Feu', 1290, 188, 18, 244), S('Entei ★★', 'Feu', 1810, 256, 19, 244)]),
+  L('raikou', 5, [], 3,
+    { name: 'Fatal-Foudre', desc: 'Tous les 4 tours : 240% ATK Électrik sur le plus faible + étourdit.', every: 4, mult: 2.4, aim: 'weak', stun: true },
+    [S('Raikou', 'Électrik', 800, 126, 18, 243), S('Raikou ★', 'Électrik', 1230, 188, 19, 243), S('Raikou ★★', 'Électrik', 1730, 256, 20, 243)]),
+  L('latias', 5, [], 3,
+    { name: 'Ball’Brume', desc: 'Tous les 3 tours : 170% ATK Psy + baisse l’ATK de 20% + soigne un allié de 8%.', every: 3, mult: 1.7, aim: 'front', atkBreak: 0.2, healAlly: 0.08 },
+    [S('Latias', ['Dragon', 'Psy'], 830, 123, 18, 380), S('Latias ★', ['Dragon', 'Psy'], 1270, 184, 19, 380), S('Latias ★★', ['Dragon', 'Psy'], 1790, 251, 20, 380)]),
+  L('latios', 5, [], 3,
+    { name: 'Lumi-Éclat', desc: 'Tous les 3 tours : 220% ATK Psy sur le plus faible.', every: 3, mult: 2.2, aim: 'weak' },
+    [S('Latios', ['Dragon', 'Psy'], 790, 134, 18, 381), S('Latios ★', ['Dragon', 'Psy'], 1220, 200, 19, 381), S('Latios ★★', ['Dragon', 'Psy'], 1720, 273, 20, 381)]),
+  L('kyogre', 5, [], 3,
+    { name: 'Onde Originelle', desc: 'Tous les 4 tours : 170% ATK Eau à tous les ennemis.', every: 4, mult: 1.7, aim: 'all' },
+    [S('Kyogre', 'Eau', 880, 142, 17, 382), S('Kyogre ★', 'Eau', 1360, 212, 18, 382), S('Kyogre ★★', 'Eau', 1900, 289, 19, 382)]),
+  L('palkia', 5, [], 2,
+    { name: 'Spatio-Rift', desc: 'Tous les 4 tours : 230% ATK Dragon sur 2 cibles.', every: 4, mult: 2.3, aim: 'aoe2' },
+    [S('Palkia', ['Eau', 'Dragon'], 850, 142, 17, 484), S('Palkia ★', ['Eau', 'Dragon'], 1310, 212, 18, 484), S('Palkia ★★', ['Eau', 'Dragon'], 1830, 289, 19, 484)]),
+  L('reshiram', 5, [], 3,
+    { name: 'Flamme Bleue', desc: 'Tous les 4 tours : 230% ATK Feu sur 2 cibles + brûle.', every: 4, mult: 2.3, aim: 'aoe2', dot: { pct: 0.05, turns: 3 } },
+    [S('Reshiram', ['Dragon', 'Feu'], 870, 142, 17, 643), S('Reshiram ★', ['Dragon', 'Feu'], 1340, 212, 18, 643), S('Reshiram ★★', ['Dragon', 'Feu'], 1880, 289, 19, 643)]),
+  L('zekrom', 5, [], 1,
+    { name: 'Éclair Croix', desc: 'Tous les 3 tours : 230% ATK Électrik + étourdit.', every: 3, mult: 2.3, aim: 'front', stun: true },
+    [S('Zekrom', ['Dragon', 'Électrik'], 870, 142, 17, 644), S('Zekrom ★', ['Dragon', 'Électrik'], 1340, 212, 18, 644), S('Zekrom ★★', ['Dragon', 'Électrik'], 1880, 289, 19, 644)]),
+  L('arceus', 5, [], 2,
+    { name: 'Jugement', desc: 'Tous les 4 tours : 140% ATK à tous les ennemis.', every: 4, mult: 1.4, aim: 'all' },
+    [S('Arceus', 'Normal', 900, 128, 18, 493), S('Arceus ★', 'Normal', 1380, 192, 19, 493), S('Arceus ★★', 'Normal', 1940, 262, 20, 493)]),
+  L('koraidon', 5, [], 1,
+    { name: 'Méga-Écrasement', desc: 'Tous les 3 tours : 240% ATK Combat sur le front.', every: 3, mult: 2.4, aim: 'front' },
+    [S('Koraidon', ['Combat', 'Dragon'], 870, 136, 19, 1007), S('Koraidon ★', ['Combat', 'Dragon'], 1330, 204, 20, 1007), S('Koraidon ★★', ['Combat', 'Dragon'], 1870, 278, 21, 1007)]),
+  L('heatran', 5, [], 2,
+    { name: 'Vortex Magma', desc: 'Tous les 4 tours : 170% ATK Feu sur 2 cibles + brûle fort.', every: 4, mult: 1.7, aim: 'aoe2', dot: { pct: 0.07, turns: 3 } },
+    [S('Heatran', ['Feu', 'Acier'], 840, 134, 16, 485), S('Heatran ★', ['Feu', 'Acier'], 1300, 200, 17, 485), S('Heatran ★★', ['Feu', 'Acier'], 1820, 273, 18, 485)])
 ];
 
 
@@ -816,7 +995,27 @@ const MEGA_BY_DEX = {
   841: { name: 'Pomdrapi Gigamax', types: ['Plante', 'Dragon'], dex: 10216 },
   842: { name: 'Dratatin Gigamax', types: ['Plante', 'Dragon'], dex: 10217 },
   869: { name: 'Charmilly Gigamax', types: ['Fée'], dex: 10223 },
-  890: { name: 'Éthernatos Infinimax', types: ['Poison', 'Dragon'], dex: 10190 }
+  890: { name: 'Éthernatos Infinimax', types: ['Poison', 'Dragon'], dex: 10190 },
+  // Nouvelles lignées (2 stades ou sans évolution)
+  99: { name: 'Krabboss Gigamax', types: ['Eau'], dex: 10203 },
+  80: { name: 'Méga-Flagadoss', types: ['Eau', 'Psy'], dex: 10071 },
+  229: { name: 'Méga-Démolosse', types: ['Ténèbres', 'Feu'], dex: 10048 },
+  319: { name: 'Méga-Sharpedo', types: ['Eau', 'Ténèbres'], dex: 10070 },
+  768: { name: 'Méga-Sarmuraï', types: ['Insecte', 'Acier'], dex: 10316 },
+  323: { name: 'Méga-Camérupt', types: ['Feu', 'Sol'], dex: 10087 },
+  358: { name: 'Méga-Éoko', types: ['Psy', 'Acier'], dex: 10306 },
+  308: { name: 'Méga-Charmina', types: ['Combat', 'Psy'], dex: 10054 },
+  121: { name: 'Méga-Staross', types: ['Eau', 'Psy'], dex: 10280 },
+  668: { name: 'Méga-Némélios', types: ['Feu', 'Normal'], dex: 10295 },
+  892: { name: 'Shifours Gigamax (Poing Final)', types: ['Combat', 'Ténèbres'], dex: 10226 },
+  10191: { name: 'Shifours Gigamax (Mille Poings)', types: ['Combat', 'Eau'], dex: 10227 },
+  115: { name: 'Méga-Kangourex', types: ['Normal'], dex: 10039 },
+  978: { name: 'Méga-Nigirigon', types: ['Dragon', 'Eau'], dex: 10322 },
+  380: { name: 'Méga-Latias', types: ['Dragon', 'Psy'], dex: 10062 },
+  381: { name: 'Méga-Latios', types: ['Dragon', 'Psy'], dex: 10063 },
+  382: { name: 'Primo-Kyogre', types: ['Eau'], dex: 10077 },
+  484: { name: 'Palkia (Originel)', types: ['Eau', 'Dragon'], dex: 10246 },
+  485: { name: 'Méga-Heatran', types: ['Feu', 'Acier'], dex: 10311 }
 };
 
 const promoteMegaStar = (stages) => {
@@ -829,9 +1028,21 @@ const promoteMegaStar = (stages) => {
   stages[stages.length - 1] = S(mega.name, mega.types, last.hp, last.atk, last.spd, mega.dex);
 };
 
+const applyBalance = (line) => {
+  const k = BALANCE[line.id];
+  if (!k || k === 1) return;
+  const tune = (st) => {
+    st.hp = Math.round(st.hp * k);
+    st.atk = Math.round(st.atk * k);
+  };
+  line.stages.forEach(tune);
+  (line.forms || []).forEach((form) => form.stages.forEach(tune));
+};
+
 LINES.forEach((line) => {
   if (line.forms) line.forms.forEach((form) => promoteMegaStar(form.stages));
   else promoteMegaStar(line.stages);
+  applyBalance(line);
   line.ab = TALENTS[line.id] || null;
   (line.forms || []).forEach((form) => {
     form.ab = FORM_TALENTS[`${line.id}:${form.id}`] || line.ab;
@@ -850,23 +1061,7 @@ export const starterTrio = (lineId) => {
   return [lineId, ...others];
 };
 
-/** Carte de campagne solo — un nœud = une étape. */
-export const CAMPAIGN = [
-  { id: 1, name: 'Clairière Mousse', biome: 'forest', blurb: 'Échauffement', boss: false },
-  { id: 2, name: 'Ruisseau Lanturn', biome: 'water', blurb: 'Courant électrique', boss: false },
-  { id: 3, name: 'Bois Noctali', biome: 'dark', blurb: 'Ombre amicale', boss: false },
-  { id: 4, name: 'Grotte Funécire', biome: 'ghost', blurb: 'Feux follets', boss: false },
-  { id: 5, name: 'Forge Cizayox', biome: 'steel', blurb: 'Mini-boss', boss: true },
-  { id: 6, name: 'Val Gardevoir', biome: 'fairy', blurb: 'Lueurs psy', boss: false },
-  { id: 7, name: 'Crête Hisui', biome: 'fire', blurb: 'Typhlosion', boss: false },
-  { id: 8, name: 'Arène Salarsen', biome: 'electric', blurb: 'Overdrive', boss: true },
-  { id: 9, name: 'Tour Malvalame', biome: 'fire', blurb: 'Lames amères', boss: false },
-  { id: 10, name: 'Ciel Lanssorien', biome: 'dragon', blurb: 'Pseudo-légende', boss: false },
-  { id: 11, name: 'Ruines de Fer', biome: 'fairy', blurb: 'Paradoxe', boss: true },
-  { id: 12, name: 'Temple Dialga', biome: 'legend', blurb: 'Finale', boss: true }
-];
-
-export const SAVE_KEY = 'poke-arena-campaign-v2';
+export const SAVE_KEY = 'poke-arena-campaign-v3';
 
 export const saveCampaign = (state) => {
   try {
@@ -895,7 +1090,14 @@ export const hasSave = () => !!loadCampaign();
 
 export const LINE_MAP = Object.fromEntries(LINES.map((line) => [line.id, line]));
 export const ROSTER_LINES = LINES.length;
-export const ROSTER_FORMS = LINES.length * 3;
+export const ROSTER_FORMS = (() => {
+  const names = new Set();
+  LINES.forEach((line) => {
+    line.stages.forEach((st) => names.add(st.dex));
+    (line.forms || []).forEach((f) => f.stages.forEach((st) => names.add(st.dex)));
+  });
+  return names.size;
+})();
 
 export const AIM_LABELS = {
   front: 'cible la plus proche',
@@ -934,25 +1136,70 @@ export const linePlaystyle = (line) => {
 const itemSprite = (slug) =>
   `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${slug}.png`;
 
-/** Composants (vitamines) — 2 composants = item crafté. */
+/**
+ * Objets.
+ * — 6 composants (vitamines) : 2 composants sur le même Pokémon = objet fabriqué (21 recettes).
+ * — Plaques : le Pokémon compte aussi pour le type de la plaque dans les synergies.
+ * — Consommables (Poké Mart) : utilisés au moment où on les applique.
+ */
 export const COMPONENTS = [
-  { id: 'hpup', name: 'PV Plus', icon: '🧴', sprite: itemSprite('hp-up'), desc: '+12% PV max', component: true, hpMul: 1.12 },
-  { id: 'protein', name: 'Protéine', icon: '🥩', sprite: itemSprite('protein'), desc: '+12% ATK', component: true, atkMul: 1.12 },
-  { id: 'calcium', name: 'Calcium', icon: '🧪', sprite: itemSprite('calcium'), desc: '+12% puissance de sort', component: true, spellMul: 1.12 },
-  { id: 'carbos', name: 'Carbone', icon: '⚡', sprite: itemSprite('carbos'), desc: '+8% SPD', component: true, spdMul: 1.08 }
+  { id: 'hpup', name: 'PV Plus', icon: '❤', sprite: itemSprite('hp-up'), desc: '+15% PV max.', component: true, hpMul: 1.15 },
+  { id: 'protein', name: 'Protéine', icon: '✊', sprite: itemSprite('protein'), desc: '+12% ATK.', component: true, atkMul: 1.12 },
+  { id: 'calcium', name: 'Calcium', icon: '✦', sprite: itemSprite('calcium'), desc: '+15% puissance des sorts.', component: true, spellMul: 1.15 },
+  { id: 'carbos', name: 'Carbone', icon: '➤', sprite: itemSprite('carbos'), desc: '+2 SPD.', component: true, spdFlat: 2 },
+  { id: 'zinc', name: 'Zinc', icon: '⛨', sprite: itemSprite('zinc'), desc: '-8% de dégâts subis.', component: true, dmgTaken: 0.92 },
+  { id: 'ppup', name: 'PP Plus', icon: '◎', sprite: itemSprite('pp-up'), desc: 'Commence le combat avec 1 charge de sort.', component: true, precharge: 1 }
 ];
 
 export const CRAFTED = [
-  { id: 'leftovers', name: 'Restes', icon: '🍃', sprite: itemSprite('leftovers'), desc: 'Régénère 2.4% PV max par tour.', hpMul: 1.05, regen: 0.024 },
-  { id: 'rocky', name: 'Casque Brut', icon: '🪖', sprite: itemSprite('rocky-helmet'), desc: '+10% PV. Renvoie 25% des dégâts subis.', hpMul: 1.1, thorns: 0.25 },
-  { id: 'shellbell', name: 'Grosse Cloche', icon: '🔔', sprite: itemSprite('shell-bell'), desc: 'Drain : soigne 35% des dégâts infligés.', lifesteal: 0.35 },
-  { id: 'focus', name: 'Ceinture Force', icon: '🟨', sprite: itemSprite('focus-sash'), desc: 'Survit une fois à 1 PV (par combat).', endure: true },
-  { id: 'choiceband', name: 'Band. Choix', icon: '🎀', sprite: itemSprite('choice-band'), desc: '+45% ATK.', atkMul: 1.45 },
-  { id: 'lifeorb', name: 'Orbe Vie', icon: '🔴', sprite: itemSprite('life-orb'), desc: '+35% dégâts. Perd 2% PV par attaque.', atkMul: 1.35, selfHurt: 0.02 },
-  { id: 'scopelens', name: 'Lentille Scope', icon: '👓', sprite: itemSprite('scope-lens'), desc: '+25% ATK et sorts plus forts.', atkMul: 1.2, spellMul: 1.2 },
-  { id: 'choicespecs', name: 'Lunettes Choix', icon: '🕶️', sprite: itemSprite('choice-specs'), desc: '+45% puissance de sort.', spellMul: 1.45 },
-  { id: 'quickclaw', name: 'Vive Griffe', icon: '⏩', sprite: itemSprite('quick-claw'), desc: '20% de double action au tour 1. +3 SPD.', spdFlat: 3, opener: 0.2 },
-  { id: 'choicescarf', name: 'Mouchoir Choix', icon: '🧣', sprite: itemSprite('choice-scarf'), desc: '+35% SPD.', spdMul: 1.35 }
+  { id: 'leftovers', name: 'Restes', sprite: itemSprite('leftovers'), desc: '+15% PV. Récupère 3% PV max par tour.', hpMul: 1.15, regen: 0.03 },
+  { id: 'rocky', name: 'Casque Brut', sprite: itemSprite('rocky-helmet'), desc: '+15% PV. Renvoie 25% des dégâts subis à l’attaquant.', hpMul: 1.15, thorns: 0.25 },
+  { id: 'bigroot', name: 'Grosse Racine', sprite: itemSprite('big-root'), desc: '+10% PV. Ses sorts le soignent de 35% des dégâts infligés.', hpMul: 1.1, spellDrain: 0.35 },
+  { id: 'focus', name: 'Ceinture Force', sprite: itemSprite('focus-sash'), desc: 'Survit une fois à 1 PV par combat. +2 SPD.', endure: true, spdFlat: 2 },
+  { id: 'assaultvest', name: 'Veste de Combat', sprite: itemSprite('assault-vest'), desc: '+20% PV. Les sorts ennemis lui font 30% de dégâts en moins.', hpMul: 1.2, spellGuard: 0.7 },
+  { id: 'sitrus', name: 'Baie Sitrus', sprite: itemSprite('sitrus-berry'), desc: '+8% PV. Sous 50% PV : récupère 30% de ses PV (une fois).', hpMul: 1.08, berry: 0.3 },
+  { id: 'choiceband', name: 'Bandeau Choix', sprite: itemSprite('choice-band'), desc: '+40% ATK.', atkMul: 1.4 },
+  { id: 'lifeorb', name: 'Orbe Vie', sprite: itemSprite('life-orb'), desc: '+30% de dégâts (attaques et sorts). Perd 3% PV par attaque.', atkMul: 1.3, selfHurt: 0.03 },
+  { id: 'razorclaw', name: 'Griffe Rasoir', sprite: itemSprite('razor-claw'), desc: '25% de coups critiques (×1,6). +1 SPD.', critChance: 0.25, critMult: 1.6, spdFlat: 1 },
+  { id: 'expertbelt', name: 'Ceinture Pro', sprite: itemSprite('expert-belt'), desc: '+8% ATK. Ses coups super efficaces font +30% de dégâts.', atkMul: 1.08, superMul: 1.3 },
+  { id: 'kingsrock', name: 'Roche Royale', sprite: itemSprite('kings-rock'), desc: '+6% ATK. Ses attaques ont 20% de chances d’étourdir.', atkMul: 1.06, flinch: 0.2 },
+  { id: 'choicespecs', name: 'Lunettes Choix', sprite: itemSprite('choice-specs'), desc: '+45% puissance des sorts.', spellMul: 1.45 },
+  { id: 'powerherb', name: 'Herbe Pouvoir', sprite: itemSprite('power-herb'), desc: 'Lance son sort dès son premier tour. +10% puissance des sorts.', castNow: true, spellMul: 1.1 },
+  { id: 'toxicorb', name: 'Orbe Toxique', sprite: itemSprite('toxic-orb'), desc: 'Ses sorts empoisonnent (5% PV par tour, 3 tours). +10% sorts.', spellDot: { pct: 0.05, turns: 3 }, spellMul: 1.1 },
+  { id: 'shellbell', name: 'Grelot Coque', sprite: itemSprite('shell-bell'), desc: 'Soigne 20% de tous les dégâts infligés. +10% sorts.', lifesteal: 0.2, spellMul: 1.1 },
+  { id: 'choicescarf', name: 'Mouchoir Choix', sprite: itemSprite('choice-scarf'), desc: '+35% SPD.', spdMul: 1.35 },
+  { id: 'covertcloak', name: 'Pare-Effet', sprite: itemSprite('covert-cloak'), desc: 'Immunisé aux poisons, brûlures, ralentissements et étourdissements. +1 SPD.', noCC: true, cleanse: true, spdFlat: 1 },
+  { id: 'quickclaw', name: 'Vive Griffe', sprite: itemSprite('quick-claw'), desc: '20% de chances de rejouer à chaque tour. +2 SPD.', quick: 0.2, spdFlat: 2 },
+  { id: 'eviolite', name: 'Évoluroc', sprite: itemSprite('eviolite'), desc: '-20% de dégâts subis, -35% tant qu’il n’est pas 3★.', eviolite: true },
+  { id: 'lightclay', name: 'Lumargile', sprite: itemSprite('light-clay'), desc: 'Début du combat : bouclier de 25% PV pour lui et l’allié le plus proche.', startShield: 0.25 },
+  { id: 'ppmax', name: 'PP Max', sprite: itemSprite('pp-max'), desc: 'Lance son sort un tour plus tôt à chaque cycle (min. tous les 2 tours).', everyMinus: 1 }
+];
+
+/** Plaques d’Arceus : ajoutent un type pour les synergies. */
+const PLATE_DEFS = [
+  ['Feu', 'flame-plate', 'Plaque Flamme'], ['Eau', 'splash-plate', 'Plaque Hydro'], ['Plante', 'meadow-plate', 'Plaque Herbe'],
+  ['Électrik', 'zap-plate', 'Plaque Volt'], ['Combat', 'fist-plate', 'Plaque Poing'], ['Psy', 'mind-plate', 'Plaque Esprit'],
+  ['Spectre', 'spooky-plate', 'Plaque Fantôme'], ['Dragon', 'draco-plate', 'Plaque Draco'], ['Fée', 'pixie-plate', 'Plaque Pixie'],
+  ['Acier', 'iron-plate', 'Plaque Fer'], ['Glace', 'icicle-plate', 'Plaque Glace'], ['Roche', 'stone-plate', 'Plaque Roc'],
+  ['Ténèbres', 'dread-plate', 'Plaque Ombre'], ['Vol', 'sky-plate', 'Plaque Ciel'], ['Sol', 'earth-plate', 'Plaque Terre'],
+  ['Insecte', 'insect-plate', 'Plaque Insecte'], ['Poison', 'toxic-plate', 'Plaque Toxik'], ['Normal', 'blank-plate', 'Plaque Vierge']
+];
+export const PLATES = PLATE_DEFS.map(([type, slug, name]) => ({
+  id: `plate-${slug.split('-')[0]}`,
+  name,
+  sprite: itemSprite(slug),
+  desc: `Le Pokémon compte aussi comme type ${type} pour les synergies.`,
+  plate: true,
+  addTrait: type
+}));
+
+/** Consommables : effet immédiat, achetés au Poké Mart ou gagnés en événement. */
+export const CONSUMABLES = [
+  { id: 'magnet', name: 'Aimant', sprite: itemSprite('magnet'), desc: 'Retire tous les objets d’un Pokémon (ils reviennent dans le sac).', special: 'strip', consumable: true },
+  { id: 'rarecandy', name: 'Super Bonbon', sprite: itemSprite('rare-candy'), desc: 'Fait passer un Pokémon 1★ à 2★.', special: 'starUp', consumable: true },
+  { id: 'expshare', name: 'Multi Exp', sprite: itemSprite('exp-share'), desc: '+8 XP de dresseur, tout de suite.', special: 'xp', amount: 8, consumable: true, instant: true },
+  { id: 'revive', name: 'Rappel', sprite: itemSprite('revive'), desc: 'Soigne 15 PV de dresseur, tout de suite.', special: 'heal', amount: 15, consumable: true, instant: true },
+  { id: 'amuletcoin', name: 'Pièce Rune', sprite: itemSprite('amulet-coin'), desc: '+1 or à chaque victoire pour le reste de la run.', special: 'coin', consumable: true, instant: true }
 ];
 
 /**
@@ -1090,24 +1337,32 @@ export const lineSynergyRows = (line) => {
     .sort((a, b) => order.indexOf(a.trait) - order.indexOf(b.trait));
 };
 
-/** a+b (ordre libre) → craft */
+/** a+b (ordre libre) → objet fabriqué */
 export const RECIPE_TABLE = {
   'hpup+hpup': 'leftovers',
   'hpup+protein': 'rocky',
-  'hpup+calcium': 'shellbell',
-  'hpup+carbos': 'focus',
+  'calcium+hpup': 'bigroot',
+  'carbos+hpup': 'focus',
+  'hpup+zinc': 'assaultvest',
+  'hpup+ppup': 'sitrus',
   'protein+protein': 'choiceband',
-  'protein+calcium': 'lifeorb',
-  'protein+carbos': 'scopelens',
+  'calcium+protein': 'lifeorb',
+  'carbos+protein': 'razorclaw',
+  'protein+zinc': 'expertbelt',
+  'ppup+protein': 'kingsrock',
   'calcium+calcium': 'choicespecs',
-  'calcium+carbos': 'quickclaw',
-  'carbos+carbos': 'choicescarf'
+  'calcium+carbos': 'powerherb',
+  'calcium+zinc': 'toxicorb',
+  'calcium+ppup': 'shellbell',
+  'carbos+carbos': 'choicescarf',
+  'carbos+zinc': 'covertcloak',
+  'carbos+ppup': 'quickclaw',
+  'zinc+zinc': 'eviolite',
+  'ppup+zinc': 'lightclay',
+  'ppup+ppup': 'ppmax'
 };
 
-export const MAGNET = {
-  id: 'magnet', name: 'Aimant', icon: '🧲', sprite: itemSprite('magnet'),
-  desc: 'Retire les items d’un Pokémon (retour au sac).', special: 'strip'
-};
+export const MAGNET = CONSUMABLES[0];
 
 export const RUN_POOL_SIZE = 32;
 
@@ -1136,17 +1391,34 @@ export const buildRunPool = (mustIds = ['cynda', 'mudkip', 'eevee']) => {
 };
 
 /** Estimation gains prochain round (si victoire). */
-export const estimateIncome = (gold, streak, wave) => {
-  const base = 5 + Math.floor(wave / 2);
-  const interest = Math.min(5, Math.floor(gold / 10));
-  const streakBonus = Math.min(3, streak + 1);
-  const total = base + interest + streakBonus;
-  const nextInterestGold = (interest < 5) ? (interest + 1) * 10 : null;
-  return { base, interest, streakBonus, total, nextInterestGold };
+/** Bonus de série (victoires OU défaites d’affilée). streak > 0 = victoires, < 0 = défaites. */
+export const streakGold = (streak) => {
+  const n = Math.abs(streak || 0);
+  if (n >= 5) return 3;
+  if (n >= 4) return 2;
+  if (n >= 2) return 1;
+  return 0;
 };
 
-export const ITEMS = [...COMPONENTS, ...CRAFTED, MAGNET];
+/**
+ * Gains d’un combat. chapter : 1..3 (base 5/6/7), win : +1 or,
+ * intérêts : 1 par tranche de 10 or (max 5), série de victoires ou de défaites.
+ */
+export const estimateIncome = (gold, streak, chapter = 1, win = true, bonus = 0) => {
+  const base = 4 + Math.max(1, Math.min(3, chapter));
+  const interest = Math.min(5, Math.floor(Math.max(0, gold) / 10));
+  const nextStreak = win ? Math.max(1, (streak > 0 ? streak : 0) + 1) : Math.min(-1, (streak < 0 ? streak : 0) - 1);
+  const streakBonus = streakGold(nextStreak);
+  const winBonus = win ? 1 + bonus : 0;
+  const total = base + interest + streakBonus + winBonus;
+  const nextInterestGold = (interest < 5) ? (interest + 1) * 10 : null;
+  return { base, interest, streakBonus, winBonus, total, nextInterestGold, nextStreak };
+};
+
+export const ITEMS = [...COMPONENTS, ...CRAFTED, ...PLATES, ...CONSUMABLES];
 export const ITEM_MAP = Object.fromEntries(ITEMS.map((item) => [item.id, item]));
+// Anciennes sauvegardes : objets renommés.
+ITEM_MAP.scopelens = ITEM_MAP.razorclaw;
 
 export const recipeKey = (a, b) => [a, b].sort().join('+');
 export const craftResult = (a, b) => RECIPE_TABLE[recipeKey(a, b)] || null;
@@ -1168,32 +1440,80 @@ export const SHOP_ODDS = {
   9: { 1: 12, 2: 22, 3: 28, 4: 26, 5: 12 }
 };
 
-export const LEVEL_XP = [0, 0, 2, 4, 8, 14, 22, 32, 48, 64];
-export const BOARD_CAP = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 8 };
+/** XP pour passer au niveau n (LEVEL_XP[n]). +2 XP par combat, 4 or = 4 XP. */
+export const LEVEL_XP = [0, 0, 2, 4, 8, 14, 22, 34, 48, 66];
+export const MAX_LEVEL = 9;
+export const BOARD_CAP = { 1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10 };
+export const XP_COST = 4;
+export const REROLL_COST = 2;
+
+/** Ajoute de l’XP et renvoie le nouveau niveau. */
+export const addXp = (level, xp, amount) => {
+  let nextXp = xp + amount;
+  let nextLevel = level;
+  while (nextLevel < MAX_LEVEL && nextXp >= LEVEL_XP[nextLevel + 1]) {
+    nextXp -= LEVEL_XP[nextLevel + 1];
+    nextLevel += 1;
+  }
+  if (nextLevel >= MAX_LEVEL) nextXp = 0;
+  return { level: nextLevel, xp: nextXp };
+};
 export const BENCH_CAP = 9;
 export const SHOP_SIZE = 5;
 export const emptyBoard = () => Array(BOARD_SIZE).fill(null);
 
-/** Indices ennemis préférés : rangée avant (près du milieu), puis centre → bords. */
-const FOE_SLOT_ORDER = (() => {
-  const order = [];
-  for (let row = BOARD_ROWS_HALF - 1; row >= 0; row -= 1) {
-    const mid = Math.floor(BOARD_COLS / 2);
-    order.push(row * BOARD_COLS + mid);
-    for (let d = 1; d <= mid; d += 1) {
-      if (mid - d >= 0) order.push(row * BOARD_COLS + (mid - d));
-      if (mid + d < BOARD_COLS) order.push(row * BOARD_COLS + (mid + d));
-    }
-  }
-  return order;
-})();
+/** Cases d’une rangée, du centre vers les bords en laissant des trous (équipe aérée). */
+const SPREAD_COLS = [3, 1, 5, 2, 4, 0, 6];
+const rowCenterOut = (rowLocal) => SPREAD_COLS
+  .filter((c) => c < BOARD_COLS)
+  .map((c) => rowLocal * BOARD_COLS + c);
 
+/**
+ * Place les ennemis : mêlée sur la rangée avant (près du milieu), distance au fond.
+ * Côté ennemi, la rangée locale 2 est la plus proche du joueur.
+ */
 export const seatFoes = (foes) => {
   const pads = emptyBoard();
-  foes.forEach((foe, i) => {
-    const slot = FOE_SLOT_ORDER[i] ?? i % BOARD_SIZE;
-    pads[slot] = { ...foe, slot, side: 'foe' };
-  });
+  const front = rowCenterOut(BOARD_ROWS_HALF - 1);
+  const mid = rowCenterOut(BOARD_ROWS_HALF - 2);
+  const back = rowCenterOut(0);
+  const take = (lists) => {
+    for (const list of lists) {
+      const slot = list.find((i) => !pads[i]);
+      if (slot != null) return slot;
+    }
+    return pads.findIndex((u) => !u);
+  };
+  [...foes]
+    .sort((a, b) => (a.range || 1) - (b.range || 1))
+    .forEach((foe) => {
+      const r = foe.range || 1;
+      const order = r <= 1 ? [front, mid, back] : r === 2 ? [mid, front, back] : [back, mid, front];
+      const slot = take(order);
+      if (slot < 0) return;
+      pads[slot] = { ...foe, slot, side: 'foe' };
+    });
+  return pads;
+};
+
+/** Placement auto côté joueur (mêmes règles, la rangée locale 0 est l’avant). */
+export const autoSeat = (units) => {
+  const pads = emptyBoard();
+  const front = rowCenterOut(0);
+  const mid = rowCenterOut(1);
+  const back = rowCenterOut(2);
+  [...units]
+    .sort((a, b) => (a.range || 1) - (b.range || 1))
+    .forEach((u) => {
+      const r = u.range || 1;
+      const order = r <= 1 ? [front, mid, back] : r === 2 ? [mid, front, back] : [back, mid, front];
+      let slot = -1;
+      for (const list of order) {
+        slot = list.find((i) => !pads[i]) ?? -1;
+        if (slot >= 0) break;
+      }
+      if (slot >= 0) pads[slot] = u;
+    });
   return pads;
 };
 
@@ -1308,22 +1628,32 @@ export const rollShop = (level, size = SHOP_SIZE, poolLines = LINES) => {
   return slots;
 };
 
-export const rollItem = () => {
-  if (Math.random() < 0.12) return MAGNET;
-  return COMPONENTS[Math.floor(Math.random() * COMPONENTS.length)];
-};
+export const rollComponent = () => COMPONENTS[Math.floor(Math.random() * COMPONENTS.length)];
+export const rollCrafted = () => CRAFTED[Math.floor(Math.random() * CRAFTED.length)];
+export const rollPlate = () => PLATES[Math.floor(Math.random() * PLATES.length)];
+/** Compat : tirage d’un composant. */
+export const rollItem = rollComponent;
 
-export const maybeDropItem = (won, wave) => {
-  if (wave > 0 && wave % 3 === 0) return rollItem();
-  const chance = won ? 0.42 : 0.14;
-  if (Math.random() < chance) return rollItem();
-  return null;
+/** Types comptés pour les synergies : types du Pokémon + rôles + plaques équipées. */
+export const unitTraits = (unit) => {
+  const list = [...(unit?.traits || [])];
+  (unit?.items || []).forEach((id) => {
+    const add = ITEM_MAP[id]?.addTrait;
+    if (add && !list.includes(add)) list.push(add);
+  });
+  return list;
 };
 
 export const traitBonus = (units) => {
   const counts = {};
+  const seen = new Set();
   units.forEach((unit) => {
-    (unit.traits || []).forEach((trait) => {
+    // Deux exemplaires identiques sur le terrain ne comptent qu’une fois (comme dans les auto-battlers).
+    const key = `${unit.lineId}:${unit.formId || ''}`;
+    const dupe = seen.has(key);
+    seen.add(key);
+    unitTraits(unit).forEach((trait) => {
+      if (dupe && !(unit.items || []).some((id) => ITEM_MAP[id]?.addTrait === trait)) return;
       counts[trait] = (counts[trait] || 0) + 1;
     });
   });
@@ -1351,10 +1681,16 @@ export const traitBonus = (units) => {
   return { atkMul, hpMul, active, counts, details };
 };
 
+export const traitCap = (trait) => TRAIT_BONUS[trait]?.cap || 0;
+
 const itemMods = (items = []) => {
   const mods = {
     hpMul: 1, atkMul: 1, spdMul: 1, spdFlat: 0, spellMul: 1,
-    regen: 0, selfHurt: 0, thorns: 0, lifesteal: 0, endure: false, opener: 0
+    regen: 0, selfHurt: 0, thorns: 0, lifesteal: 0, endure: false,
+    dmgTaken: 1, spellGuard: 1, precharge: 0, spellDrain: 0, berry: 0,
+    critChance: 0, critMult: 1.5, superMul: 1, flinch: 0, castNow: false,
+    spellDot: null, noCC: false, cleanse: false, quick: 0, eviolite: false,
+    startShield: 0, everyMinus: 0
   };
   items.forEach((id) => {
     const item = ITEM_MAP[id];
@@ -1369,7 +1705,25 @@ const itemMods = (items = []) => {
     if (item.thorns) mods.thorns += item.thorns;
     if (item.lifesteal) mods.lifesteal += item.lifesteal;
     if (item.endure) mods.endure = true;
-    if (item.opener) mods.opener = Math.max(mods.opener, item.opener);
+    if (item.dmgTaken) mods.dmgTaken *= item.dmgTaken;
+    if (item.spellGuard) mods.spellGuard *= item.spellGuard;
+    if (item.precharge) mods.precharge += item.precharge;
+    if (item.spellDrain) mods.spellDrain += item.spellDrain;
+    if (item.berry) mods.berry = Math.max(mods.berry, item.berry);
+    if (item.critChance) {
+      mods.critChance = Math.min(0.75, mods.critChance + item.critChance);
+      mods.critMult = Math.max(mods.critMult, item.critMult || 1.5);
+    }
+    if (item.superMul) mods.superMul *= item.superMul;
+    if (item.flinch) mods.flinch = Math.min(0.6, mods.flinch + item.flinch);
+    if (item.castNow) mods.castNow = true;
+    if (item.spellDot) mods.spellDot = item.spellDot;
+    if (item.noCC) mods.noCC = true;
+    if (item.cleanse) mods.cleanse = true;
+    if (item.quick) mods.quick = Math.min(0.6, mods.quick + item.quick);
+    if (item.eviolite) mods.eviolite = true;
+    if (item.startShield) mods.startShield += item.startShield;
+    if (item.everyMinus) mods.everyMinus += item.everyMinus;
   });
   return mods;
 };
@@ -1393,31 +1747,50 @@ export const buildFighters = (units, opts = {}) => {
     const im = itemMods(unit.items || []);
     const ab = opts.neutralized ? null : (unit.ab || talentOf(unit.lineId, unit.formId));
     const a = ab || {};
-    const maxHp = Math.round(unit.hp * bonus.hpMul * im.hpMul * (a.hpMul || 1));
+    const scale = unit.scale || 1;
+    const maxHp = Math.round(unit.hp * scale * bonus.hpMul * im.hpMul * (a.hpMul || 1));
+    const every = unit.spell?.every ? Math.max(2, unit.spell.every - im.everyMinus) : 0;
+    let cast = (a.precharge || 0) + im.precharge;
+    if (im.castNow && every) cast = Math.max(cast, every - 1);
     return {
       ...unit,
       ab,
       maxHp,
       curHp: maxHp,
-      power: Math.round(unit.atk * bonus.atkMul * im.atkMul * (a.atkMul || 1)),
+      power: Math.round(unit.atk * scale * bonus.atkMul * im.atkMul * (a.atkMul || 1)),
       spd: Math.round(unit.spd * im.spdMul * (a.spdMul || 1) + im.spdFlat),
       range: unit.range || 1,
+      spellEvery: every,
       spellMul: im.spellMul * (a.spellMul || 1),
       regen: im.regen + (a.regen || 0),
       selfHurt: im.selfHurt,
       thorns: im.thorns + (a.thorns || 0),
       lifesteal: im.lifesteal,
+      spellDrain: im.spellDrain,
       endure: im.endure || !!a.endure,
       endured: false,
-      opener: im.opener,
+      itemBerry: im.berry,
+      itemBerryUsed: false,
+      itemCrit: im.critChance,
+      itemCritMult: im.critMult,
+      superMul: im.superMul,
+      flinch: im.flinch,
+      spellDot: im.spellDot,
+      itemNoCC: im.noCC,
+      itemCleanse: im.cleanse,
+      quick: im.quick,
+      dmgTakenMul: im.dmgTaken * (im.eviolite ? (unit.star >= 3 ? 0.8 : 0.65) : 1),
+      spellGuardMul: im.spellGuard,
+      startShield: im.startShield,
       stunSkip: false,
       alive: true,
-      cast: a.precharge || 0,
+      cast,
       shieldHp: 0,
       dot: null,
       slowed: false,
       vuln: 1,
       guard: 1,
+      dmgDealt: 0,
       disguiseUsed: false,
       spellShieldUsed: false,
       berryUsed: false,
@@ -1427,59 +1800,85 @@ export const buildFighters = (units, opts = {}) => {
   });
 };
 
-const fighterAxial = (u) => indexToAxial(u.slot ?? 0, u.side === 'foe');
+const fighterAxial = (u) => u.cell || indexToAxial(u.slot ?? 0, u.side === 'foe');
 
 const distBetween = (a, b) => hexDist(fighterAxial(a), fighterAxial(b));
 
 const inRangeOf = (attacker, target) => distBetween(attacker, target) <= (attacker.range || 1);
 
-const offsetNeighbors = (col, row) => {
-  const odd = row & 1;
-  const dirs = odd
-    ? [[+1, 0], [0, -1], [-1, -1], [-1, 0], [-1, +1], [0, +1]]
-    : [[+1, 0], [+1, -1], [0, -1], [-1, 0], [0, +1], [+1, +1]];
-  return dirs.map(([dc, dr]) => ({ col: col + dc, row: row + dr }));
-};
+const BOARD_ROWS = BOARD_ROWS_HALF * 2;
+const cellKey = (c) => `${c.col},${c.row}`;
+const onGrid = (c) => c.col >= 0 && c.col < BOARD_COLS && c.row >= 0 && c.row < BOARD_ROWS;
 
-const axialToSlot = (col, row, isEnemy) => {
-  const rowLocal = isEnemy ? row : row - BOARD_ROWS_HALF;
-  if (col < 0 || col >= BOARD_COLS || rowLocal < 0 || rowLocal >= BOARD_ROWS_HALF) return null;
-  return rowLocal * BOARD_COLS + col;
+/** Voisins hexagonaux réels (vérifiés par la distance cubique, quel que soit le décalage des rangées). */
+const hexNeighbors = (c) => {
+  const out = [];
+  for (let dr = -1; dr <= 1; dr += 1) {
+    for (let dc = -1; dc <= 1; dc += 1) {
+      if (!dr && !dc) continue;
+      const n = { col: c.col + dc, row: c.row + dr };
+      if (onGrid(n) && hexDist(c, n) === 1) out.push(n);
+    }
+  }
+  return out;
 };
 
 const snapshotPos = (allies, foes) => {
   const pos = {};
-  allies.forEach((u) => { pos[u.uid] = { side: 'ally', slot: u.slot }; });
-  foes.forEach((u) => { pos[u.uid] = { side: 'foe', slot: u.slot }; });
+  [...allies, ...foes].forEach((u) => {
+    const c = fighterAxial(u);
+    pos[u.uid] = { side: u.side, col: c.col, row: c.row };
+  });
   return pos;
 };
 
-const occupiedKey = (side, slot) => `${side}:${slot}`;
-
-/** Avance d’1 case vers la cible la plus proche (demi-plateau). */
-const stepCloser = (u, enemies, allies, foes) => {
+/**
+ * Déplace l’unité d’1 case sur le plateau entier (les deux moitiés) vers la case libre la plus
+ * proche d’où elle peut toucher un ennemi (plus court chemin qui contourne les autres Pokémon).
+ */
+const stepCloser = (u, enemies, allies, foes, reach = u.range || 1) => {
   const live = enemies.filter((t) => t.alive);
   if (!live.length) return false;
-  const target = live.slice().sort((a, b) => distBetween(u, a) - distBetween(u, b))[0];
-  const from = fighterAxial(u);
-  const goal = fighterAxial(target);
-  const isEnemy = u.side === 'foe';
-  const team = isEnemy ? foes : allies;
-  const side = isEnemy ? 'foe' : 'ally';
-  const occ = new Set(
-    team.filter((t) => t.alive && t.uid !== u.uid).map((t) => occupiedKey(side, t.slot))
+  const start = fighterAxial(u);
+  const blocked = new Set(
+    [...allies, ...foes].filter((t) => t.alive && t !== u).map((t) => cellKey(fighterAxial(t)))
   );
-  const options = offsetNeighbors(from.col, from.row)
-    .map((n) => {
-      const slot = axialToSlot(n.col, n.row, isEnemy);
-      return slot == null ? null : { ...n, slot, dist: hexDist(n, goal) };
-    })
-    .filter((n) => n && !occ.has(occupiedKey(side, n.slot)));
-  if (!options.length) return false;
-  options.sort((a, b) => a.dist - b.dist || Math.random() - 0.5);
-  const best = options[0];
-  if (best.dist >= hexDist(from, goal)) return false;
-  u.slot = best.slot;
+  const canHitFrom = (c) => live.some((t) => hexDist(c, fighterAxial(t)) <= reach);
+  const prev = new Map([[cellKey(start), null]]);
+  const queue = [start];
+  let goal = null;
+  while (queue.length && !goal) {
+    const c = queue.shift();
+    const around = hexNeighbors(c).sort(() => Math.random() - 0.5);
+    for (const n of around) {
+      const k = cellKey(n);
+      if (prev.has(k) || blocked.has(k)) continue;
+      prev.set(k, c);
+      if (canHitFrom(n)) {
+        goal = n;
+        break;
+      }
+      queue.push(n);
+    }
+  }
+  let step = null;
+  if (goal) {
+    step = goal;
+    while (prev.get(cellKey(step)) && prev.get(cellKey(step)) !== start) step = prev.get(cellKey(step));
+  } else {
+    // Aucun chemin : on se rapproche quand même de l’ennemi le plus proche si une case le permet.
+    const nearest = live.slice().sort((a, b) => distBetween(u, a) - distBetween(u, b))[0];
+    const goalCell = fighterAxial(nearest);
+    const here = hexDist(start, goalCell);
+    const options = hexNeighbors(start)
+      .filter((n) => !blocked.has(cellKey(n)))
+      .map((n) => ({ ...n, d: hexDist(n, goalCell) }))
+      .filter((n) => n.d < here)
+      .sort((a, b) => a.d - b.d);
+    if (options.length) step = { col: options[0].col, row: options[0].row };
+  }
+  if (!step) return false;
+  u.cell = { col: step.col, row: step.row };
   return true;
 };
 
@@ -1488,8 +1887,9 @@ const pickTargets = (aim, foes, allies, self, respectRange = false) => {
   if (!live.length) return [];
   if (respectRange && self) {
     const inR = live.filter((t) => inRangeOf(self, t));
-    if (inR.length) live = inR;
-    else return [];
+    if (!inR.length) return [];
+    if (aim === 'all') return live;
+    live = inR;
   }
   if (aim === 'all') return live;
   if (aim === 'aoe2') {
@@ -1510,7 +1910,9 @@ const note = (ctx, line) => {
 /** Altérations : ralentissement, étourdissement, baisse d’ATK, poison / brûlure. */
 const applyStatus = (ctx, target, source, eff, reflected = false) => {
   if (!target?.alive || !eff) return;
-  const ta = target.ab || {};
+  const ta = { ...(target.ab || {}) };
+  if (target.itemNoCC) ta.noCC = true;
+  if (target.itemCleanse) ta.cleanse = true;
   let lowered = false;
   if (eff.slow && !ta.noCC) {
     if (ta.contrary) target.spd += eff.slow;
@@ -1542,8 +1944,16 @@ const applyStatus = (ctx, target, source, eff, reflected = false) => {
 };
 
 const checkThresholds = (ctx, u) => {
-  if (!u.alive || !u.ab) return;
+  if (!u.alive) return;
   const ratio = u.curHp / u.maxHp;
+  if (u.itemBerry && !u.itemBerryUsed && ratio < 0.5) {
+    u.itemBerryUsed = true;
+    const heal = Math.round(u.maxHp * u.itemBerry);
+    u.curHp = Math.min(u.maxHp, u.curHp + heal);
+    ctx.floats.push({ uid: u.uid, text: `+${heal}`, kind: 'heal' });
+    note(ctx, `${u.name} mange sa Baie Sitrus !`);
+  }
+  if (!u.ab) return;
   if (u.ab.berry && !u.berryUsed && ratio < 0.5) {
     u.berryUsed = true;
     const heal = Math.round(u.maxHp * u.ab.berry);
@@ -1623,9 +2033,13 @@ const resolveHit = (attacker, target, base, kind, turnIndex) => {
   if (ta.hunger && turnIndex % 2 === 0) dmg *= 1 + ta.hunger;
   if (ta.vsType) Object.entries(ta.vsType).forEach(([t, m]) => { if (unitHasType(target, t)) dmg *= m; });
   if (kind === 'auto' && ta.autoMul) dmg *= ta.autoMul;
+  if (mult > 1 && attacker.superMul) dmg *= attacker.superMul;
   let crit = false;
   if (ta.crit && !da.noCrit && Math.random() < ta.crit.chance) {
     dmg *= ta.crit.mult;
+    crit = true;
+  } else if (attacker.itemCrit && !da.noCrit && Math.random() < attacker.itemCrit) {
+    dmg *= attacker.itemCritMult || 1.5;
     crit = true;
   }
   if (da.resist && da.resist[atkType]) dmg *= da.resist[atkType];
@@ -1634,11 +2048,12 @@ const resolveHit = (attacker, target, base, kind, turnIndex) => {
   if (kind === 'spell' && da.spellGuard) dmg *= da.spellGuard;
   if (da.dmgTaken) dmg *= da.dmgTaken;
   if (da.superGuard && mult > 1) dmg *= da.superGuard;
-  dmg *= (target.vuln || 1) * (target.guard || 1);
-  return { result: 'hit', dmg, crit };
+  if (kind === 'spell') dmg *= target.spellGuardMul || 1;
+  dmg *= (target.vuln || 1) * (target.guard || 1) * (target.dmgTakenMul || 1);
+  return { result: 'hit', dmg, crit, mult };
 };
 
-const applyDamage = (ctx, target, raw, attacker) => {
+const applyDamage = (ctx, target, raw, attacker, kind = 'auto') => {
   let dmg = Math.max(6, Math.round(raw));
   const pierce = has(attacker, 'pierce');
   if (target.shieldHp > 0 && !pierce) {
@@ -1647,9 +2062,11 @@ const applyDamage = (ctx, target, raw, attacker) => {
     dmg -= absorbed;
   }
   target.curHp -= dmg;
+  attacker.dmgDealt = (attacker.dmgDealt || 0) + dmg;
   const ta = attacker.ab || {};
-  if (attacker.lifesteal) {
-    attacker.curHp = Math.min(attacker.maxHp, attacker.curHp + Math.round(dmg * attacker.lifesteal));
+  const drain = (attacker.lifesteal || 0) + (kind === 'spell' ? attacker.spellDrain || 0 : 0);
+  if (drain) {
+    attacker.curHp = Math.min(attacker.maxHp, attacker.curHp + Math.round(dmg * drain));
   }
   if (attacker.selfHurt && !ta.rockHead && !ta.magicGuard) {
     attacker.curHp -= Math.round(attacker.maxHp * attacker.selfHurt);
@@ -1673,6 +2090,9 @@ const applyDamage = (ctx, target, raw, attacker) => {
   }
   if (ta.hitDot && target.curHp > 0 && Math.random() < ta.hitDot.chance) {
     applyStatus(ctx, target, attacker, { dot: { pct: ta.hitDot.pct, turns: ta.hitDot.turns } });
+  }
+  if (kind === 'auto' && attacker.flinch && target.curHp > 0 && Math.random() < attacker.flinch) {
+    applyStatus(ctx, target, attacker, { stun: true });
   }
   finish(ctx, target, attacker);
   finish(ctx, attacker, null);
@@ -1779,31 +2199,6 @@ const turnStart = (ctx, u, friends, enemies, turnIndex) => {
   return true;
 };
 
-export const enemyWave = (wave, level) => {
-  const cap = BOARD_CAP[Math.min(9, level)] || 1;
-  // Vague 1 : 2 ennemis pour un plateau vivant (toujours battable avec un starter + shop).
-  const count = Math.min(BOARD_SIZE, Math.max(wave === 1 ? 2 : 1, Math.min(cap + 1, 1 + Math.floor(wave / 2))));
-  const budget = Math.min(5, 1 + Math.floor((wave - 1) / 3));
-  const foes = [];
-  for (let i = 0; i < count; i += 1) {
-    const cost = Math.max(1, Math.min(5, budget - (i % 2)));
-    const pool = LINES.filter((line) => line.cost === cost);
-    const line = pool[Math.floor(Math.random() * pool.length)] || LINES[0];
-    const star = wave >= 14 ? 3 : wave >= 8 ? 2 : 1;
-    const unit = unitFromLine(line.id, star, `foe-${wave}-${i}`, [], null, true);
-    const scale = 0.82 + wave * 0.07;
-    const withItem = wave >= 7 && Math.random() < 0.22 ? [rollItem().id] : [];
-    foes.push({
-      ...unit,
-      items: withItem,
-      name: `Sauvage ${unit.name}`,
-      hp: Math.round(unit.hp * scale),
-      atk: Math.round(unit.atk * scale * 0.92)
-    });
-  }
-  return foes;
-};
-
 const snapshotHp = (allies, foes) => {
   const hp = {};
   [...allies, ...foes].forEach((u) => {
@@ -1827,7 +2222,12 @@ export const simulateFight = (alliesIn, foesIn) => {
   const log = [];
   const ctx = { allies, foes, log, turn: 0, floats: [] };
   const frames = [];
-  const pushFrame = (line, fx = {}, floats = []) => {
+  /**
+   * Une image du combat.
+   * fx    : uid → 'strike' | 'spell' | 'move' | 'hit' | 'ko' | 'heal' | 'buff' | 'miss'
+   * act   : { uid, kind, type, targets[], crit } — l’action jouée (pilote les animations)
+   */
+  const pushFrame = (line, fx = {}, floats = [], act = null) => {
     const all = [...floats, ...ctx.floats];
     ctx.floats = [];
     frames.push({
@@ -1835,6 +2235,8 @@ export const simulateFight = (alliesIn, foesIn) => {
       hp: snapshotHp(allies, foes),
       fx,
       floats: all,
+      act,
+      turn: ctx.turn,
       pos: snapshotPos(allies, foes)
     });
   };
@@ -1842,9 +2244,133 @@ export const simulateFight = (alliesIn, foesIn) => {
   if (foeNeutral && !allyNeutral) log.push('Gaz Inhibiteur : talents adverses neutralisés !');
   startEffects(ctx, allies, foes);
   startEffects(ctx, foes, allies);
-  pushFrame(log.length ? log[log.length - 1] : 'Combat !');
+  // Lumargile : bouclier pour soi et l’allié le plus proche.
+  [allies, foes].forEach((team) => {
+    team.forEach((u) => {
+      if (!u.startShield) return;
+      const mate = team.filter((f) => f !== u && f.alive).sort((a, b) => distBetween(u, a) - distBetween(u, b))[0];
+      [u, mate].filter(Boolean).forEach((f) => { f.shieldHp += Math.round(f.maxHp * u.startShield); });
+    });
+  });
+  pushFrame(log.length ? log[log.length - 1] : 'Combat !', {}, [], { kind: 'start' });
   let turn = 0;
-  const maxTurns = 48;
+  const maxTurns = 50;
+
+  const doStrike = (u, enemies, friends, turnIndex) => {
+    let picked = pickTargets('front', enemies, friends, u, true);
+    if (!picked.length) {
+      if (stepCloser(u, enemies, allies, foes)) {
+        pushFrame(`${u.name} avance`, { [u.uid]: 'move' }, [], { uid: u.uid, kind: 'move' });
+        picked = pickTargets('front', enemies, friends, u, true);
+      }
+      if (!picked.length) return false;
+    }
+    const target = picked[0];
+    const fx = { [u.uid]: 'strike' };
+    const floats = [];
+    const hit = resolveHit(u, target, u.power * (0.88 + Math.random() * 0.28), 'auto', turnIndex);
+    const act = { uid: u.uid, kind: 'strike', type: u.type, targets: [target.uid], ranged: (u.range || 1) > 1 };
+    if (hit.result !== 'hit') {
+      fx[target.uid] = 'miss';
+      floats.push({ uid: target.uid, text: hit.result === 'immune' ? 'Immunisé' : 'Raté', kind: 'miss' });
+      pushFrame(`${u.name} → ${target.name} : ${HIT_NOTES[hit.result]}`, fx, floats, act);
+      return true;
+    }
+    const before = target.curHp;
+    applyDamage(ctx, target, hit.dmg, u, 'auto');
+    const dealt = Math.max(0, before - target.curHp);
+    fx[target.uid] = target.alive ? 'hit' : 'ko';
+    if (dealt) floats.push({ uid: target.uid, text: `-${dealt}${hit.crit ? '!' : ''}`, kind: hit.crit ? 'crit' : (hit.mult > 1 ? 'super' : 'dmg') });
+    act.crit = hit.crit;
+    act.eff = hit.mult;
+    pushFrame(`${u.name} → ${target.name}${hit.crit ? ' (critique)' : ''}${hit.mult > 1 ? ' — super efficace' : ''}`, fx, floats, act);
+    return true;
+  };
+
+  const doSpell = (u, spell, enemies, friends, turnIndex) => {
+    const spellRange = (u.range || 1) + 1;
+    const prev = u.range;
+    u.range = spellRange;
+    let picked = pickTargets(spell.aim, enemies, friends, u, true);
+    u.range = prev;
+    if (!picked.length) {
+      if (stepCloser(u, enemies, allies, foes, spellRange)) {
+        pushFrame(`${u.name} avance`, { [u.uid]: 'move' }, [], { uid: u.uid, kind: 'move' });
+        u.range = spellRange;
+        picked = pickTargets(spell.aim, enemies, friends, u, true);
+        u.range = prev;
+      }
+      if (!picked.length) {
+        u.cast -= 1; // le sort reste chargé pour le tour suivant
+        return false;
+      }
+    }
+    const fx = { [u.uid]: 'spell' };
+    const floats = [];
+    const extras = [];
+    const act = { uid: u.uid, kind: 'spell', type: u.type, name: spell.name, aim: spell.aim, targets: [] };
+    const spellPower = u.power * (spell.mult || 1.5) * (u.spellMul || 1);
+    picked.forEach((target) => {
+      if (!target.alive) return;
+      act.targets.push(target.uid);
+      const hit = resolveHit(u, target, spellPower * (0.92 + Math.random() * 0.2), 'spell', turnIndex);
+      if (hit.result !== 'hit') {
+        fx[target.uid] = 'miss';
+        floats.push({ uid: target.uid, text: hit.result === 'immune' ? 'Immunisé' : 'Bloqué', kind: 'miss' });
+        extras.push(`${target.name} : ${HIT_NOTES[hit.result]}`);
+        return;
+      }
+      let raw = hit.dmg;
+      if (spell.shred) raw += target.maxHp * spell.shred;
+      if (spell.stealAtk) raw = Math.max(raw, target.power * 1.1);
+      const before = target.curHp;
+      applyDamage(ctx, target, raw, u, 'spell');
+      const dealt = Math.max(0, before - target.curHp);
+      fx[target.uid] = target.alive ? 'hit' : 'ko';
+      if (hit.crit) act.crit = true;
+      if (dealt) floats.push({ uid: target.uid, text: `-${dealt}${hit.crit ? '!' : ''}`, kind: hit.crit ? 'crit' : (hit.mult > 1 ? 'super' : 'dmg') });
+      if (target.alive) {
+        const stun = spell.stun || (u.ab?.serene && Math.random() < u.ab.serene);
+        applyStatus(ctx, target, u, { slow: spell.slow, stun, atkBreak: spell.atkBreak, dot: spell.dot || u.spellDot });
+      }
+    });
+    if (spell.healAlly) {
+      const wounded = friends.filter((f) => f.alive).sort((a, b) => a.curHp / a.maxHp - b.curHp / b.maxHp)[0];
+      if (wounded) {
+        const heal = Math.round(wounded.maxHp * spell.healAlly);
+        wounded.curHp = Math.min(wounded.maxHp, wounded.curHp + heal);
+        floats.push({ uid: wounded.uid, text: `+${heal}`, kind: 'heal' });
+        if (!fx[wounded.uid]) fx[wounded.uid] = 'heal';
+      }
+    }
+    if (spell.shield) u.shieldHp += Math.round(u.maxHp * spell.shield);
+    if (u.ab?.stance) u.shieldHp += Math.round(u.maxHp * u.ab.stance);
+    if (spell.selfAtk) u.power = Math.round(u.power * (1 + spell.selfAtk));
+    if (spell.selfSlow) u.spd = Math.max(1, u.spd - spell.selfSlow);
+    if (spell.recoil && u.alive && !u.ab?.rockHead && !u.ab?.magicGuard) {
+      u.curHp -= Math.round(u.maxHp * spell.recoil);
+      finish(ctx, u, null);
+    }
+    if (spell.teamAtk) {
+      friends.forEach((f) => {
+        if (!f.alive) return;
+        f.power = Math.round(f.power * (1 + spell.teamAtk));
+        if (!fx[f.uid]) fx[f.uid] = 'buff';
+      });
+    }
+    if (spell.allyBuff) {
+      const slow = friends.filter((f) => f.alive).sort((a, b) => a.spd - b.spd)[0];
+      if (slow) {
+        slow.spd += 3;
+        if (!fx[slow.uid]) fx[slow.uid] = 'buff';
+      }
+    }
+    friends.forEach((f) => { if (f !== u && f.alive && f.ab?.dancer) f.cast += 1; });
+    const line = `${u.name} : ${spell.name}${extras.length ? ` (${extras.join(', ')})` : ''}`;
+    if (turnIndex < 10) log.push(line);
+    pushFrame(line, fx, floats, act);
+    return true;
+  };
 
   while (turn < maxTurns) {
     ctx.turn = turn;
@@ -1863,139 +2389,49 @@ export const simulateFight = (alliesIn, foesIn) => {
       if (!u.alive) continue;
       const enemies = side === 'a' ? foes : allies;
       const friends = side === 'a' ? allies : foes;
+      if (!enemies.some((t) => t.alive)) break;
       if (!turnStart(ctx, u, friends, enemies, turnIndex)) {
         pushFrame(`${u.name} succombe à son altération`, { [u.uid]: 'ko' });
         continue;
       }
       if (u.stunSkip) {
         u.stunSkip = false;
+        pushFrame(`${u.name} est étourdi`, { [u.uid]: 'stun' }, [{ uid: u.uid, text: 'Étourdi', kind: 'miss' }]);
         continue;
       }
 
-      const targets = enemies.filter((t) => t.alive);
-      if (!targets.length) continue;
-
       u.cast += 1;
       const spell = u.spell;
-      const useSpell = spell && spell.every && u.cast > 0 && u.cast % spell.every === 0;
-      const openerExtra = turnIndex === 0 && u.opener && Math.random() < u.opener;
-
-      const strikes = openerExtra ? 2 : 1;
-      for (let s = 0; s < strikes; s += 1) {
-        if (!u.alive) break;
-        if (useSpell && s === 0) {
-          const spellRange = (u.range || 1) + 1;
-          const prev = u.range;
-          u.range = spellRange;
-          let picked = pickTargets(spell.aim, enemies, friends, u, true);
-          u.range = prev;
-          if (!picked.length) {
-            if (stepCloser(u, enemies, allies, foes)) {
-              pushFrame(`${u.name} avance`, { [u.uid]: 'move' });
-              u.range = spellRange;
-              picked = pickTargets(spell.aim, enemies, friends, u, true);
-              u.range = prev;
-            }
-            if (!picked.length) {
-              pushFrame(`${u.name} : sort hors de portée`, { [u.uid]: 'move' });
-              continue;
-            }
-          }
-          const fx = { [u.uid]: 'spell' };
-          const floats = [];
-          const extras = [];
-          const spellPower = u.power * (spell.mult || 1.5) * (u.spellMul || 1);
-          picked.forEach((target) => {
-            if (!target.alive) return;
-            const hit = resolveHit(u, target, spellPower * (0.92 + Math.random() * 0.2), 'spell', turnIndex);
-            if (hit.result !== 'hit') {
-              extras.push(`${target.name} : ${HIT_NOTES[hit.result]}`);
-              return;
-            }
-            let raw = hit.dmg;
-            if (spell.shred) raw += target.maxHp * spell.shred;
-            if (spell.stealAtk) raw = Math.max(raw, target.power * 1.1);
-            const before = target.curHp;
-            applyDamage(ctx, target, raw, u);
-            const dealt = Math.max(0, before - target.curHp);
-            fx[target.uid] = target.alive ? 'hit' : 'ko';
-            if (dealt) floats.push({ uid: target.uid, text: `-${dealt}${hit.crit ? '!' : ''}`, kind: 'dmg' });
-            if (target.alive) {
-              const stun = spell.stun || (u.ab?.serene && Math.random() < u.ab.serene);
-              applyStatus(ctx, target, u, { slow: spell.slow, stun, atkBreak: spell.atkBreak, dot: spell.dot });
-            }
-          });
-          if (spell.healAlly) {
-            const wounded = friends.filter((f) => f.alive).sort((a, b) => a.curHp / a.maxHp - b.curHp / b.maxHp)[0];
-            if (wounded) {
-              const heal = Math.round(wounded.maxHp * spell.healAlly);
-              wounded.curHp = Math.min(wounded.maxHp, wounded.curHp + heal);
-              floats.push({ uid: wounded.uid, text: `+${heal}`, kind: 'heal' });
-            }
-          }
-          if (spell.shield) u.shieldHp += Math.round(u.maxHp * spell.shield);
-          if (u.ab?.stance) u.shieldHp += Math.round(u.maxHp * u.ab.stance);
-          if (spell.selfAtk) u.power = Math.round(u.power * (1 + spell.selfAtk));
-          if (spell.selfSlow) u.spd = Math.max(1, u.spd - spell.selfSlow);
-          if (spell.recoil && u.alive && !u.ab?.rockHead && !u.ab?.magicGuard) {
-            u.curHp -= Math.round(u.maxHp * spell.recoil);
-            finish(ctx, u, null);
-          }
-          if (spell.teamAtk) friends.forEach((f) => { if (f.alive) f.power = Math.round(f.power * (1 + spell.teamAtk)); });
-          if (spell.allyBuff) {
-            const slow = friends.filter((f) => f.alive).sort((a, b) => a.spd - b.spd)[0];
-            if (slow) slow.spd += 3;
-          }
-          friends.forEach((f) => { if (f !== u && f.alive && f.ab?.dancer) f.cast += 1; });
-          const line = `${u.name} : ${spell.name}${extras.length ? ` (${extras.join(', ')})` : ''}`;
-          if (turnIndex < 10) log.push(line);
-          pushFrame(line, fx, floats);
-        } else {
-          let picked = pickTargets('front', enemies, friends, u, true);
-          if (!picked.length) {
-            if (stepCloser(u, enemies, allies, foes)) {
-              pushFrame(`${u.name} avance`, { [u.uid]: 'move' });
-              picked = pickTargets('front', enemies, friends, u, true);
-            }
-            if (!picked.length) {
-              pushFrame(`${u.name} hors de portée (P${u.range})`, { [u.uid]: 'move' });
-              continue;
-            }
-          }
-          const target = picked[0];
-          const fx = { [u.uid]: 'strike' };
-          const floats = [];
-          const hit = resolveHit(u, target, u.power * (0.88 + Math.random() * 0.28), 'auto', turnIndex);
-          if (hit.result !== 'hit') {
-            pushFrame(`${u.name} → ${target.name} : ${HIT_NOTES[hit.result]}`, fx);
-            continue;
-          }
-          const before = target.curHp;
-          applyDamage(ctx, target, hit.dmg, u);
-          const dealt = Math.max(0, before - target.curHp);
-          fx[target.uid] = target.alive ? 'hit' : 'ko';
-          if (dealt) floats.push({ uid: target.uid, text: `-${dealt}${hit.crit ? '!' : ''}`, kind: 'dmg' });
-          pushFrame(`${u.name} → ${target.name}${hit.crit ? ' (critique)' : ''}`, fx, floats);
-        }
+      const useSpell = spell && u.spellEvery && u.cast > 0 && u.cast % u.spellEvery === 0;
+      let acted = false;
+      if (useSpell) acted = doSpell(u, spell, enemies, friends, turnIndex);
+      if (!acted) acted = doStrike(u, enemies, friends, turnIndex);
+      if (!acted) pushFrame(`${u.name} cherche une cible`, { [u.uid]: 'move' });
+      // Vive Griffe : action supplémentaire.
+      if (u.alive && u.quick && enemies.some((t) => t.alive) && Math.random() < u.quick) {
+        doStrike(u, enemies, friends, turnIndex);
       }
     }
     turn += 1;
   }
 
   const win = foes.every((u) => !u.alive) && allies.some((u) => u.alive);
-  const aliveFoes = foes.filter((u) => u.alive).length;
-  const damage = win ? 0 : Math.max(2, aliveFoes + 1);
+  const aliveFoes = foes.filter((u) => u.alive);
   pushFrame(
     win ? 'Victoire !' : 'Défaite…',
-    Object.fromEntries((win ? foes : allies).map((u) => [u.uid, 'ko']))
+    {},
+    [],
+    { kind: 'end', win }
   );
   return {
     win,
     log: log.slice(0, 10),
     frames,
-    damage,
+    damage: win ? 0 : aliveFoes.reduce((sum, u) => sum + (u.star || 1), 0),
     survivors: allies.filter((u) => u.alive).length,
-    turns: turn
+    foeSurvivors: aliveFoes.length,
+    turns: turn,
+    stats: [...allies, ...foes].map((u) => ({ uid: u.uid, name: u.name, side: u.side, dmg: Math.round(u.dmgDealt || 0), alive: u.alive, dex: u.dex }))
   };
 };
 
@@ -2004,6 +2440,7 @@ export const mergeUnits = (board, bench) => {
   let boardNext = [...board];
   let benchNext = [...bench];
   const notes = [];
+  const evolved = [];
   let changed = true;
 
   while (changed) {
@@ -2033,6 +2470,7 @@ export const mergeUnits = (board, bench) => {
       });
     });
     const upgraded = unitFromLine(base.lineId, base.star + 1, undefined, pooledItems, base.formId || null);
+    evolved.push(upgraded.uid);
     notes.push(upgraded.pendingEvo
       ? `${base.name} ×3 — choisis son évolution`
       : `${base.name} ×3 → ${upgraded.name} (${upgraded.star}★)`);
@@ -2057,7 +2495,7 @@ export const mergeUnits = (board, bench) => {
     changed = true;
   }
 
-  return { board: boardNext, bench: benchNext.filter(Boolean), notes };
+  return { board: boardNext, bench: benchNext.filter(Boolean), notes, evolved };
 };
 
 /** Si trop d’unités sur le terrain vs cap niveau, renvoie le surplus au banc. */
@@ -2085,9 +2523,9 @@ export const enforceBoardCap = (board, bench, cap) => {
  * Retourne { unit, note, stripped } ou null si impossible.
  */
 export const equipItemOnUnit = (unit, itemId) => {
-  if (!unit || !itemId || itemId === 'magnet') return null;
+  if (!unit || !itemId) return null;
   const def = ITEM_MAP[itemId];
-  if (!def) return null;
+  if (!def || def.consumable) return null;
   const items = [...(unit.items || [])];
 
   if (def.component) {
@@ -2100,7 +2538,8 @@ export const equipItemOnUnit = (unit, itemId) => {
       items.push(result);
       return {
         unit: { ...unit, items: items.slice(0, ITEM_SLOTS) },
-        note: `${ITEM_MAP[other].name} + ${def.name} → ${ITEM_MAP[result].name}`
+        note: `${ITEM_MAP[other].name} + ${def.name} → ${ITEM_MAP[result].name} !`,
+        crafted: result
       };
     }
     if (items.length >= ITEM_SLOTS) return null;
@@ -2108,6 +2547,7 @@ export const equipItemOnUnit = (unit, itemId) => {
     return { unit: { ...unit, items }, note: `${def.name} équipé` };
   }
 
+  if (def.plate && unitTraits(unit).includes(def.addTrait)) return null;
   if (items.length >= ITEM_SLOTS) return null;
   items.push(itemId);
   return { unit: { ...unit, items }, note: `${def.name} équipé` };
