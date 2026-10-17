@@ -11,61 +11,30 @@ import { composeSong, hashString, playSong } from './pokeArenaChiptune';
 
 export const MUSIC_BASE = process.env.REACT_APP_MUSIC_URL || `${process.env.PUBLIC_URL || ''}/music`;
 
-/* ——————————————————————— Catalogue (clé = nom du fichier .mp3) ——————————————————————— */
+/* ——————————————————————— Catalogue ———————————————————————
+ * Clé = nom du fichier .mp3 (si on dépose le fichier) ; `yt` = vidéos YouTube jouées en priorité. */
 
 const T = (title, mood) => ({ title, mood });
+/** Piste YouTube : plusieurs identifiants possibles (le suivant sert si une vidéo est indisponible). */
+const Y = (title, mood, yt) => ({ title, mood, yt });
 
 export const TRACKS = {
-  // Villes / menus
-  'town-newbark-hgss': T('Bourg Geon — HeartGold / SoulSilver', 'town'),
-  'town-twinleaf-dp': T('Bonaugure — Diamant / Perle', 'town'),
-  'town-nuvema-bw': T('Renouet — Noir / Blanc', 'town'),
-  'town-vaniville-xy': T('Bourg Croquis — X / Y', 'town'),
-  // Prairies et forêts
-  'route-29-hgss': T('Route 29 — HeartGold / SoulSilver', 'route'),
-  'route-30-hgss': T('Route 30 — HeartGold / SoulSilver', 'route'),
-  'route-38-hgss': T('Route 38 — HeartGold / SoulSilver', 'route'),
-  'national-park-hgss': T('Parc Naturel — HeartGold / SoulSilver', 'route'),
-  'route-201-dp': T('Route 201 — Diamant / Perle', 'route'),
-  'route-205-dp': T('Route 205 — Diamant / Perle', 'route'),
-  'eterna-forest-dp': T('Forêt de Vestigion — Diamant / Perle', 'route'),
-  'route-1-bw': T('Route 1 — Noir / Blanc', 'route'),
-  'route-6-bw': T('Route 6 — Noir / Blanc', 'route'),
-  'route-xy': T('Thème des routes — X / Y', 'route'),
-  // Montagnes
-  'route-47-hgss': T('Route 47 — HeartGold / SoulSilver', 'route'),
-  'route-210-dp': T('Route 210 — Diamant / Perle', 'route'),
-  'mt-coronet-dp': T('Mont Couronné — Diamant / Perle', 'cave'),
-  'route-10-bw': T('Route 10 — Noir / Blanc', 'route'),
-  'dragonspiral-bw': T('Tour Dragospire — Noir / Blanc', 'cave'),
-  // Côtes
-  'olivine-hgss': T('Oliville — HeartGold / SoulSilver', 'town'),
-  'surf-hgss': T('Surf — HeartGold / SoulSilver', 'route'),
-  'sunyshore-dp': T('Rivamar — Diamant / Perle', 'town'),
-  'undella-bw': T('Port Yoneuve (été) — Noir / Blanc', 'town'),
-  'cyllage-xy': T('Relifac-le-Haut — X / Y', 'town'),
-  // Neige
-  'ice-path-hgss': T('Route de Glace — HeartGold / SoulSilver', 'snow'),
-  'route-216-dp': T('Route 216 — Diamant / Perle', 'snow'),
-  'snowpoint-dp': T('Frimapic — Diamant / Perle', 'snow'),
-  'icirrus-bw': T('Flocombe — Noir / Blanc', 'snow'),
-  'snowbelle-xy': T('Flusselles — X / Y', 'snow'),
-  // Volcans
-  'cinnabar-hgss': T('Cramois’Île — HeartGold / SoulSilver', 'volcano'),
-  'stark-mountain-pt': T('Mont Abrupt — Platine', 'volcano'),
-  'reversal-mountain-b2w2': T('Mont Renverse — Noire 2 / Blanche 2', 'volcano'),
-  'route-113-oras': T('Route 113 — Rubis Oméga / Saphir Alpha', 'volcano'),
-  // Grottes
-  'union-cave-hgss': T('Caves Jumelles — HeartGold / SoulSilver', 'cave'),
-  'chargestone-bw': T('Grotte Électrolithe — Noir / Blanc', 'cave'),
-  'twist-mountain-bw': T('Mont Foré — Noir / Blanc', 'cave'),
-  'glittering-cave-xy': T('Grotte Scintillante — X / Y', 'cave'),
-  // Ligue
-  'victory-road-hgss': T('Route Victoire — HeartGold / SoulSilver', 'league'),
-  'league-dp': T('Ligue Pokémon — Diamant / Perle', 'league'),
-  'victory-road-bw': T('Route Victoire — Noir / Blanc', 'league'),
-  'league-bw': T('Ligue Pokémon — Noir / Blanc', 'league'),
-  'league-xy': T('Ligue Pokémon — X / Y', 'league'),
+  // ——— Sélection de Jules (YouTube) ———
+  'op-saison-3-vf': Y('Pokémon Johto — Générique saison 3 (VF)', 'town', ['ca_AUEJmkLo', 'FLJij1Ethl0']),
+  'op-saison-8-vf': Y('Pokémon Invincible — Générique saison 8 (VF)', 'town', ['Np-vs6bXZAE']),
+  'op-saison-9-vf': Y('Pokémon Advanced Battle — Générique saison 9 (VF)', 'town', ['8kKzydj7XbU', 'bLf8IMffDuY']),
+  'parc-naturel-hgss': Y('Parc Naturel — HeartGold / SoulSilver', 'route', ['4ujh7lvcsRs', '4ujh7IvcsRs']),
+  'route-209-dp': Y('Route 209 (jour) — Diamant / Perle', 'route', ['pmCpbZQXo9A']),
+  'route-15-xy': Y('Route 15 — X / Y', 'route', ['ANamw2Fs6VY']),
+  'port-yoneuve-bw': Y('Port Yoneuve — Noir / Blanc 2', 'town', ['2YZ1ouxhzaM']),
+  'pont-hameau-b2w2': Y('Pont du Hameau — Noir / Blanc 2', 'route', ['Gju6j3f2xTc']),
+  'bourg-en-vol-oras': Y('Bourg-en-Vol — Rubis Oméga / Saphir Alpha', 'town', ['xa-ngQFKark']),
+  'la-porte-xy': Y('La Porte — X / Y', 'town', ['rtvln-rF3Rw', 'rtvIn-rF3Rw']),
+  'route-216-nuit-dp': Y('Route 216 (nuit) — Diamant / Perle', 'snow', ['nayAS2WTMP0']),
+  'ligue-dp': Y('Ligue Pokémon — Diamant / Perle', 'league', ['u83mX9tGG9E']),
+  'donjons-mysteres-1': Y('Pokémon Donjon Mystère : Explorateurs (piste 1)', 'cave', ['WKLBhjeN27o']),
+  'donjons-mysteres-2': Y('Pokémon Donjon Mystère : Explorateurs (piste 2)', 'cave', ['MvVwQ37VhkA']),
+  'miroir-b-xd': Y('Miror B. — Pokémon XD', 'grunt', ['WuhqoZvyntA']),
   // Combats de dresseurs
   'battle-trainer-johto-hgss': T('Combat ! Dresseur (Johto) — HeartGold / SoulSilver', 'battle'),
   'battle-trainer-kanto-hgss': T('Combat ! Dresseur (Kanto) — HeartGold / SoulSilver', 'battle'),
@@ -93,7 +62,7 @@ export const TRACKS = {
   'battle-red-hgss': T('Combat contre Red — HeartGold / SoulSilver', 'champion'),
   'battle-blue-frlg': T('Combat final ! Rival (Blue) — Rouge Feu / Vert Feuille', 'champion'),
   'battle-champion-oras': T('Combat ! Maître — Rubis Oméga / Saphir Alpha', 'champion'),
-  'battle-cynthia-dp': T('Combat ! Maîtresse (Cynthia) — Diamant / Perle', 'champion'),
+  'battle-cynthia-dp': Y('Combat ! Maîtresse (Cynthia) — Diamant / Perle', 'champion', ['DfJYs5boP9A']),
   'battle-champion-bw': T('Combat ! Maître (Goyah) — Noir / Blanc', 'champion'),
   'battle-iris-b2w2': T('Combat ! Maîtresse Iris — Noire 2 / Blanche 2', 'champion'),
   'battle-diantha-xy': T('Combat ! Maîtresse (Dianthéa) — X / Y', 'champion'),
@@ -102,7 +71,7 @@ export const TRACKS = {
   'battle-geeta-sv': T('Combat ! Alisma — Écarlate / Violet', 'champion'),
   'battle-nemona-sv': T('Combat ! Menzi — Écarlate / Violet', 'champion'),
   // Méchants
-  'battle-cyrus-dp': T('Combat ! Chef de la Team Galaxie (Hélio) — Diamant / Perle', 'villain'),
+  'battle-cyrus-dp': Y('Combat ! Chef de la Team Galaxie (Hélio) — Diamant / Perle', 'villain', ['SE5dBmWml34', '-X_OBgeo59o', 'mA6WXoiQi34']),
   'battle-rocket-boss-hgss': T('Combat ! Chef de la Team Rocket — HeartGold / SoulSilver', 'villain'),
   'battle-aqua-magma-leader-oras': T('Combat ! Chef Aqua / Magma — Rubis Oméga / Saphir Alpha', 'villain'),
   'battle-ghetsis-bw': T('Combat ! Ghetis — Noir / Blanc', 'villain'),
@@ -124,13 +93,6 @@ export const TRACKS = {
   'battle-rival-sm': T('Combat ! Rival — Soleil / Lune', 'rival'),
   'battle-rival-swsh': T('Combat ! Rival — Épée / Bouclier', 'rival'),
   'battle-rival-sv': T('Combat ! Rival — Écarlate / Violet', 'rival'),
-  // Victoires
-  'victory-trainer-hgss': T('Victoire ! (Dresseur) — HeartGold / SoulSilver', 'victory'),
-  'victory-trainer-dp': T('Victoire ! (Dresseur) — Diamant / Perle', 'victory'),
-  'victory-gym-dp': T('Victoire ! (Champion d’Arène) — Diamant / Perle', 'victory'),
-  'victory-champion-bw': T('Victoire ! (Maître) — Noir / Blanc', 'victory'),
-  'hall-of-fame-hgss': T('Panthéon — HeartGold / SoulSilver', 'fame'),
-  'hall-of-fame-dp': T('Panthéon — Diamant / Perle', 'fame')
 };
 
 /* ——————————————————————— Choix de la piste ——————————————————————— */
@@ -138,17 +100,18 @@ export const TRACKS = {
 const pickBy = (list, seedText) => list[hashString(seedText) % list.length];
 
 const BIOME_TRACKS = {
-  prairie: ['route-29-hgss', 'route-30-hgss', 'route-38-hgss', 'national-park-hgss', 'route-201-dp', 'route-205-dp', 'eterna-forest-dp', 'route-1-bw', 'route-6-bw', 'route-xy'],
-  montagne: ['route-47-hgss', 'route-210-dp', 'mt-coronet-dp', 'route-10-bw', 'dragonspiral-bw'],
-  plage: ['olivine-hgss', 'surf-hgss', 'sunyshore-dp', 'undella-bw', 'cyllage-xy'],
-  neige: ['ice-path-hgss', 'route-216-dp', 'snowpoint-dp', 'icirrus-bw', 'snowbelle-xy'],
-  volcan: ['cinnabar-hgss', 'stark-mountain-pt', 'reversal-mountain-b2w2', 'route-113-oras'],
-  grotte: ['union-cave-hgss', 'mt-coronet-dp', 'chargestone-bw', 'twist-mountain-bw', 'glittering-cave-xy'],
-  ligue: ['victory-road-hgss', 'league-dp', 'victory-road-bw', 'league-bw', 'league-xy']
+  prairie: ['parc-naturel-hgss', 'route-209-dp', 'route-15-xy', 'pont-hameau-b2w2'],
+  montagne: ['route-15-xy', 'pont-hameau-b2w2', 'route-209-dp'],
+  plage: ['port-yoneuve-bw', 'pont-hameau-b2w2', 'bourg-en-vol-oras'],
+  neige: ['route-216-nuit-dp'],
+  volcan: ['donjons-mysteres-1', 'donjons-mysteres-2'],
+  grotte: ['donjons-mysteres-2', 'donjons-mysteres-1'],
+  ligue: ['ligue-dp']
 };
 const LEGACY_BIOME = { forest: 'prairie', mountain: 'montagne', league: 'ligue' };
 
-export const TOWN_TRACKS = ['town-newbark-hgss', 'town-twinleaf-dp', 'town-nuvema-bw', 'town-vaniville-xy'];
+export const TOWN_TRACKS = ['op-saison-3-vf', 'op-saison-8-vf', 'op-saison-9-vf', 'la-porte-xy', 'bourg-en-vol-oras'];
+export const OPENING_TRACKS = ['op-saison-3-vf', 'op-saison-8-vf', 'op-saison-9-vf'];
 const TRAINER_TRACKS = ['battle-trainer-johto-hgss', 'battle-trainer-kanto-hgss', 'battle-trainer-dp', 'battle-trainer-bw', 'battle-trainer-xy'];
 
 const GYM_BY_REGION = {
@@ -196,18 +159,14 @@ export const battleTrack = (node) => {
   if (t.role === 'gym') return GYM_BY_REGION[t.region] || 'battle-gym-dp';
   if (node?.kind === 'rival') return RIVAL_TRACK[t.name] || 'battle-rival-hgss';
   if (node?.kind === 'villain') return VILLAIN_TRACK[t.team]?.[0] || 'battle-cyrus-dp';
-  if (t.team) return VILLAIN_TRACK[t.team]?.[1] || 'battle-grunt-galactic-dp';
+  if (t.team) return 'miroir-b-xd';
   const seed = `${node?.id || ''}-${t.name || ''}`;
   if ((hashString(`cyrus-${seed}`) % 1000) / 1000 < CYRUS_CHANCE) return 'battle-cyrus-dp';
   return pickBy(TRAINER_TRACKS, seed);
 };
 
-export const victoryTrack = (node) => {
-  const role = node?.trainer?.role;
-  if (role === 'champion') return 'victory-champion-bw';
-  if (role === 'gym' || role === 'e4' || node?.kind === 'villain') return 'victory-gym-dp';
-  return pickBy(['victory-trainer-hgss', 'victory-trainer-dp'], node?.id || '');
-};
+/** Après une victoire, on garde la musique en cours (pas de jingle). */
+export const victoryTrack = () => null;
 
 /** Thème de combat en salon multi (varie à chaque round, Hélio de temps en temps). */
 export const versusTrack = (round, code = '') => {
@@ -220,15 +179,80 @@ export const versusTrack = (round, code = '') => {
 /* ——————————————————————— Lecteur ——————————————————————— */
 
 const failed = new Set();
+const ytDead = new Set();
+
+/** Charge l’API IFrame de YouTube une seule fois. */
+let ytApi = null;
+const loadYouTube = () => {
+  if (ytApi) return ytApi;
+  ytApi = new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') { reject(new Error('no window')); return; }
+    if (window.YT && window.YT.Player) { resolve(window.YT); return; }
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof prev === 'function') prev();
+      resolve(window.YT);
+    };
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    tag.async = true;
+    tag.onerror = () => reject(new Error('YouTube indisponible'));
+    document.head.appendChild(tag);
+    setTimeout(() => reject(new Error('YouTube trop lent')), 8000);
+  });
+  ytApi.catch(() => { /* géré par l’appelant */ });
+  return ytApi;
+};
+
+/** Mini-lecteur YouTube : une seule iframe, déplacée en fixed (visible ou hors écran). */
+const createYouTubeDeck = (onEnded, onFail, onPlaying) => {
+  let player = null;
+  let ready = null;
+  const host = document.createElement('div');
+  host.className = 'pa-yt-host';
+  Object.assign(host.style, { position: 'fixed', left: '-10000px', top: '0', width: '240px', height: '135px', zIndex: '400', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,.45)' });
+  const mount = document.createElement('div');
+  host.appendChild(mount);
+  document.body.appendChild(host);
+  const init = () => {
+    if (ready) return ready;
+    ready = loadYouTube().then((YT) => new Promise((resolve) => {
+      player = new YT.Player(mount, {
+        width: '240',
+        height: '135',
+        playerVars: { autoplay: 1, controls: 1, disablekb: 1, modestbranding: 1, playsinline: 1, rel: 0, iv_load_policy: 3 },
+        events: {
+          onReady: () => resolve(player),
+          onStateChange: (e) => {
+            if (e.data === YT.PlayerState.ENDED) onEnded();
+            if (e.data === YT.PlayerState.PLAYING) onPlaying();
+          },
+          onError: () => onFail()
+        }
+      });
+    }));
+    return ready;
+  };
+  return {
+    init,
+    get player() { return player; },
+    show(rect) {
+      if (!rect) { host.style.left = '-10000px'; return; }
+      Object.assign(host.style, { left: `${Math.round(rect.left)}px`, top: `${Math.round(rect.top)}px` });
+    },
+    destroy() { host.remove(); }
+  };
+};
 
 const createPlayer = () => {
   let ac = null;
   let master = null;
   let volume = 0.5;
-  let current = null; // { key, kind: 'file'|'synth', audio?, song? }
+  let current = null; // { key, kind: 'yt'|'file'|'synth', … }
   let wanted = null;
   let listeners = [];
   let unlocked = false;
+  let deck = null;
 
   const ensureCtx = () => {
     if (ac) return ac;
@@ -256,12 +280,17 @@ const createPlayer = () => {
     }, 40);
   };
 
+  const ytVolume = (v) => {
+    try { deck?.player?.setVolume(Math.round(v * 100)); } catch { /* lecteur pas prêt */ }
+  };
+
   const stopCurrent = () => {
     const c = current;
     current = null;
     if (!c) return;
     c.cancelled = true;
     if (c.kind === 'synth') c.song.stop(0.5);
+    else if (c.kind === 'yt') { try { deck?.player?.pauseVideo(); } catch { /* lecteur pas prêt */ } }
     else fadeAudio(c.audio, 0, 500, () => { c.audio.pause(); c.audio.src = ''; });
   };
 
@@ -300,16 +329,60 @@ const createPlayer = () => {
     audio.src = `${MUSIC_BASE}/${key}.mp3`;
     const p = audio.play();
     if (p && p.catch) p.catch((e) => { if (e && e.name !== 'NotAllowedError') fallback(); });
-    // Pas de réponse au bout de 4 s : on bascule sur le thème composé.
     setTimeout(() => { if (!settled && current === entry) fallback(); }, 4000);
+  };
+
+  /** Piste sans YouTube jouable : fichier déposé, sinon thème composé. */
+  const startLocal = (key) => {
+    if (failed.has(key)) startSynth(key);
+    else startFile(key);
+  };
+
+  const ytIds = (key) => (TRACKS[key]?.yt || []).filter((id) => !ytDead.has(id));
+
+  const startYouTube = (key) => {
+    const entry = { key, kind: 'yt', ids: ytIds(key), playing: false };
+    current = entry;
+    const giveUp = () => {
+      if (entry.cancelled || current !== entry) return;
+      current = null;
+      startLocal(key);
+    };
+    if (!deck) {
+      deck = createYouTubeDeck(
+        () => { // fin de la vidéo : on boucle
+          if (current?.kind === 'yt') { try { deck.player.seekTo(0); deck.player.playVideo(); } catch { /* lecteur pas prêt */ } }
+        },
+        () => { // vidéo indisponible : identifiant suivant
+          const c = current;
+          if (c?.kind !== 'yt') return;
+          ytDead.add(c.ids.shift());
+          if (c.ids.length) deck.player.loadVideoById(c.ids[0]);
+          else { current = null; startLocal(c.key); }
+        },
+        () => {
+          if (current?.kind === 'yt' && !current.playing) {
+            current.playing = true;
+            ytVolume(volume);
+            notify();
+          }
+        }
+      );
+    }
+    deck.init().then((pl) => {
+      if (entry.cancelled || current !== entry) return;
+      ytVolume(volume);
+      pl.loadVideoById(entry.ids[0]);
+      setTimeout(() => { if (!entry.playing && current === entry && !entry.cancelled) giveUp(); }, 9000);
+    }).catch(giveUp);
   };
 
   const start = (key) => {
     if (!key || volume <= 0 || !unlocked) return;
     if (current?.key === key) return;
     stopCurrent();
-    if (failed.has(key)) startSynth(key);
-    else startFile(key);
+    if (ytIds(key).length && typeof document !== 'undefined') startYouTube(key);
+    else startLocal(key);
   };
 
   const unlock = () => {
@@ -325,6 +398,7 @@ const createPlayer = () => {
 
   return {
     play(key) {
+      if (key === undefined) return;
       wanted = key;
       if (!key) {
         stopCurrent();
@@ -337,14 +411,20 @@ const createPlayer = () => {
       volume = Math.max(0, Math.min(1, v));
       if (master) master.gain.value = volume * 0.7;
       if (current?.kind === 'file') current.audio.volume = volume;
+      if (current?.kind === 'yt') ytVolume(volume);
       if (volume <= 0) {
         stopCurrent();
         notify();
       } else if (!current) start(wanted);
     },
+    /** Affiche la vidéo YouTube en cours à cet endroit (rect en coordonnées écran), ou la cache. */
+    showVideo(rect) {
+      if (deck) deck.show(rect);
+    },
     stop() {
       wanted = null;
       stopCurrent();
+      if (deck) deck.show(null);
       notify();
     },
     subscribe(fn) {

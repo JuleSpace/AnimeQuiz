@@ -330,3 +330,5 @@
 .pa-root.skin-premium .ui-node.kind-villain { background: #2c2236; }
 .pa-root.skin-premium .pa-foe .ui-trainer-portrait.is-sm { background: radial-gradient(circle at 50% 35%, #4a3b30 0 40%, #241c17 80%); }
 .pa-root.skin-premium .ui-trainer em { color: var(--muted, #b9a68d); }
+.pa-root.skin-premium .pa-music-pop { background: #241c17; border-color: rgba(222, 184, 120, 0.35); color: #f3e6cf; }
+.pa-root.skin-premium .pa-music-src { color: var(--gold-hi); }

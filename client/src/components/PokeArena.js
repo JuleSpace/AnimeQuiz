@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import ArenaBoardIso, { BOARD_THEMES, BOARD_THEME_LABELS, DEFAULT_BOARD_THEME, resolveScene } from './ArenaBoardIso';
 import './PokeArena.css';
@@ -57,7 +57,7 @@ import {
   regionAt,
   rewardChoices
 } from './pokeArenaCampaign';
-import { TOWN_TRACKS, battleTrack, musicPlayer, regionTrack, versusTrack, victoryTrack } from './pokeArenaMusic';
+import { OPENING_TRACKS, TOWN_TRACKS, battleTrack, musicPlayer, regionTrack, versusTrack } from './pokeArenaMusic';
 import {
   VERSUS_MAX_PLAYERS,
   rebuildBoard,
@@ -153,6 +153,7 @@ const readSkin = () => {
   }
 };
 const THEME_IDS = Object.keys(BOARD_THEMES);
+
 const MUSIC_KEY = 'poke-arena-music';
 const MUSIC_LEVELS = [0, 0.25, 0.5, 0.8];
 const readMusic = () => {
@@ -162,6 +163,71 @@ const readMusic = () => {
   } catch {
     return 0.5;
   }
+};
+
+/** Bouton ♪ : ouvre un petit panneau (titre, vidéo YouTube en cours, volume). */
+const MusicControl = ({ volume, onVolume, now }) => {
+  const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState(null);
+  const wrap = useRef(null);
+  const slot = useRef(null);
+  const btn = useRef(null);
+  const isYt = now?.kind === 'yt';
+  useEffect(() => {
+    if (!open) {
+      musicPlayer().showVideo(null);
+      return undefined;
+    }
+    const place = () => {
+      const r = btn.current?.getBoundingClientRect();
+      if (r) setPos({ top: r.bottom + 8, left: Math.max(8, Math.min(window.innerWidth - 272, r.right - 264)) });
+    };
+    place();
+    const close = (e) => { if (wrap.current && !wrap.current.contains(e.target)) setOpen(false); };
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('pointerdown', close);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+      window.removeEventListener('pointerdown', close);
+      musicPlayer().showVideo(null);
+      setPos(null);
+    };
+  }, [open]);
+  // La vidéo (iframe fixe, hors de React) se cale sur l’emplacement du panneau une fois rendu.
+  useLayoutEffect(() => {
+    if (open && pos) musicPlayer().showVideo(isYt && slot.current ? slot.current.getBoundingClientRect() : null);
+  }, [open, pos, isYt, now?.key]);
+  const source = !now ? '' : isYt ? 'YouTube' : now.kind === 'file' ? 'Fichier' : 'Thème original (en attendant une piste)';
+  return (
+    <div className="pa-music" ref={wrap}>
+      <button
+        ref={btn}
+        type="button"
+        className={`ui-btn is-small is-ghost pa-music-btn${volume > 0 ? ' is-on' : ''}`}
+        title={now ? `♪ ${now.title}` : 'Musique'}
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {volume > 0 ? '♪' : '♪̸'}
+      </button>
+      {open && (
+        <div className="pa-music-pop" role="dialog" aria-label="Musique" style={pos || undefined}>
+          <strong>{now?.title || (volume > 0 ? 'La musique démarre…' : 'Musique coupée')}</strong>
+          {source && <span className="pa-music-src">{source}</span>}
+          {isYt && <div ref={slot} className="pa-music-video" />}
+          <div className="pa-music-levels">
+            {MUSIC_LEVELS.map((l) => (
+              <button key={l} type="button" className={`ui-btn is-small${Math.abs(l - volume) < 0.01 ? ' is-primary' : ' is-ghost'}`} onClick={() => onVolume(l)}>
+                {l ? `${Math.round(l * 100)} %` : 'Off'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 const SPEEDS = [1, 2, 4];
 
@@ -330,26 +396,13 @@ const PokeArena = ({ onClose }) => {
   useEffect(() => {
     let key = townTrack;
     if (phase === 'map' || phase === 'mart' || phase === 'event') key = regionTrack(regionAt(map, floor));
-    else if (phase === 'battle' && mode === 'versus') key = result?.win ? 'victory-trainer-dp' : versusTrack(vsRound, vsRoom?.code);
-    else if (phase === 'battle') key = (result?.win || rewardOpts) ? victoryTrack(node) : battleTrack(node);
-    else if (phase === 'over') key = wonRun ? 'hall-of-fame-hgss' : townTrack;
-    else if (phase === 'vs-over') key = 'hall-of-fame-dp';
+    else if (phase === 'battle' && mode === 'versus') key = versusTrack(vsRound, vsRoom?.code);
+    else if (phase === 'battle') key = battleTrack(node);
+    else if (phase === 'over' || phase === 'vs-over') key = (phase === 'vs-over' || wonRun) ? OPENING_TRACKS[Math.floor(Math.random() * OPENING_TRACKS.length)] : townTrack;
     musicPlayer().play(key);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, mode, node?.id, result?.win, !!rewardOpts, floor, map, vsRound, wonRun]);
-  const musicLabel = musicVol > 0 ? `♪ ${Math.round(musicVol * 100)} %` : '♪ Off';
-  const musicTitle = nowPlaying
-    ? `${nowPlaying.kind === 'file' ? nowPlaying.title : `Thème original (ajoute « ${nowPlaying.key}.mp3 » pour l’OST : ${nowPlaying.title})`} · clic : volume`
-    : 'Musique : clic pour régler le volume';
-  const cycleMusic = () => setMusicVol((v) => {
-    const i = MUSIC_LEVELS.findIndex((x) => Math.abs(x - v) < 0.01);
-    return MUSIC_LEVELS[(i + 1) % MUSIC_LEVELS.length];
-  });
-  const musicButton = (
-    <button type="button" className={`ui-btn is-small is-ghost pa-music-btn${musicVol > 0 ? ' is-on' : ''}`} title={musicTitle} aria-label={musicTitle} onClick={cycleMusic}>
-      {musicLabel}
-    </button>
-  );
+  }, [phase, mode, node?.id, floor, map, vsRound, wonRun]);
+  const musicButton = <MusicControl volume={musicVol} onVolume={setMusicVol} now={nowPlaying} />;
 
   const openTrait = (trait, event, extra = {}) => {
     if (!trait || !event?.currentTarget) {
