@@ -156,7 +156,7 @@ const loadYouTube = () => {
   return ytApi;
 };
 
-/** Une seule iframe, en position fixe : affichée dans le panneau ♪ ou rangée hors écran. */
+/** Une seule iframe, rangée hors écran : on n’en garde que le son et le titre. */
 const createDeck = (handlers) => {
   let player = null;
   let ready = null;
@@ -189,23 +189,23 @@ const createDeck = (handlers) => {
       }));
       return ready;
     },
-    get player() { return player; },
-    show(rect) {
-      if (!rect) { host.style.left = '-10000px'; return; }
-      Object.assign(host.style, { left: `${Math.round(rect.left)}px`, top: `${Math.round(rect.top)}px` });
-    }
+    get player() { return player; }
   };
 };
 
 const createPlayer = () => {
   let volume = 0.5;
-  let current = null; // { key, id, playing }
+  let current = null; // { req (piste demandée), key (piste jouée), id, playing, ytTitle }
   let wanted = null;
   let listeners = [];
   let unlocked = false;
   let deck = null;
 
-  const notify = () => listeners.forEach((fn) => fn(current ? { key: current.key, kind: 'yt', title: TRACKS[current.key]?.title || '' } : null));
+  const notify = () => listeners.forEach((fn) => fn(current ? {
+    key: current.key,
+    kind: 'yt',
+    title: current.ytTitle || TRACKS[current.key]?.title || ''
+  } : null));
   const call = (fn) => { try { if (deck?.player) fn(deck.player); } catch { /* lecteur pas prêt */ } };
 
   const pause = () => {
@@ -226,17 +226,33 @@ const createPlayer = () => {
     }
     const menus = liveMenus().filter((k) => k !== c.key);
     if (!menus.length) { pause(); notify(); return; }
-    load(menus[Math.floor(Math.random() * menus.length)]);
+    load(menus[Math.floor(Math.random() * menus.length)], c.req);
+  };
+
+  /** Fin d’un morceau : on enchaîne sur une autre musique du même lieu, sinon des menus. */
+  const next = () => {
+    const c = current;
+    if (!c) return;
+    const pool = (Object.values(BIOME_TRACKS).find((list) => list.includes(c.key)) || TOWN_TRACKS)
+      .filter((k) => k !== c.key && liveIds(k).length);
+    const fallback = liveMenus().filter((k) => k !== c.key);
+    const list = pool.length ? pool : fallback;
+    if (!list.length) { call((p) => { p.seekTo(0); p.playVideo(); }); return; }
+    load(list[Math.floor(Math.random() * list.length)], c.req);
   };
 
   const ensureDeck = () => {
     if (deck) return deck;
     deck = createDeck({
-      ended: () => { if (current) call((p) => { p.seekTo(0); p.playVideo(); }); },
+      ended: () => next(),
       playing: () => {
         if (current && !current.playing) {
           current.playing = true;
-          call((p) => p.setVolume(Math.round(volume * 100)));
+          call((p) => {
+            p.setVolume(Math.round(volume * 100));
+            const title = p.getVideoData?.()?.title;
+            if (title) current.ytTitle = title;
+          });
           notify();
         }
       },
@@ -245,10 +261,10 @@ const createPlayer = () => {
     return deck;
   };
 
-  const load = (key) => {
+  const load = (key, req = key) => {
     const id = liveIds(key)[0];
     if (!id) { skip(); return; }
-    const entry = { key, id, playing: false };
+    const entry = { req, key, id, playing: false };
     current = entry;
     notify();
     ensureDeck().init().then((p) => {
@@ -262,7 +278,7 @@ const createPlayer = () => {
 
   const start = (key) => {
     if (!key || volume <= 0 || !unlocked || typeof document === 'undefined') return;
-    if (current?.key === key) return;
+    if (current?.req === key) return;
     load(key);
   };
 
@@ -287,14 +303,13 @@ const createPlayer = () => {
       call((p) => p.setVolume(Math.round(volume * 100)));
       if (volume <= 0) { pause(); notify(); } else if (!current) start(wanted);
     },
-    /** Affiche la vidéo en cours à cet endroit (rect en coordonnées écran), ou la cache. */
-    showVideo(rect) {
-      if (deck) deck.show(rect);
+    /** Passe au morceau suivant (même lieu, sinon menus). */
+    next() {
+      next();
     },
     stop() {
       wanted = null;
       pause();
-      if (deck) deck.show(null);
       notify();
     },
     subscribe(fn) {

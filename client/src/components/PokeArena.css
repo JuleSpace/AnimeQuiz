@@ -1755,9 +1755,22 @@
 }
 .pa-music-pop strong { font-size: 13px; line-height: 1.3; }
 .pa-music-src { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
-.pa-music-video { width: 240px; height: 135px; border-radius: 10px; background: #000; }
-.pa-music-levels { display: flex; gap: 4px; }
-.pa-music-levels .ui-btn { flex: 1; padding: 4px 0; }
+
+.pa-music-title { font-size: 14px !important; }
+.pa-music-vol { display: flex; align-items: center; gap: 8px; }
+.pa-music-vol em { font-style: normal; font-size: 12px; font-weight: 800; min-width: 38px; text-align: right; color: var(--muted); }
+.pa-music-vol input[type='range'] {
+  flex: 1;
+  height: 6px;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--yellow, #f6c94a) var(--p), rgba(127, 127, 127, 0.3) var(--p));
+  cursor: pointer;
+}
+.pa-music-vol input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4); }
+.pa-music-vol input[type='range']::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4); }
+.pa-music-next { justify-self: start; }
 .pa-music-btn { min-width: 30px; font-size: 15px !important; }
 .pa-music-btn:not(.is-on) { opacity: 0.55; }
 
@@ -1800,3 +1813,59 @@
 .ui-combo-pop.is-none strong { display: none; }
 .pa-bag-item.is-locked { opacity: 0.6; cursor: default; }
 .pa-bag-hint { margin: 6px 0 0; font-size: 11px; color: var(--muted); }
+
+/* ———————————— Rareté des cartes de boutique : cadres métal animés (plus d’aplats de couleur) ————————————
+ * 1 : bronze mat · 2 : argent (reflet lent) · 3 : or (reflet) · 4 : améthyste holo · 5 : prisme qui tourne */
+@property --pa-ang { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.pa-card,
+.pa-card.cost-2,
+.pa-card.cost-3,
+.pa-card.cost-4 { box-shadow: var(--lift); }
+.pa-card.cost-5 { box-shadow: var(--lift), 0 0 18px -6px rgba(255, 210, 120, 0.7); }
+.pa-card:not(.is-sold)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  padding: 3px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, #6a5646, #9c8268 45%, #6a5646 55%, #8a735c);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.pa-card.cost-2:not(.is-sold)::before {
+  background: linear-gradient(105deg, #7c838d 0%, #b9c0c9 20%, #f4f7fb 30%, #a7aeb8 40%, #7c838d 60%, #cfd5dc 80%, #7c838d 100%);
+  background-size: 200% 100%;
+  animation: pa-sheen 7s linear infinite;
+}
+.pa-card.cost-3:not(.is-sold)::before {
+  background: linear-gradient(105deg, #8f6522 0%, #d9b25c 20%, #fff0bf 30%, #c79a45 40%, #8f6522 60%, #e8c877 80%, #8f6522 100%);
+  background-size: 200% 100%;
+  animation: pa-sheen 5s linear infinite;
+}
+.pa-card.cost-4:not(.is-sold)::before {
+  background: linear-gradient(105deg, #5d3c96 0%, #a77be6 18%, #f3d9ff 28%, #7fc8ff 36%, #9a6ad8 46%, #5d3c96 60%, #e0a8ff 80%, #5d3c96 100%);
+  background-size: 200% 100%;
+  animation: pa-sheen 3.6s linear infinite;
+}
+.pa-card.cost-5:not(.is-sold)::before {
+  padding: 3px;
+  background: conic-gradient(from var(--pa-ang), #ff7a7a, #ffd36b, #fff6c9, #7dffb0, #6bc8ff, #c58bff, #ff8fd1, #ff7a7a);
+  animation: pa-prism 4s linear infinite;
+}
+@keyframes pa-sheen { from { background-position: 0% 0; } to { background-position: -200% 0; } }
+@keyframes pa-prism { to { --pa-ang: 360deg; } }
+.pa-card.cost-5:not(.is-sold) { animation: pa-prism-glow 2.4s ease-in-out infinite; }
+@keyframes pa-prism-glow {
+  50% { box-shadow: var(--lift), 0 0 26px -4px rgba(255, 220, 140, 0.95); }
+}
+.pa-slot.cost-1 { border-bottom-color: #8a735c; }
+.pa-slot.cost-2 { border-bottom-color: #c3c9d1; }
+.pa-slot.cost-3 { border-bottom-color: #d9b25c; }
+.pa-slot.cost-4 { border-bottom-color: #a77be6; }
+.pa-slot.cost-5 { border-bottom-color: #ffd36b; }
+@media (prefers-reduced-motion: reduce) {
+  .pa-card::before, .pa-card.cost-5 { animation: none !important; }
+}

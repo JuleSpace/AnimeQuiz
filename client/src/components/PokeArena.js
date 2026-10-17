@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import ArenaBoardIso, { BOARD_THEMES, BOARD_THEME_LABELS, DEFAULT_BOARD_THEME, resolveScene } from './ArenaBoardIso';
 import './PokeArena.css';
@@ -157,7 +157,6 @@ const readSkin = () => {
 const THEME_IDS = Object.keys(BOARD_THEMES);
 
 const MUSIC_KEY = 'poke-arena-music';
-const MUSIC_LEVELS = [0, 0.25, 0.5, 0.8];
 const readMusic = () => {
   try {
     const v = localStorage.getItem(MUSIC_KEY);
@@ -172,14 +171,9 @@ const MusicControl = ({ volume, onVolume, now }) => {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState(null);
   const wrap = useRef(null);
-  const slot = useRef(null);
   const btn = useRef(null);
-  const isYt = now?.kind === 'yt';
   useEffect(() => {
-    if (!open) {
-      musicPlayer().showVideo(null);
-      return undefined;
-    }
+    if (!open) return undefined;
     const place = () => {
       const r = btn.current?.getBoundingClientRect();
       if (r) setPos({ top: r.bottom + 8, left: Math.max(8, Math.min(window.innerWidth - 272, r.right - 264)) });
@@ -193,15 +187,10 @@ const MusicControl = ({ volume, onVolume, now }) => {
       window.removeEventListener('resize', place);
       window.removeEventListener('scroll', place, true);
       window.removeEventListener('pointerdown', close);
-      musicPlayer().showVideo(null);
       setPos(null);
     };
   }, [open]);
-  // La vidéo (iframe fixe, hors de React) se cale sur l’emplacement du panneau une fois rendu.
-  useLayoutEffect(() => {
-    if (open && pos) musicPlayer().showVideo(isYt && slot.current ? slot.current.getBoundingClientRect() : null);
-  }, [open, pos, isYt, now?.key]);
-  const source = now ? 'YouTube' : '';
+  const pct = Math.round(volume * 100);
   return (
     <div className="pa-music" ref={wrap}>
       <button
@@ -216,16 +205,25 @@ const MusicControl = ({ volume, onVolume, now }) => {
       </button>
       {open && (
         <div className="pa-music-pop" role="dialog" aria-label="Musique" style={pos || undefined}>
-          <strong>{now?.title || (volume > 0 ? 'La musique démarre…' : 'Musique coupée')}</strong>
-          {source && <span className="pa-music-src">{source}</span>}
-          {isYt && <div ref={slot} className="pa-music-video" />}
-          <div className="pa-music-levels">
-            {MUSIC_LEVELS.map((l) => (
-              <button key={l} type="button" className={`ui-btn is-small${Math.abs(l - volume) < 0.01 ? ' is-primary' : ' is-ghost'}`} onClick={() => onVolume(l)}>
-                {l ? `${Math.round(l * 100)} %` : 'Off'}
-              </button>
-            ))}
-          </div>
+          <span className="pa-music-src">En ce moment</span>
+          <strong className="pa-music-title">{now?.title || (volume > 0 ? 'La musique démarre…' : 'Musique coupée')}</strong>
+          <label className="pa-music-vol">
+            <span aria-hidden>{volume > 0 ? '🔊' : '🔇'}</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+              value={pct}
+              style={{ '--p': `${pct}%` }}
+              aria-label="Volume de la musique"
+              onChange={(e) => onVolume(Number(e.target.value) / 100)}
+            />
+            <em>{pct} %</em>
+          </label>
+          <button type="button" className="ui-btn is-small is-ghost pa-music-next" disabled={!now} onClick={() => musicPlayer().next()}>
+            Morceau suivant ⏭
+          </button>
         </div>
       )}
     </div>
