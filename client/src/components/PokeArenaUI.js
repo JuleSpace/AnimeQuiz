@@ -19,7 +19,7 @@ import {
   canMegaEvolve,
   unitFromLine
 } from './pokeArenaData';
-import { CHAPTERS, FLOORS_PER_CHAPTER, NODE_INFO, isFightKind } from './pokeArenaCampaign';
+import { NODE_INFO, isFightKind, regionAt, regionsOf, trainerSprite } from './pokeArenaCampaign';
 
 export const ROLE_COLOR = { Starter: '#e9a23b', Force: '#d1495b', Mage: '#5c7cfa' };
 export const tint = (t) => TYPE_COLOR[t] || ROLE_COLOR[t] || '#9aa3c2';
@@ -383,6 +383,29 @@ export const StarterScreen = ({ onPick, onBack, onTrait }) => {
   );
 };
 
+/* ———————————————— Dresseurs ———————————————— */
+
+/** Portrait de dresseur (sprite Showdown), avec repli sur l’initiale. */
+export const TrainerPortrait = ({ trainer, size = 'md', title }) => {
+  const src = trainerSprite(trainer?.sprite);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [src]);
+  const show = src && !failed;
+  return (
+    <span className={`ui-trainer-portrait is-${size}${show ? '' : ' is-fallback'}${trainer?.role ? ` role-${trainer.role}` : ''}`} title={title}>
+      {show
+        ? <img src={src} alt="" loading="lazy" draggable={false} onError={() => setFailed(true)} />
+        : <b aria-hidden>{(trainer?.name || '?').slice(0, 1)}</b>}
+    </span>
+  );
+};
+
+/** Boss d’une région (Champion d’Arène, ou Conseil 4 + Maître pour la Ligue). */
+const regionBosses = (map, chapterId) => map
+  .filter((f) => f.chapter === chapterId)
+  .flatMap((f) => f.nodes.filter((n) => n.kind === 'boss').map((n) => n.trainer))
+  .filter(Boolean);
+
 /* ———————————————— Carte ———————————————— */
 
 export const MapScreen = ({ map, floor, path, onEnter, hud, team }) => {
@@ -392,14 +415,24 @@ export const MapScreen = ({ map, floor, path, onEnter, hud, team }) => {
   return (
     <div className="ui-map">
       <div className="ui-map-main">
-        {CHAPTERS.map((ch) => {
+        {regionsOf(map).map((ch) => {
           const floors = map.filter((f) => f.chapter === ch.id);
           const done = floors.every((f) => f.floor < floor);
+          const bosses = regionBosses(map, ch.id);
           return (
             <section key={ch.id} className={`ui-chapter biome-${ch.biome}${done ? ' is-done' : ''}`}>
               <header>
-                <h2>{ch.name}</h2>
-                <p>{ch.blurb}</p>
+                <div>
+                  <h2>{ch.name}</h2>
+                  <p>{ch.blurb}</p>
+                </div>
+                {bosses.length > 0 && (
+                  <div className="ui-chapter-bosses">
+                    {bosses.map((t, i) => (
+                      <TrainerPortrait key={`${t.name}-${i}`} trainer={t} size="sm" title={`${t.title} ${t.name}`} />
+                    ))}
+                  </div>
+                )}
               </header>
               <ol className="ui-route">
                 {floors.map((f) => (
@@ -421,8 +454,10 @@ export const MapScreen = ({ map, floor, path, onEnter, hud, team }) => {
                             onFocus={() => setFocus(node)}
                             aria-label={`${meta.label}${node.trainer ? `, ${node.trainer.title} ${node.trainer.name}` : ''}`}
                           >
-                            <span className="ui-node-icon" aria-hidden>{meta.icon}</span>
-                            {node.kind === 'boss' && <span className="ui-node-tag">{node.trainer.name}</span>}
+                            {node.trainer?.sprite && node.kind !== 'combat'
+                              ? <TrainerPortrait trainer={node.trainer} size="xs" />
+                              : <span className="ui-node-icon" aria-hidden>{meta.icon}</span>}
+                            {(node.kind === 'boss' || node.kind === 'rival' || node.kind === 'villain') && <span className="ui-node-tag">{node.trainer.name}</span>}
                           </button>
                         );
                       })}
@@ -438,13 +473,15 @@ export const MapScreen = ({ map, floor, path, onEnter, hud, team }) => {
         {hud}
         {shown && (
           <div className={`ui-node-info kind-${shown.kind}`}>
-            <span className="ui-node-icon" aria-hidden>{NODE_INFO[shown.kind].icon}</span>
+            {shown.trainer
+              ? <TrainerPortrait trainer={shown.trainer} size="md" />
+              : <span className="ui-node-icon" aria-hidden>{NODE_INFO[shown.kind].icon}</span>}
             <div>
               <h3>{NODE_INFO[shown.kind].label}{shown.floor === floor ? '' : ` (étage ${shown.floor + 1})`}</h3>
               <p>{NODE_INFO[shown.kind].hint}</p>
               {shown.trainer && (
                 <>
-                  <p className="ui-trainer"><b>{shown.trainer.title} {shown.trainer.name}</b></p>
+                  <p className="ui-trainer"><b>{shown.trainer.title} {shown.trainer.name}</b>{shown.trainer.region && <em> · {shown.trainer.region}</em>}</p>
                   <div className="ui-chips">{shown.trainer.types.map((t) => <TypeChip key={t} type={t} small />)}</div>
                 </>
               )}
@@ -512,7 +549,7 @@ export const MartScreen = ({ stock, gold, onBuy, onReroll, onLeave, bag, hud }) 
 
 /* ———————————————— Événement ———————————————— */
 
-export const EventScreen = ({ options, onChoose, hud }) => (
+export const EventScreen = ({ options, onChoose, hud, gold = 0 }) => (
   <div className="ui-event">
     <header className="ui-screen-head">
       <div>
@@ -527,11 +564,11 @@ export const EventScreen = ({ options, onChoose, hud }) => (
         const u = o.lineId ? unitFromLine(o.lineId, o.star || 1, `ev-${o.lineId}`) : null;
         return (
           <li key={o.id}>
-            <button type="button" className="ui-event-card" onClick={() => onChoose(o)}>
+            <button type="button" className="ui-event-card" disabled={!!o.cost && gold < o.cost} onClick={() => onChoose(o)}>
               <div className="ui-event-art">
                 {it && <ItemIcon item={it} size={56} />}
                 {u && <PokeSprite unit={u} size="lg" />}
-                {!it && !u && <span className="ui-event-glyph" aria-hidden>{o.id === 'gold' ? '🪙' : o.id === 'xp' ? '📘' : '♨️'}</span>}
+                {!it && !u && <span className="ui-event-glyph" aria-hidden>{o.id === 'gold' ? '🪙' : o.id === 'xp' ? '📘' : o.id === 'tutor' ? '🥋' : '♨️'}</span>}
               </div>
               <strong>{o.title}</strong>
               <p>{o.text}</p>
@@ -759,10 +796,7 @@ export const RewardModal = ({ choices, onPick }) => (
   </div>
 );
 
-export const chapterLabel = (floor) => {
-  const ch = CHAPTERS[Math.min(CHAPTERS.length - 1, Math.floor(floor / FLOORS_PER_CHAPTER))];
-  return ch?.name || '';
-};
+export const chapterLabel = (floor, map = []) => regionAt(map, floor)?.name || '';
 
 export { isFightKind };
 

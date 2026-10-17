@@ -50,10 +50,12 @@ const slotToCell = (index, enemy) => {
 export const BOARD_THEMES = Object.fromEntries(['auto', ...SCENES].map((k) => [k, true]));
 export const BOARD_THEME_LABELS = SCENE_LABELS;
 export const DEFAULT_BOARD_THEME = 'auto';
-/** Résout « auto » selon le chapitre de la campagne. */
-export const resolveScene = (theme, chapter = 1) => (
-  theme && theme !== 'auto' && SCENES.includes(theme) ? theme : (SCENE_BY_CHAPTER[chapter] || 'prairie')
-);
+/** Résout « auto » selon le lieu de la campagne (nom de décor) ou le numéro de chapitre. */
+export const resolveScene = (theme, auto = 1) => {
+  if (theme && theme !== 'auto' && SCENES.includes(theme)) return theme;
+  if (typeof auto === 'string' && SCENES.includes(auto)) return auto;
+  return SCENE_BY_CHAPTER[auto] || 'prairie';
+};
 
 /* ———————————————— Sprites ———————————————— */
 

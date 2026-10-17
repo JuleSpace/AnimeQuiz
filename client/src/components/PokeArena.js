@@ -44,15 +44,18 @@ import {
 import {
   CENTER_HEAL,
   TOTAL_FLOORS,
-  bossChoices,
   chapterOf,
   enemyTeam,
   eventOptions,
   fightLoot,
+  finalBoss,
   generateMap,
+  hasRewardChoice,
   isFightKind,
   lossDamage,
-  martStock
+  martStock,
+  regionAt,
+  rewardChoices
 } from './pokeArenaCampaign';
 import {
   VERSUS_MAX_PLAYERS,
@@ -78,6 +81,7 @@ import {
   StarterScreen,
   TraitPanel,
   TraitPopup,
+  TrainerPortrait,
   TypeChip,
   UnitCard,
   VersusLobby,
@@ -90,6 +94,34 @@ import {
 } from './PokeArenaUI';
 
 export const ARENA_HASH = '#arena';
+
+/** Étiquette de l’adversaire dans la barre du haut. */
+const foeLabel = (node) => {
+  const t = node.trainer || {};
+  if (t.role === 'gym') return `Arène ${t.badge || ''} · ${t.region || ''}`;
+  if (t.role === 'e4') return `Conseil 4 · ${t.seat || ''}/4`;
+  if (t.role === 'champion') return 'Combat final';
+  if (node.kind === 'rival') return 'Rival';
+  if (node.kind === 'villain') return t.team || 'Méchants';
+  if (node.kind === 'elite') return 'Élite';
+  if (t.team) return t.team;
+  return 'Adversaire';
+};
+
+/** Réplique de l’adversaire dans le bandeau d’avant-combat. */
+const bannerLine = (node) => {
+  const t = node.trainer || {};
+  if (t.role === 'champion') return 'Le titre se joue maintenant !';
+  if (t.role === 'e4') return 'Le Conseil 4 ne fait pas de cadeau.';
+  if (t.role === 'gym') return 'Montre-moi ce que tu vaux pour mériter mon badge !';
+  if (node.kind === 'rival') {
+    if (t.meet === 4) return 'Un dernier duel avant la Ligue !';
+    return t.meet > 1 ? 'Encore toi ? Cette fois, je gagne !' : 'Mon starter bat le tien, prépare-toi !';
+  }
+  if (node.kind === 'villain') return 'Personne ne se dresse sur notre route !';
+  if (t.team) return 'Tu te mêles de ce qui ne te regarde pas !';
+  return 'veut se battre !';
+};
 
 const SPEED_KEY = 'poke-arena-speed';
 const THEME_KEY = 'poke-arena-board-theme';
@@ -242,6 +274,8 @@ const PokeArena = ({ onClose }) => {
   const boardCap = BOARD_CAP[Math.min(MAX_LEVEL, level)] || 2;
   const onBoard = board.filter(Boolean);
   const chapter = chapterOf(floor);
+  const totalFloors = map.length || TOTAL_FLOORS;
+  const autoScene = mode === 'versus' ? chapter : (regionAt(map, floor)?.scene || chapter);
   const incomeEst = estimateIncome(gold, streak, chapter, true, coin);
   const xpNeed = level >= MAX_LEVEL ? null : LEVEL_XP[level + 1];
   const selected = [...board, ...bench].find((u) => u?.uid === selectedUid) || null;
@@ -335,7 +369,7 @@ const PokeArena = ({ onClose }) => {
     const pool = buildRunPool(trio);
     const firstBoard = autoSeat([starter]);
     setRunPool(pool);
-    setMap(generateMap());
+    setMap(generateMap(lineId, trio));
     setFloor(0);
     setPath([]);
     setNode(null);
@@ -366,7 +400,7 @@ const PokeArena = ({ onClose }) => {
     setPath(nextPath);
     setFloor(nextFloor);
     setNode(null);
-    if (nextFloor >= TOTAL_FLOORS) {
+    if (nextFloor >= totalFloors) {
       clearCampaign();
       setCanContinue(false);
       setPhase('over');
@@ -802,11 +836,11 @@ const PokeArena = ({ onClose }) => {
     const res = simulateFight(withBoardSlots(padBoard(capped.board), 'ally'), withBoardSlots(foes, 'foe'));
     playRef.current = { res, frames: res.frames };
     clearTimers();
-    setBanner({ key: Date.now(), title: `${node.trainer.title} ${node.trainer.name}`, sub: 'veut se battre !' });
+    setBanner({ key: Date.now(), title: `${node.trainer.title} ${node.trainer.name}`, sub: bannerLine(node), trainer: node.trainer });
     const id = setTimeout(() => {
       setBanner(null);
       playFrom(0);
-    }, 1100 / Math.max(1, speedRef.current * 0.75));
+    }, 1500 / Math.max(1, speedRef.current * 0.75));
     timers.current.push(id);
   };
 
@@ -845,8 +879,8 @@ const PokeArena = ({ onClose }) => {
       if (!shopLocked) setShop(rollShop(level, SHOP_SIZE, runPool));
       return;
     }
-    if (node.kind === 'boss' && r.win) {
-      setRewardOpts(bossChoices());
+    if (hasRewardChoice(node.kind) && r.win) {
+      setRewardOpts(rewardChoices(node));
       return;
     }
     if (!shopLocked) setShop(rollShop(level, SHOP_SIZE, runPool));
@@ -901,17 +935,25 @@ const PokeArena = ({ onClose }) => {
   };
 
   const chooseEvent = (o) => {
-    if (o.id === 'gold') setGold((g) => g + o.amount);
-    else if (o.id === 'item' || o.id === 'plate') setBag((b) => [...b, o.itemId]);
-    else if (o.id === 'xp') {
+    const eff = o.effect || o.id;
+    if (o.cost) {
+      if (gold < o.cost) {
+        say('Pas assez d’or pour cet échange.');
+        return;
+      }
+      setGold((g) => g - o.cost);
+    }
+    if (eff === 'gold') setGold((g) => g + o.amount);
+    else if (eff === 'item' || eff === 'plate') setBag((b) => [...b, o.itemId]);
+    else if (eff === 'xp') {
       const next = addXp(level, xp, o.amount);
       setLevel(next.level);
       setXp(next.xp);
-    } else if (o.id === 'unit') {
+    } else if (eff === 'unit') {
       const u = unitFromLine(o.lineId, o.star, undefined, [], null, true);
       if (bench.length < BENCH_CAP) applyMerge(board, [...bench, u]);
       else say('Banc plein : le Pokémon repart à la Pension.');
-    } else if (o.id === 'heal') setHp((h) => Math.min(START_HP, h + o.amount));
+    } else if (eff === 'heal') setHp((h) => Math.min(START_HP, h + o.amount));
     say(`${o.title} : ${o.label}`);
     advance(node.id);
   };
@@ -1205,7 +1247,7 @@ const PokeArena = ({ onClose }) => {
             <button type="button" className="ui-btn" onClick={() => setPhase('codex')}>Pokédex</button>
             <button type="button" className="ui-btn is-ghost" onClick={onClose}>Quitter</button>
           </div>
-          <p className="pa-hub-foot">{ROSTER_LINES} lignées, {ROSTER_FORMS} formes, {TOTAL_FLOORS} étapes.</p>
+          <p className="pa-hub-foot">{ROSTER_LINES} lignées, {ROSTER_FORMS} formes, {TOTAL_FLOORS} étapes, 6 régions et plus de 100 dresseurs célèbres.</p>
         </div>
       </div>
     );
@@ -1265,14 +1307,16 @@ const PokeArena = ({ onClose }) => {
   }
 
   if (phase === 'over') {
-    const victory = floor >= TOTAL_FLOORS && hp > 0;
+    const victory = floor >= totalFloors && hp > 0;
+    const champ = finalBoss(map);
     const team = board.filter(Boolean);
     return (
       <div className={`pa-root ${skinCls} pa-screen`}>
         <div className={`pa-over${victory ? ' is-win' : ''}`}>
           {victory && <div className="ui-confetti" aria-hidden>{Array.from({ length: 40 }).map((_, i) => <i key={i} style={{ '--i': i }} />)}</div>}
           <h1>{victory ? 'Maître de la Ligue !' : 'Ton aventure s’arrête ici'}</h1>
-          <p>{victory ? 'Tu as battu Peter et traversé les trois chapitres.' : `Étape ${floor + 1} sur ${TOTAL_FLOORS} (${chapterLabel(floor)}), ${wins} combats gagnés.`}</p>
+          {victory && champ && <TrainerPortrait trainer={champ} size="lg" />}
+          <p>{victory ? `Tu as battu ${champ ? `${champ.title} ${champ.name}` : 'le Maître'} et conquis la Ligue.` : `Étape ${floor + 1} sur ${totalFloors} (${chapterLabel(floor, map)}), ${wins} combats gagnés.`}</p>
           <div className="pa-over-team">
             {team.map((u) => (
               <figure key={u.uid}>
@@ -1300,8 +1344,8 @@ const PokeArena = ({ onClose }) => {
         </div>
       ) : (
         <div className="pa-top-where">
-          <strong>{chapterLabel(floor)}</strong>
-          <span>Étape {Math.min(floor + 1, TOTAL_FLOORS)} sur {TOTAL_FLOORS}</span>
+          <strong>{chapterLabel(floor, map)}</strong>
+          <span>Étape {Math.min(floor + 1, totalFloors)} sur {totalFloors}</span>
         </div>
       )}
       {extra}
@@ -1320,7 +1364,7 @@ const PokeArena = ({ onClose }) => {
           title="Changer l’ambiance du terrain"
           onClick={() => setBoardTheme((t) => THEME_IDS[(THEME_IDS.indexOf(t) + 1) % THEME_IDS.length])}
         >
-          Terrain : {boardTheme === 'auto' ? `Auto (${BOARD_THEME_LABELS[resolveScene('auto', chapter)]})` : BOARD_THEME_LABELS[boardTheme]}
+          Terrain : {boardTheme === 'auto' ? `Auto (${BOARD_THEME_LABELS[resolveScene('auto', autoScene)]})` : BOARD_THEME_LABELS[boardTheme]}
         </button>
         {mode === 'versus' ? (
           <button type="button" className="ui-btn is-small is-ghost" onClick={leaveVersus}>Quitter le salon</button>
@@ -1368,7 +1412,7 @@ const PokeArena = ({ onClose }) => {
     return (
       <div className={`pa-root ${skinCls} pa-screen`}>
         {topBar(null)}
-        <EventScreen options={eventOpts} onChoose={chooseEvent} hud={null} />
+        <EventScreen options={eventOpts} onChoose={chooseEvent} gold={gold} hud={null} />
         {toastEl}
       </div>
     );
@@ -1406,10 +1450,13 @@ const PokeArena = ({ onClose }) => {
           )}
         </div>
       ) : trainer && (
-        <div className="pa-foe">
-          <span className="pa-foe-label">{node.kind === 'boss' ? 'Champion' : node.kind === 'elite' ? 'Élite' : 'Adversaire'}</span>
-          <strong>{trainer.title} {trainer.name}</strong>
-          <span className="ui-chips">{trainer.types.map((t) => <TypeChip key={t} type={t} small onHover={(tt, e) => openTrait(tt, e)} />)}</span>
+        <div className={`pa-foe kind-${node.kind}`}>
+          <TrainerPortrait trainer={trainer} size="sm" />
+          <div className="pa-foe-text">
+            <span className="pa-foe-label">{foeLabel(node)}</span>
+            <strong>{trainer.title} {trainer.name}</strong>
+            <span className="ui-chips">{trainer.types.map((t) => <TypeChip key={t} type={t} small onHover={(tt, e) => openTrait(tt, e)} />)}</span>
+          </div>
         </div>
       ))}
 
@@ -1430,7 +1477,7 @@ const PokeArena = ({ onClose }) => {
           actKey={actKey}
           evolving={evolving}
           speed={speed}
-          theme={resolveScene(boardTheme, chapter)}
+          theme={resolveScene(boardTheme, autoScene)}
           premium={skin === 'premium'}
           stage={isFight ? 'fight' : 'prep'}
           onCellClick={onCellClick}
@@ -1451,7 +1498,8 @@ const PokeArena = ({ onClose }) => {
           {isFight ? fightLine : `${onBoard.length} / ${boardCap} Pokémon sur le terrain`}
         </div>
         {banner && (
-          <div key={banner.key} className="pa-banner">
+          <div key={banner.key} className={`pa-banner${banner.trainer ? ' has-trainer' : ''}`}>
+            {banner.trainer && <TrainerPortrait trainer={banner.trainer} size="lg" />}
             <strong>{banner.title}</strong>
             <span>{banner.sub}</span>
           </div>

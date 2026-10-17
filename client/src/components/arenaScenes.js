@@ -5,13 +5,16 @@
  * Tout est procédural et déterministe (graine fixe) : aucun fichier image.
  */
 
-export const SCENES = ['prairie', 'montagne', 'ligue', 'plage'];
+export const SCENES = ['prairie', 'montagne', 'plage', 'neige', 'volcan', 'grotte', 'ligue'];
 export const SCENE_LABELS = {
   auto: 'Auto',
   prairie: 'Prairie',
   montagne: 'Montagne',
   ligue: 'Stade de la Ligue',
-  plage: 'Plage'
+  plage: 'Plage',
+  neige: 'Toundra',
+  volcan: 'Volcan',
+  grotte: 'Grotte'
 };
 /** Lieu automatique selon le chapitre de la campagne. */
 export const SCENE_BY_CHAPTER = { 1: 'prairie', 2: 'montagne', 3: 'ligue' };
@@ -388,6 +391,163 @@ const sceneryPlage = (ctx, w, h) => {
   vignette(ctx, w, h, 0.16);
 };
 
+
+const sceneryNeige = (ctx, w, h) => {
+  ctx.fillStyle = vGrad(ctx, 0, h * 0.42, ['#9fb8d6', '#c9d8ea', '#eef3f8']);
+  ctx.fillRect(0, 0, w, h);
+  const sun = ctx.createRadialGradient(w * 0.22, h * 0.08, 0, w * 0.22, h * 0.08, h * 0.4);
+  sun.addColorStop(0, 'rgba(255,255,255,0.9)');
+  sun.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sun;
+  ctx.fillRect(0, 0, w, h * 0.5);
+  cloud(ctx, w * 0.62, h * 0.07, 0.9, 0.7);
+  cloud(ctx, w * 0.9, h * 0.12, 0.6, 0.6);
+  // Glaciers lointains
+  ridge(ctx, w, h, h * 0.24, h * 0.12, w / 6, '#c4d3e6', 12, true);
+  ridge(ctx, w, h, h * 0.29, h * 0.08, w / 5, '#dbe6f2', 14, true);
+  // Collines enneigées
+  ridge(ctx, w, h, h * 0.335, h * 0.05, w / 3, '#eef4fa', 16);
+  // Sapins givrés
+  const rnd = seeded(41);
+  for (let i = 0; i < 52; i += 1) {
+    const x = (i / 51) * (w + 30) - 15 + (rnd() - 0.5) * 16;
+    const y = h * 0.36 + rnd() * h * 0.02;
+    const s = 11 + rnd() * 15;
+    ctx.fillStyle = ['#3f5d5a', '#4a6a66', '#35504f'][Math.floor(rnd() * 3)];
+    for (let k = 0; k < 3; k += 1) {
+      const yy = y - k * s * 0.45;
+      const ww = s * (0.6 - k * 0.14);
+      ctx.beginPath();
+      ctx.moveTo(x, yy - s * 0.75);
+      ctx.lineTo(x + ww, yy);
+      ctx.lineTo(x - ww, yy);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.moveTo(x, y - s * 1.65);
+    ctx.lineTo(x + s * 0.22, y - s * 1.2);
+    ctx.lineTo(x - s * 0.22, y - s * 1.2);
+    ctx.closePath();
+    ctx.fill();
+  }
+  // Plaine de neige
+  const top = h * 0.37;
+  ctx.fillStyle = vGrad(ctx, top, h, ['#f4f8fc', '#e3ecf5', '#d6e2ee']);
+  ctx.fillRect(0, top, w, h - top);
+  for (let i = 0; i < 120; i += 1) {
+    const x = rnd() * w;
+    const y = top + 6 + rnd() * (h - top);
+    const t = (y - top) / (h - top);
+    ellipse(ctx, x, y, 6 + t * 16 * rnd(), 1.5 + t * 4 * rnd(), rnd() < 0.5 ? 'rgba(140,165,200,0.22)' : 'rgba(255,255,255,0.7)');
+  }
+  vignette(ctx, w, h, 0.16);
+};
+
+const sceneryVolcan = (ctx, w, h) => {
+  ctx.fillStyle = vGrad(ctx, 0, h * 0.42, ['#3a2a35', '#7a3d34', '#d0763f']);
+  ctx.fillRect(0, 0, w, h);
+  // Volcan
+  const vx = w * 0.62;
+  const base = h * 0.33;
+  ctx.fillStyle = '#4a3434';
+  ctx.beginPath();
+  ctx.moveTo(vx - w * 0.42, base);
+  ctx.lineTo(vx - w * 0.07, h * 0.1);
+  ctx.lineTo(vx + w * 0.06, h * 0.1);
+  ctx.lineTo(vx + w * 0.44, base);
+  ctx.closePath();
+  ctx.fill();
+  // Coulées de lave
+  const lava = ctx.createLinearGradient(0, h * 0.1, 0, base);
+  lava.addColorStop(0, '#ffd27a');
+  lava.addColorStop(1, 'rgba(255,90,30,0.2)');
+  ctx.strokeStyle = lava;
+  ctx.lineCap = 'round';
+  [[-0.03, -0.12], [0.02, 0.1], [0, -0.02]].forEach(([dx, ex], k) => {
+    ctx.lineWidth = 5 - k;
+    ctx.beginPath();
+    ctx.moveTo(vx + w * dx, h * 0.105);
+    ctx.quadraticCurveTo(vx + w * (dx + ex * 0.4), h * 0.2, vx + w * (dx + ex), base);
+    ctx.stroke();
+  });
+  ctx.lineCap = 'butt';
+  // Lueur et panache
+  const glow = ctx.createRadialGradient(vx, h * 0.1, 0, vx, h * 0.1, h * 0.25);
+  glow.addColorStop(0, 'rgba(255,170,60,0.85)');
+  glow.addColorStop(1, 'rgba(255,120,40,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, w, h * 0.4);
+  for (let k = 0; k < 6; k += 1) ellipse(ctx, vx - k * 22, h * 0.07 - k * h * 0.012, 26 + k * 10, 12 + k * 4, `rgba(60,45,50,${0.55 - k * 0.07})`);
+  // Roches sombres au premier plan
+  ridge(ctx, w, h, h * 0.335, h * 0.05, w / 5, '#3d2b2b', 18, true);
+  const top = h * 0.37;
+  ctx.fillStyle = vGrad(ctx, top, h, ['#5a4440', '#4b3936', '#3f302e']);
+  ctx.fillRect(0, top, w, h - top);
+  const rnd = seeded(53);
+  for (let i = 0; i < 60; i += 1) {
+    const x = rnd() * w;
+    const y = top + 6 + rnd() * (h - top);
+    const t = (y - top) / (h - top);
+    ellipse(ctx, x, y, 2 + t * 5 * rnd(), 1 + t * 2.5 * rnd(), rnd() < 0.3 ? 'rgba(255,130,50,0.55)' : 'rgba(20,10,10,0.3)');
+  }
+  vignette(ctx, w, h, 0.3);
+};
+
+const sceneryGrotte = (ctx, w, h) => {
+  ctx.fillStyle = vGrad(ctx, 0, h * 0.45, ['#1d1a2a', '#2c2740', '#3d3552']);
+  ctx.fillRect(0, 0, w, h);
+  const rnd = seeded(61);
+  // Parois au fond
+  ridge(ctx, w, h, h * 0.3, h * 0.12, w / 8, '#2a2438', 63, true);
+  ridge(ctx, w, h, h * 0.34, h * 0.07, w / 6, '#342d45', 65, true);
+  // Stalactites
+  ctx.fillStyle = '#17141f';
+  ctx.fillRect(0, 0, w, h * 0.035);
+  for (let x = -10; x < w + 20; x += 14 + rnd() * 22) {
+    const len = h * (0.04 + rnd() * 0.12);
+    ctx.beginPath();
+    ctx.moveTo(x, h * 0.03);
+    ctx.lineTo(x + 8 + rnd() * 10, h * 0.03);
+    ctx.lineTo(x + 5 + rnd() * 4, h * 0.03 + len);
+    ctx.closePath();
+    ctx.fill();
+  }
+  // Cristaux lumineux
+  const crystal = (x, y, s, hue) => {
+    const g = ctx.createRadialGradient(x, y - s, 0, x, y - s, s * 3);
+    g.addColorStop(0, `hsla(${hue},90%,70%,0.45)`);
+    g.addColorStop(1, `hsla(${hue},90%,70%,0)`);
+    ctx.fillStyle = g;
+    ctx.fillRect(x - s * 3, y - s * 4, s * 6, s * 6);
+    [[-0.5, 0.8, -0.25], [0, 1.4, 0], [0.45, 0.9, 0.3]].forEach(([dx, hh, tilt]) => {
+      const cx = x + dx * s;
+      ctx.fillStyle = `hsl(${hue},70%,${62 + dx * 10}%)`;
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.22, y);
+      ctx.lineTo(cx + tilt * s - s * 0.18, y - hh * s);
+      ctx.lineTo(cx + tilt * s, y - hh * s - s * 0.35);
+      ctx.lineTo(cx + tilt * s + s * 0.18, y - hh * s);
+      ctx.lineTo(cx + s * 0.22, y);
+      ctx.closePath();
+      ctx.fill();
+    });
+  };
+  for (let i = 0; i < 9; i += 1) crystal(rnd() * w, h * (0.33 + rnd() * 0.04), 7 + rnd() * 9, [190, 280, 320][i % 3]);
+  // Sol de la caverne
+  const top = h * 0.37;
+  ctx.fillStyle = vGrad(ctx, top, h, ['#4a4258', '#3e374b', '#332d3f']);
+  ctx.fillRect(0, top, w, h - top);
+  for (let i = 0; i < 120; i += 1) {
+    const x = rnd() * w;
+    const y = top + 6 + rnd() * (h - top);
+    const t = (y - top) / (h - top);
+    ellipse(ctx, x, y, 2 + t * 6 * rnd(), 1 + t * 3 * rnd(), rnd() < 0.15 ? 'rgba(170,140,255,0.4)' : 'rgba(10,8,20,0.3)');
+  }
+  vignette(ctx, w, h, 0.38);
+};
+
 /* ——————————————————————————— Terrains ——————————————————————————— */
 
 const FIELDS = {
@@ -461,6 +621,63 @@ const FIELDS = {
     tileLine: 'rgba(160,120,70,0.32)',
     border: 'planks',
     ripples: true
+  },
+  neige: {
+    shadow: 'rgba(60,80,110,0.22)',
+    side: ['#8193ab', '#62738c'],
+    rim: '#d9e3ee',
+    stone: ['#eef3f9', '#dfe8f2', '#f7fafd', '#d3dfec'],
+    surface: ['#e9f1f8', '#dbe7f2'],
+    band: 'rgba(255,255,255,0)',
+    grain: ['rgba(120,150,190,0.14)', 'rgba(255,255,255,0.6)'],
+    line: 'rgba(110,150,200,0.65)',
+    foe: 'rgba(214,92,72,0.12)',
+    ally: 'rgba(60,120,210,0.14)',
+    emblem: 'rgba(160,195,235,0.25)',
+    tileTop: 'rgba(255,255,255,0.18)',
+    tileEdge: 'rgba(90,120,160,0.2)',
+    tileLine: 'rgba(120,160,210,0.4)',
+    border: 'stones',
+    frost: true
+  },
+  volcan: {
+    shadow: 'rgba(20,5,5,0.4)',
+    side: ['#3a2826', '#271a19'],
+    rim: '#4e3a36',
+    stone: ['#5b4540', '#4a3633', '#6a514a', '#3f2e2b'],
+    surface: ['#6a5550', '#5b4743'],
+    band: 'rgba(255,255,255,0)',
+    grain: ['rgba(20,10,10,0.22)', 'rgba(255,170,110,0.12)'],
+    line: 'rgba(255,190,120,0.75)',
+    foe: 'rgba(240,90,50,0.18)',
+    ally: 'rgba(240,180,90,0.12)',
+    emblem: 'rgba(255,140,60,0.18)',
+    emblemCore: '#ff8a3d',
+    tileTop: 'rgba(255,220,180,0.06)',
+    tileEdge: 'rgba(20,8,8,0.3)',
+    tileLine: 'rgba(255,170,100,0.35)',
+    border: 'rocks',
+    lava: true
+  },
+  grotte: {
+    shadow: 'rgba(5,0,15,0.45)',
+    side: ['#2b2538', '#1d1928'],
+    rim: '#3d3550',
+    stone: ['#4b4360', '#3f3852', '#564d6c', '#352f46'],
+    surface: ['#5a5168', '#4d455b'],
+    band: 'rgba(255,255,255,0)',
+    grain: ['rgba(10,5,20,0.2)', 'rgba(200,180,255,0.1)'],
+    line: 'rgba(200,180,255,0.7)',
+    foe: 'rgba(220,90,120,0.16)',
+    ally: 'rgba(110,170,255,0.16)',
+    emblem: 'rgba(170,140,255,0.18)',
+    emblemCore: '#b48cff',
+    tileTop: 'rgba(220,210,255,0.06)',
+    tileEdge: 'rgba(5,0,15,0.3)',
+    tileLine: 'rgba(190,170,255,0.32)',
+    border: 'rocks',
+    slabs: true,
+    gems: true
   }
 };
 
@@ -472,8 +689,10 @@ const PREMIUM_FIELD = {
   tileTop: 'rgba(255,236,190,0.07)'
 };
 
-const sceneryFns = { prairie: sceneryPrairie, montagne: sceneryMontagne, ligue: sceneryLigue, plage: sceneryPlage };
-const GROUND = { prairie: '#86bd66', montagne: '#a29889', ligue: '#ddc9ad', plage: '#f0dfb5' };
+const sceneryFns = {
+  prairie: sceneryPrairie, montagne: sceneryMontagne, ligue: sceneryLigue, plage: sceneryPlage, neige: sceneryNeige, volcan: sceneryVolcan, grotte: sceneryGrotte
+};
+const GROUND = { prairie: '#86bd66', montagne: '#a29889', ligue: '#ddc9ad', plage: '#f0dfb5', neige: '#e3ecf5', volcan: '#4b3936', grotte: '#3e374b' };
 const HORIZON = 0.37;
 
 /**
@@ -501,7 +720,10 @@ const GRADES = {
   prairie: { sky: ['rgba(214,120,60,0.75)', 'rgba(246,190,120,0.65)'], top: 'rgba(255,150,50,0.85)', bottom: 'rgba(120,60,20,0.55)', warm: 'rgba(170,105,55,0.26)', sun: [0.82, 0.08, 'rgba(255,196,110,0.5)'] },
   montagne: { sky: ['rgba(150,90,140,0.7)', 'rgba(240,150,140,0.65)'], top: 'rgba(255,120,120,0.8)', bottom: 'rgba(70,40,80,0.55)', warm: 'rgba(150,95,95,0.26)', sun: [0.15, 0.06, 'rgba(255,170,140,0.45)'] },
   ligue: { top: 'rgba(110,60,90,0.75)', bottom: 'rgba(50,28,30,0.6)', warm: 'rgba(120,75,60,0.32)', sun: [0.5, 0.04, 'rgba(255,214,150,0.4)'] },
-  plage: { sky: ['rgba(220,100,70,0.75)', 'rgba(250,180,100,0.7)'], top: 'rgba(255,110,50,0.85)', bottom: 'rgba(130,60,40,0.5)', warm: 'rgba(170,100,60,0.22)', sun: [0.25, 0.18, 'rgba(255,180,100,0.55)'] }
+  plage: { sky: ['rgba(220,100,70,0.75)', 'rgba(250,180,100,0.7)'], top: 'rgba(255,110,50,0.85)', bottom: 'rgba(130,60,40,0.5)', warm: 'rgba(170,100,60,0.22)', sun: [0.25, 0.18, 'rgba(255,180,100,0.55)'] },
+  neige: { sky: ['rgba(170,120,170,0.55)', 'rgba(250,190,160,0.5)'], top: 'rgba(255,190,150,0.6)', bottom: 'rgba(60,60,110,0.45)', warm: 'rgba(150,120,120,0.18)', sun: [0.22, 0.08, 'rgba(255,200,160,0.45)'] },
+  volcan: { top: 'rgba(255,120,60,0.6)', bottom: 'rgba(60,20,10,0.5)', warm: 'rgba(150,80,50,0.2)', sun: [0.62, 0.1, 'rgba(255,150,60,0.5)'] },
+  grotte: { top: 'rgba(150,110,200,0.5)', bottom: 'rgba(30,15,30,0.5)', warm: 'rgba(110,80,70,0.22)', sun: [0.5, 0.35, 'rgba(200,170,255,0.3)'] }
 };
 export const applyPremiumGrade = (ctx, w, h, scene, horizon = h * 0.3) => {
   const G = GRADES[scene] || GRADES.prairie;
@@ -687,6 +909,57 @@ export const drawField = (ctx, gridW, gridH, scene, SIZE, premium = false) => {
       ctx.moveTo(sx, yy);
       for (let xx = sx; xx < sx + sw + 40; xx += 40) ctx.quadraticCurveTo(xx + 20, yy + (r() - 0.5) * 12, xx + 40, yy);
       ctx.stroke();
+    }
+  }
+  // Givre (toundra)
+  if (F.frost) {
+    const r = seeded(13);
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 26; i += 1) {
+      let x = sx + r() * sw;
+      let y = sy + r() * sh;
+      ctx.strokeStyle = r() < 0.5 ? 'rgba(130,170,220,0.35)' : 'rgba(255,255,255,0.8)';
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      for (let k = 0; k < 4; k += 1) {
+        x += (r() - 0.5) * 60;
+        y += (r() - 0.5) * 30;
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    for (let i = 0; i < 14; i += 1) ellipse(ctx, sx + r() * sw, sy + r() * sh, 30 + r() * 50, 10 + r() * 16, 'rgba(255,255,255,0.35)');
+  }
+  // Fissures de lave (volcan)
+  if (F.lava) {
+    const r = seeded(17);
+    for (let i = 0; i < 16; i += 1) {
+      let x = sx + r() * sw;
+      let y = sy + r() * sh;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      for (let k = 0; k < 5; k += 1) {
+        x += (r() - 0.5) * 70;
+        y += (r() - 0.5) * 36;
+        ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = 'rgba(255,110,40,0.35)';
+      ctx.lineWidth = 7;
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,200,100,0.75)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+  // Éclats de cristal (grotte)
+  if (F.gems) {
+    const r = seeded(19);
+    for (let i = 0; i < 22; i += 1) {
+      const x = sx + r() * sw;
+      const y = sy + r() * sh;
+      const hue = [190, 280, 320][i % 3];
+      ellipse(ctx, x, y, 12 + r() * 10, 6 + r() * 4, `hsla(${hue},90%,70%,0.12)`);
+      ellipse(ctx, x, y, 2.5, 2, `hsla(${hue},90%,80%,0.7)`);
     }
   }
   // Grain

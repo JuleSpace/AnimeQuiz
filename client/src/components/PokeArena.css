@@ -1661,3 +1661,79 @@
 }
 
 .pa-top-actions .ui-btn.is-small { white-space: nowrap; }
+
+/* ———————————— Régions aléatoires & dresseurs ———————————— */
+.ui-chapter.biome-montagne::before { background: linear-gradient(118deg, #e6e0fb 0 80%, transparent 80.2%); }
+.ui-chapter.biome-ligue::before { background: linear-gradient(118deg, #ffe5d6 0 80%, transparent 80.2%); }
+.ui-chapter.biome-plage::before { background: linear-gradient(118deg, #dcf1fa 0 80%, transparent 80.2%); }
+.ui-chapter.biome-neige::before { background: linear-gradient(118deg, #e4eefc 0 80%, transparent 80.2%); }
+.ui-chapter.biome-volcan::before { background: linear-gradient(118deg, #ffdcd0 0 80%, transparent 80.2%); }
+.ui-chapter.biome-grotte::before { background: linear-gradient(118deg, #e6e1ef 0 80%, transparent 80.2%); }
+.ui-chapter header { align-items: center; justify-content: space-between; flex-wrap: nowrap; }
+.ui-chapter header > div:first-child { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.ui-chapter-bosses { display: flex; gap: 4px; flex-shrink: 0; }
+
+.ui-trainer-portrait {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 35%, #fff 0 40%, #e9ecf5 75%);
+  box-shadow: inset 0 0 0 2px rgba(29, 35, 64, 0.16);
+}
+.ui-trainer-portrait img {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 150%;
+  height: auto;
+  transform: translate(-50%, -6%);
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.ui-trainer-portrait b { font: italic 800 20px/1 'Barlow Condensed', sans-serif; color: var(--ink-2); }
+.ui-trainer-portrait.is-xs { width: 100%; height: 100%; background: transparent; box-shadow: none; }
+.ui-trainer-portrait.is-xs img { width: 140%; transform: translate(-50%, -4%); }
+.ui-trainer-portrait.is-sm { width: 40px; height: 40px; }
+.ui-trainer-portrait.is-md { width: 56px; height: 56px; }
+.ui-trainer-portrait.is-lg { width: 132px; height: 132px; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
+.ui-trainer-portrait.is-lg img { position: static; width: 132px; transform: none; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35)); }
+.ui-trainer-portrait.role-gym { box-shadow: inset 0 0 0 2px #e9a23b; }
+.ui-trainer-portrait.role-e4 { box-shadow: inset 0 0 0 2px #8a6fd1; }
+.ui-trainer-portrait.role-champion { box-shadow: inset 0 0 0 2px #d1495b, 0 0 0 2px rgba(246, 201, 74, 0.6); }
+.ui-trainer-portrait.is-lg[class*='role-'] { box-shadow: none; }
+.ui-node .ui-trainer-portrait.is-xs { border-radius: 50%; overflow: hidden; }
+.ui-node.kind-rival { background: #fff2c2; }
+.ui-node.kind-villain { background: #3b2f4a; color: #fff; }
+.ui-node-info .ui-trainer-portrait.is-md { width: 52px; height: 52px; }
+.ui-trainer em { font-style: normal; color: var(--ink-2); font-weight: 700; }
+
+.pa-foe { padding-left: 4px; }
+.pa-foe .ui-trainer-portrait.is-sm { width: 38px; height: 38px; background: #fff; }
+.pa-foe-text { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+
+.pa-banner.has-trainer {
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 16px;
+  align-items: center;
+  justify-content: center;
+  animation-duration: 1.6s;
+}
+.pa-banner.has-trainer .ui-trainer-portrait { grid-row: 1 / span 2; margin: -40px 0 -20px; animation: pa-trainer-in 1.6s cubic-bezier(.2, .8, .3, 1) both; }
+.pa-banner.has-trainer strong { align-self: end; }
+.pa-banner.has-trainer span { align-self: start; justify-self: start; }
+.pa-banner.has-trainer strong { justify-self: start; }
+@keyframes pa-trainer-in {
+  0% { transform: translateX(-40px) scale(0.85); opacity: 0; }
+  25% { transform: none; opacity: 1; }
+  85% { transform: none; opacity: 1; }
+  100% { transform: translateX(30px); opacity: 0; }
+}
+.pa-over .ui-trainer-portrait.is-lg { margin: 6px auto -4px; display: block; }
+.pa-over .ui-trainer-portrait.is-lg img { margin: 0 auto; display: block; }
+.ui-event-card:disabled { opacity: 0.5; cursor: not-allowed; }
