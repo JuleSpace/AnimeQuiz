@@ -42,6 +42,9 @@ export const spriteUrl = (dex) =>
   `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${dex}.png`;
 export const hgssUrl = (dex) =>
   `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-iv/heartgold-soulsilver/${dex}.png`;
+/** Sprite animé façon modèle 3D (Pokémon Showdown, via PokeAPI) — repli sur HOME si absent. */
+export const showdownUrl = (dex) =>
+  `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/${dex}.gif`;
 export const animUrl = (dex) =>
   dex <= 649
     ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${dex}.gif`
@@ -1962,6 +1965,7 @@ export const unitFromLine = (lineId, star = 1, uid, items = [], formId = null, a
       sprite: spriteUrl(megaDex),
       pixel: homeUrl(megaDex),
       anim: animUrl(megaDex),
+      ani: showdownUrl(megaDex),
       model: homeUrl(megaDex),
       mega: true
     };
@@ -1990,6 +1994,7 @@ export const unitFromLine = (lineId, star = 1, uid, items = [], formId = null, a
     sprite: spriteUrl(dex),
     pixel: dex < 10000 ? hgssUrl(dex) : homeUrl(dex),
     anim: animUrl(dex),
+    ani: showdownUrl(dex),
     model: homeUrl(dex),
     items: items.slice(0, ITEM_SLOTS)
   };

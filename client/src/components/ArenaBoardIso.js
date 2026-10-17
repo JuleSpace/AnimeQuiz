@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { BOARD_COLS, BOARD_ROWS_HALF, BOARD_SIZE, ITEM_MAP } from './pokeArenaData';
+import { BOARD_COLS, BOARD_ROWS_HALF, BOARD_SIZE, ITEM_MAP, showdownUrl } from './pokeArenaData';
 import './ArenaBoard.css';
 import { SCENES, SCENE_BY_CHAPTER, SCENE_LABELS, applyPremiumGrade, drawField, drawScenery, drawTile } from './arenaScenes';
 
@@ -57,17 +57,31 @@ export const resolveScene = (theme, chapter = 1) => (
 
 /* ———————————————— Sprites ———————————————— */
 
-const Sprite = ({ unit, enemy }) => {
-  const chain = [unit.home, unit.art, unit.sprite].filter(Boolean);
+/**
+ * Sprite du plateau : d’abord le sprite animé (modèle 3D), à sa taille naturelle
+ * (les gros Pokémon restent plus gros), posé sur son socle ; sinon l’artwork HOME fixe.
+ */
+const Sprite = ({ unit, enemy, size = 80 }) => {
+  const chain = [unit.ani || showdownUrl(unit.dex), unit.home, unit.art, unit.sprite].filter(Boolean);
   const [idx, setIdx] = useState(0);
-  useEffect(() => { setIdx(0); }, [unit.dex]);
+  const [nat, setNat] = useState(null);
+  useEffect(() => { setIdx(0); setNat(null); }, [unit.dex]);
+  const src = chain[Math.min(idx, chain.length - 1)];
+  const animated = idx === 0 && nat;
+  let style;
+  if (animated) {
+    const k = Math.min(size / 70, (size * 1.6) / Math.max(nat.w, nat.h));
+    style = { width: Math.round(nat.w * k), height: Math.round(nat.h * k) };
+  }
   return (
     <img
-      className={`bd-sprite${enemy ? ' is-enemy' : ''}`}
-      src={chain[Math.min(idx, chain.length - 1)]}
+      className={`bd-sprite${enemy ? ' is-enemy' : ''}${animated ? ' is-animated' : ''}`}
+      src={src}
+      style={style}
       alt={unit.name}
       draggable={false}
-      onError={() => setIdx((i) => Math.min(i + 1, chain.length - 1))}
+      onLoad={(e) => { if (idx === 0) setNat({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight }); }}
+      onError={() => { setNat(null); setIdx((i) => Math.min(i + 1, chain.length - 1)); }}
     />
   );
 };
@@ -299,7 +313,7 @@ export default function ArenaBoardIso({
             <span className="bd-shadow" aria-hidden />
             <div key={isActor ? `a-${actKey}` : 'idle'} className="bd-body">
               <div className="bd-bob">
-                <Sprite unit={u} enemy={enemy} />
+                <Sprite unit={u} enemy={enemy} size={unitSize} />
               </div>
             </div>
             <div className="bd-plate">

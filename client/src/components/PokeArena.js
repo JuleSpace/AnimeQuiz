@@ -789,6 +789,15 @@ const PokeArena = ({ onClose }) => {
       return;
     }
     if (!shopLocked) setShop(rollShop(level, SHOP_SIZE, runPool));
+    if (!r.win) {
+      // Défaite : on reste sur la même étape et on peut rechoisir parmi ses chemins.
+      setNode(null);
+      setStage('prep');
+      setPhase('map');
+      setSaveTick((t) => t + 1);
+      say('Défaite : tu restes sur cette étape. Choisis à nouveau ton chemin.');
+      return;
+    }
     advance(node.id);
   };
 
