@@ -1370,8 +1370,10 @@ export const buildRunPool = (mustIds = ['cynda', 'mudkip', 'eevee']) => {
   const must = mustIds.map((id) => LINE_MAP[id]).filter(Boolean);
   const used = new Set(must.map((l) => l.id));
   const byCost = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+  // Les autres starters restent hors de la boutique : seuls le starter choisi et ses deux compagnons y sont.
+  const isOtherStarter = (line) => (line.traits || []).includes('Starter') && !used.has(line.id);
   LINES.forEach((line) => {
-    if (used.has(line.id)) return;
+    if (used.has(line.id) || isOtherStarter(line)) return;
     byCost[line.cost]?.push(line);
   });
   const targets = { 1: 8, 2: 8, 3: 7, 4: 5, 5: 4 };
@@ -1382,7 +1384,7 @@ export const buildRunPool = (mustIds = ['cynda', 'mudkip', 'eevee']) => {
     picked.push(...pool.slice(0, need));
   });
   while (picked.length < RUN_POOL_SIZE) {
-    const extra = LINES.find((l) => !picked.some((p) => p.id === l.id));
+    const extra = LINES.find((l) => !isOtherStarter(l) && !picked.some((p) => p.id === l.id));
     if (!extra) break;
     picked.push(extra);
   }

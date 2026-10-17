@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import ArenaBoardIso, { BOARD_THEMES, BOARD_THEME_LABELS, DEFAULT_BOARD_THEME } from './ArenaBoardIso';
+import ArenaBoardIso, { BOARD_THEMES, BOARD_THEME_LABELS, DEFAULT_BOARD_THEME, resolveScene } from './ArenaBoardIso';
 import './PokeArena.css';
 import {
   BENCH_CAP,
@@ -964,7 +964,7 @@ const PokeArena = ({ onClose }) => {
           title="Changer l’ambiance du terrain"
           onClick={() => setBoardTheme((t) => THEME_IDS[(THEME_IDS.indexOf(t) + 1) % THEME_IDS.length])}
         >
-          Terrain : {BOARD_THEME_LABELS[boardTheme]}
+          Terrain : {boardTheme === 'auto' ? `Auto (${BOARD_THEME_LABELS[resolveScene('auto', chapter)]})` : BOARD_THEME_LABELS[boardTheme]}
         </button>
         <button type="button" className="ui-btn is-small" onClick={() => { persist(); say('Partie sauvegardée.'); }} disabled={phase === 'battle' && stage !== 'prep'}>Sauvegarder</button>
         <button type="button" className="ui-btn is-small is-ghost" onClick={() => setPhase('hub')} disabled={phase === 'battle' && stage !== 'prep'}>Menu</button>
@@ -1054,7 +1054,7 @@ const PokeArena = ({ onClose }) => {
           actKey={actKey}
           evolving={evolving}
           speed={speed}
-          theme={boardTheme}
+          theme={resolveScene(boardTheme, chapter)}
           stage={isFight ? 'fight' : 'prep'}
           onCellClick={onCellClick}
           onHoverUnit={(u) => { setHoverUnit(u); if (u) setTraitPop(null); }}

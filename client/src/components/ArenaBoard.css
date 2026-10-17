@@ -446,8 +446,119 @@
 @keyframes bd-shake-a { 25% { transform: translate(-4px, 2px); } 50% { transform: translate(4px, -2px); } 75% { transform: translate(-2px, 1px); } }
 @keyframes bd-shake-b { 25% { transform: translate(4px, 2px); } 50% { transform: translate(-4px, -2px); } 75% { transform: translate(2px, 1px); } }
 
+
+/* ——— Ambiance animée par lieu (au-dessus du décor, sous les Pokémon) ——— */
+.bd-ambient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+.bd-ambient i {
+  position: absolute;
+  display: block;
+  left: calc(var(--i) * 7.3% - 4%);
+  top: -6%;
+  animation-delay: calc(var(--i) * -1.37s);
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+
+/* Prairie : pétales portés par le vent */
+.bd-ambient.scene-prairie i {
+  width: 7px;
+  height: 5px;
+  border-radius: 60% 40% 60% 40%;
+  background: #ffd1dc;
+  opacity: 0.85;
+  animation-name: bd-petal;
+  animation-duration: calc(9s + var(--i) * 0.55s);
+}
+.bd-ambient.scene-prairie i:nth-child(3n) { background: #ffffff; }
+.bd-ambient.scene-prairie i:nth-child(4n) { background: #fff0a6; width: 5px; height: 4px; }
+@keyframes bd-petal {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.9; }
+  50% { transform: translate(18vw, 55vh) rotate(260deg); }
+  90% { opacity: 0.8; }
+  100% { transform: translate(34vw, 115vh) rotate(540deg); opacity: 0; }
+}
+
+/* Montagne : nappes de brume + quelques flocons */
+.bd-ambient.scene-montagne i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  animation-name: bd-snow;
+  animation-duration: calc(11s + var(--i) * 0.6s);
+}
+.bd-ambient.scene-montagne i:nth-child(-n+4) {
+  top: calc(18% + var(--i) * 9%);
+  left: -40%;
+  width: 46%;
+  height: 16%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0));
+  animation-name: bd-mist;
+  animation-duration: calc(38s + var(--i) * 9s);
+}
+@keyframes bd-snow {
+  0% { transform: translate(0, 0); opacity: 0; }
+  10% { opacity: 0.85; }
+  100% { transform: translate(-6vw, 110vh); opacity: 0; }
+}
+@keyframes bd-mist {
+  0% { transform: translateX(0); opacity: 0; }
+  15%, 85% { opacity: 1; }
+  100% { transform: translateX(260%); opacity: 0; }
+}
+
+/* Stade : poussières dorées dans les projecteurs */
+.bd-ambient.scene-ligue i {
+  top: auto;
+  bottom: -4%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 226, 170, 0.85);
+  box-shadow: 0 0 6px rgba(255, 226, 170, 0.8);
+  animation-name: bd-mote;
+  animation-duration: calc(12s + var(--i) * 0.7s);
+  animation-timing-function: ease-in-out;
+}
+@keyframes bd-mote {
+  0% { transform: translate(0, 0); opacity: 0; }
+  20% { opacity: 0.9; }
+  50% { transform: translate(3vw, -45vh); }
+  100% { transform: translate(-2vw, -95vh); opacity: 0; }
+}
+
+/* Plage : reflets sur la mer */
+.bd-ambient.scene-plage i {
+  top: calc(23% + (var(--i) * 7 % 9) * 1%);
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.95);
+  animation-name: bd-glint;
+  animation-duration: calc(2.6s + var(--i) * 0.31s);
+  animation-timing-function: ease-in-out;
+}
+@keyframes bd-glint {
+  0%, 100% { opacity: 0; transform: scaleX(0.3); }
+  50% { opacity: 0.9; transform: scaleX(1); }
+}
+
+.bd-stage.scene-prairie { background: #9ccd78; }
+.bd-stage.scene-montagne { background: #a29889; }
+.bd-stage.scene-ligue { background: #d8c3a5; }
+.bd-stage.scene-plage { background: #efdcb2; }
+
 @media (prefers-reduced-motion: reduce) {
   .bd-bob,
+  .bd-ambient i,
   .bd-stage.shake-0,
   .bd-stage.shake-1 { animation: none !important; }
   .bd-unit { transition: none; }
