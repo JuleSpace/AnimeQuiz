@@ -20,7 +20,9 @@ import {
   SHOP_SIZE,
   START_GOLD,
   START_HP,
-  TRAIT_INFO,
+  lineSynergyRows,
+  traitDossier,
+  applyEvolutionChoice,
   buildRunPool,
   linePlaystyle,
   rangeLabel,
@@ -85,17 +87,88 @@ const pickPlayFrames = (frames) => {
   return out;
 };
 
-const TraitTip = ({ trait, count, tip }) => {
-  const info = TRAIT_INFO[trait];
-  if (!info && !trait) return null;
+const TraitPopup = ({ pop }) => {
+  if (!pop?.trait) return null;
+  const doc = traitDossier(pop.trait);
   return (
-    <div className="pa-trait-tip">
-      <strong>{info?.title || trait}{count != null ? ` ×${count}` : ''}</strong>
-      {info?.blurb && <span>{info.blurb}</span>}
-      <em>{tip || info?.effect}</em>
+    <div
+      className="pa-trait-pop"
+      style={{
+        left: pop.left,
+        top: pop.top,
+        '--tint': TYPE_TINT[pop.trait] || '#c8f542'
+      }}
+      role="tooltip"
+    >
+      <header>
+        <strong>{doc.title}</strong>
+        {pop.count != null && <em>×{pop.count}</em>}
+      </header>
+      {doc.blurb && <p className="pa-trait-blurb">{doc.blurb}</p>}
+      {doc.tiers.length > 0 && (
+        <div className="pa-trait-block">
+          <span>Synergie</span>
+          <ul>
+            {doc.tiers.map((tier) => <li key={tier.n}>{tier.label}</li>)}
+          </ul>
+        </div>
+      )}
+      {pop.count != null && (
+        <p className="pa-trait-now">
+          {pop.count >= 2 && pop.tip
+            ? `Actif : ${pop.tip}`
+            : `Pas encore actif — il en faut 2 (tu en as ${pop.count}).`}
+        </p>
+      )}
+      {doc.strong.length > 0 && (
+        <p><b>Avantage</b> {doc.strong.map((row) => row.label).join(' · ')}</p>
+      )}
+      {doc.weak.length > 0 && (
+        <p><b>Désavantage</b> {doc.weak.map((row) => row.label).join(' · ')}</p>
+      )}
     </div>
   );
 };
+
+const lineEndLabel = (line) => (
+  line.forms?.length
+    ? line.forms.map((form) => form.stages[0].name).join(' / ')
+    : (line.stages[line.stages.length - 1]?.name || '')
+);
+
+const lineTitle = (line) => {
+  const head = line.stages.map((stage) => stage.name).join(' → ');
+  if (!line.forms?.length) return head;
+  return `${head} → ${line.forms.map((form) => form.stages[0].name).join(' ou ')}`;
+};
+
+const CodexStage = ({ unit, star, onTrait, offTrait }) => (
+  <article className="pa-codex-stage">
+    <div className="pa-codex-stage-art" style={{ '--tint': TYPE_TINT[unit.type] || '#c8f542' }}>
+      <PokeSprite unit={unit} size="lg" />
+      <span className="pa-codex-stars">{stars(star)}</span>
+    </div>
+    <h3>{unit.name}</h3>
+    <div className="pa-codex-types">
+      {(unit.types || [unit.type]).map((t) => (
+        <span
+          key={t}
+          className="pa-type-chip"
+          style={{ '--tint': TYPE_TINT[t] || '#c8f542' }}
+          onMouseEnter={(e) => onTrait(t, e)}
+          onMouseLeave={offTrait}
+        >
+          {t}
+        </span>
+      ))}
+    </div>
+    <ul className="pa-codex-stats">
+      <li><b>PV</b>{unit.hp}</li>
+      <li><b>ATK</b>{unit.atk}</li>
+      <li><b>SPD</b>{unit.spd}</li>
+    </ul>
+  </article>
+);
 
 const SpellTip = ({ unit, onTraitHover }) => {
   if (!unit) return null;
@@ -115,7 +188,7 @@ const SpellTip = ({ unit, onTraitHover }) => {
               <i
                 key={trait}
                 style={{ '--tint': TYPE_TINT[trait] || '#f0c14b' }}
-                onMouseEnter={() => onTraitHover?.(trait)}
+                onMouseEnter={(e) => onTraitHover?.(trait, e)}
                 onMouseLeave={() => onTraitHover?.(null)}
               >
                 {trait}
@@ -206,7 +279,7 @@ const PokeArena = ({ onClose }) => {
   const [fxMap, setFxMap] = useState({});
   const [hpMap, setHpMap] = useState({});
   const [hoverUnit, setHoverUnit] = useState(null);
-  const [hoverTrait, setHoverTrait] = useState(null);
+  const [traitPop, setTraitPop] = useState(null);
   const [showRecipes, setShowRecipes] = useState(false);
   const [runPool, setRunPool] = useState([]);
   const [saveMsg, setSaveMsg] = useState('');
@@ -214,7 +287,36 @@ const PokeArena = ({ onClose }) => {
   const [codexCost, setCodexCost] = useState(0);
   const [codexQuery, setCodexQuery] = useState('');
   const [codexPick, setCodexPick] = useState(null);
+  const [goldPulse, setGoldPulse] = useState(0);
+  const [buyPop, setBuyPop] = useState(null);
+  const [floatFx, setFloatFx] = useState([]);
   const timers = useRef([]);
+  const lockedEnemyRef = useRef(null);
+  const fightUnitsRef = useRef({ allies: [], foes: [] });
+  const prevGoldRef = useRef(gold);
+
+  const openTrait = (trait, event, extra = {}) => {
+    const name = typeof trait === 'string' ? trait : trait?.trait;
+    if (!name || !event?.currentTarget) {
+      setTraitPop(null);
+      return;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    const width = 300;
+    const estimated = 280;
+    let left = rect.left;
+    let top = rect.bottom + 8;
+    if (left + width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - width - 8);
+    if (top + estimated > window.innerHeight - 8) top = Math.max(8, rect.top - estimated - 8);
+    setTraitPop({
+      trait: name,
+      count: extra.count ?? null,
+      tip: extra.tip || '',
+      left,
+      top
+    });
+  };
+  const closeTrait = () => setTraitPop(null);
 
   const codexLines = useMemo(() => {
     const q = codexQuery.trim().toLowerCase();
@@ -222,10 +324,11 @@ const PokeArena = ({ onClose }) => {
       if (codexCost && line.cost !== codexCost) return false;
       if (!q) return true;
       const names = line.stages.map((s) => s.name).join(' ');
+      const forms = (line.forms || []).flatMap((form) => form.stages.map((s) => s.name)).join(' ');
       const traits = (line.traits || []).join(' ');
-      const hay = `${line.id} ${names} ${traits} ${line.spell?.name || ''} ${line.spell?.desc || ''}`.toLowerCase();
+      const hay = `${line.id} ${names} ${forms} ${traits} ${line.spell?.name || ''} ${line.spell?.desc || ''}`.toLowerCase();
       return hay.includes(q);
-    });
+    }).sort((a, b) => a.cost - b.cost || (a.stages[0]?.name || '').localeCompare(b.stages[0]?.name || '', 'fr'));
   }, [codexCost, codexQuery]);
 
   const codexSelected = codexPick ? LINE_MAP[codexPick] : null;
@@ -248,6 +351,27 @@ const PokeArena = ({ onClose }) => {
     timers.current = [];
   };
   useEffect(() => () => clearTimers(), []);
+
+  useEffect(() => {
+    if (prevGoldRef.current !== gold) {
+      setGoldPulse((n) => n + 1);
+      prevGoldRef.current = gold;
+    }
+  }, [gold]);
+
+  const cloneBoard = (boardIn) => padBoard(boardIn).map((u) => (
+    u ? { ...u, items: [...(u.items || [])] } : null
+  ));
+
+  const boardFromPos = (units, pos, side) => {
+    const pads = emptyBoard();
+    units.forEach((u) => {
+      const p = pos?.[u.uid];
+      if (!p || p.side !== side) return;
+      pads[p.slot] = { ...u, slot: p.slot, side };
+    });
+    return pads;
+  };
 
   const snapshotSave = () => ({
     phase: 'map',
@@ -296,7 +420,7 @@ const PokeArena = ({ onClose }) => {
     setHpMap({});
     setSelectedUid(null);
     setSelectedItem(null);
-    setHoverTrait(null);
+    closeTrait();
     setLocked(false);
     setStage('prep');
     setPhase('map');
@@ -306,6 +430,20 @@ const PokeArena = ({ onClose }) => {
   const mapUnit = (uid, fn) => {
     setBoard((current) => current.map((u) => (u?.uid === uid ? fn(u) : u)));
     setBench((current) => current.map((u) => (u?.uid === uid ? fn(u) : u)));
+  };
+
+  const pendingEvo = useMemo(
+    () => [...board, ...bench].find((u) => u?.pendingEvo) || null,
+    [board, bench]
+  );
+
+  const chooseEvo = (formId) => {
+    if (!pendingEvo) return;
+    const next = applyEvolutionChoice(pendingEvo, formId);
+    if (!next) return;
+    mapUnit(pendingEvo.uid, () => next);
+    setHoverUnit(next);
+    setLog(`${next.name} — évolution choisie.`);
   };
 
   const applyMerge = (nextBoard, nextBench, prefix = '') => {
@@ -342,14 +480,16 @@ const PokeArena = ({ onClose }) => {
     setFxMap({});
     setHpMap({});
     setHoverUnit(null);
-    setHoverTrait(null);
+    closeTrait();
     setRunPool([]);
     setShop([]);
     setLog('Choisis ton partenaire de départ.');
   };
 
-  const previewWave = (w, lv) => {
-    setEnemyBoard(seatFoes(enemyWave(w, lv)));
+  const lockEnemyWave = (w, lv) => {
+    const foeBoard = seatFoes(enemyWave(w, lv));
+    lockedEnemyRef.current = cloneBoard(foeBoard);
+    setEnemyBoard(foeBoard);
   };
 
   const pickStarter = (lineId) => {
@@ -369,15 +509,12 @@ const PokeArena = ({ onClose }) => {
     if (nodeId < wave) return setLog('Étape déjà validée — avance sur la suivante.');
     setPhase('run');
     setStage('prep');
-    previewWave(nodeId, level);
+    lockEnemyWave(nodeId, level);
     setHpMap({});
     setFxMap({});
+    setFloatFx([]);
     setLog(`${CAMPAIGN[nodeId - 1]?.name || `Étape ${nodeId}`} — place ton équipe, puis Combat.`);
   };
-
-  useEffect(() => {
-    if (phase === 'run' && stage === 'prep') previewWave(wave, level);
-  }, [phase, stage, wave, level]);
 
   const buyXp = () => {
     if (locked || stage !== 'prep') return;
@@ -415,6 +552,8 @@ const PokeArena = ({ onClose }) => {
     const bought = unitFromLine(offer.lineId, 1);
     setGold((g) => g - offer.cost);
     setShop((current) => current.map((slot, i) => (i === index ? null : slot)));
+    setBuyPop(index);
+    setTimeout(() => setBuyPop(null), 450);
     applyMerge(board, [...bench, bought], 'Fusion : ');
     setSelectedUid(bought.uid);
     setLog(`${bought.name} — sort : ${bought.spell?.name}. Place-le sur une case.`);
@@ -611,11 +750,17 @@ const PokeArena = ({ onClose }) => {
     setPhase('run');
     setLocked(false);
     setFightLine('');
-    previewWave(currentWave, currentLevel);
+    setFxMap({});
+    setFloatFx([]);
+    setHpMap({});
+    if (lockedEnemyRef.current) setEnemyBoard(cloneBoard(lockedEnemyRef.current));
   };
+
+  const fightPrepRef = useRef({ board: null, enemy: null });
 
   const fight = () => {
     if (locked || stage !== 'prep') return;
+    if ([...board, ...bench].some((u) => u?.pendingEvo)) return setLog('Choisis d’abord l’évolution.');
     const capped = enforceBoardCap(board, bench, boardCap);
     if (capped.moved) {
       setBoard(padBoard(capped.board));
@@ -624,37 +769,67 @@ const PokeArena = ({ onClose }) => {
     }
     const fighters = capped.board.filter(Boolean);
     if (!fighters.length) return setLog('Place au moins un Pokémon.');
+
+    let foeReady = padBoard(enemyBoard);
+    if (!foeReady.some(Boolean) && lockedEnemyRef.current?.some(Boolean)) {
+      foeReady = cloneBoard(lockedEnemyRef.current);
+      setEnemyBoard(foeReady);
+    }
+    if (!foeReady.some(Boolean)) {
+      lockEnemyWave(wave, level);
+      foeReady = cloneBoard(lockedEnemyRef.current);
+    }
+
+    fightPrepRef.current = {
+      board: cloneBoard(capped.board),
+      enemy: cloneBoard(foeReady)
+    };
+
     clearTimers();
     setLocked(true);
     setSelectedUid(null);
     setSelectedItem(null);
     setStage('fight');
     setLog('Combat…');
+    setFloatFx([]);
 
-    const foesRaw = enemyWave(wave, level);
-    const foeBoard = seatFoes(foesRaw);
-    setEnemyBoard(foeBoard);
     const allies = withBoardSlots(padBoard(capped.board), 'ally');
-    const foes = withBoardSlots(foeBoard, 'foe');
+    const foes = withBoardSlots(foeReady, 'foe');
+    fightUnitsRef.current = {
+      allies: allies.map((u) => ({ ...u })),
+      foes: foes.map((u) => ({ ...u }))
+    };
 
     const result = simulateFight(allies, foes);
     const play = pickPlayFrames(result.frames);
     const snapshot = { gold, hp, streak, level, wave };
 
     if (play[0]?.hp) setHpMap(play[0].hp);
+    if (play[0]?.pos) {
+      setBoard(boardFromPos(fightUnitsRef.current.allies, play[0].pos, 'ally'));
+      setEnemyBoard(boardFromPos(fightUnitsRef.current.foes, play[0].pos, 'foe'));
+    }
 
     play.forEach((frame, i) => {
       const id = setTimeout(() => {
         setFightLine(frame.line || '');
         setHpMap(frame.hp || {});
         setFxMap(frame.fx || {});
-      }, 280 + i * 420);
+        setFloatFx((frame.floats || []).map((f, fi) => ({ ...f, key: `${i}-${fi}-${f.uid}` })));
+        if (frame.pos) {
+          setBoard(boardFromPos(fightUnitsRef.current.allies, frame.pos, 'ally'));
+          setEnemyBoard(boardFromPos(fightUnitsRef.current.foes, frame.pos, 'foe'));
+        }
+      }, 220 + i * 380);
       timers.current.push(id);
     });
 
     const endId = setTimeout(() => {
+      setFloatFx([]);
+      // Remet les positions de prep (le combat ne doit pas déplacer le placement)
+      if (fightPrepRef.current.board) setBoard(fightPrepRef.current.board);
       finishFight(result, snapshot.gold, snapshot.hp, snapshot.streak, snapshot.level, snapshot.wave);
-    }, 280 + play.length * 420 + 500);
+    }, 220 + play.length * 380 + 480);
     timers.current.push(endId);
   };
 
@@ -699,9 +874,21 @@ const PokeArena = ({ onClose }) => {
 
   if (phase === 'codex') {
     const detail = codexSelected || codexLines[0] || null;
-    const detailForms = detail
-      ? [1, 2, 3].map((star) => unitFromLine(detail.id, star)).filter(Boolean)
+    const preUnits = detail
+      ? (detail.forms
+        ? Array.from({ length: Math.max(0, detail.branchAt - 1) }, (_, i) => unitFromLine(detail.id, i + 1, `codex-pre-${i + 1}`))
+        : [1, 2, 3].map((star) => unitFromLine(detail.id, star, `codex-${star}`))
+      ).filter(Boolean)
       : [];
+    const forks = (detail?.forms || []).map((form) => ({
+      id: form.id,
+      units: Array.from({ length: 4 - detail.branchAt }, (_, i) => {
+        const star = detail.branchAt + i;
+        return { star, unit: unitFromLine(detail.id, star, `codex-${form.id}-${star}`, [], form.id) };
+      }).filter((row) => row.unit)
+    }));
+    const synergyRows = detail ? lineSynergyRows(detail) : [];
+    const roleBadges = (detail?.traits || []).filter((t) => ['Starter', 'Force', 'Mage'].includes(t));
     return (
       <div className="pa-root pa-codex-root">
         <header className="pa-codex-top">
@@ -756,7 +943,7 @@ const PokeArena = ({ onClose }) => {
                   {preview && <PokeSprite unit={preview} size="sm" />}
                   <div className="pa-codex-row-meta">
                     <strong>{line.stages[0]?.name}</strong>
-                    <span>→ {line.stages[2]?.name}</span>
+                    <span>→ {lineEndLabel(line)}</span>
                   </div>
                   <em className="pa-codex-cost">{line.cost}</em>
                 </button>
@@ -770,17 +957,18 @@ const PokeArena = ({ onClose }) => {
               <header className="pa-codex-detail-head">
                 <div>
                   <p className="pa-codex-kicker">Lignée · coût {detail.cost}</p>
-                  <h2>{detail.stages.map((s) => s.name).join(' → ')}</h2>
+                  <h2>{lineTitle(detail)}</h2>
                   <p className="pa-codex-role">{linePlaystyle(detail)}</p>
                 </div>
                 <div className="pa-codex-badges">
                   <span className="pa-codex-badge">Portée {rangeLabel(detail.range)}</span>
-                  {(detail.traits || []).map((t) => (
+                  {roleBadges.map((t) => (
                     <span
                       key={t}
                       className="pa-codex-badge is-type"
                       style={{ '--tint': TYPE_TINT[t] || '#c8f542' }}
-                      title={TRAIT_INFO[t]?.effect || t}
+                      onMouseEnter={(e) => openTrait(t, e)}
+                      onMouseLeave={closeTrait}
                     >
                       {t}
                     </span>
@@ -788,23 +976,37 @@ const PokeArena = ({ onClose }) => {
                 </div>
               </header>
 
-              <div className="pa-codex-evo">
-                {detailForms.map((form, i) => (
-                  <article key={form.uid} className="pa-codex-stage">
-                    <div className="pa-codex-stage-art" style={{ '--tint': TYPE_TINT[form.type] || '#c8f542' }}>
-                      <PokeSprite unit={form} size="lg" />
-                      <span className="pa-codex-stars">{stars(i + 1)}</span>
-                    </div>
-                    <h3>{form.name}</h3>
-                    <p className="pa-codex-type" style={{ '--tint': TYPE_TINT[form.type] || '#c8f542' }}>{form.type}</p>
-                    <ul className="pa-codex-stats">
-                      <li><b>PV</b>{form.hp}</li>
-                      <li><b>ATK</b>{form.atk}</li>
-                      <li><b>SPD</b>{form.spd}</li>
-                    </ul>
-                  </article>
+              <div className={`pa-codex-evo${detail.forms ? ' is-pre' : ''}`}>
+                {preUnits.map((form, i) => (
+                  <CodexStage
+                    key={form.uid}
+                    unit={form}
+                    star={i + 1}
+                    onTrait={openTrait}
+                    offTrait={closeTrait}
+                  />
                 ))}
               </div>
+              {forks.length > 0 && (
+                <>
+                  <p className="pa-codex-role">À {detail.branchAt}★, les voies côte à côte.</p>
+                  <div className="pa-codex-fork">
+                    {forks.map((fork) => (
+                      <div key={fork.id} className="pa-codex-fork-col">
+                        {fork.units.map(({ star, unit }) => (
+                          <CodexStage
+                            key={unit.uid}
+                            unit={unit}
+                            star={star}
+                            onTrait={openTrait}
+                            offTrait={closeTrait}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
 
               <div className="pa-codex-spell">
                 <h3>Sort — {detail.spell?.name}</h3>
@@ -820,16 +1022,16 @@ const PokeArena = ({ onClose }) => {
               <div className="pa-codex-traits-explain">
                 <h3>Synergies de la lignée</h3>
                 <ul>
-                  {(detail.traits || []).map((t) => {
-                    const info = TRAIT_INFO[t];
-                    return (
-                      <li key={t}>
-                        <strong style={{ color: TYPE_TINT[t] || 'var(--pa-acid)' }}>{t}</strong>
-                        <span>{info?.blurb}</span>
-                        <em>{info?.effect}</em>
-                      </li>
-                    );
-                  })}
+                  {synergyRows.map((row) => (
+                    <li key={row.trait}>
+                      <strong style={{ color: TYPE_TINT[row.trait] || 'var(--pa-acid)' }}>{row.title}</strong>
+                      <span>{row.blurb}</span>
+                      {row.tiers.length > 0 && <em>{row.tiers.map((tier) => tier.label).join(' · ')}</em>}
+                      {row.strong.length > 0 && <em>Avantage : {row.strong.map((item) => item.label).join(', ')}</em>}
+                      {row.weak.length > 0 && <em>Désavantage : {row.weak.map((item) => item.label).join(', ')}</em>}
+                      <em className="pa-codex-where">Présent sur : {row.where.join(', ')}</em>
+                    </li>
+                  ))}
                 </ul>
               </div>
 
@@ -839,6 +1041,7 @@ const PokeArena = ({ onClose }) => {
             </section>
           )}
         </div>
+        <TraitPopup pop={traitPop} />
       </div>
     );
   }
@@ -848,7 +1051,7 @@ const PokeArena = ({ onClose }) => {
       <div className="pa-root">
         <header className="pa-top">
           <div className="pa-hp">❤ {hp}</div>
-          <div className="pa-gold-top">
+          <div key={goldPulse} className="pa-gold-top is-pulse">
             <strong>{gold} or</strong>
             <span className="pa-income-mini">→ +{incomeEst.total}</span>
           </div>
@@ -932,19 +1135,24 @@ const PokeArena = ({ onClose }) => {
                   className="pa-starter-card"
                   style={{ '--ring': ring }}
                   onClick={() => pickStarter(lineId)}
-                  onMouseEnter={() => { setHoverUnit(preview); setHoverTrait(null); }}
+                  onMouseEnter={() => { setHoverUnit(preview); closeTrait(); }}
                 >
                   <PokeSprite unit={preview} size="lg" />
                   <strong>{preview.name}</strong>
-                  <em>{preview.type} · P{preview.range || 1}</em>
+                  <em>{(preview.types || [preview.type]).join(' · ')} · P{preview.range || 1}</em>
                 </button>
               );
             })}
           </div>
           <div className="pa-starter-tips">
-            {hoverUnit && <SpellTip unit={hoverUnit} onTraitHover={setHoverTrait} />}
-            {hoverTrait && <TraitTip trait={hoverTrait} />}
+            {hoverUnit && (
+              <SpellTip
+                unit={hoverUnit}
+                onTraitHover={(t, e) => (t ? openTrait(t, e) : closeTrait())}
+              />
+            )}
           </div>
+          <TraitPopup pop={traitPop} />
           <button type="button" className="pa-btn pa-btn-ghost" onClick={() => setPhase('hub')}>Retour</button>
         </div>
       </div>
@@ -952,21 +1160,45 @@ const PokeArena = ({ onClose }) => {
   }
 
   const traitEntries = Object.entries(traits.counts || {}).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  const tipTraitInfo = hoverTrait
-    ? (typeof hoverTrait === 'object'
-      ? hoverTrait
-      : {
-          trait: hoverTrait,
-          count: traits.counts?.[hoverTrait],
-          tip: traits.details?.find((d) => d.trait === hoverTrait)?.tip
-        })
-    : null;
+  const traitExtra = (trait) => ({
+    count: traits.counts?.[trait] || 0,
+    tip: traits.details?.find((d) => d.trait === trait)?.tip || ''
+  });
 
   return (
     <div className={`pa-root${stage === 'fight' ? ' is-fighting' : ''}`}>
+      {pendingEvo && LINE_MAP[pendingEvo.lineId]?.forms && (
+        <div className="pa-modal" role="dialog">
+          <div className="pa-modal-card pa-evo-card">
+            <header>
+              <h2>Évolution</h2>
+            </header>
+            <p>{pendingEvo.name} peut prendre plusieurs formes. Choisis-en une.</p>
+            <div className="pa-evo-grid">
+              {LINE_MAP[pendingEvo.lineId].forms.map((form) => {
+                const preview = unitFromLine(pendingEvo.lineId, pendingEvo.star, `pick-${form.id}`, [], form.id);
+                if (!preview) return null;
+                return (
+                  <button
+                    key={form.id}
+                    type="button"
+                    className="pa-evo-opt"
+                    style={{ '--tint': TYPE_TINT[preview.type] || '#c8f542' }}
+                    onClick={() => chooseEvo(form.id)}
+                  >
+                    <PokeSprite unit={preview} size="lg" />
+                    <strong>{preview.name}</strong>
+                    <em>{(preview.traits || []).filter((t) => !['Starter', 'Force', 'Mage'].includes(t)).join(' / ')}</em>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
       <header className="pa-top">
         <div className="pa-hp">❤ {hp}</div>
-        <div className="pa-gold-top">
+        <div key={goldPulse} className="pa-gold-top is-pulse">
           <strong>{gold} or</strong>
           <span className="pa-income-mini" title="Estimation si victoire au prochain combat">
             → +{incomeEst.total}
@@ -985,28 +1217,13 @@ const PokeArena = ({ onClose }) => {
                 key={trait}
                 className={count >= 2 ? 'is-active' : ''}
                 style={{ '--tint': TYPE_TINT[trait] || '#f0c14b' }}
-                onMouseEnter={() => setHoverTrait({
-                  trait,
-                  count,
-                  tip: detail?.tip,
-                  blurb: detail?.blurb,
-                  effect: detail?.effect || TRAIT_INFO[trait]?.effect
-                })}
-                onMouseLeave={() => setHoverTrait(null)}
+                onMouseEnter={(e) => openTrait(trait, e, { count, tip: detail?.tip || '' })}
+                onMouseLeave={closeTrait}
               >
                 {trait} ×{count}
               </i>
             );
           })}
-          {tipTraitInfo && (
-            <div className="pa-trait-tip-anchor">
-              <TraitTip
-                trait={tipTraitInfo.trait}
-                count={tipTraitInfo.count}
-                tip={tipTraitInfo.tip || tipTraitInfo.effect}
-              />
-            </div>
-          )}
         </div>
         <div className="pa-top-actions">
           <button type="button" className="pa-chip" onClick={persist} disabled={stage === 'fight'}>Sauver</button>
@@ -1026,6 +1243,16 @@ const PokeArena = ({ onClose }) => {
         </p>
       )}
 
+      {tipUnit && (
+        <div className="pa-hover-layer" aria-hidden={false}>
+          <SpellTip
+            unit={tipUnit}
+            onTraitHover={(t, e) => (t ? openTrait(t, e, traitExtra(t)) : closeTrait())}
+          />
+        </div>
+      )}
+      <TraitPopup pop={traitPop} />
+
       <>
           <div className="pa-stage">
             <ArenaBoardIso
@@ -1035,18 +1262,11 @@ const PokeArena = ({ onClose }) => {
               placing={placing}
               fxMap={fxMap}
               hpMap={hpMap}
+              floatFx={floatFx}
               stage={stage}
               onCellClick={placeAt}
-              onHoverUnit={(u) => { setHoverUnit(u); if (u) setHoverTrait(null); }}
+              onHoverUnit={(u) => { setHoverUnit(u); if (u) closeTrait(); }}
             />
-            {tipUnit && (
-              <div className="pa-tip-float">
-                <SpellTip unit={tipUnit} onTraitHover={setHoverTrait} />
-                {hoverTrait && typeof hoverTrait === 'string' && (
-                  <TraitTip trait={hoverTrait} />
-                )}
-              </div>
-            )}
           </div>
 
           {showRecipes && (
@@ -1201,10 +1421,10 @@ const PokeArena = ({ onClose }) => {
                     <button
                       key={unit.uid}
                       type="button"
-                      className="pa-shop-card"
+                      className={`pa-shop-card${buyPop === index ? ' is-bought' : ''}`}
                       style={{ '--tint': TYPE_TINT[unit.type] || '#f0c14b' }}
                       onClick={() => buy(index)}
-                      onMouseEnter={() => { setHoverUnit(unit); setHoverTrait(null); }}
+                      onMouseEnter={() => { setHoverUnit(unit); closeTrait(); }}
                       disabled={stage !== 'prep'}
                     >
                       <span className="pa-shop-cost">{unit.cost}</span>
@@ -1219,11 +1439,11 @@ const PokeArena = ({ onClose }) => {
                             style={{ '--tint': TYPE_TINT[t] || '#f0c14b' }}
                             onMouseEnter={(e) => {
                               e.stopPropagation();
-                              setHoverTrait(t);
+                              openTrait(t, e, traitExtra(t));
                             }}
                             onMouseLeave={(e) => {
                               e.stopPropagation();
-                              setHoverTrait(null);
+                              closeTrait();
                             }}
                           >
                             {t}

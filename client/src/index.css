@@ -2882,6 +2882,75 @@ textarea.input {
 .ktb-pin.fx-hit { animation: arena-r3f-hit 0.35s ease; }
 .ktb-pin.fx-strike { animation: arena-r3f-strike 0.4s ease; }
 .ktb-pin.fx-ko { animation: arena-r3f-ko 0.55s ease forwards; }
+.ktb-pin.fx-spell { animation: ktb-spell 0.5s ease; }
+.ktb-pin.fx-move { animation: ktb-move 0.35s ease; }
+
+@keyframes ktb-spell {
+  0% { filter: brightness(1); transform: translateY(0) scale(1); }
+  40% { filter: brightness(1.35) drop-shadow(0 0 12px rgba(200, 245, 66, 0.7)); transform: translateY(-8px) scale(1.1); }
+  100% { filter: brightness(1); transform: translateY(0) scale(1); }
+}
+
+@keyframes ktb-move {
+  0% { transform: translate(0, 0); }
+  45% { transform: translate(10px, -12px); }
+  100% { transform: translate(0, 0); }
+}
+
+.ktb-float {
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  transform: translateX(-50%);
+  font-weight: 800;
+  font-size: 0.85rem;
+  pointer-events: none;
+  animation: ktb-float-up 0.7s ease forwards;
+  z-index: 6;
+  text-shadow: 0 1px 0 #000, 0 0 6px rgba(0, 0, 0, 0.6);
+}
+
+.ktb-float.is-dmg { color: #ff6b7a; }
+.ktb-float.is-heal { color: #7dffb0; }
+
+@keyframes ktb-float-up {
+  0% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -28px); }
+}
+
+.ktb-burst,
+.ktb-slash {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  pointer-events: none;
+  z-index: 5;
+  border-radius: 50%;
+}
+
+.ktb-burst {
+  background: radial-gradient(circle, rgba(200, 245, 66, 0.55), transparent 70%);
+  animation: ktb-burst 0.45s ease forwards;
+}
+
+.ktb-slash {
+  background:
+    linear-gradient(125deg, transparent 42%, rgba(255, 255, 255, 0.85) 50%, transparent 58%);
+  animation: ktb-slash 0.35s ease forwards;
+}
+
+@keyframes ktb-burst {
+  0% { transform: scale(0.4); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes ktb-slash {
+  0% { transform: scaleX(0.2) rotate(-12deg); opacity: 1; }
+  100% { transform: scaleX(1.4) rotate(8deg); opacity: 0; }
+}
 
 .ktb-cave {
   position: absolute;

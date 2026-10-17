@@ -162,6 +162,7 @@ export default function ArenaBoardIso({
   placing,
   fxMap = {},
   hpMap = {},
+  floatFx = [],
   stage,
   onCellClick,
   onHoverUnit
@@ -357,6 +358,7 @@ export default function ArenaBoardIso({
         const ratio = hpInfo
           ? Math.max(0, Math.min(1, hpInfo.cur / Math.max(1, hpInfo.max)))
           : 1;
+        const floats = floatFx.filter((f) => f.uid === unit.uid);
         return (
           <div
             key={unit.uid}
@@ -385,6 +387,11 @@ export default function ArenaBoardIso({
                 <span className="ktb-hpnum">{Math.ceil(hpInfo.cur)}/{hpInfo.max}</span>
               )}
             </div>
+            {floats.map((f) => (
+              <span key={f.key} className={`ktb-float is-${f.kind || 'dmg'}`}>{f.text}</span>
+            ))}
+            {fx === 'spell' && <span className="ktb-burst" aria-hidden />}
+            {fx === 'strike' && <span className="ktb-slash" aria-hidden />}
             <span className="ktb-shadow" />
             <PixelPoke unit={unit} enemy={cell.enemy} />
           </div>
