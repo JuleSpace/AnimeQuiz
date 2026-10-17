@@ -1904,3 +1904,449 @@
 .pa-codex-talent h3 {
   color: var(--pa-acid, #c8f542);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   REFONTE « HOLO STADIUM » — nuit, verre, néons cyan / magenta / or
+   (bloc en dernier : il prend le pas sur la DA précédente)
+   ═══════════════════════════════════════════════════════════ */
+
+.pa-root {
+  --pa-ink: #05061a;
+  --pa-stone: #0d0f2a;
+  --pa-stone-2: #161a3d;
+  --pa-moss: #1b2150;
+  --pa-sand: #c9cdf0;
+  --pa-gold: #ffcc4d;
+  --pa-gold-dim: #b07a12;
+  --pa-acid: #45e9ff;
+  --pa-bruise: #ff4f8b;
+  --pa-blood: #d42a63;
+  --pa-blood-hot: #ff4f8b;
+  --pa-ally: #45e9ff;
+  --pa-foe: #ff4f8b;
+  --pa-ice: #8fd6ff;
+  --pa-violet: #b25cff;
+  --pa-panel: rgba(13, 15, 42, 0.78);
+  --pa-glass: linear-gradient(180deg, rgba(30, 34, 84, 0.72), rgba(10, 11, 34, 0.82));
+  --pa-line: rgba(150, 165, 255, 0.16);
+  --pa-text: #eef1ff;
+  --pa-muted: #8d93c4;
+  --pa-radius: 14px;
+  background:
+    radial-gradient(70% 60% at 50% 0%, rgba(178, 92, 255, 0.22), transparent 60%),
+    radial-gradient(60% 50% at 0% 100%, rgba(69, 233, 255, 0.14), transparent 60%),
+    radial-gradient(60% 50% at 100% 100%, rgba(255, 79, 139, 0.14), transparent 60%),
+    linear-gradient(180deg, #05061a 0%, #0a0b24 55%, #07071a 100%);
+}
+
+/* —— Boutons —— */
+.pa-root .pa-btn {
+  border-radius: 12px;
+  border: 1px solid var(--pa-line);
+  background: var(--pa-glass);
+  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.8);
+}
+
+.pa-root .pa-btn-gold {
+  transform: none;
+  border: 0;
+  color: #241400;
+  background: linear-gradient(135deg, #ffe58a, #ffb52e 55%, #ff8a3d);
+  box-shadow: 0 0 0 1px rgba(255, 220, 140, 0.6) inset, 0 10px 30px -8px rgba(255, 170, 40, 0.65);
+}
+
+.pa-root .pa-btn-ghost {
+  color: var(--pa-sand);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pa-root .pa-chip {
+  border-radius: 999px;
+  border: 1px solid var(--pa-line);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--pa-sand);
+  backdrop-filter: blur(6px);
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+
+.pa-root .pa-chip:hover:not(:disabled) {
+  background: rgba(69, 233, 255, 0.12);
+  border-color: rgba(69, 233, 255, 0.5);
+  color: #fff;
+  box-shadow: 0 0 16px -4px rgba(69, 233, 255, 0.7);
+}
+
+.pa-root .pa-chip-danger {
+  border-color: rgba(255, 79, 139, 0.45);
+  color: #ff9dbd;
+}
+
+.pa-root .pa-chip-danger:hover:not(:disabled) {
+  background: rgba(255, 79, 139, 0.14);
+  border-color: rgba(255, 79, 139, 0.7);
+  box-shadow: 0 0 16px -4px rgba(255, 79, 139, 0.8);
+}
+
+/* —— Barre du haut —— */
+.pa-root .pa-top {
+  margin: 10px 12px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--pa-line);
+  border-radius: var(--pa-radius);
+  background: var(--pa-glass);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 16px 40px -24px rgba(0, 0, 0, 0.9);
+}
+
+.pa-root .pa-hp {
+  border: 0;
+  border-radius: 12px;
+  padding: 8px 14px;
+  color: #fff;
+  background: linear-gradient(135deg, #ff4f8b, #b0185a);
+  box-shadow: 0 0 22px -6px rgba(255, 79, 139, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  font-family: var(--pa-pixel);
+  letter-spacing: 0.04em;
+}
+
+.pa-root .pa-gold-top {
+  border: 0;
+  border-radius: 12px;
+  color: #2a1700;
+  background: linear-gradient(135deg, #ffe58a, #ffb52e);
+  box-shadow: 0 0 22px -6px rgba(255, 190, 60, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.pa-root .pa-income-mini {
+  color: #6a3d00;
+}
+
+.pa-root .pa-wave strong {
+  font-size: 0.78rem;
+  color: #fff;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.pa-root .pa-traits i {
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.pa-root .pa-traits i.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--tint) 45%, transparent), color-mix(in srgb, var(--tint) 15%, transparent));
+  border-color: color-mix(in srgb, var(--tint) 75%, transparent);
+  box-shadow: 0 0 14px -2px color-mix(in srgb, var(--tint) 80%, transparent);
+}
+
+/* —— Journal & revenus —— */
+.pa-root .pa-log {
+  margin: 8px 12px 0;
+  border: 0;
+  border-radius: 999px;
+  text-align: center;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(90deg, transparent, rgba(178, 92, 255, 0.22), transparent);
+  text-shadow: 0 0 12px rgba(178, 92, 255, 0.8);
+}
+
+.pa-root.is-fighting .pa-log {
+  font-family: var(--pa-pixel);
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  background: linear-gradient(90deg, transparent, rgba(255, 79, 139, 0.28), transparent);
+  text-shadow: 0 0 14px rgba(255, 79, 139, 0.9);
+}
+
+.pa-root .pa-income-bar {
+  margin: 0 12px;
+  border: 0;
+  background: transparent;
+  justify-content: center;
+  color: var(--pa-muted);
+}
+
+.pa-root .pa-income-bar strong {
+  color: var(--pa-gold);
+  text-shadow: 0 0 10px rgba(255, 204, 77, 0.6);
+}
+
+/* —— Plateau —— */
+.pa-root .pa-stage {
+  padding: 8px 12px 0;
+}
+
+.pa-root.is-fighting .pa-stage::after {
+  display: none;
+}
+
+/* —— Bulles d’info —— */
+.pa-root .pa-tip,
+.pa-root .pa-trait-pop,
+.pa-root .pa-item-tip,
+.pa-root .pa-modal-card {
+  border-radius: var(--pa-radius);
+  border: 1px solid rgba(150, 165, 255, 0.24);
+  background: linear-gradient(180deg, rgba(26, 30, 74, 0.94), rgba(9, 10, 30, 0.96));
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  backdrop-filter: blur(16px);
+}
+
+.pa-root .pa-tip-cost {
+  border-radius: 6px;
+  background: linear-gradient(135deg, #ffe58a, #ffb52e);
+}
+
+.pa-root .pa-tip-stats span {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pa-root .pa-tip-types i,
+.pa-root .pa-type-chip,
+.pa-root .pa-shop-type {
+  border-radius: 999px;
+}
+
+.pa-root .pa-tip-spell b {
+  color: var(--pa-acid);
+}
+
+.pa-root .pa-tip-talent b,
+.pa-root .pa-codex-talent h3 {
+  color: var(--pa-gold);
+}
+
+/* —— Dock (objets, banc, boutique) —— */
+.pa-root .pa-dock {
+  margin: 10px 12px 12px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--pa-line);
+  border-radius: 18px;
+  background: var(--pa-glass);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 -10px 40px -24px rgba(178, 92, 255, 0.6);
+}
+
+.pa-root .pa-item {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--pa-line);
+}
+
+.pa-root .pa-item.is-selected {
+  border-color: var(--pa-gold);
+  box-shadow: 0 0 18px -4px rgba(255, 204, 77, 0.9);
+}
+
+.pa-root .pa-bench {
+  border: 0;
+  border-radius: 14px;
+  background: rgba(3, 4, 18, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(69, 233, 255, 0.12);
+}
+
+.pa-root .pa-bench-slot {
+  border-radius: 12px;
+  border: 1px solid rgba(69, 233, 255, 0.14);
+  background:
+    radial-gradient(80% 60% at 50% 100%, rgba(69, 233, 255, 0.12), transparent 70%),
+    rgba(255, 255, 255, 0.02);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.pa-root .pa-bench-slot:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: rgba(69, 233, 255, 0.5);
+  box-shadow: 0 0 18px -6px rgba(69, 233, 255, 0.9);
+}
+
+.pa-root .pa-bench-slot.is-selected {
+  border-color: var(--pa-gold);
+  box-shadow: 0 0 22px -4px rgba(255, 204, 77, 0.95), inset 0 0 18px rgba(255, 204, 77, 0.2);
+}
+
+.pa-root .pa-level {
+  font-size: 0.8rem;
+  color: #fff;
+}
+
+.pa-root .pa-xp {
+  height: 9px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.pa-root .pa-xp i {
+  border-radius: inherit;
+  background: linear-gradient(90deg, #45e9ff, #b25cff);
+  box-shadow: 0 0 12px rgba(69, 233, 255, 0.8);
+}
+
+/* Cartes de boutique : couleur selon le coût, façon auto-battler */
+.pa-root .pa-shop-card {
+  --tier: #8d93c4;
+  border-radius: 14px;
+  border: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 70% at 50% 15%, color-mix(in srgb, var(--tint) 30%, transparent), transparent 70%),
+    linear-gradient(180deg, #171a44, #0b0c26);
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--tier) 80%, transparent),
+    0 12px 26px -16px color-mix(in srgb, var(--tier) 90%, transparent);
+  transition: transform 0.18s cubic-bezier(0.3, 0.7, 0.3, 1.4), box-shadow 0.18s ease;
+}
+
+.pa-root .pa-shop-card[data-cost='2'] { --tier: #46e07d; }
+.pa-root .pa-shop-card[data-cost='3'] { --tier: #3da5ff; }
+.pa-root .pa-shop-card[data-cost='4'] { --tier: #b25cff; }
+.pa-root .pa-shop-card[data-cost='5'] { --tier: #ffcc4d; }
+
+.pa-root .pa-shop-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.18) 50%, transparent 65%);
+  transform: translateX(-120%);
+  transition: transform 0.6s ease;
+}
+
+.pa-root .pa-shop-card:hover:not(:disabled) {
+  transform: translateY(-5px) scale(1.02);
+  filter: none;
+  box-shadow:
+    inset 0 0 0 2px var(--tier),
+    0 18px 34px -14px var(--tier);
+}
+
+.pa-root .pa-shop-card:hover:not(:disabled)::after {
+  transform: translateX(120%);
+}
+
+.pa-root .pa-shop-card[data-cost='5'] {
+  animation: pa-legend-shine 2.4s ease-in-out infinite;
+}
+
+@keyframes pa-legend-shine {
+  50% { box-shadow: inset 0 0 0 2px var(--tier), 0 0 26px -6px var(--tier); }
+}
+
+.pa-root .pa-shop-cost {
+  border-radius: 8px;
+  color: #10122e;
+  background: var(--tier);
+  box-shadow: 0 0 12px -2px var(--tier);
+}
+
+.pa-root .pa-shop-card .pa-sprite {
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.6));
+  transition: transform 0.2s ease;
+}
+
+.pa-root .pa-shop-card:hover:not(:disabled) .pa-sprite {
+  transform: scale(1.12) translateY(-3px);
+}
+
+.pa-root .pa-shop-card.is-empty {
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* Bouton Combat */
+.pa-root .pa-btn-fight {
+  border: 0;
+  border-radius: 16px;
+  color: #fff;
+  background: linear-gradient(145deg, #ff4f8b, #b25cff);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) inset, 0 12px 36px -10px rgba(255, 79, 139, 0.9);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  animation: pa-fight-pulse 2.2s ease-in-out infinite;
+}
+
+.pa-root .pa-btn-fight::before {
+  content: '⚔';
+  font-size: 1.6rem;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+}
+
+.pa-root .pa-btn-fight:disabled {
+  animation: none;
+}
+
+@keyframes pa-fight-pulse {
+  50% { box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25) inset, 0 0 44px -6px rgba(255, 79, 139, 1); }
+}
+
+.pa-root.is-fighting .pa-dock {
+  opacity: 0.4;
+  filter: saturate(0.6);
+}
+
+/* —— Sprites d’interface —— */
+.pa-root .pa-sprite {
+  image-rendering: auto;
+}
+
+/* —— Écrans hub / carte / starter / codex —— */
+.pa-root .pa-hub-card,
+.pa-root .pa-map,
+.pa-root .pa-codex-detail,
+.pa-root .pa-codex-list {
+  border-radius: 20px;
+  border: 1px solid var(--pa-line);
+  background: var(--pa-glass);
+  backdrop-filter: blur(16px);
+}
+
+.pa-root .pa-hub-brand-poke { color: var(--pa-acid); text-shadow: 0 0 24px rgba(69, 233, 255, 0.8); }
+.pa-root .pa-hub-brand-bully { color: var(--pa-foe); text-shadow: 0 0 24px rgba(255, 79, 139, 0.8); }
+.pa-root .pa-hub-brand-tac { color: var(--pa-gold); text-shadow: 0 0 24px rgba(255, 204, 77, 0.7); }
+
+.pa-root .pa-starter-card {
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--ring) 55%, transparent);
+  background:
+    radial-gradient(90% 70% at 50% 10%, color-mix(in srgb, var(--ring) 28%, transparent), transparent 70%),
+    linear-gradient(180deg, #161a44, #0a0b25);
+  box-shadow: 0 12px 30px -18px color-mix(in srgb, var(--ring) 90%, transparent);
+}
+
+.pa-root .pa-starter-card:hover {
+  transform: translateY(-5px) scale(1.03);
+  box-shadow: 0 0 0 1px var(--ring), 0 18px 40px -14px var(--ring);
+}
+
+.pa-root .pa-starter h1,
+.pa-root .pa-map-title {
+  color: #fff;
+  text-shadow: 0 0 18px rgba(178, 92, 255, 0.9);
+}
+
+.pa-root .pa-map-node {
+  border-radius: 16px;
+  border: 1px solid var(--pa-line);
+  box-shadow: 0 14px 30px -20px rgba(0, 0, 0, 0.9);
+}
+
+.pa-root .pa-map-node.is-current {
+  border-color: var(--pa-gold);
+  box-shadow: 0 0 0 1px var(--pa-gold), 0 0 30px -6px rgba(255, 204, 77, 0.9);
+}
+
+/* Combat : le dock se replie pour laisser toute la place à l’arène */
+.pa-root.is-fighting .pa-dock .pa-items-row,
+.pa-root.is-fighting .pa-dock .pa-bench {
+  display: none;
+}
+
+.pa-root.is-fighting .pa-income-bar {
+  display: none;
+}

@@ -1,4 +1,4 @@
-import { TALENTS } from './pokeArenaTalents';
+import { FORM_TALENTS, TALENTS } from './pokeArenaTalents';
 
 export const TYPES = ['Feu', 'Eau', 'Plante', 'Électrik', 'Normal', 'Combat', 'Psy', 'Spectre', 'Dragon', 'Fée', 'Acier', 'Glace', 'Roche', 'Ténèbres', 'Vol', 'Sol', 'Insecte', 'Poison'];
 
@@ -174,7 +174,11 @@ export const LINES = [
     ] }),
   L('sneasel', 2, [], 1,
     { name: 'Triple Axel', desc: 'Tous les 3 tours : 185% ATK Glace sur le backline.', every: 3, mult: 1.85, aim: 'back' },
-    [S('Farfuret', ['Ténèbres', 'Glace'], 380, 64, 19, 215), S('Dimoret', ['Ténèbres', 'Glace'], 740, 120, 20, 461), S('Dimoret ★', ['Ténèbres', 'Glace'], 1200, 185, 21, 461)]),
+    [S('Farfuret', ['Ténèbres', 'Glace'], 380, 64, 19, 215)],
+    { at: 2, forms: [
+      { id: 'johto', stages: [S('Dimoret', ['Ténèbres', 'Glace'], 740, 120, 20, 461), S('Dimoret ★', ['Ténèbres', 'Glace'], 1200, 185, 21, 461)] },
+      { id: 'hisui', stages: [S('Farfurex', ['Combat', 'Poison'], 760, 125, 19, 903), S('Farfurex ★', ['Combat', 'Poison'], 1240, 190, 20, 903)] }
+    ] }),
   L('riolu', 2, ['Force'], 2,
     { name: 'Aurasphère', desc: 'Tous les 3 tours : 190% ATK qui touche le back.', every: 3, mult: 1.9, aim: 'back' },
     [S('Riolu', 'Combat', 420, 60, 16, 447), S('Lucario', ['Combat', 'Acier'], 820, 125, 18, 448), S('Lucario ★', ['Combat', 'Acier'], 1340, 192, 20, 448)]),
@@ -207,7 +211,11 @@ export const LINES = [
     ] }),
   L('toxel', 3, [], 2,
     { name: 'Overdrive', desc: 'Tous les 3 tours : 185% ATK Électrik à 2 cibles.', every: 3, mult: 1.85, aim: 'aoe2' },
-    [S('Toxizap', ['Électrik', 'Poison'], 420, 62, 14, 848), S('Salarsen', ['Électrik', 'Poison'], 820, 120, 15, 849), S('Salarsen ★', ['Électrik', 'Poison'], 1340, 185, 16, 849)]),
+    [S('Toxizap', ['Électrik', 'Poison'], 420, 62, 14, 848)],
+    { at: 2, forms: [
+      { id: 'aigue', stages: [S('Salarsen (Aigüe)', ['Électrik', 'Poison'], 820, 120, 15, 849), S('Salarsen (Aigüe) ★', ['Électrik', 'Poison'], 1340, 185, 16, 849)] },
+      { id: 'grave', stages: [S('Salarsen (Grave)', ['Électrik', 'Poison'], 860, 115, 14, 10184), S('Salarsen (Grave) ★', ['Électrik', 'Poison'], 1400, 178, 15, 10184)] }
+    ] }),
   L('zorua-h', 3, [], 2,
     { name: 'Rancune', desc: 'Tous les 3 tours : 190% ATK Spectre + shred 10%.', every: 3, mult: 1.9, aim: 'weak', shred: 0.1 },
     [S('Zorua de Hisui', ['Spectre', 'Normal'], 400, 68, 16, 10238), S('Zoroark de Hisui', ['Spectre', 'Normal'], 780, 128, 18, 10239), S('Zoroark de Hisui ★', ['Spectre', 'Normal'], 1280, 195, 19, 10239)]),
@@ -361,7 +369,11 @@ export const LINES = [
     [S('Shaymin', 'Plante', 700, 100, 15, 492), S('Shaymin ★', 'Plante', 1150, 155, 16, 492), S('Shaymin ★★', 'Plante', 1750, 220, 17, 492)]),
   L('zapdos', 5, [], 3,
     { name: 'Fatal-Foudre', desc: 'Tous les 3 tours : 220% ATK Électrik.', every: 3, mult: 2.2, aim: 'random' },
-    [S('Électhor', ['Électrik', 'Vol'], 760, 115, 16, 145), S('Électhor ★', ['Électrik', 'Vol'], 1250, 180, 17, 145), S('Électhor ★★', ['Électrik', 'Vol'], 1900, 255, 18, 145)]),
+    [S('Électhor', ['Électrik', 'Vol'], 760, 115, 16, 145)],
+    { at: 2, forms: [
+      { id: 'kanto', stages: [S('Électhor ★', ['Électrik', 'Vol'], 1250, 180, 17, 145), S('Électhor ★★', ['Électrik', 'Vol'], 1900, 255, 18, 145)] },
+      { id: 'galar', stages: [S('Électhor de Galar', ['Combat', 'Vol'], 1280, 185, 18, 10170), S('Électhor de Galar ★', ['Combat', 'Vol'], 1940, 260, 19, 10170)] }
+    ] }),
   L('rayquaza', 5, [], 2,
     { name: 'Draco-Météore', desc: 'Tous les 3 tours : 230% ATK Dragon zone.', every: 3, mult: 2.3, aim: 'aoe2' },
     [S('Rayquaza', ['Dragon', 'Vol'], 780, 120, 16, 384), S('Rayquaza ★', ['Dragon', 'Vol'], 1280, 190, 17, 384), S('Rayquaza ★★', ['Dragon', 'Vol'], 1950, 265, 18, 384)]),
@@ -392,7 +404,8 @@ export const LINES = [
     [S('Verpom', ['Plante', 'Dragon'], 380, 44, 12, 840)],
     { at: 2, forms: [
       { id: 'flapple', stages: [S('Pomdrapi', ['Plante', 'Dragon'], 800, 120, 16, 841), S('Pomdrapi ★', ['Plante', 'Dragon'], 1280, 175, 17, 841)] },
-      { id: 'appletun', stages: [S('Dratatin', ['Plante', 'Dragon'], 900, 95, 11, 842), S('Dratatin ★', ['Plante', 'Dragon'], 1400, 145, 12, 842)] }
+      { id: 'appletun', stages: [S('Dratatin', ['Plante', 'Dragon'], 900, 95, 11, 842), S('Dratatin ★', ['Plante', 'Dragon'], 1400, 145, 12, 842)] },
+      { id: 'dipplin', stages: [S('Pomdramour', ['Plante', 'Dragon'], 860, 100, 10, 1011), S('Pomdorochi', ['Plante', 'Dragon'], 1420, 150, 11, 1019)] }
     ] }),
   L('bulbasaur', 2, ['Starter'], 2,
     { name: 'Giga-Sangsue', desc: 'Tous les 3 tours : 170% ATK + soin allié 8%.', every: 3, mult: 1.7, aim: 'front', healAlly: 0.08 },
@@ -409,15 +422,40 @@ export const LINES = [
 
   // —— Grille (formes normales) ——
   mono('lapras', 3, 'Lokhlass', ['Eau', 'Glace'], 620, 70, 12, 131, 2),
-  line2('exegg', 2, ['Noeunoeuf', ['Plante', 'Psy'], 380, 48, 11, 102], ['Noadkoko', ['Plante', 'Psy'], 820, 110, 12, 103]),
-  mono('articuno', 5, 'Artikodin', ['Glace', 'Vol'], 760, 110, 15, 144, 3),
+  L('exegg', 2, [], 1,
+    { name: 'Canon Graine', desc: 'Tous les 3 tours : 175% ATK Plante sur 2 cibles.', every: 3, mult: 1.75, aim: 'aoe2' },
+    [S('Noeunoeuf', ['Plante', 'Psy'], 380, 48, 11, 102)],
+    { at: 2, forms: [
+      { id: 'kanto', stages: [S('Noadkoko', ['Plante', 'Psy'], 820, 110, 12, 103), S('Noadkoko ★', ['Plante', 'Psy'], 1300, 165, 13, 103)] },
+      { id: 'alola', stages: [S('Noadkoko d’Alola', ['Plante', 'Dragon'], 880, 115, 10, 10114), S('Noadkoko d’Alola ★', ['Plante', 'Dragon'], 1400, 170, 11, 10114)] }
+    ] }),
+  L('articuno', 5, [], 3,
+    { name: 'Blizzard', desc: 'Tous les 4 tours : 210% ATK Glace sur 2 cibles + ralentit.', every: 4, mult: 2.1, aim: 'aoe2', slow: 2 },
+    [S('Artikodin', ['Glace', 'Vol'], 760, 110, 15, 144)],
+    { at: 2, forms: [
+      { id: 'kanto', stages: [S('Artikodin ★', ['Glace', 'Vol'], 1140, 160, 16, 144), S('Artikodin ★★', ['Glace', 'Vol'], 1520, 210, 17, 144)] },
+      { id: 'galar', stages: [S('Artikodin de Galar', ['Psy', 'Vol'], 1100, 170, 16, 10169), S('Artikodin de Galar ★', ['Psy', 'Vol'], 1480, 220, 17, 10169)] }
+    ] }),
   line3('machop', 2, ['Machoc', 'Combat', 400, 55, 12, 66], ['Machopeur', 'Combat', 740, 100, 13, 67], ['Mackogneur', 'Combat', 1240, 165, 14, 68], 1),
   line3('nido', 2, ['Nidoran♂', 'Poison', 360, 42, 13, 32], ['Nidorino', 'Poison', 680, 80, 14, 33], ['Nidoking', ['Poison', 'Sol'], 1180, 145, 15, 34], 1),
-  line2('sand', 2, ['Sabelette', 'Sol', 380, 48, 13, 27], ['Sablaireau', 'Sol', 820, 110, 14, 28], 1),
+  L('sand', 2, [], 1,
+    { name: 'Tranche', desc: 'Tous les 3 tours : 180% ATK sur le plus faible.', every: 3, mult: 1.8, aim: 'weak' },
+    [S('Sabelette', 'Sol', 380, 48, 13, 27)],
+    { at: 2, forms: [
+      { id: 'kanto', stages: [S('Sablaireau', 'Sol', 820, 110, 14, 28), S('Sablaireau ★', 'Sol', 1300, 165, 15, 28)] },
+      { id: 'alola', stages: [S('Sablaireau d’Alola', ['Glace', 'Acier'], 800, 112, 14, 10102), S('Sablaireau d’Alola ★', ['Glace', 'Acier'], 1280, 168, 15, 10102)] }
+    ] }),
   line3('pidgey', 2, ['Roucool', ['Normal', 'Vol'], 340, 40, 15, 16], ['Roucoups', ['Normal', 'Vol'], 640, 75, 16, 17], ['Roucarnage', ['Normal', 'Vol'], 1100, 130, 18, 18], 2),
   mono('pinsir', 3, 'Scarabrute', 'Insecte', 560, 100, 15, 127, 1),
-  line3('geodude', 2, ['Racaillou', ['Roche', 'Sol'], 420, 50, 10, 74], ['Gravalanch', ['Roche', 'Sol'], 780, 90, 11, 75], ['Grolem', ['Roche', 'Sol'], 1280, 145, 12, 76], 1),
-  line2('magnemite', 2, ['Magnéti', ['Électrik', 'Acier'], 360, 55, 14, 81], ['Magnéton', ['Électrik', 'Acier'], 780, 115, 15, 82], 3),
+  L('geodude', 2, [], 1,
+    { name: 'Éboulement', desc: 'Tous les 3 tours : 170% ATK Roche sur 2 cibles.', every: 3, mult: 1.7, aim: 'aoe2' },
+    [S('Racaillou', ['Roche', 'Sol'], 420, 50, 10, 74)],
+    { at: 2, forms: [
+      { id: 'kanto', stages: [S('Gravalanch', ['Roche', 'Sol'], 780, 90, 11, 75), S('Grolem', ['Roche', 'Sol'], 1280, 145, 12, 76)] },
+      { id: 'alola', stages: [S('Gravalanch d’Alola', ['Roche', 'Électrik'], 760, 95, 11, 10110), S('Grolem d’Alola', ['Roche', 'Électrik'], 1240, 150, 12, 10111)] }
+    ] }),
+  withSpell(line3('magnemite', 2, ['Magnéti', ['Électrik', 'Acier'], 360, 55, 14, 81], ['Magnéton', ['Électrik', 'Acier'], 740, 105, 14, 82], ['Magnézone', ['Électrik', 'Acier'], 1260, 160, 13, 462], 3),
+    { name: 'Élecanon', desc: 'Tous les 4 tours : 175% ATK Électrik + étourdit.', every: 4, mult: 1.75, aim: 'tank', stun: true }),
   line2('clefairy', 2, ['Mélofée', 'Fée', 400, 48, 12, 35], ['Mélodelfe', 'Fée', 860, 105, 13, 36], 2),
   L('mewtwo', 5, [], 3,
     { name: 'Frappe', desc: 'Tous les 3 tours : 170% ATK.', every: 3, mult: 1.7, aim: 'front' },
@@ -429,7 +467,14 @@ export const LINES = [
   line2('sentret', 1, ['Fouinette', 'Normal', 360, 36, 12, 161], ['Fouinar', 'Normal', 760, 78, 14, 162], 1),
   line3('chikorita', 2, ['Germignon', 'Plante', 400, 46, 12, 152], ['Macronium', 'Plante', 740, 82, 13, 153], ['Méganium', 'Plante', 1220, 135, 14, 154], 2, ['Starter']),
   line3('swinub', 2, ['Marcacrin', ['Glace', 'Sol'], 420, 48, 11, 220], ['Cochignon', ['Glace', 'Sol'], 800, 95, 12, 221], ['Mammochon', ['Glace', 'Sol'], 1320, 155, 13, 473], 1),
-  line2('tyrogue', 2, ['Debugant', 'Combat', 340, 50, 16, 236], ['Kapoera', 'Combat', 780, 115, 18, 237], 1),
+  L('tyrogue', 2, [], 1,
+    { name: 'Mach Punch', desc: 'Tous les 2 tours : 145% ATK Combat.', every: 2, mult: 1.45, aim: 'front' },
+    [S('Debugant', 'Combat', 340, 50, 16, 236)],
+    { at: 2, forms: [
+      { id: 'lee', stages: [S('Kicklee', 'Combat', 740, 125, 17, 106), S('Kicklee ★', 'Combat', 1180, 185, 18, 106)] },
+      { id: 'chan', stages: [S('Tygnon', 'Combat', 780, 115, 16, 107), S('Tygnon ★', 'Combat', 1240, 175, 17, 107)] },
+      { id: 'top', stages: [S('Kapoera', 'Combat', 780, 115, 18, 237), S('Kapoera ★', 'Combat', 1240, 170, 19, 237)] }
+    ] }),
   line3('zubat', 2, ['Nosferapti', ['Poison', 'Vol'], 320, 42, 17, 41], ['Nosferalto', ['Poison', 'Vol'], 620, 85, 18, 42], ['Nostenfer', ['Poison', 'Vol'], 1080, 145, 20, 169], 2),
   line2('hoothoot', 2, ['Hoothoot', ['Normal', 'Vol'], 380, 42, 13, 163], ['Noarfang', ['Normal', 'Vol'], 820, 95, 14, 164], 3),
   mono('shuckle', 2, 'Caratroc', ['Insecte', 'Roche'], 520, 30, 8, 213, 1),
@@ -486,8 +531,20 @@ export const LINES = [
   line3('roggenrola', 2, ['Nodulithe', 'Roche', 420, 48, 10, 524], ['Géolithe', 'Roche', 800, 90, 11, 525], ['Gigalithe', 'Roche', 1320, 145, 11, 526], 1),
   line2('karrablast', 3, ['Carabing', 'Insecte', 380, 55, 14, 588], ['Lançargot', ['Insecte', 'Acier'], 860, 130, 12, 589], 1),
   line2('cottonee', 2, ['Doudouvet', ['Plante', 'Fée'], 360, 46, 15, 546], ['Farfaduvet', ['Plante', 'Fée'], 760, 105, 17, 547], 2),
-  mono('kyurem', 5, 'Kyurem', ['Dragon', 'Glace'], 820, 125, 14, 646, 3),
-  mono('meloetta', 5, 'Meloetta', ['Psy', 'Normal'], 700, 120, 16, 648, 3),
+  L('kyurem', 5, [], 3,
+    { name: 'Ère Glaciaire', desc: 'Tous les 4 tours : 225% ATK Glace à tous + ralentit.', every: 4, mult: 2.25, aim: 'all', slow: 2 },
+    [S('Kyurem', ['Dragon', 'Glace'], 820, 125, 14, 646), S('Kyurem ★', ['Dragon', 'Glace'], 1230, 181, 15, 646)],
+    { at: 3, forms: [
+      { id: 'noir', stages: [S('Kyurem Noir', ['Dragon', 'Glace'], 1600, 260, 16, 10022)] },
+      { id: 'blanc', stages: [S('Kyurem Blanc', ['Dragon', 'Glace'], 1700, 245, 15, 10023)] }
+    ] }),
+  L('meloetta', 5, [], 3,
+    { name: 'Chant Antique', desc: 'Tous les 3 tours : 190% ATK sur 2 cibles + étourdit.', every: 3, mult: 1.9, aim: 'aoe2', stun: true },
+    [S('Meloetta', ['Normal', 'Psy'], 700, 120, 16, 648)],
+    { at: 2, forms: [
+      { id: 'chant', stages: [S('Meloetta (Chant)', ['Normal', 'Psy'], 1050, 174, 17, 648), S('Meloetta (Chant) ★', ['Normal', 'Psy'], 1400, 228, 18, 648)] },
+      { id: 'danse', stages: [S('Meloetta (Danse)', ['Normal', 'Combat'], 1000, 185, 19, 10018), S('Meloetta (Danse) ★', ['Normal', 'Combat'], 1340, 240, 20, 10018)] }
+    ] }),
   L('fennekin', 3, ['Starter'], 3,
     { name: 'Feu Mystique', desc: 'Tous les 3 tours : 180% ATK Feu + baisse l’ATK de 15%.', every: 3, mult: 1.8, aim: 'weak', atkBreak: 0.15 },
     [S('Feunnec', 'Feu', 380, 55, 16, 653), S('Roussil', 'Feu', 720, 100, 17, 654)],
@@ -497,12 +554,24 @@ export const LINES = [
     ] }),
   line3('chespin', 3, ['Marisson', 'Plante', 420, 52, 12, 650], ['Boguérisse', 'Plante', 800, 95, 12, 651], ['Blindépique', ['Plante', 'Combat'], 1320, 155, 13, 652], 1, ['Starter']),
   line2('helioptile', 2, ['Galvaran', ['Électrik', 'Normal'], 360, 52, 16, 694], ['Iguolta', ['Électrik', 'Normal'], 780, 120, 18, 695], 3),
-  line2('bergmite', 3, ['Grelaçon', 'Glace', 460, 55, 10, 712], ['Séracrawl', 'Glace', 1000, 120, 11, 713], 1),
+  L('bergmite', 3, [], 1,
+    { name: 'Avalanche', desc: 'Tous les 3 tours : 180% ATK Glace + bouclier 10%.', every: 3, mult: 1.8, aim: 'front', shield: 0.1 },
+    [S('Grelaçon', 'Glace', 460, 55, 10, 712)],
+    { at: 2, forms: [
+      { id: 'kalos', stages: [S('Séracrawl', 'Glace', 1000, 120, 11, 713), S('Séracrawl ★', 'Glace', 1560, 175, 12, 713)] },
+      { id: 'hisui', stages: [S('Séracrawl de Hisui', ['Glace', 'Roche'], 1020, 125, 10, 10243), S('Séracrawl de Hisui ★', ['Glace', 'Roche'], 1600, 180, 11, 10243)] }
+    ] }),
   mono('hawlucha', 3, 'Brutalibré', ['Combat', 'Vol'], 520, 100, 18, 701, 1),
   line2('skrelp', 3, ['Venalgue', ['Poison', 'Eau'], 380, 52, 12, 690], ['Kravarech', ['Poison', 'Dragon'], 860, 125, 13, 691], 2),
   line2('binacle', 2, ['Opermine', ['Roche', 'Eau'], 400, 52, 12, 688], ['Golgopathe', ['Roche', 'Eau'], 880, 120, 13, 689], 1),
   line2('espurr', 2, ['Psystigri', 'Psy', 360, 52, 15, 677], ['Mistigrix', 'Psy', 780, 115, 16, 678], 3),
-  line3('goomy', 4, ['Mucuscule', 'Dragon', 420, 48, 11, 704], ['Colimucus', 'Dragon', 820, 95, 12, 705], ['Muplodocus', 'Dragon', 1400, 165, 13, 706], 2),
+  L('goomy', 4, [], 2,
+    { name: 'Hydro-Queue', desc: 'Tous les 3 tours : 170% ATK Dragon sur 2 cibles + ralentit.', every: 3, mult: 1.7, aim: 'aoe2', slow: 2 },
+    [S('Mucuscule', 'Dragon', 420, 48, 11, 704)],
+    { at: 2, forms: [
+      { id: 'kalos', stages: [S('Colimucus', 'Dragon', 820, 95, 12, 705), S('Muplodocus', 'Dragon', 1400, 165, 13, 706)] },
+      { id: 'hisui', stages: [S('Colimucus de Hisui', ['Acier', 'Dragon'], 840, 92, 11, 10241), S('Muplodocus de Hisui', ['Acier', 'Dragon'], 1440, 160, 12, 10242)] }
+    ] }),
   line2('inkay', 3, ['Sepiatop', ['Ténèbres', 'Psy'], 380, 52, 14, 686], ['Sepiatroce', ['Ténèbres', 'Psy'], 820, 125, 15, 687], 2),
   mono('klefki', 3, 'Trousselin', ['Acier', 'Fée'], 520, 80, 13, 707, 2),
   mono('yveltal', 5, 'Yveltal', ['Ténèbres', 'Vol'], 820, 130, 16, 717, 3),
@@ -515,18 +584,33 @@ export const LINES = [
   mono('passimian', 3, 'Quartermac', 'Combat', 540, 105, 15, 766, 1),
   line2('salandit', 3, ['Tritox', ['Poison', 'Feu'], 360, 55, 16, 757], ['Malamandre', ['Poison', 'Feu'], 780, 125, 18, 758], 2),
   line2('mudbray', 2, ['Tiboudet', 'Sol', 440, 55, 12, 749], ['Bourrinos', 'Sol', 960, 120, 12, 750], 1),
-  mono('oricorio', 2, 'Plumeline', ['Vol', 'Feu'], 460, 85, 17, 741, 2),
+  L('oricorio', 2, [], 2,
+    { name: 'Danse Éveil', desc: 'Tous les 3 tours : 175% ATK sur 2 cibles (type du style).', every: 3, mult: 1.75, aim: 'aoe2' },
+    [S('Plumeline', ['Feu', 'Vol'], 460, 85, 17, 741)],
+    { at: 2, forms: [
+      { id: 'flamenco', stages: [S('Plumeline (Flamenco)', ['Feu', 'Vol'], 690, 123, 18, 741), S('Plumeline (Flamenco) ★', ['Feu', 'Vol'], 920, 162, 19, 741)] },
+      { id: 'pompom', stages: [S('Plumeline (Pom-Pom)', ['Électrik', 'Vol'], 690, 123, 18, 10123), S('Plumeline (Pom-Pom) ★', ['Électrik', 'Vol'], 920, 162, 19, 10123)] },
+      { id: 'hula', stages: [S('Plumeline (Hula)', ['Psy', 'Vol'], 720, 118, 18, 10124), S('Plumeline (Hula) ★', ['Psy', 'Vol'], 960, 156, 19, 10124)] },
+      { id: 'buyo', stages: [S('Plumeline (Buyō)', ['Spectre', 'Vol'], 680, 126, 18, 10125), S('Plumeline (Buyō) ★', ['Spectre', 'Vol'], 900, 166, 19, 10125)] }
+    ] }),
   mono('oranguru', 3, 'Gouroutan', ['Normal', 'Psy'], 560, 95, 12, 765, 3),
   L('rockruff', 3, [], 1,
     { name: 'Lame de Roc', desc: 'Tous les 3 tours : 200% ATK Roche sur le front.', every: 3, mult: 2.0, aim: 'front' },
     [S('Rocabot', 'Roche', 400, 55, 15, 744)],
     { at: 2, forms: [
       { id: 'jour', stages: [S('Lougaroc (Diurne)', 'Roche', 860, 125, 17, 745), S('Lougaroc (Diurne) ★', 'Roche', 1340, 180, 18, 745)] },
-      { id: 'nuit', stages: [S('Lougaroc (Nocturne)', 'Roche', 900, 130, 15, 10126), S('Lougaroc (Nocturne) ★', 'Roche', 1400, 185, 16, 10126)] }
+      { id: 'nuit', stages: [S('Lougaroc (Nocturne)', 'Roche', 900, 130, 15, 10126), S('Lougaroc (Nocturne) ★', 'Roche', 1400, 185, 16, 10126)] },
+      { id: 'crepuscule', stages: [S('Lougaroc (Crépusculaire)', 'Roche', 880, 128, 17, 10152), S('Lougaroc (Crépusculaire) ★', 'Roche', 1370, 183, 18, 10152)] }
     ] }),
   line3('jangmo', 4, ['Bébécaille', 'Dragon', 420, 55, 13, 782], ['Écaïd', ['Dragon', 'Combat'], 820, 110, 14, 783], ['Ékaïser', ['Dragon', 'Combat'], 1400, 180, 15, 784], 1),
   line2('fomantis', 2, ['Mimantis', 'Plante', 380, 52, 14, 753], ['Floramantis', 'Plante', 820, 120, 15, 754], 2),
-  mono('lunala', 5, 'Lunala', ['Psy', 'Spectre'], 820, 130, 15, 792, 3),
+  L('lunala', 5, [], 3,
+    { name: 'Rayon Spectral', desc: 'Tous les 4 tours : 240% ATK sur le plus faible.', every: 4, mult: 2.4, aim: 'weak' },
+    [S('Cosmog', 'Psy', 520, 70, 12, 789), S('Cosmovum', 'Psy', 980, 110, 6, 790)],
+    { at: 3, forms: [
+      { id: 'lunala', stages: [S('Lunala', ['Psy', 'Spectre'], 1640, 260, 16, 792)] },
+      { id: 'solgaleo', stages: [S('Solgaleo', ['Psy', 'Acier'], 1700, 255, 15, 791)] }
+    ] }),
   mono('marshadow', 5, 'Marshadow', ['Combat', 'Spectre'], 680, 140, 20, 802, 1),
   line2('grimer-a', 3, ['Tadmorv d’Alola', ['Poison', 'Ténèbres'], 460, 55, 10, 10112], ['Grotadmorv d’Alola', ['Poison', 'Ténèbres'], 980, 120, 11, 10113], 1),
   line3('scorbunny', 3, ['Flambino', 'Feu', 380, 58, 17, 813], ['Lapyro', 'Feu', 720, 105, 18, 814], ['Pyrobut', 'Feu', 1200, 170, 20, 815], 1, ['Starter']),
@@ -551,14 +635,16 @@ export const LINES = [
   line3('starly', 3, ['Étourmi', ['Normal', 'Vol'], 340, 46, 16, 396], ['Étourvol', ['Normal', 'Vol'], 680, 90, 17, 397], ['Étouraptor', ['Normal', 'Vol'], 1160, 150, 18, 398], 2),
   line2('milcery', 2, ['Crèmy', 'Fée', 360, 42, 12, 868], ['Charmilly', 'Fée', 800, 100, 13, 869], 2),
   mono('furfrou', 2, 'Couafarel', 'Normal', 480, 80, 16, 676, 1),
-  mono('vivillon', 2, 'Prismillon', ['Insecte', 'Vol'], 460, 85, 16, 666, 2),
+  withSpell(line3('vivillon', 2, ['Lépidonille', 'Insecte', 340, 38, 12, 664], ['Pérégrain', 'Insecte', 640, 58, 8, 665], ['Prismillon', ['Insecte', 'Vol'], 1080, 148, 15, 666], 3),
+    { name: 'Poudre Fureur', desc: 'Tous les 3 tours : 150% ATK Insecte + étourdit.', every: 3, mult: 1.5, aim: 'random', stun: true }),
   L('ogerpon', 5, [], 1,
     { name: 'Massue Furieuse', desc: 'Tous les 3 tours : 230% ATK sur le front, ignore 10% PV.', every: 3, mult: 2.3, aim: 'front', shred: 0.1 },
     [S('Ogerpon', 'Plante', 680, 125, 18, 1017)],
     { at: 2, forms: [
       { id: 'turquoise', stages: [S('Ogerpon (Turquoise)', 'Plante', 1020, 185, 19, 1017), S('Ogerpon (Turquoise) ★', 'Plante', 1560, 250, 20, 1017)] },
       { id: 'puits', stages: [S('Ogerpon (Masque du Puits)', ['Plante', 'Eau'], 1060, 180, 18, 10273), S('Ogerpon (Masque du Puits) ★', ['Plante', 'Eau'], 1620, 245, 19, 10273)] },
-      { id: 'fourneau', stages: [S('Ogerpon (Masque du Fourneau)', ['Plante', 'Feu'], 1000, 190, 19, 10274), S('Ogerpon (Masque du Fourneau) ★', ['Plante', 'Feu'], 1520, 255, 20, 10274)] }
+      { id: 'fourneau', stages: [S('Ogerpon (Masque du Fourneau)', ['Plante', 'Feu'], 1000, 190, 19, 10274), S('Ogerpon (Masque du Fourneau) ★', ['Plante', 'Feu'], 1520, 255, 20, 10274)] },
+      { id: 'pierre', stages: [S('Ogerpon (Masque de la Pierre)', ['Plante', 'Roche'], 1120, 175, 17, 10275), S('Ogerpon (Masque de la Pierre) ★', ['Plante', 'Roche'], 1700, 235, 18, 10275)] }
     ] }),
   mono('miraidon', 5, 'Miraidon', ['Électrik', 'Dragon'], 820, 135, 18, 1008, 3),
   mono('roaring', 5, 'Rugit-Lune', ['Dragon', 'Ténèbres'], 780, 145, 20, 1005, 2),
@@ -569,8 +655,13 @@ export const LINES = [
   line2('bellibolt', 2, ['Têtampoule', 'Électrik', 400, 48, 11, 938], ['Ampibidou', 'Électrik', 880, 115, 12, 939], 2),
 
   // —— Grille : Pokémon restants ——
-  withSpell(line3('teddiursa', 1, ['Teddiursa', 'Normal', 420, 46, 11, 216], ['Ursaring', 'Normal', 820, 92, 11, 217], ['Ursaking', ['Sol', 'Normal'], 1340, 140, 11, 901], 1, ['Force']),
-    { name: 'Coup d’Boule', desc: 'Tous les 3 tours : 165% ATK + ralentit (SPD -2).', every: 3, mult: 1.65, aim: 'front', slow: 2 }),
+  L('teddiursa', 1, ['Force'], 1,
+    { name: 'Coup d’Boule', desc: 'Tous les 3 tours : 165% ATK + ralentit (SPD -2).', every: 3, mult: 1.65, aim: 'front', slow: 2 },
+    [S('Teddiursa', 'Normal', 420, 46, 11, 216), S('Ursaring', 'Normal', 820, 92, 11, 217)],
+    { at: 3, forms: [
+      { id: 'ursaking', stages: [S('Ursaking', ['Sol', 'Normal'], 1340, 140, 11, 901)] },
+      { id: 'lune', stages: [S('Ursaking (Lune Vermeille)', ['Sol', 'Normal'], 1280, 150, 10, 10272)] }
+    ] }),
   withSpell(line2('swablu', 2, ['Tylton', ['Normal', 'Vol'], 360, 42, 14, 333], ['Altaria', ['Dragon', 'Vol'], 800, 95, 15, 334], 2),
     { name: 'Chant Antique', desc: 'Tous les 3 tours : 150% ATK sur 2 cibles + soigne 8%.', every: 3, mult: 1.5, aim: 'aoe2', healAlly: 0.08 }),
   withSpell(mono('chatot', 1, 'Pijako', ['Normal', 'Vol'], 380, 42, 16, 441, 3),
@@ -625,8 +716,13 @@ export const LINES = [
     { name: 'Distorsion', desc: 'Tous les 4 tours : 150% ATK Psy sur 2 cibles + soigne 12%.', every: 4, mult: 1.5, aim: 'aoe2', healAlly: 0.12 }),
   withSpell(mono('scream-tail', 4, 'Hurle-Queue', ['Fée', 'Psy'], 720, 100, 15, 985, 2),
     { name: 'Bâillement', desc: 'Tous les 3 tours : 170% ATK Fée + étourdit + soigne 10%.', every: 3, mult: 1.7, aim: 'front', stun: true, healAlly: 0.1 }),
-  withSpell(line3('wurmple', 2, ['Chenipotte', 'Insecte', 340, 38, 12, 265], ['Armulys', 'Insecte', 640, 60, 8, 266], ['Charmillon', ['Insecte', 'Vol'], 1080, 150, 15, 267], 3),
-    { name: 'Vent Argenté', desc: 'Tous les 3 tours : 160% ATK Insecte sur 2 cibles.', every: 3, mult: 1.6, aim: 'aoe2' }),
+  L('wurmple', 2, [], 3,
+    { name: 'Vent Argenté', desc: 'Tous les 3 tours : 160% ATK Insecte sur 2 cibles.', every: 3, mult: 1.6, aim: 'aoe2' },
+    [S('Chenipotte', 'Insecte', 340, 38, 12, 265)],
+    { at: 2, forms: [
+      { id: 'charmillon', stages: [S('Armulys', 'Insecte', 640, 60, 8, 266), S('Charmillon', ['Insecte', 'Vol'], 1080, 150, 15, 267)] },
+      { id: 'papinox', stages: [S('Blindalys', 'Insecte', 660, 56, 8, 268), S('Papinox', ['Insecte', 'Poison'], 1160, 138, 14, 269)] }
+    ] }),
   withSpell(mono('slither-wing', 4, 'Rampe-Ailes', ['Insecte', 'Combat'], 700, 120, 13, 988, 1),
     { name: 'Danse Flamme', desc: 'Tous les 3 tours : 200% ATK Combat + brûle (5%/tour).', every: 3, mult: 2.0, aim: 'front', dot: { pct: 0.05, turns: 3 } }),
   withSpell(line2('kabuto', 3, ['Kabuto', ['Roche', 'Eau'], 400, 55, 14, 140], ['Kabutops', ['Roche', 'Eau'], 860, 130, 16, 141], 1),
@@ -649,8 +745,13 @@ export const LINES = [
     { name: 'Berceuse', desc: 'Tous les 4 tours : 130% ATK + étourdit la cible.', every: 4, mult: 1.3, aim: 'tank', stun: true }),
   withSpell(mono('xerneas', 5, 'Xerneas', 'Fée', 840, 120, 15, 716, 3),
     { name: 'Géo-Contrôle', desc: 'Tous les 4 tours : 200% ATK Fée sur 2 cibles + 20% ATK d’équipe.', every: 4, mult: 2.0, aim: 'aoe2', teamAtk: 0.2 }),
-  withSpell(line2('koffing', 3, ['Smogo', 'Poison', 420, 46, 10, 109], ['Smogogo de Galar', ['Poison', 'Fée'], 960, 105, 10, 10167], 2),
-    { name: 'Vent Féérique', desc: 'Tous les 3 tours : 160% ATK Fée sur 2 cibles + empoisonne.', every: 3, mult: 1.6, aim: 'aoe2', dot: { pct: 0.04, turns: 3 } }),
+  L('koffing', 3, [], 2,
+    { name: 'Gaz Toxik', desc: 'Tous les 3 tours : 160% ATK sur 2 cibles + empoisonne.', every: 3, mult: 1.6, aim: 'aoe2', dot: { pct: 0.04, turns: 3 } },
+    [S('Smogo', 'Poison', 420, 46, 10, 109)],
+    { at: 2, forms: [
+      { id: 'kanto', stages: [S('Smogogo', 'Poison', 960, 100, 10, 110), S('Smogogo ★', 'Poison', 1500, 150, 11, 110)] },
+      { id: 'galar', stages: [S('Smogogo de Galar', ['Poison', 'Fée'], 960, 105, 10, 10167), S('Smogogo de Galar ★', ['Poison', 'Fée'], 1500, 155, 11, 10167)] }
+    ] }),
   withSpell(line2('munchlax', 4, ['Goinfrex', 'Normal', 560, 60, 8, 446], ['Ronflex', 'Normal', 1240, 125, 8, 143], 1, ['Force']),
     { name: 'Plaquage', desc: 'Tous les 3 tours : 180% ATK + étourdit + soigne 10%.', every: 3, mult: 1.8, aim: 'front', stun: true, healAlly: 0.1 }),
   withSpell(mono('groudon', 5, 'Groudon', 'Sol', 900, 125, 12, 383, 1),
@@ -691,7 +792,31 @@ const MEGA_BY_DEX = {
   718: { name: 'Zygarde (Forme Parfaite)', types: ['Dragon', 'Sol'], dex: 10120 },
   645: { name: 'Démétéros (Totémique)', types: ['Sol', 'Vol'], dex: 10021 },
   383: { name: 'Primo-Groudon', types: ['Sol', 'Feu'], dex: 10078 },
-  888: { name: 'Zacian (Épée Suprême)', types: ['Fée', 'Acier'], dex: 10188 }
+  888: { name: 'Zacian (Épée Suprême)', types: ['Fée', 'Acier'], dex: 10188 },
+  // Méga-Évolutions de Pokémon Légendes Z-A (lignées à 2 stades ou sans évolution)
+  36: { name: 'Méga-Mélodelfe', types: ['Fée', 'Vol'], dex: 10278 },
+  491: { name: 'Méga-Darkrai', types: ['Ténèbres'], dex: 10312 },
+  530: { name: 'Méga-Minotaupe', types: ['Sol', 'Acier'], dex: 10287 },
+  623: { name: 'Méga-Golemastoc', types: ['Sol', 'Spectre'], dex: 10313 },
+  678: { name: 'Méga-Mistigrix', types: ['Psy'], dex: 10314 },
+  687: { name: 'Méga-Sepiatroce', types: ['Ténèbres', 'Psy'], dex: 10297 },
+  689: { name: 'Méga-Golgopathe', types: ['Roche', 'Combat'], dex: 10298 },
+  691: { name: 'Méga-Kravarech', types: ['Poison', 'Dragon'], dex: 10299 },
+  701: { name: 'Méga-Brutalibré', types: ['Combat', 'Vol'], dex: 10300 },
+  740: { name: 'Méga-Crabominable', types: ['Combat', 'Glace'], dex: 10315 },
+  801: { name: 'Méga-Magearna', types: ['Acier', 'Fée'], dex: 10317 },
+  807: { name: 'Méga-Zeraora', types: ['Électrik'], dex: 10319 },
+  870: { name: 'Méga-Hexadron', types: ['Combat'], dex: 10303 },
+  952: { name: 'Méga-Scovilain', types: ['Plante', 'Feu'], dex: 10320 },
+  970: { name: 'Méga-Floréclat', types: ['Roche', 'Poison'], dex: 10321 },
+  // Formes Gigamax / Infinimax
+  131: { name: 'Lokhlass Gigamax', types: ['Eau', 'Glace'], dex: 10204 },
+  849: { name: 'Salarsen Gigamax', types: ['Électrik', 'Poison'], dex: 10219 },
+  10184: { name: 'Salarsen Gigamax (Grave)', types: ['Électrik', 'Poison'], dex: 10228 },
+  841: { name: 'Pomdrapi Gigamax', types: ['Plante', 'Dragon'], dex: 10216 },
+  842: { name: 'Dratatin Gigamax', types: ['Plante', 'Dragon'], dex: 10217 },
+  869: { name: 'Charmilly Gigamax', types: ['Fée'], dex: 10223 },
+  890: { name: 'Éthernatos Infinimax', types: ['Poison', 'Dragon'], dex: 10190 }
 };
 
 const promoteMegaStar = (stages) => {
@@ -708,6 +833,9 @@ LINES.forEach((line) => {
   if (line.forms) line.forms.forEach((form) => promoteMegaStar(form.stages));
   else promoteMegaStar(line.stages);
   line.ab = TALENTS[line.id] || null;
+  (line.forms || []).forEach((form) => {
+    form.ab = FORM_TALENTS[`${line.id}:${form.id}`] || line.ab;
+  });
 });
 
 /** Starters jouables : toutes les lignées avec le rôle Starter. */
@@ -1109,7 +1237,7 @@ export const unitFromLine = (lineId, star = 1, uid, items = [], formId = null, a
     cost: line.cost,
     traits: [...types, ...roles],
     spell: line.spell,
-    ab: line.ab || null,
+    ab: (resolved.formId && line.forms?.find((f) => f.id === resolved.formId)?.ab) || line.ab || null,
     range: line.range || 1,
     name: base.name,
     type: types[0],
@@ -1248,6 +1376,13 @@ const itemMods = (items = []) => {
 
 /* ——————————————————————————— Moteur de combat ——————————————————————————— */
 
+/** Talent d’une unité selon sa lignée et sa forme. */
+export const talentOf = (lineId, formId) => {
+  const line = LINE_MAP[lineId];
+  if (!line) return null;
+  return (formId && line.forms?.find((f) => f.id === formId)?.ab) || line.ab || null;
+};
+
 const has = (u, key) => !!(u && u.ab && u.ab[key]);
 const isStatused = (u) => !!(u.slowed || u.dot || u.stunSkip);
 const unitHasType = (u, type) => (u.types || [u.type]).includes(type);
@@ -1256,7 +1391,7 @@ export const buildFighters = (units, opts = {}) => {
   const bonus = traitBonus(units);
   return units.map((unit) => {
     const im = itemMods(unit.items || []);
-    const ab = opts.neutralized ? null : (unit.ab || LINE_MAP[unit.lineId]?.ab || null);
+    const ab = opts.neutralized ? null : (unit.ab || talentOf(unit.lineId, unit.formId));
     const a = ab || {};
     const maxHp = Math.round(unit.hp * bonus.hpMul * im.hpMul * (a.hpMul || 1));
     return {
@@ -1472,6 +1607,7 @@ const resolveHit = (attacker, target, base, kind, turnIndex) => {
     target.spellShieldUsed = true;
     return { result: 'spellShield' };
   }
+  if (da.wonderGuard && typeMult(atkType, target.type) <= 1 && !ta.protean) return { result: 'immune' };
   if (da.immune && da.immune.includes(atkType)) {
     if (da.absorb) target.curHp = Math.min(target.maxHp, target.curHp + Math.round(target.maxHp * da.absorb));
     if (da.immuneAtk) target.power = Math.round(target.power * (1 + da.immuneAtk));
@@ -1529,6 +1665,7 @@ const applyDamage = (ctx, target, raw, attacker) => {
       if (da.onHitType.atk) target.power = Math.round(target.power * (1 + da.onHitType.atk));
     }
     if (da.onHitAtk) target.power = Math.round(target.power * (1 + da.onHitAtk));
+    if (da.onHitSpd) target.spd += da.onHitSpd;
     if (da.stamina) target.guard = Math.max(0.7, (target.guard || 1) - 0.04);
   }
   if (da.contact && (attacker.range || 1) <= 1 && attacker.alive && Math.random() < da.contact.chance) {
@@ -1683,8 +1820,8 @@ const HIT_NOTES = {
 };
 
 export const simulateFight = (alliesIn, foesIn) => {
-  const allyNeutral = foesIn.some((u) => (u.ab || LINE_MAP[u.lineId]?.ab)?.neutralize);
-  const foeNeutral = alliesIn.some((u) => (u.ab || LINE_MAP[u.lineId]?.ab)?.neutralize);
+  const allyNeutral = foesIn.some((u) => (u.ab || talentOf(u.lineId, u.formId))?.neutralize);
+  const foeNeutral = alliesIn.some((u) => (u.ab || talentOf(u.lineId, u.formId))?.neutralize);
   const allies = buildFighters(alliesIn.map((u) => ({ ...u, side: u.side || 'ally' })), { neutralized: allyNeutral && !foeNeutral });
   const foes = buildFighters(foesIn.map((u) => ({ ...u, side: u.side || 'foe' })), { neutralized: foeNeutral && !allyNeutral });
   const log = [];

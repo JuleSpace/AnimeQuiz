@@ -22,6 +22,7 @@ import {
   START_HP,
   STARTER_LINES,
   starterTrio,
+  talentOf,
   lineSynergyRows,
   traitDossier,
   applyEvolutionChoice,
@@ -328,7 +329,7 @@ const PokeArena = ({ onClose }) => {
       const names = line.stages.map((s) => s.name).join(' ');
       const forms = (line.forms || []).flatMap((form) => form.stages.map((s) => s.name)).join(' ');
       const traits = (line.traits || []).join(' ');
-      const hay = `${line.id} ${names} ${forms} ${traits} ${line.spell?.name || ''} ${line.spell?.desc || ''} ${line.ab?.name || ''}`.toLowerCase();
+      const hay = `${line.id} ${names} ${forms} ${traits} ${line.spell?.name || ''} ${line.spell?.desc || ''} ${line.ab?.name || ''} ${(line.forms || []).map((f) => f.ab?.name || '').join(' ')}`.toLowerCase();
       return hay.includes(q);
     }).sort((a, b) => a.cost - b.cost || (a.stages[0]?.name || '').localeCompare(b.stages[0]?.name || '', 'fr'));
   }, [codexCost, codexQuery]);
@@ -407,7 +408,7 @@ const PokeArena = ({ onClose }) => {
       .filter(Boolean);
     const restoredPool = pool.length ? pool : buildRunPool();
     // Les sauvegardes d’avant les talents n’ont pas de champ ab : on le recharge depuis la lignée.
-    const withTalent = (u) => (u ? { ...u, ab: LINE_MAP[u.lineId]?.ab || null } : u);
+    const withTalent = (u) => (u ? { ...u, ab: talentOf(u.lineId, u.formId) } : u);
     setRunPool(restoredPool);
     setBench((data.bench || []).map(withTalent));
     setBoard(padBoard((data.board || emptyBoard()).map(withTalent)));
@@ -1018,6 +1019,15 @@ const PokeArena = ({ onClose }) => {
                 <div className="pa-codex-spell pa-codex-talent">
                   <h3>Talent — {detail.ab.name}</h3>
                   <p>{detail.ab.desc}</p>
+                  {(detail.forms || []).some((form) => form.ab && form.ab !== detail.ab) && (
+                    <ul>
+                      {detail.forms.map((form) => (
+                        <li key={form.id}>
+                          <b>{form.stages[0]?.name}</b> : {form.ab?.name} — {form.ab?.desc}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               )}
 
@@ -1397,6 +1407,7 @@ const PokeArena = ({ onClose }) => {
                     key={unit ? unit.uid : `bench-empty-${i}`}
                     type="button"
                     className={`pa-bench-slot${unit?.uid === selectedUid ? ' is-selected' : ''}`}
+                    data-cost={unit?.cost || 0}
                     onClick={() => {
                       if (stage !== 'prep' || !unit) return;
                       if (selectedItem) {
@@ -1440,6 +1451,7 @@ const PokeArena = ({ onClose }) => {
                       key={unit.uid}
                       type="button"
                       className={`pa-shop-card${buyPop === index ? ' is-bought' : ''}`}
+                      data-cost={unit.cost}
                       style={{ '--tint': TYPE_TINT[unit.type] || '#f0c14b' }}
                       onClick={() => buy(index)}
                       onMouseEnter={() => { setHoverUnit(unit); closeTrait(); }}
