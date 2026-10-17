@@ -7,6 +7,7 @@ const path = require('path');
 const axios = require('axios');
 const multer = require('multer');
 const { attachQuiz } = require('./quiz');
+const { attachArena } = require('./arena');
 const { attachAdmins, ensureSuperadmin, requireAdmin, requireSuper, canEditQuiz } = require('./admins');
 require('dotenv').config();
 
@@ -472,6 +473,7 @@ app.get('/api/clips/:id', async (req, res) => {
 
 attachAdmins(app);
 attachQuiz(app, io);
+attachArena(io);
 
 // Route de test pour vérifier que l'app fonctionne
 app.get('/', (req, res) => {

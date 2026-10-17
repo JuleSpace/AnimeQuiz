@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import io from 'socket.io-client';
 import ArenaBoardIso, { BOARD_THEMES, BOARD_THEME_LABELS, DEFAULT_BOARD_THEME, resolveScene } from './ArenaBoardIso';
 import './PokeArena.css';
 import './PokeArenaPremium.css';
@@ -18,6 +19,7 @@ import {
   START_HP,
   XP_COST,
   addXp,
+  rollComponent,
   applyEvolutionChoice,
   autoSeat,
   buildRunPool,
@@ -53,6 +55,17 @@ import {
   martStock
 } from './pokeArenaCampaign';
 import {
+  VERSUS_MAX_PLAYERS,
+  rebuildBoard,
+  serializeBoard,
+  versusChapter,
+  versusLossDamage,
+  versusPool,
+  versusPoolSize,
+  versusStarterCount,
+  versusView
+} from './pokeArenaVersus';
+import {
   CodexScreen,
   EventScreen,
   ItemIcon,
@@ -67,6 +80,9 @@ import {
   TraitPopup,
   TypeChip,
   UnitCard,
+  VersusLobby,
+  VersusOver,
+  VersusPlayers,
   chapterLabel,
   displayName,
   stars,
@@ -78,6 +94,21 @@ export const ARENA_HASH = '#arena';
 const SPEED_KEY = 'poke-arena-speed';
 const THEME_KEY = 'poke-arena-board-theme';
 const SKIN_KEY = 'poke-arena-skin';
+const VS_NAME_KEY = 'poke-arena-vs-name';
+const readVsName = () => {
+  try {
+    return localStorage.getItem(VS_NAME_KEY) || '';
+  } catch {
+    return '';
+  }
+};
+const ARENA_URL = `${process.env.REACT_APP_SERVER_URL || (typeof window !== 'undefined' ? window.location.origin : '')}/arena`;
+/** Objets distribués à tous les joueurs à certains rounds du salon multi. */
+const versusLoot = (round) => {
+  if (round === 8 || round === 14) return ['keystone'];
+  if (round % 3 === 0) return [rollComponent().id];
+  return [];
+};
 const SKINS = ['premium', 'classique'];
 const SKIN_LABELS = { premium: 'Premium', classique: 'Classique' };
 const readSkin = () => {
@@ -184,6 +215,21 @@ const PokeArena = ({ onClose }) => {
     try { localStorage.setItem(SKIN_KEY, skin); } catch { /* stockage indisponible */ }
   }, [skin]);
   const [saveTick, setSaveTick] = useState(0);
+  // Salon multi
+  const [mode, setMode] = useState('solo');
+  const [vsName, setVsName] = useState(readVsName);
+  const [vsRoom, setVsRoom] = useState(null);
+  const [vsMe, setVsMe] = useState(null);
+  const [vsRound, setVsRound] = useState(0);
+  const [vsDeadline, setVsDeadline] = useState(null);
+  const [vsReady, setVsReady] = useState(false);
+  const [vsOpponent, setVsOpponent] = useState(null);
+  const [vsRanking, setVsRanking] = useState(null);
+  const [vsError, setVsError] = useState('');
+  const [vsBusy, setVsBusy] = useState(false);
+  const [nowTick, setNowTick] = useState(() => Date.now());
+  const socketRef = useRef(null);
+  const vsRef = useRef({});
 
   const timers = useRef([]);
   const speedRef = useRef(speed);
@@ -410,7 +456,7 @@ const PokeArena = ({ onClose }) => {
     say(`${pendingEvo.name} évolue en ${displayName(next.name)} !`);
   };
 
-  const canEdit = phase === 'battle' && stage === 'prep' && !result;
+  const canEdit = phase === 'battle' && stage === 'prep' && !result && !(mode === 'versus' && vsReady);
 
   const placeUnit = (uid, index) => {
     if (!canEdit) return;
@@ -658,6 +704,10 @@ const PokeArena = ({ onClose }) => {
   /* ———————————————— Combat ———————————————— */
 
   const finishFight = (res) => {
+    if (mode === 'versus') {
+      finishVersusFight(res);
+      return;
+    }
     const n = node;
     const gains = estimateIncome(gold, streak, chapterOf(n.floor), res.win, coin);
     const xpNext = addXp(level, xp, 2);
@@ -771,6 +821,17 @@ const PokeArena = ({ onClose }) => {
     setAct(null);
     setFightLine('');
     if (prepBoardRef.current) setBoard(prepBoardRef.current);
+    if (mode === 'versus') {
+      setEnemyBoard(emptyBoard());
+      setVsOpponent(null);
+      if (r.dead || vsRef.current.ranking) {
+        setPhase('vs-over');
+        return;
+      }
+      setStage('prep');
+      if (!shopLocked) setShop(rollShop(level, SHOP_SIZE, runPool));
+      return;
+    }
     if (r.dead) {
       clearCampaign();
       setCanContinue(false);
@@ -855,6 +916,224 @@ const PokeArena = ({ onClose }) => {
     advance(node.id);
   };
 
+  /* ———————————————— Salon multi ———————————————— */
+
+  const finishVersusFight = (res) => {
+    const round = vsRef.current.round || vsRound;
+    const gains = estimateIncome(gold, streak, versusChapter(round), res.win, coin);
+    const xpNext = addXp(level, xp, 2);
+    const loot = versusLoot(round);
+    const hpLost = res.win ? 0 : Math.min(hp, versusLossDamage(round, vsRef.current.damageTaken || 0));
+    const statsMeter = res.stats.filter((st) => st.side === 'ally' && st.dmg > 0).sort((a, b) => b.dmg - a.dmg);
+    const totals = {};
+    res.stats.forEach((st) => { if (st.dmg) totals[st.uid] = st.dmg; });
+    setMeter(totals);
+    setGold((g) => g + gains.total);
+    setStreak(gains.nextStreak);
+    setLevel(xpNext.level);
+    setXp(xpNext.xp);
+    if (loot.length) setBag((b) => [...b, ...loot]);
+    if (res.win) setWins((w) => w + 1);
+    if (hpLost) setHp((h) => h - hpLost);
+    socketRef.current?.emit('arena:result', { round, hp: hp - hpLost, win: res.win });
+    setResult({
+      win: res.win,
+      gains,
+      loot,
+      hpLost,
+      meter: statsMeter,
+      boss: vsRef.current.opponent ? `contre ${vsRef.current.opponent.name}` : null,
+      dead: hp - hpLost <= 0
+    });
+  };
+
+  /** Lance le rejeu d’un duel envoyé par le serveur (combat identique chez les deux joueurs). */
+  const playVersusFight = (payload) => {
+    const view = versusView(payload.home, payload.away, payload.seed, payload.isHome);
+    const own = rebuildBoard(payload.isHome ? payload.home : payload.away);
+    clearTimers();
+    prepBoardRef.current = padBoard(board).map((u) => (u ? { ...u, items: [...(u.items || [])] } : null));
+    vsRef.current.damageTaken = view.damageTaken;
+    vsRef.current.opponent = payload.opponent;
+    setVsOpponent(payload.opponent);
+    setPendingEvoSafe();
+    setBoard(own);
+    setEnemyBoard(view.enemyBoard);
+    setSelectedUid(null);
+    setSelectedItem(null);
+    setResult(null);
+    setPositions(null);
+    setHpMap({});
+    setFxMap({});
+    setFloatFx([]);
+    setMeter({});
+    setStage('fight');
+    playRef.current = { res: view.res, frames: view.res.frames };
+    setBanner({ key: Date.now(), title: payload.opponent?.name || 'Adversaire', sub: payload.ghost ? 'Combat contre un reflet' : `Round ${payload.round}` });
+    const id = setTimeout(() => {
+      setBanner(null);
+      playFrom(0);
+    }, 1100 / Math.max(1, speedRef.current * 0.75));
+    timers.current.push(id);
+  };
+
+  const setPendingEvoSafe = () => {
+    // Un choix d’évolution en attente est résolu automatiquement avant le combat.
+    if (!pendingEvo) return;
+    const form = LINE_MAP[pendingEvo.lineId]?.forms?.[0];
+    if (form) chooseEvo(form.id);
+  };
+
+  const startVersus = (poolIds, starterId) => {
+    clearTimers();
+    const pool = poolIds.map((id) => LINE_MAP[id]).filter(Boolean);
+    const starter = unitFromLine(starterId, 1) || unitFromLine(pool[0]?.id, 1);
+    setMode('versus');
+    setRunPool(pool);
+    setMap([]);
+    setFloor(0);
+    setPath([]);
+    setNode(null);
+    setBench([]);
+    setBoard(autoSeat([starter]));
+    setEnemyBoard(emptyBoard());
+    setShop(rollShop(1, SHOP_SIZE, pool));
+    setShopLocked(false);
+    setBag([]);
+    setGold(START_GOLD);
+    setXp(0);
+    setLevel(1);
+    setHp(START_HP);
+    setStreak(0);
+    setCoin(0);
+    setWins(0);
+    setResult(null);
+    setSelectedUid(null);
+    setSelectedItem(null);
+    setVsReady(false);
+    setVsRanking(null);
+    vsRef.current.ranking = null;
+    setStage('prep');
+    setPhase('battle');
+    say(`Ton starter : ${displayName(starter.name)}. Le pool compte ${pool.length} lignées.`);
+  };
+
+  const sendReady = (force = false) => {
+    const sock = socketRef.current;
+    if (!sock || mode !== 'versus' || stage !== 'prep') return;
+    if (vsReady && !force) {
+      sock.emit('arena:unready', { round: vsRound });
+      setVsReady(false);
+      return;
+    }
+    setPendingEvoSafe();
+    const capped = enforceBoardCap(board, bench, boardCap);
+    setBoard(padBoard(capped.board));
+    setBench(capped.bench);
+    sock.emit('arena:ready', { round: vsRound, board: serializeBoard(padBoard(capped.board)), level });
+    setVsReady(true);
+  };
+
+  // Les gestionnaires de socket lisent toujours la dernière version de ces fonctions.
+  vsRef.current.handlers = { startVersus, playVersusFight };
+  vsRef.current.round = vsRound;
+
+  const openSocket = () => {
+    if (socketRef.current) return socketRef.current;
+    const sock = io(ARENA_URL, { transports: ['websocket', 'polling'] });
+    socketRef.current = sock;
+    sock.on('arena:room', (room) => setVsRoom(room));
+    sock.on('arena:started', ({ pool, starterOf }) => {
+      vsRef.current.handlers.startVersus(pool, starterOf?.[sock.id]);
+    });
+    sock.on('arena:round', ({ round, deadline }) => {
+      vsRef.current.round = round;
+      setVsRound(round);
+      setVsDeadline(deadline);
+      setVsReady(false);
+    });
+    sock.on('arena:fight', (payload) => vsRef.current.handlers.playVersusFight(payload));
+    sock.on('arena:over', ({ ranking }) => {
+      vsRef.current.ranking = ranking;
+      setVsRanking(ranking);
+      setPhase((p) => (p === 'battle' && !playRef.current ? 'vs-over' : p));
+    });
+    sock.on('connect_error', () => setVsError('Connexion au serveur impossible.'));
+    return sock;
+  };
+
+  const closeSocket = () => {
+    const sock = socketRef.current;
+    if (sock) {
+      sock.emit('arena:leave');
+      sock.disconnect();
+    }
+    socketRef.current = null;
+    setVsRoom(null);
+    setVsMe(null);
+    setVsReady(false);
+    setVsOpponent(null);
+  };
+  useEffect(() => () => { socketRef.current?.disconnect(); }, []);
+
+  const saveVsName = (v) => {
+    setVsName(v);
+    try { localStorage.setItem(VS_NAME_KEY, v); } catch { /* stockage indisponible */ }
+  };
+
+  const vsCreate = () => {
+    setVsError('');
+    setVsBusy(true);
+    openSocket().emit('arena:create', { name: vsName }, (ack) => {
+      setVsBusy(false);
+      if (ack?.ok) setVsMe(ack.me);
+      else setVsError(ack?.error || 'Création impossible.');
+    });
+  };
+
+  const vsJoin = (code) => {
+    setVsError('');
+    setVsBusy(true);
+    openSocket().emit('arena:join', { code, name: vsName }, (ack) => {
+      setVsBusy(false);
+      if (ack?.ok) setVsMe(ack.me);
+      else setVsError(ack?.error || 'Impossible de rejoindre.');
+    });
+  };
+
+  const vsStart = () => {
+    const count = vsRoom?.players?.length || 2;
+    const pool = versusPool(count);
+    const starters = pool.filter((id) => (LINE_MAP[id]?.traits || []).includes('Starter'));
+    setVsBusy(true);
+    socketRef.current?.emit('arena:start', { pool, starters }, (ack) => {
+      setVsBusy(false);
+      if (!ack?.ok) setVsError(ack?.error || 'Lancement impossible.');
+    });
+  };
+
+  const leaveVersus = () => {
+    closeSocket();
+    clearTimers();
+    setMode('solo');
+    setResult(null);
+    setStage('prep');
+    setPhase('hub');
+  };
+
+  // Compte à rebours de la préparation ; prêt automatique à la fin du temps.
+  useEffect(() => {
+    if (mode !== 'versus') return undefined;
+    const id = setInterval(() => setNowTick(Date.now()), 500);
+    return () => clearInterval(id);
+  }, [mode]);
+  useEffect(() => {
+    if (mode === 'versus' && phase === 'battle' && stage === 'prep' && !vsReady && !result && vsDeadline && nowTick >= vsDeadline) {
+      sendReady(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nowTick]);
+
   /* ———————————————— Raccourcis clavier ———————————————— */
 
   useEffect(() => {
@@ -922,11 +1201,47 @@ const PokeArena = ({ onClose }) => {
           <div className="pa-hub-actions">
             {canContinue && <button type="button" className="ui-btn is-primary is-big" onClick={resumeSave}>Continuer la partie</button>}
             <button type="button" className={`ui-btn is-big${canContinue ? '' : ' is-primary'}`} onClick={() => setPhase('starter')}>Nouvelle partie</button>
+            <button type="button" className="ui-btn" onClick={() => { setVsError(''); setPhase('lobby'); }}>Salon multi</button>
             <button type="button" className="ui-btn" onClick={() => setPhase('codex')}>Pokédex</button>
             <button type="button" className="ui-btn is-ghost" onClick={onClose}>Quitter</button>
           </div>
           <p className="pa-hub-foot">{ROSTER_LINES} lignées, {ROSTER_FORMS} formes, {TOTAL_FLOORS} étapes.</p>
         </div>
+      </div>
+    );
+  }
+
+  if (phase === 'lobby') {
+    const count = Math.max(2, vsRoom?.players?.length || 2);
+    return (
+      <div className={`pa-root ${skinCls} pa-screen`}>
+        <VersusLobby
+          room={vsRoom}
+          me={vsMe}
+          name={vsName}
+          onName={saveVsName}
+          onCreate={vsCreate}
+          onJoin={vsJoin}
+          onStart={vsStart}
+          onLeave={() => { closeSocket(); setPhase('hub'); }}
+          error={vsError}
+          busy={vsBusy}
+          poolPreview={vsRoom ? { size: versusPoolSize(count), starters: versusStarterCount(count), max: VERSUS_MAX_PLAYERS } : null}
+        />
+      </div>
+    );
+  }
+
+  if (phase === 'vs-over') {
+    return (
+      <div className={`pa-root ${skinCls} pa-screen`}>
+        <VersusOver
+          ranking={vsRanking}
+          me={vsMe}
+          team={board.filter(Boolean)}
+          onBack={leaveVersus}
+          onLobby={() => { closeSocket(); setMode('solo'); setVsError(''); setPhase('lobby'); }}
+        />
       </div>
     );
   }
@@ -978,10 +1293,17 @@ const PokeArena = ({ onClose }) => {
   const topBar = (extra) => (
     <header className="pa-top">
       {hud}
-      <div className="pa-top-where">
-        <strong>{chapterLabel(floor)}</strong>
-        <span>Étape {Math.min(floor + 1, TOTAL_FLOORS)} sur {TOTAL_FLOORS}</span>
-      </div>
+      {mode === 'versus' ? (
+        <div className="pa-top-where">
+          <strong>Round {vsRound || 1}</strong>
+          <span>Salon {vsRoom?.code || ''}</span>
+        </div>
+      ) : (
+        <div className="pa-top-where">
+          <strong>{chapterLabel(floor)}</strong>
+          <span>Étape {Math.min(floor + 1, TOTAL_FLOORS)} sur {TOTAL_FLOORS}</span>
+        </div>
+      )}
       {extra}
       <div className="pa-top-actions">
         <button
@@ -1000,9 +1322,15 @@ const PokeArena = ({ onClose }) => {
         >
           Terrain : {boardTheme === 'auto' ? `Auto (${BOARD_THEME_LABELS[resolveScene('auto', chapter)]})` : BOARD_THEME_LABELS[boardTheme]}
         </button>
-        <button type="button" className="ui-btn is-small" onClick={() => { persist(); say('Partie sauvegardée.'); }} disabled={phase === 'battle' && stage !== 'prep'}>Sauvegarder</button>
-        <button type="button" className="ui-btn is-small is-ghost" onClick={() => setPhase('hub')} disabled={phase === 'battle' && stage !== 'prep'}>Menu</button>
-        <button type="button" className="ui-btn is-small is-ghost" onClick={onClose}>Quitter</button>
+        {mode === 'versus' ? (
+          <button type="button" className="ui-btn is-small is-ghost" onClick={leaveVersus}>Quitter le salon</button>
+        ) : (
+          <>
+            <button type="button" className="ui-btn is-small" onClick={() => { persist(); say('Partie sauvegardée.'); }} disabled={phase === 'battle' && stage !== 'prep'}>Sauvegarder</button>
+            <button type="button" className="ui-btn is-small is-ghost" onClick={() => setPhase('hub')} disabled={phase === 'battle' && stage !== 'prep'}>Menu</button>
+            <button type="button" className="ui-btn is-small is-ghost" onClick={onClose}>Quitter</button>
+          </>
+        )}
       </div>
     </header>
   );
@@ -1063,7 +1391,21 @@ const PokeArena = ({ onClose }) => {
 
   return (
     <div className={`pa-root ${skinCls} pa-battle${isFight ? ' is-fighting' : ''}${drag ? ' is-dragging' : ''}`}>
-      {topBar(trainer && (
+      {topBar(mode === 'versus' ? (
+        <div className={`pa-foe pa-vs-timer${!isFight && vsDeadline && vsDeadline - nowTick < 10000 ? ' is-urgent' : ''}`}>
+          {isFight || vsOpponent ? (
+            <>
+              <span className="pa-foe-label">Adversaire</span>
+              <strong>{vsOpponent?.name || '…'}</strong>
+            </>
+          ) : (
+            <>
+              <span className="pa-foe-label">{vsReady ? 'Prêt · en attente' : 'Préparation'}</span>
+              <strong>{vsDeadline ? `${Math.max(0, Math.ceil((vsDeadline - nowTick) / 1000))} s` : '—'}</strong>
+            </>
+          )}
+        </div>
+      ) : trainer && (
         <div className="pa-foe">
           <span className="pa-foe-label">{node.kind === 'boss' ? 'Champion' : node.kind === 'elite' ? 'Élite' : 'Adversaire'}</span>
           <strong>{trainer.title} {trainer.name}</strong>
@@ -1147,6 +1489,8 @@ const PokeArena = ({ onClose }) => {
             <p>Raccourcis : D relance la boutique, F achète de l’XP, E vend le Pokémon survolé.</p>
           </div>
         )}
+
+        {mode === 'versus' && <VersusPlayers room={vsRoom} me={vsMe} />}
 
         <div className="pa-bag">
           <header>
@@ -1271,9 +1615,15 @@ const PokeArena = ({ onClose }) => {
                 </button>
               ) : <div key={`sold-${index}`} className="pa-card is-sold" aria-hidden />))}
             </div>
-            <button type="button" className="ui-btn is-fight" onClick={fight} disabled={!canEdit}>
-              Combattre
-            </button>
+            {mode === 'versus' ? (
+              <button type="button" className={`ui-btn is-fight${vsReady ? ' is-ready' : ''}`} onClick={() => sendReady(false)} disabled={stage !== 'prep' || !!result}>
+                {vsReady ? 'Prêt ✓' : 'Prêt !'}
+              </button>
+            ) : (
+              <button type="button" className="ui-btn is-fight" onClick={fight} disabled={!canEdit}>
+                Combattre
+              </button>
+            )}
           </div>
         )}
       </footer>
@@ -1307,7 +1657,9 @@ const PokeArena = ({ onClose }) => {
         <ResultOverlay
           result={result}
           onContinue={continueAfterFight}
-          continueLabel={result.dead ? 'Voir le bilan' : node?.kind === 'boss' && !result.win ? 'Se préparer à nouveau' : 'Continuer'}
+          continueLabel={mode === 'versus'
+            ? (result.dead || vsRanking ? 'Voir le classement' : 'Préparer le round suivant')
+            : result.dead ? 'Voir le bilan' : node?.kind === 'boss' && !result.win ? 'Se préparer à nouveau' : 'Continuer'}
         />
       )}
       {rewardOpts && <RewardModal choices={rewardOpts} onPick={pickReward} />}

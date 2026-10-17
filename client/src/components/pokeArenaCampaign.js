@@ -151,15 +151,15 @@ const TEAM_SIZE = [2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 8, 8, 8
  * Les élites ont +1,5 étoile et +1 Pokémon ; les champions sont déjà comptés (étages 7, 15, 23).
  * Réglé par simulation de runs complètes (bot joueur) : voir le README du mode.
  */
-const STAR_BUDGET = [2, 3, 4, 4, 5.5, 6, 6.5, 7.5, 8, 8.5, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13, 13.5, 14, 14, 14.5, 15, 15.5];
+const STAR_BUDGET = [2, 3, 4, 4.5, 6, 6.5, 7, 8, 8.5, 9, 10, 10.5, 11, 12, 12.5, 13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5, 17];
 
 /** Puissance des ennemis par étage (multiplie PV et ATK). */
 export const DIFFICULTY = [
-  0.86, 0.88, 0.9, 0.9, 0.92, 0.92, 0.94, 0.94,
-  0.94, 0.95, 0.96, 0.96, 0.97, 0.98, 0.98, 1.0,
-  0.98, 1.0, 1.0, 1.02, 1.02, 1.04, 1.04, 1.06
+  0.87, 0.89, 0.92, 0.93, 0.95, 0.96, 0.97, 0.98,
+  0.98, 0.99, 1.0, 1.01, 1.02, 1.03, 1.03, 1.05,
+  1.03, 1.05, 1.06, 1.07, 1.08, 1.09, 1.1, 1.12
 ];
-export const KIND_SCALE = { combat: 1, elite: 1.0, boss: 0.94 };
+export const KIND_SCALE = { combat: 1, elite: 1.03, boss: 0.95 };
 
 const lineTypes = (line) => {
   const set = new Set();
@@ -196,9 +196,10 @@ const spreadStars = (size, budget, floor) => {
 
 const itemCount = (floor, kind) => {
   if (kind === 'boss') return chapterOf(floor);
-  if (kind === 'elite') return floor >= 12 ? 2 : 1;
-  if (floor >= 18) return Math.random() < 0.7 ? 2 : 1;
-  if (floor >= 9) return Math.random() < 0.6 ? 1 : 0;
+  if (kind === 'elite') return floor >= 10 ? 2 : 1;
+  if (floor >= 16) return Math.random() < 0.6 ? 2 : 1;
+  if (floor >= 8) return Math.random() < 0.7 ? 1 : 0;
+  if (floor >= 4) return Math.random() < 0.5 ? 1 : 0;
   return 0;
 };
 

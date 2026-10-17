@@ -1556,6 +1556,43 @@
 .ui-codex-forms figure { border-radius: 10px; }
 
 
+
+/* ———————————— Salon multi ———————————— */
+
+.ui-lobby { display: grid; gap: 16px; max-width: 980px; width: 100%; margin: 0 auto; }
+.ui-lobby-entry { display: grid; gap: 14px; }
+.ui-field { display: grid; gap: 6px; max-width: 360px; font-weight: 700; }
+.ui-lobby-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.ui-lobby-choices .ui-card { align-content: start; }
+.ui-code-input { font: 800 28px/1 'Barlow Condensed', sans-serif; letter-spacing: 0.4em; text-align: center; text-transform: uppercase; }
+.ui-lobby-error { color: var(--red); font-weight: 700; }
+.ui-lobby-room { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; align-items: start; }
+.ui-lobby-code { text-align: center; }
+.ui-lobby-code strong { display: block; margin: 6px 0; font: italic 800 64px/1 'Barlow Condensed', sans-serif; letter-spacing: 0.12em; color: var(--sel); }
+.ui-lobby-players { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; }
+.ui-lobby-players li { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; background: var(--paper-2); font-weight: 700; }
+.ui-lobby-players li.is-me { box-shadow: inset 3px 0 0 var(--sel); }
+.ui-lobby-players em { font-style: normal; font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--line); color: var(--ink-2); }
+
+.ui-vs-players ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.ui-vs-players li { display: grid; grid-template-columns: minmax(0, 1fr) 70px 34px auto; gap: 8px; align-items: center; font-size: 13px; }
+.ui-vs-players li.is-me .ui-vs-name { color: var(--sel); font-weight: 800; }
+.ui-vs-players li.is-out { opacity: 0.45; }
+.ui-vs-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.ui-vs-players i { height: 6px; border-radius: 3px; background: var(--paper-2); overflow: hidden; }
+.ui-vs-players b { display: block; height: 100%; background: linear-gradient(90deg, var(--red), var(--grass)); }
+.ui-vs-players strong { text-align: right; }
+.ui-vs-players em { font-style: normal; font-size: 11px; color: var(--muted); }
+.ui-vs-players em.is-ready { color: var(--grass); font-weight: 800; }
+.pa-vs-timer.is-urgent strong { color: var(--red); animation: pa-bump 1s ease-in-out infinite; }
+.ui-btn.is-fight.is-ready { filter: saturate(0.4) brightness(0.9); }
+.ui-vs-ranking { list-style: none; margin: 10px auto 18px; padding: 0; display: grid; gap: 6px; max-width: 420px; text-align: left; }
+.ui-vs-ranking li { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 8px; background: var(--paper-2); }
+.ui-vs-ranking li.is-me { box-shadow: inset 3px 0 0 var(--sel); }
+.ui-vs-ranking strong { font: italic 800 22px/1 'Barlow Condensed', sans-serif; }
+.ui-vs-ranking em { font-style: normal; color: var(--muted); }
+@media (max-width: 760px) { .ui-lobby-room { grid-template-columns: 1fr; } }
+
 /* ———————————— Responsive ———————————— */
 
 @media (max-width: 1180px) {

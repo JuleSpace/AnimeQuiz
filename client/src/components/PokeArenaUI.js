@@ -761,3 +761,140 @@ export const chapterLabel = (floor) => {
 };
 
 export { isFightKind };
+
+/* ——————————————————————————— Salon multi ——————————————————————————— */
+
+/** Écran du salon : choisir un pseudo, créer ou rejoindre par code, puis attendre le lancement. */
+export const VersusLobby = ({ room, me, name, onName, onCreate, onJoin, onStart, onLeave, error, busy, poolPreview }) => {
+  const [code, setCode] = useState('');
+  const isHost = room && room.hostId === me;
+  const players = room?.players || [];
+  return (
+    <div className="ui-lobby">
+      <header className="ui-screen-head">
+        <div>
+          <h1>Salon multi</h1>
+          <p>De 2 à 8 dresseurs. Un pool de Pokémon est tiré au hasard au lancement, le même pour tout le monde, et chacun commence avec un starter du pool tiré au sort.</p>
+        </div>
+        <button type="button" className="ui-btn is-ghost" onClick={onLeave}>Retour</button>
+      </header>
+
+      {!room ? (
+        <div className="ui-lobby-entry">
+          <label className="ui-field">
+            <span>Ton pseudo</span>
+            <input className="ui-search" value={name} maxLength={20} onChange={(e) => onName(e.target.value)} placeholder="Sacha" />
+          </label>
+          <div className="ui-lobby-choices">
+            <section className="ui-card">
+              <h3>Créer un salon</h3>
+              <p className="ui-muted">Tu recevras un code à 4 lettres à partager.</p>
+              <button type="button" className="ui-btn is-primary is-big" onClick={onCreate} disabled={busy || !name.trim()}>Créer</button>
+            </section>
+            <section className="ui-card">
+              <h3>Rejoindre</h3>
+              <input
+                className="ui-search ui-code-input"
+                value={code}
+                maxLength={4}
+                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
+                placeholder="CODE"
+                aria-label="Code du salon"
+              />
+              <button type="button" className="ui-btn is-big" onClick={() => onJoin(code)} disabled={busy || code.length !== 4 || !name.trim()}>Rejoindre</button>
+            </section>
+          </div>
+          {error && <p className="ui-lobby-error" role="alert">{error}</p>}
+        </div>
+      ) : (
+        <div className="ui-lobby-room">
+          <section className="ui-card ui-lobby-code">
+            <h3>Code du salon</h3>
+            <strong>{room.code}</strong>
+            <p className="ui-muted">Partage ce code : tes amis le saisissent dans « Rejoindre ».</p>
+          </section>
+          <section className="ui-card">
+            <h3>Dresseurs ({players.length} / 8)</h3>
+            <ul className="ui-lobby-players">
+              {players.map((p) => (
+                <li key={p.id} className={p.id === me ? 'is-me' : ''}>
+                  <span>{p.name}</span>
+                  {p.id === room.hostId && <em>Chef</em>}
+                  {p.id === me && <em>Toi</em>}
+                </li>
+              ))}
+            </ul>
+            {poolPreview && <p className="ui-muted">Pool à {players.length} joueurs : {poolPreview.size} lignées dont {poolPreview.starters} starters.</p>}
+            {isHost ? (
+              <button type="button" className="ui-btn is-primary is-big" onClick={onStart} disabled={busy || players.length < 2}>
+                {players.length < 2 ? 'En attente d’un 2e joueur…' : 'Lancer la partie'}
+              </button>
+            ) : (
+              <p className="ui-muted">Le chef du salon lance la partie.</p>
+            )}
+            {error && <p className="ui-lobby-error" role="alert">{error}</p>}
+          </section>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/** Classement en direct pendant une partie multi. */
+export const VersusPlayers = ({ room, me }) => {
+  if (!room) return null;
+  const players = [...room.players].sort((a, b) => (b.alive - a.alive) || b.hp - a.hp);
+  return (
+    <div className="ui-card ui-vs-players">
+      <h3>Dresseurs</h3>
+      <ul>
+        {players.map((p) => (
+          <li key={p.id} className={`${p.id === me ? 'is-me' : ''}${p.alive ? '' : ' is-out'}`}>
+            <span className="ui-vs-name">{p.name}{!p.connected && ' (parti)'}</span>
+            <i><b style={{ width: `${Math.max(0, p.hp)}%` }} /></i>
+            <strong>{p.alive ? p.hp : `${p.place || '—'}e`}</strong>
+            {room.status === 'prep' && p.alive && <em className={p.ready ? 'is-ready' : ''}>{p.ready ? 'Prêt' : '…'}</em>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+/** Bilan d’une partie multi. */
+export const VersusOver = ({ ranking, me, onBack, onLobby, team }) => {
+  const mine = ranking?.find((r) => r.id === me);
+  const first = mine?.place === 1;
+  return (
+    <div className={`pa-over${first ? ' is-win' : ''}`}>
+      {first && <div className="ui-confetti" aria-hidden>{Array.from({ length: 40 }).map((_, i) => <i key={i} style={{ '--i': i }} />)}</div>}
+      <h1>{!ranking ? 'Éliminé' : first ? 'Victoire !' : `${mine?.place || '?'}e place`}</h1>
+      <p>{ranking ? 'Classement final du salon.' : 'Tu es éliminé. Le classement s’affichera à la fin de la partie.'}</p>
+      {ranking && (
+        <ol className="ui-vs-ranking">
+          {ranking.map((r) => (
+            <li key={r.id} className={r.id === me ? 'is-me' : ''}>
+              <strong>{r.place || '—'}</strong>
+              <span>{r.name}</span>
+              <em>{r.hp} PV</em>
+            </li>
+          ))}
+        </ol>
+      )}
+      {team?.length > 0 && (
+        <div className="pa-over-team">
+          {team.map((u) => (
+            <figure key={u.uid}>
+              <PokeSprite unit={u} size="lg" />
+              <figcaption>{displayName(u.name)} <span className="ui-stars">{stars(u.star)}</span></figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
+      <div className="pa-hub-actions">
+        <button type="button" className="ui-btn is-primary is-big" onClick={onLobby}>Nouveau salon</button>
+        <button type="button" className="ui-btn" onClick={onBack}>Menu</button>
+      </div>
+    </div>
+  );
+};

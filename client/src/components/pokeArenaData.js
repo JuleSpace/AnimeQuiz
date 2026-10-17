@@ -2271,7 +2271,7 @@ const stepCloser = (u, enemies, allies, foes, reach = u.range || 1) => {
   let goal = null;
   while (queue.length && !goal) {
     const c = queue.shift();
-    const around = hexNeighbors(c).sort(() => Math.random() - 0.5);
+    const around = shuffleList(hexNeighbors(c));
     for (const n of around) {
       const k = cellKey(n);
       if (prev.has(k) || blocked.has(k)) continue;
@@ -2800,10 +2800,12 @@ export const simulateFight = (alliesIn, foesIn) => {
     const liveF = foes.filter((u) => u.alive);
     if (!liveA.length || !liveF.length) break;
 
+    // Départage aléatoire des égalités de vitesse via une clé tirée à l’avance
+    // (un comparateur aléatoire donnerait des ordres différents selon le navigateur).
     const queue = [
-      ...liveA.map((u) => ({ side: 'a', u })),
-      ...liveF.map((u) => ({ side: 'f', u }))
-    ].sort((a, b) => b.u.spd - a.u.spd || Math.random() - 0.5);
+      ...liveA.map((u) => ({ side: 'a', u, k: Math.random() })),
+      ...liveF.map((u) => ({ side: 'f', u, k: Math.random() }))
+    ].sort((a, b) => b.u.spd - a.u.spd || a.k - b.k);
 
     const turnIndex = turn;
     for (let qi = 0; qi < queue.length; qi += 1) {
@@ -2850,11 +2852,22 @@ export const simulateFight = (alliesIn, foesIn) => {
     log: log.slice(0, 10),
     frames,
     damage: win ? 0 : aliveFoes.reduce((sum, u) => sum + (u.star || 1), 0),
+    allyDamage: allies.filter((u) => u.alive).reduce((sum, u) => sum + (u.star || 1), 0),
     survivors: allies.filter((u) => u.alive).length,
     foeSurvivors: aliveFoes.length,
     turns: turn,
     stats: [...allies, ...foes].map((u) => ({ uid: u.uid, name: u.name, side: u.side, dmg: Math.round(u.dmgDealt || 0), alive: u.alive, dex: u.dex }))
   };
+};
+
+/** Mélange de Fisher-Yates (reproductible quand Math.random est remplacé par un générateur à graine). */
+export const shuffleList = (list) => {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 };
 
 /** Fusionne 3 unités même ligne + même étoile → +1★ (évolution). Conserve les items. */
