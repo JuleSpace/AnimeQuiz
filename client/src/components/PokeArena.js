@@ -55,7 +55,8 @@ import {
   lossDamage,
   martStock,
   regionAt,
-  rewardChoices
+  rewardChoices,
+  trainerSprite
 } from './pokeArenaCampaign';
 import { musicPlayer } from './pokeArenaMusic';
 import {
@@ -79,6 +80,8 @@ import {
   MartScreen,
   PokeSprite,
   RecipeModal,
+  PoolModal,
+  PLAYER_TRAINERS,
   ResultOverlay,
   RewardModal,
   StarterScreen,
@@ -157,6 +160,7 @@ const readSkin = () => {
 const THEME_IDS = Object.keys(BOARD_THEMES);
 
 const MUSIC_KEY = 'poke-arena-music';
+const TRAINER_KEY = 'poke-arena-trainer';
 const readMusic = () => {
   try {
     const v = localStorage.getItem(MUSIC_KEY);
@@ -270,6 +274,19 @@ const readTheme = () => {
 
 const withTalent = (u) => (u ? { ...u, ab: talentOf(u.lineId, u.formId) } : u);
 
+/** Dresseur debout au bord du terrain, de son côté : l'adversaire en haut à droite, toi en bas à gauche. */
+const TrainerStand = ({ sprite, side, label }) => {
+  const [failed, setFailed] = useState(false);
+  const src = trainerSprite(sprite);
+  if (!src || failed) return null;
+  return (
+    <div className={`pa-stand is-${side}`} aria-hidden="true" title={label}>
+      <img src={src} alt="" draggable={false} onError={() => setFailed(true)} />
+      {label && <span>{label}</span>}
+    </div>
+  );
+};
+
 const PokeArena = ({ onClose }) => {
   const [phase, setPhase] = useState('hub');
   const [stage, setStage] = useState('prep');
@@ -313,6 +330,13 @@ const PokeArena = ({ onClose }) => {
   const [hoverUnit, setHoverUnit] = useState(null);
   const [traitPop, setTraitPop] = useState(null);
   const [showRecipes, setShowRecipes] = useState(false);
+  const [showPool, setShowPool] = useState(false);
+  const [myTrainer, setMyTrainer] = useState(() => {
+    try { return localStorage.getItem(TRAINER_KEY) || 'red'; } catch { return 'red'; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(TRAINER_KEY, myTrainer); } catch { /* stockage indisponible */ }
+  }, [myTrainer]);
   const [canContinue, setCanContinue] = useState(() => hasSave());
   const [evolving, setEvolving] = useState([]);
   const [drag, setDrag] = useState(null);
@@ -1409,7 +1433,13 @@ const PokeArena = ({ onClose }) => {
   if (phase === 'starter') {
     return (
       <div className={`pa-root ${skinCls} pa-screen`}>
-        <StarterScreen onPick={startRun} onBack={() => setPhase('hub')} onTrait={(t, e) => openTrait(t, e)} />
+        <StarterScreen
+          onPick={startRun}
+          onBack={() => setPhase('hub')}
+          onTrait={(t, e) => openTrait(t, e)}
+          trainer={myTrainer}
+          onTrainer={setMyTrainer}
+        />
         <TraitPopup pop={traitPop} />
       </div>
     );
@@ -1443,6 +1473,15 @@ const PokeArena = ({ onClose }) => {
     );
   }
 
+  const poolModal = showPool && (
+    <PoolModal
+      pool={runPool}
+      owned={[...board.filter(Boolean), ...bench]}
+      onClose={() => setShowPool(false)}
+      onTrait={(t, e) => openTrait(t, e)}
+    />
+  );
+
   const topBar = (extra) => (
     <header className="pa-top">
       {hud}
@@ -1459,6 +1498,11 @@ const PokeArena = ({ onClose }) => {
       )}
       {extra}
       <div className="pa-top-actions">
+        {runPool.length > 0 && (
+          <button type="button" className="ui-btn is-small" title="Voir toutes les lignées de cette partie" onClick={() => setShowPool(true)}>
+            Pool
+          </button>
+        )}
         {musicButton}
         <button
           type="button"
@@ -1503,6 +1547,7 @@ const PokeArena = ({ onClose }) => {
           hud={null}
           team={[...board.filter(Boolean), ...bench]}
         />
+        {poolModal}
         {toastEl}
       </div>
     );
@@ -1514,6 +1559,7 @@ const PokeArena = ({ onClose }) => {
         {topBar(null)}
         <MartScreen stock={stock} gold={gold} bag={bag} onBuy={buyWare} onReroll={rerollMart} onLeave={() => advance(node.id)} hud={null} onItemMenu={openItemMenu} />
         {itemMenu && <ItemCraftsPopover itemId={itemMenu.itemId} rect={itemMenu.rect} owned={bag} onClose={closeItemMenu} />}
+        {poolModal}
         {toastEl}
       </div>
     );
@@ -1524,6 +1570,7 @@ const PokeArena = ({ onClose }) => {
       <div className={`pa-root ${skinCls} pa-screen`}>
         {topBar(null)}
         <EventScreen options={eventOpts} onChoose={chooseEvent} gold={gold} hud={null} />
+        {poolModal}
         {toastEl}
       </div>
     );
@@ -1605,6 +1652,10 @@ const PokeArena = ({ onClose }) => {
             }
           })}
         />
+        {mode !== 'versus' && trainer?.sprite && (
+          <TrainerStand key={`foe-${node?.id}`} sprite={trainer.sprite} side="foe" label={`${trainer.title || ''} ${trainer.name || ''}`.trim()} />
+        )}
+        <TrainerStand key={`me-${myTrainer}`} sprite={myTrainer} side="me" label={PLAYER_TRAINERS.find((t) => t.id === myTrainer)?.name || 'Toi'} />
         <div className="pa-arena-caption" aria-live="polite">
           {isFight ? fightLine : `${onBoard.length} / ${boardCap} Pokémon sur le terrain`}
         </div>
@@ -1842,6 +1893,7 @@ const PokeArena = ({ onClose }) => {
       {itemMenu && <ItemCraftsPopover itemId={itemMenu.itemId} rect={itemMenu.rect} owned={bag} onClose={closeItemMenu} />}
       {comboHover && selectedItem && !itemMenu && <ComboPreview a={selectedItem} b={comboHover.id} rect={comboHover.rect} />}
       {showRecipes && <RecipeModal onClose={() => setShowRecipes(false)} />}
+      {poolModal}
       <TraitPopup pop={traitPop} />
       {toastEl}
 

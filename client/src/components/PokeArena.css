@@ -1869,3 +1869,121 @@
 @media (prefers-reduced-motion: reduce) {
   .pa-card::before, .pa-card.cost-5 { animation: none !important; }
 }
+
+/* ———————————————— Ton dresseur (choix au démarrage) ———————————————— */
+.ui-starter-trainer { display: grid; gap: 8px; }
+.ui-starter-trainer h3 { font: italic 800 20px/1 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+.ui-trainer-pick {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  scrollbar-width: thin;
+}
+.ui-trainer-opt {
+  flex: 0 0 auto;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 78px;
+  padding: 8px 4px 6px;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 0 0 2px var(--line-2, rgba(0, 0, 0, 0.12));
+  color: var(--ink, #1b1d2a);
+  font: 700 12px/1.1 'Barlow', sans-serif;
+  transition: box-shadow 0.15s, background 0.15s;
+}
+.ui-trainer-opt:hover { box-shadow: inset 0 0 0 2px var(--accent, #e9a23b); }
+.ui-trainer-opt.is-on {
+  background: #fff;
+  box-shadow: inset 0 0 0 3px var(--accent, #e9a23b), 0 6px 14px rgba(0, 0, 0, 0.15);
+}
+.ui-trainer-opt span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ———————————————— Pool de la partie ———————————————— */
+.ui-pool { max-height: 86vh; overflow-y: auto; }
+.ui-pool-tier { margin-top: 14px; }
+.ui-pool-tier h3 { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ui-pool-tier h3 small { font-weight: 700; color: var(--muted, #6b7088); }
+.ui-pool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; }
+.ui-pool-card {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 10px 8px 9px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--t) 16%, #fff), #fff 70%);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--t) 40%, transparent);
+  text-align: center;
+}
+.ui-pool-card strong { font: italic 800 15px/1.1 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+.ui-pool-final { font-size: 11px; font-weight: 700; color: var(--muted, #6b7088); }
+.ui-pool-traits { font-size: 11px; font-weight: 800; color: var(--ink-2, #3b3f55); }
+.ui-pool-card.is-owned { box-shadow: inset 0 0 0 3px var(--t), 0 6px 14px rgba(0, 0, 0, 0.12); }
+.ui-pool-owned {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--t);
+  color: #fff;
+  font: italic 800 13px/1.3 'Barlow Condensed', sans-serif;
+}
+
+/* ———————————————— Dresseurs au bord du terrain ———————————————— */
+.pa-stand {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  pointer-events: none;
+}
+.pa-stand img {
+  height: clamp(110px, 17vh, 170px);
+  width: auto;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.35));
+}
+.pa-stand span {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1b1d2a;
+  font: italic 800 13px/1.3 'Barlow Condensed', sans-serif;
+  text-transform: uppercase;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+.pa-stand.is-foe {
+  top: 4%;
+  right: 2%;
+  animation: pa-stand-foe 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+.pa-stand.is-me {
+  bottom: 9%;
+  left: 2%;
+  animation: pa-stand-me 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+.pa-stand.is-me img { transform: scaleX(-1); }
+@keyframes pa-stand-foe { from { opacity: 0; transform: translateX(80px); } to { opacity: 1; transform: none; } }
+@keyframes pa-stand-me { from { opacity: 0; transform: translateX(-80px); } to { opacity: 1; transform: none; } }
+.is-fighting .pa-stand img { animation: pa-stand-cheer 1.6s ease-in-out infinite; }
+@keyframes pa-stand-cheer { 50% { translate: 0 -4px; } }
+.pa-root.skin-premium .pa-stand span { background: rgba(28, 22, 18, 0.92); color: #f3e6cc; }
+@media (max-width: 900px) {
+  .pa-stand img { height: 84px; }
+  .pa-stand span { display: none; }
+}
+/* Cartes claires : texte foncé quel que soit le style d'interface */
+.pa-root .ui-pool-card,
+.pa-root .ui-pool-card strong,
+.pa-root .ui-trainer-opt,
+.pa-root .ui-trainer-opt span { color: #1b1d2a; }
+.pa-root .ui-pool-final { color: #5b6078; }
+.pa-root .ui-pool-traits { color: #3b3f55; }

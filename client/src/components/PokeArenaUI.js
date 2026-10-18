@@ -269,7 +269,39 @@ const MiniStage = ({ stage }) => (
   </figure>
 );
 
-export const StarterScreen = ({ onPick, onBack, onTrait }) => {
+/* ———————————————— Ton dresseur ———————————————— */
+
+/** Dresseurs jouables (sprites Showdown), choisis au démarrage et affichés de ton côté du terrain. */
+export const PLAYER_TRAINERS = [
+  { id: 'red', name: 'Red' }, { id: 'leaf', name: 'Leaf' }, { id: 'ethan', name: 'Ethan' }, { id: 'lyra', name: 'Lyra' },
+  { id: 'brendan', name: 'Brendan' }, { id: 'may', name: 'Flora' }, { id: 'lucas', name: 'Louka' }, { id: 'dawn', name: 'Aurore' },
+  { id: 'hilbert', name: 'Ludvan' }, { id: 'hilda', name: 'Ludvina' }, { id: 'nate', name: 'Matis' }, { id: 'rosa', name: 'Mei' },
+  { id: 'calem', name: 'Kalem' }, { id: 'serena', name: 'Serena' }, { id: 'elio', name: 'Elio' }, { id: 'selene', name: 'Selene' },
+  { id: 'victor', name: 'Victor' }, { id: 'gloria', name: 'Gloria' }, { id: 'florian', name: 'Florian' }, { id: 'juliana', name: 'Juliana' },
+  { id: 'silver', name: 'Silver' }, { id: 'blue-gen7', name: 'Blue' }, { id: 'n', name: 'N' }, { id: 'steven', name: 'Pierre Rochard' },
+  { id: 'cynthia', name: 'Cynthia' }, { id: 'cyrus', name: 'Hélio' }
+];
+
+export const TrainerPicker = ({ value, onChange }) => (
+  <div className="ui-trainer-pick" role="listbox" aria-label="Ton dresseur">
+    {PLAYER_TRAINERS.map((t) => (
+      <button
+        key={t.id}
+        type="button"
+        role="option"
+        aria-selected={value === t.id}
+        className={`ui-trainer-opt${value === t.id ? ' is-on' : ''}`}
+        onClick={() => onChange(t.id)}
+        title={t.name}
+      >
+        <TrainerPortrait trainer={{ sprite: t.id, name: t.name }} size="md" />
+        <span>{t.name}</span>
+      </button>
+    ))}
+  </div>
+);
+
+export const StarterScreen = ({ onPick, onBack, onTrait, trainer, onTrainer }) => {
   const [gen, setGen] = useState(0);
   const [type, setType] = useState('');
   const [pickId, setPickId] = useState(STARTER_LINES[0]?.id);
@@ -297,6 +329,12 @@ export const StarterScreen = ({ onPick, onBack, onTrait }) => {
         </div>
         <button type="button" className="ui-btn is-ghost" onClick={onBack}>Retour</button>
       </header>
+      {onTrainer && (
+        <section className="ui-starter-trainer">
+          <h3>Ton dresseur</h3>
+          <TrainerPicker value={trainer} onChange={onTrainer} />
+        </section>
+      )}
       <div className="ui-starter-body">
         <section className="ui-starter-pick">
           <div className="ui-filters" role="toolbar" aria-label="Filtres">
@@ -380,6 +418,80 @@ export const StarterScreen = ({ onPick, onBack, onTrait }) => {
             </button>
           </section>
         )}
+      </div>
+    </div>
+  );
+};
+
+/* ———————————————— Pool de la partie ———————————————— */
+
+const lineTypes = (line) => {
+  const all = [];
+  const add = (st) => (st.types || [st.type]).forEach((t) => { if (t && !all.includes(t)) all.push(t); });
+  line.stages.forEach(add);
+  (line.forms || []).forEach((f) => f.stages.forEach(add));
+  return all;
+};
+
+/** Toutes les lignées que la boutique peut proposer pendant cette partie, par coût. */
+export const PoolModal = ({ pool = [], owned = [], onClose, onTrait }) => {
+  useEscape(onClose);
+  const [type, setType] = useState('');
+  const counts = useMemo(() => {
+    const map = {};
+    owned.forEach((u) => { if (u?.lineId) map[u.lineId] = (map[u.lineId] || 0) + 1; });
+    return map;
+  }, [owned]);
+  const rows = useMemo(() => pool.map((line) => {
+    const unit = unitFromLine(line.id, 1, `pool-${line.id}`);
+    const last = line.forms?.length ? null : line.stages[line.stages.length - 1];
+    return { line, unit, types: lineTypes(line), finalName: last ? displayName(last.name) : 'Évolutions au choix' };
+  }).filter((r) => r.unit), [pool]);
+  const allTypes = useMemo(() => {
+    const set = [];
+    rows.forEach((r) => r.types.forEach((t) => { if (!set.includes(t)) set.push(t); }));
+    return set.sort((a, b) => TYPES.indexOf(a) - TYPES.indexOf(b));
+  }, [rows]);
+  const shown = rows.filter((r) => !type || r.types.includes(type));
+  return (
+    <div className="ui-modal" role="dialog" aria-label="Pool de la partie" onClick={onClose}>
+      <div className="ui-modal-card is-wide ui-pool" onClick={(e) => e.stopPropagation()}>
+        <header>
+          <h2>Pool de la partie</h2>
+          <button type="button" className="ui-btn is-ghost" onClick={onClose}>Fermer</button>
+        </header>
+        <p className="ui-muted">
+          Les {pool.length} lignées que la boutique peut te proposer pendant cette partie. Celles que tu as déjà sont marquées.
+        </p>
+        <div className="ui-filters" role="toolbar" aria-label="Filtrer par type">
+          <button type="button" className={`ui-chip${type === '' ? ' is-on' : ''}`} onClick={() => setType('')}>Tous</button>
+          {allTypes.map((t) => (
+            <button key={t} type="button" className={`ui-chip is-type${type === t ? ' is-on' : ''}`} style={{ '--t': tint(t) }} onClick={() => setType(type === t ? '' : t)}>{t}</button>
+          ))}
+        </div>
+        {[1, 2, 3, 4, 5].map((cost) => {
+          const list = shown.filter((r) => r.line.cost === cost);
+          if (!list.length) return null;
+          return (
+            <section key={cost} className="ui-pool-tier">
+              <h3><span className={`ui-cost cost-${cost}`}>{cost} or</span> <small>{list.length} lignée{list.length > 1 ? 's' : ''}</small></h3>
+              <div className="ui-pool-grid">
+                {list.map(({ line, unit, types, finalName }) => (
+                  <div key={line.id} className={`ui-pool-card${counts[line.id] ? ' is-owned' : ''}`} style={{ '--t': tint(unit.type) }}>
+                    {counts[line.id] ? <span className="ui-pool-owned">×{counts[line.id]}</span> : null}
+                    <PokeSprite unit={unit} size="md" />
+                    <strong>{displayName(unit.name)}</strong>
+                    <span className="ui-pool-final">› {finalName}</span>
+                    <span className="ui-chips">{types.map((t) => <TypeChip key={t} type={t} small onHover={onTrait} />)}</span>
+                    {(line.traits || []).filter((t) => !types.includes(t)).length > 0 && (
+                      <span className="ui-pool-traits">{line.traits.filter((t) => !types.includes(t)).join(' · ')}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );
