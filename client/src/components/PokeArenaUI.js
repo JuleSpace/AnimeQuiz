@@ -8,6 +8,8 @@ import {
   RECIPE_LIST,
   ROSTER_LINES,
   RUN_POOL_SIZE,
+  SHOP_ODDS,
+  SHOP_SIZE,
   STARTER_LINES,
   TYPES,
   lineSynergyRows,
@@ -434,7 +436,24 @@ const lineTypes = (line) => {
 };
 
 /** Toutes les lignées que la boutique peut proposer pendant cette partie, par coût. */
-export const PoolModal = ({ pool = [], owned = [], onClose, onTrait }) => {
+const pct = (v) => (v >= 10 || v === 0 ? `${Math.round(v)} %` : `${v.toFixed(1).replace('.', ',')} %`);
+
+/** Chances par case de la boutique selon le coût, au niveau donné. */
+export const ShopOdds = ({ level = 1, compact = false }) => {
+  const odds = SHOP_ODDS[Math.min(9, Math.max(1, level))] || SHOP_ODDS[1];
+  return (
+    <div className={`ui-odds${compact ? ' is-compact' : ''}`} title={`Chances par case de la boutique au niveau ${level}`}>
+      {[1, 2, 3, 4, 5].map((cost) => (
+        <span key={cost} className={`ui-odds-cell cost-${cost}${odds[cost] ? '' : ' is-zero'}`}>
+          {!compact && <b>{cost} or</b>}
+          {odds[cost] || 0} %
+        </span>
+      ))}
+    </div>
+  );
+};
+
+export const PoolModal = ({ pool = [], owned = [], level = 1, onClose, onTrait }) => {
   useEscape(onClose);
   const [type, setType] = useState('');
   const counts = useMemo(() => {
@@ -463,6 +482,13 @@ export const PoolModal = ({ pool = [], owned = [], onClose, onTrait }) => {
         <p className="ui-muted">
           Les {pool.length} lignées que la boutique peut te proposer pendant cette partie. Celles que tu as déjà sont marquées.
         </p>
+        <div className="ui-pool-odds">
+          <span>Chances par case au niveau {level}</span>
+          <ShopOdds level={level} />
+          <small>
+            La boutique a {SHOP_SIZE} cases. Chaque case tire d'abord un coût selon ces chances, puis une lignée au hasard parmi celles de ce coût.
+          </small>
+        </div>
         <div className="ui-filters" role="toolbar" aria-label="Filtrer par type">
           <button type="button" className={`ui-chip${type === '' ? ' is-on' : ''}`} onClick={() => setType('')}>Tous</button>
           {allTypes.map((t) => (
@@ -472,9 +498,21 @@ export const PoolModal = ({ pool = [], owned = [], onClose, onTrait }) => {
         {[1, 2, 3, 4, 5].map((cost) => {
           const list = shown.filter((r) => r.line.cost === cost);
           if (!list.length) return null;
+          const odds = (SHOP_ODDS[Math.min(9, Math.max(1, level))] || SHOP_ODDS[1])[cost] || 0;
+          const inTier = rows.filter((r) => r.line.cost === cost).length || 1;
+          const perSlot = odds / inTier;
+          const perShop = (1 - (1 - perSlot / 100) ** SHOP_SIZE) * 100;
           return (
             <section key={cost} className="ui-pool-tier">
-              <h3><span className={`ui-cost cost-${cost}`}>{cost} or</span> <small>{list.length} lignée{list.length > 1 ? 's' : ''}</small></h3>
+              <h3>
+                <span className={`ui-cost cost-${cost}`}>{cost} or</span>
+                <small>{list.length} lignée{list.length > 1 ? 's' : ''}</small>
+                <em className={odds ? '' : 'is-zero'}>
+                  {odds
+                    ? `${odds} % par case · chaque espèce : ${pct(perSlot)} par case, ${pct(perShop)} d'être dans la boutique`
+                    : `Pas encore au niveau ${level}`}
+                </em>
+              </h3>
               <div className="ui-pool-grid">
                 {list.map(({ line, unit, types, finalName }) => (
                   <div key={line.id} className={`ui-pool-card${counts[line.id] ? ' is-owned' : ''}`} style={{ '--t': tint(unit.type) }}>

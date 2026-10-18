@@ -81,6 +81,7 @@ import {
   PokeSprite,
   RecipeModal,
   PoolModal,
+  ShopOdds,
   PLAYER_TRAINERS,
   ResultOverlay,
   RewardModal,
@@ -1476,6 +1477,7 @@ const PokeArena = ({ onClose }) => {
   const poolModal = showPool && (
     <PoolModal
       pool={runPool}
+      level={level}
       owned={[...board.filter(Boolean), ...bench]}
       onClose={() => setShowPool(false)}
       onTrait={(t, e) => openTrait(t, e)}
@@ -1805,6 +1807,9 @@ const PokeArena = ({ onClose }) => {
               </button>
               <button type="button" className={`ui-chip${shopLocked ? ' is-on' : ''}`} onClick={() => setShopLocked((v) => !v)} aria-pressed={shopLocked} title="Garde ces Pokémon pour le prochain combat">
                 {shopLocked ? 'Boutique gardée' : 'Garder la boutique'}
+              </button>
+              <button type="button" className="pa-odds-btn" onClick={() => setShowPool(true)} title="Chances par coût à ton niveau · voir le pool">
+                <ShopOdds level={level} compact />
               </button>
             </div>
             <div className="pa-shop">
