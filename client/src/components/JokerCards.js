@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from './ArcadeIcon';
+import './JokerChao.css';
 
 export const JOKERS = {
   double: {
@@ -397,10 +398,114 @@ function playCardVoice(cardId) {
   }
 }
 
-const Mark = ({ cardId }) => {
-  const src = CARD_ART[cardId];
-  if (!src) return null;
-  return <img className="tcg-photo tcg-photo-fit" src={src} alt="" />;
+/* ——————————————————————— Cartes « Jardin des Chao » ——————————————————————— */
+
+// Rôle (bulle d’émotion), couleurs lisibles sur fond clair, rareté (fruits) et aura des cartes rares.
+const CHAO = {
+  double: { mood: '!', accent: '#ff2d55', pastel: '#ffe1e7', fruits: ['round', 'tri', 'heart'], aura: true },
+  filet: { mood: 'heart', accent: '#14a89c', pastel: '#d6fff6', fruits: ['round'] },
+  seconde: { mood: '?', accent: '#ff8a00', pastel: '#ffe9c7', fruits: ['round', 'tri'] },
+  copie: { mood: '?', accent: '#a26be8', pastel: '#efe3ff', fruits: ['round', 'tri'] },
+  indice: { mood: '?', accent: '#e0a400', pastel: '#fff3c4', fruits: ['round'] },
+  silence: { mood: '!', accent: '#6f7d93', pastel: '#e8eef4', fruits: ['round', 'tri'] },
+  vol: { mood: '!', accent: '#ff3d8a', pastel: '#ffe0ee', fruits: ['round', 'tri', 'heart'] },
+  melange: { mood: '!', accent: '#2fb86b', pastel: '#ddffe9', fruits: ['round', 'tri'] },
+  pot: { mood: '?', accent: '#e08a00', pastel: '#ffeccc', fruits: ['round', 'tri'] },
+  renversement: { mood: '!', accent: '#6366f1', pastel: '#e3e6ff', fruits: ['round', 'tri', 'heart'] },
+  toutourien: { mood: '!', accent: '#ff2424', pastel: '#ffe0dc', fruits: ['round', 'tri', 'heart'], aura: true },
+  gambling: { mood: '!', accent: '#d9a400', pastel: '#fff3c4', fruits: ['round', 'tri', 'heart'], aura: true },
+  rumeur: { mood: '?', accent: '#c13fd8', pastel: '#fae3ff', fruits: ['round'] },
+  bouclier: { mood: 'heart', accent: '#3b82f6', pastel: '#dbeafe', fruits: ['round', 'heart'] }
+};
+const MOOD_BALL = { '!': '#ffd23a', '?': '#8fd8ff', heart: '#ff9ac0' };
+
+const chaoOf = (cardId) => CHAO[cardId] || { mood: '?', accent: JOKERS[cardId]?.accent || '#3b82f6', pastel: '#eef3ff', fruits: ['round'] };
+
+/** Rareté d’une carte (1 à 3) : nombre de fruits. Sert aussi à la couleur de l’œuf. */
+export const jokerRarity = (cardId) => chaoOf(cardId).fruits.length;
+
+const chaoStyle = (cardId) => {
+  const c = chaoOf(cardId);
+  return { '--a': c.accent, '--p': c.pastel, '--b': MOOD_BALL[c.mood] };
+};
+
+const HeartIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 21s-7.5-4.6-9.5-9.2C1.2 8.6 3.2 5 6.6 5c2 0 3.5 1.1 4.4 2.6l1 1.5 1-1.5C13.9 6.1 15.4 5 17.4 5c3.4 0 5.4 3.6 4.1 6.8C19.5 16.4 12 21 12 21z" fill="#0a1f6b" />
+  </svg>
+);
+
+const VOL_RINGS = [[-90, -60], [-60, -90], [-20, -110], [20, -105], [60, -88], [92, -55], [-110, -20], [110, -18]]
+  .map(([x, y], i) => ({ x: `${x / 16}em`, y: `${y / 16}em`, d: `${i * 0.03}s` }));
+const POT_RINGS = [-60, -36, -12, 12, 36, 60, -84, 84]
+  .map((x, i) => ({ s: `${((i % 2 ? 1 : -1) * 40) / 16}em`, x: `${(x * 1.4) / 16}em`, d: `${i * 0.06}s` }));
+
+/** Effet signature de chaque carte, rejoué quand on l’obtient ou qu’on la joue. */
+const CardFx = ({ cardId }) => {
+  switch (cardId) {
+    case 'double':
+      return <><i className="jcx-ring l" /><i className="jcx-ring r" /><b className="jcx-x2">×2</b></>;
+    case 'filet':
+      return (
+        <>
+          <i className="jcx-net" />
+          <i className="jcx-spark" style={{ left: '30%', top: '40%' }} />
+          <i className="jcx-spark" style={{ left: '60%', top: '30%' }} />
+          <i className="jcx-spark" style={{ left: '48%', top: '60%' }} />
+        </>
+      );
+    case 'copie':
+      return <><i className="jcx-ghost" /><i className="jcx-ghost" style={{ '--d': '0.12s' }} /><i className="jcx-ghost" style={{ '--d': '0.24s' }} /></>;
+    case 'silence':
+      return (
+        <svg className="jcx-mute" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="11" fill="#fff" stroke="#0a1f6b" strokeWidth="1.6" />
+          <path d="M5 10h3l4-3.5v11L8 14H5z" fill="#0a1f6b" />
+          <path d="M15 9.5l4.5 5M19.5 9.5l-4.5 5" stroke="#ff2347" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case 'vol':
+      return <>{VOL_RINGS.map((r) => <i key={`${r.x}${r.y}`} className="jcx-r" style={{ '--x': r.x, '--y': r.y, '--d': r.d }} />)}</>;
+    case 'gambling':
+      return (
+        <span className="jcx-slots">
+          {['0s', '0.25s', '0.5s'].map((d) => (
+            <span key={d} className="jcx-reel">
+              <span className="jcx-strip" style={{ '--d': d }}><i className="o" /><i className="t" /><i className="o" /><i className="t" /><i className="o" /><i className="h" /></span>
+            </span>
+          ))}
+        </span>
+      );
+    case 'bouclier':
+      return <i className="jcx-shield" />;
+    case 'indice':
+      return <span className="jcx-tip">Psst ! Un indice !</span>;
+    case 'seconde':
+      return <><span className="jcx-ans a1"><b>1</b></span><span className="jcx-ans a2"><b>2</b></span></>;
+    case 'melange':
+      return <><i className="jcx-mini m1" style={{ '--c': '#ff7aa8' }} /><i className="jcx-mini m2" style={{ '--c': '#8fd8ff' }} /><i className="jcx-mini m3" style={{ '--c': '#ffd23a' }} /></>;
+    case 'pot':
+      return <>{POT_RINGS.map((r) => <i key={r.x} className="jcx-pot" style={{ '--s': r.s, '--x': r.x, '--d': r.d }} />)}</>;
+    case 'renversement':
+      return (
+        <svg className="jcx-arrows" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="11" fill="#fff" stroke="#0a1f6b" strokeWidth="1.6" />
+          <path d="M8.5 6v12M8.5 6 6 8.5M8.5 6 11 8.5M15.5 18V6M15.5 18 13 15.5M15.5 18l2.5-2.5" stroke="#4f46e5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </svg>
+      );
+    case 'toutourien':
+      return <><b className="jcx-allin t">TOUT !</b><b className="jcx-allin r">RIEN</b></>;
+    case 'rumeur':
+      return (
+        <>
+          <span className="jcx-whisper w1" style={{ '--d': '0s' }}>…</span>
+          <span className="jcx-whisper w2" style={{ '--d': '0.25s' }}>psst</span>
+          <span className="jcx-whisper w3" style={{ '--d': '0.5s' }}>…</span>
+        </>
+      );
+    default:
+      return null;
+  }
 };
 
 export const JokerCard = ({ cardId, used = false, size = 'full', slam = false, reveal = false, quiet = false }) => {
@@ -417,150 +522,170 @@ export const JokerCard = ({ cardId, used = false, size = 'full', slam = false, r
     setDropping(true);
     const onTable = slam || size !== 'hand' || TABLE_DROP.has(cardId);
     if (!quiet && (slam || (size === 'hand' && !onTable))) playDropSound(cardId);
-    const timer = setTimeout(() => setDropping(false), slam ? 1700 : 1200);
+    const timer = setTimeout(() => setDropping(false), 2400);
     return () => clearTimeout(timer);
   }, [used, slam, cardId, size, card, quiet]);
 
   useEffect(() => {
     if (!reveal) return undefined;
     setImpact(true);
-    const timer = setTimeout(() => setImpact(false), 1300);
+    const timer = setTimeout(() => setImpact(false), 2400);
     return () => clearTimeout(timer);
   }, [reveal]);
 
   if (!card) return null;
+  const chao = chaoOf(cardId);
+  const art = CARD_ART[cardId];
 
   const tilt = (event) => {
     const node = event.currentTarget;
     const rect = node.getBoundingClientRect();
     const px = (event.clientX - rect.left) / rect.width;
     const py = (event.clientY - rect.top) / rect.height;
-    node.style.setProperty('--mx', `${px * 100}%`);
-    node.style.setProperty('--my', `${py * 100}%`);
-    node.style.setProperty('--ry', `${(px - 0.5) * 14}deg`);
-    node.style.setProperty('--rx', `${(0.5 - py) * 12}deg`);
+    node.style.setProperty('--ry', `${(px - 0.5) * 12}deg`);
+    node.style.setProperty('--rx', `${(0.5 - py) * 10}deg`);
   };
-
   const untilt = (event) => {
     const node = event.currentTarget;
     node.style.removeProperty('--rx');
     node.style.removeProperty('--ry');
   };
 
+  const playing = dropping || impact;
+  const classes = [
+    'jc',
+    `jc-${size}`,
+    used ? 'is-used' : '',
+    dropping && slam ? 'is-slam' : '',
+    dropping && !slam ? 'is-drop' : '',
+    impact ? 'is-reveal' : '',
+    playing ? 'is-play' : '',
+    chao.aura ? 'has-aura' : ''
+  ].filter(Boolean).join(' ');
+
   return (
-    <article
-      className={`tcg-card tcg-${size} ${used ? 'is-used' : ''} ${dropping && slam ? 'is-slam' : ''} ${dropping && !slam ? 'is-drop' : ''} ${impact ? 'is-reveal' : ''}`}
-      data-card={cardId}
-      style={{ '--tcg-accent': card.accent, '--tcg-mate': card.mate }}
-      onMouseMove={tilt}
-      onMouseLeave={untilt}
-    >
-      <div className="tcg-float">
-        <div className="tcg-name"><i className="tcg-gem" /><span>{card.name}</span></div>
-        <div className="tcg-art">
-          <Mark cardId={cardId} />
-          <span className="tcg-sheen" />
-          <span className="tcg-sweep" />
-          <span className={`tcg-fx tcg-fx-${cardId}`}>
-            {cardId === 'gambling' && <><i>7</i><i>7</i><i>7</i></>}
-          </span>
-          {used && <div className="tcg-stamp">Jouée</div>}
+    <article className={classes} data-card={cardId} style={chaoStyle(cardId)} onMouseMove={tilt} onMouseLeave={untilt}>
+      {size !== 'mini' && (
+        <span className="jc-ball" aria-hidden="true">{chao.mood === 'heart' ? <HeartIcon /> : <b>{chao.mood}</b>}</span>
+      )}
+      <div className="jc-card">
+        <div className="jc-in">
+          <i className="jc-shell" aria-hidden="true" />
+          <div className="jc-name"><span>{card.name}</span></div>
+          <div className="jc-art">
+            <div className="jc-bubble">{art && <img src={art} alt="" draggable={false} />}</div>
+          </div>
+          {size === 'full' ? (
+            <div className="jc-ground">
+              <span className="jc-fruits" aria-label={`Rareté ${chao.fruits.length} sur 3`}>
+                {chao.fruits.map((f, i) => <i key={`${f}-${i}`} className={f} />)}
+              </span>
+              <p className="jc-rule">{card.rule}</p>
+            </div>
+          ) : <div className="jc-grass" />}
+          {used && <div className="jc-stamp">Jouée</div>}
         </div>
-        {size === 'full' && (
-          <p className="tcg-rule"><span>{card.rule}</span></p>
-        )}
       </div>
-      <span className="tcg-flash" />
-      <span className="tcg-burst" />
-      <span className="tcg-shock" />
+      {playing && <span className="jc-fx" aria-hidden="true"><CardFx cardId={cardId} /></span>}
     </article>
   );
 };
 
+const TABLE_TEXT = {
+  melange: { banner: 'Mélange !', who: (n) => `${n} mélange les réponses`, none: 'Les réponses sont mélangées' },
+  pot: { banner: 'Pot commun !', who: (n) => `${n} met les points au pot`, none: 'Les points partent au pot' },
+  renversement: { banner: 'Renversement !', who: (n) => `${n} renverse le classement`, none: 'Le classement se renverse' }
+};
+const TABLE_CHIPS = ['?', '?', '?', '?', '?', '?'].map((text, i) => ({ text, a: `${i * 60}deg` }));
+const TABLE_RINGS = Array.from({ length: 14 }, (_, i) => ({ a: `${i * (360 / 14)}deg`, d: `${i * 0.05}s` }));
+
+/** Carte de table jouée : elle traverse l’écran, s’écrase au centre et agit sur toute la partie. */
 export const TableDrop = ({ cardId, username = '', quiet = false }) => {
   const who = username.trim();
-  let caption = who ? `${who} mélange les réponses` : 'Les réponses sont mélangées';
-  if (cardId === 'pot') caption = who ? `${who} met les points au pot` : 'Les points partent au pot';
-  if (cardId === 'renversement') caption = who ? `${who} renverse le classement` : 'Le classement se renverse';
+  const text = TABLE_TEXT[cardId] || { banner: `${JOKERS[cardId]?.name || 'Joker'} !`, who: (n) => `${n} joue une carte`, none: 'Une carte est jouée' };
+  const caption = who ? text.who(who) : text.none;
   return (
-    <div className="melange-burst" role="status">
-      <div className="melange-burst-card">
+    <div className={`jt jt-${cardId}`} role="status">
+      <i className="jt-dim" aria-hidden="true" />
+      <i className="jt-lines" aria-hidden="true" />
+      <i className="jt-wave" aria-hidden="true" />
+      <i className="jt-wave w2" aria-hidden="true" />
+      {cardId === 'renversement' && (
+        <svg className="jt-arrows" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,.6)" strokeWidth="2.5" strokeDasharray="7 6" />
+          <path d="M50 0 l13 12 h-26z M50 100 l-13 -12 h26z" fill="#ffd23a" stroke="#08164d" strokeWidth="1.6" />
+        </svg>
+      )}
+      {cardId === 'melange' && (
+        <div className="jt-orbit" aria-hidden="true">
+          {TABLE_CHIPS.map((c) => <span key={c.a} className="jt-chip" style={{ '--a': c.a }}>{c.text}</span>)}
+        </div>
+      )}
+      {cardId === 'pot' && TABLE_RINGS.map((r) => <i key={r.a} className="jt-ring" style={{ '--a': r.a, '--d': r.d }} aria-hidden="true" />)}
+      <div className="jt-banner" aria-hidden="true"><span>{text.banner}</span></div>
+      <div className="jt-card">
         <JokerCard cardId={cardId} size="full" slam quiet={quiet} />
       </div>
-      <p className="melange-burst-caption">{caption}</p>
+      <i className="jt-flash" aria-hidden="true" />
+      <p className="jt-cap">{caption}</p>
     </div>
   );
 };
 
-const PACK_RAYS = Array.from({ length: 16 }, (_, i) => ({
-  a: (360 / 16) * i - 6,
-  w: 10 + (i % 4) * 8,
-  h: 340 + (i % 5) * 56,
-  delay: (i % 6) * 0.045
-}));
+/* ——————————————————————— Booster : œuf de Chao ——————————————————————— */
 
-const PACK_EMBERS = Array.from({ length: 24 }, (_, i) => ({
-  x: -130 + ((i * 41) % 270),
-  delay: (i * 0.07) % 0.85,
-  dur: 0.72 + (i % 5) * 0.14,
-  size: 3 + (i % 4) * 2
-}));
-
-const PACK_CONFETTI = Array.from({ length: 42 }, (_, i) => {
-  const angle = (Math.PI * 2 * i) / 42;
-  const dist = 160 + (i % 8) * 42;
-  return {
-    dx: Math.round(Math.cos(angle) * dist),
-    dy: Math.round(Math.sin(angle) * dist * 0.72 - 90),
-    rot: (i * 53) % 360,
-    delay: (i % 9) * 0.028,
-    w: 6 + (i % 3) * 5,
-    h: i % 2 === 0 ? 16 : 8,
-    color: ['#fff6d0', '#ffe14a', '#ff6ec7', '#7ec8ff', '#ffffff', '#ff2d55', '#9dff6a'][i % 7]
-  };
+const EGG_RINGS = Array.from({ length: 10 }, (_, i) => {
+  const a = ((-160 + i * 15.5) * Math.PI) / 180;
+  return { x: `${Math.round(Math.cos(a) * 240)}px`, y: `${Math.round(Math.sin(a) * 210 - 40)}px`, d: `${(i % 3) * 0.05}s` };
 });
-
-const PACK_SPARKS = Array.from({ length: 26 }, (_, i) => {
-  const angle = (Math.PI * 2 * i) / 26 + 0.18;
-  const dist = 130 + (i % 6) * 48;
-  return {
-    dx: Math.round(Math.cos(angle) * dist),
-    dy: Math.round(Math.sin(angle) * dist * 0.8 - 36),
-    delay: (i % 8) * 0.03,
-    size: i % 5 === 0 ? 12 : 6
-  };
-});
-
-const PACK_SCRAPS = Array.from({ length: 20 }, (_, i) => {
-  const side = i % 2 === 0 ? -1 : 1;
-  return {
-    dx: side * (80 + (i % 7) * 28),
-    dy: -40 - (i % 8) * 32,
-    rot: side * (40 + (i * 17) % 120),
-    delay: (i % 6) * 0.03,
-    w: 6 + (i % 4) * 3,
-    h: i % 3 === 0 ? 8 : 18
-  };
-});
-
-const PACK_STREAKS = Array.from({ length: 8 }, (_, i) => ({
-  y: 8 + i * 11,
-  delay: (i % 4) * 0.04,
-  flip: i % 2 === 0
+const EGG_FRUITS = Array.from({ length: 14 }, (_, i) => ({
+  k: ['o', 'h', 't'][i % 3],
+  x: `${5 + ((i * 37) % 90)}%`,
+  d: `${(i % 5) * 0.18}s`,
+  r: `${(i % 2 ? 1 : -1) * (180 + i * 20)}deg`
 }));
+const EGG_PATH = 'M95 4C150 4 186 90 186 150C186 206 146 236 95 236C44 236 4 206 4 150C4 90 40 4 95 4Z';
+const EGG_KIND = { 1: 'normal', 2: 'shiny', 3: 'chaos' };
 
-const PACK_GLINTS = Array.from({ length: 12 }, (_, i) => ({
-  a: (360 / 12) * i,
-  delay: i * 0.045,
-  r: 168 + (i % 3) * 22
-}));
+let eggSerial = 0;
 
-const CardBack = () => (
-  <div className="card-back" aria-hidden="true">
-    <span className="card-back-gem">J</span>
-    <span className="card-back-word">Joker</span>
-  </div>
-);
+const ChaoEgg = ({ kind }) => {
+  const [uid] = useState(() => {
+    eggSerial += 1;
+    return `egg${eggSerial}`;
+  });
+  return (
+    <svg viewBox="-8 -8 206 256" aria-hidden="true">
+      <defs>
+        <linearGradient id={`${uid}-normal`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" /><stop offset=".38" stopColor="#ffffff" /><stop offset=".38" stopColor="#cfe8ff" /><stop offset=".46" stopColor="#cfe8ff" />
+          <stop offset=".46" stopColor="#ffffff" /><stop offset=".64" stopColor="#ffffff" /><stop offset=".64" stopColor="#9fd0ff" /><stop offset="1" stopColor="#7fbcff" />
+        </linearGradient>
+        <linearGradient id={`${uid}-shiny`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fff6c0" /><stop offset=".38" stopColor="#fff1a6" /><stop offset=".38" stopColor="#ffd23a" /><stop offset=".46" stopColor="#ffd23a" />
+          <stop offset=".46" stopColor="#fff1a6" /><stop offset=".64" stopColor="#ffe27a" /><stop offset=".64" stopColor="#ffb800" /><stop offset="1" stopColor="#e59400" />
+        </linearGradient>
+        <linearGradient id={`${uid}-chaos`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ff7a7a" /><stop offset=".2" stopColor="#ffd36b" /><stop offset=".4" stopColor="#7dffb0" />
+          <stop offset=".6" stopColor="#6bc8ff" /><stop offset=".8" stopColor="#c58bff" /><stop offset="1" stopColor="#ff8fd1" />
+        </linearGradient>
+        <clipPath id={`${uid}-top`}><polygon points="-10,-10 200,-10 200,120 167,106 144,130 120,108 95,132 70,108 46,130 23,106 -10,120" /></clipPath>
+        <clipPath id={`${uid}-bottom`}><polygon points="-10,120 23,106 46,130 70,108 95,132 120,108 144,130 167,106 200,120 200,250 -10,250" /></clipPath>
+      </defs>
+      <g className="egg-bottom">
+        <path className="egg-fill" clipPath={`url(#${uid}-bottom)`} d={EGG_PATH} fill={`url(#${uid}-${kind})`} />
+        <path clipPath={`url(#${uid}-bottom)`} d={EGG_PATH} fill="none" stroke="#0a1f6b" strokeWidth="6" />
+        <path clipPath={`url(#${uid}-bottom)`} d="M4 150C4 206 44 236 95 236C146 236 186 206 186 150" fill="none" stroke="rgba(10,31,107,.14)" strokeWidth="20" transform="translate(-6,-8)" />
+      </g>
+      <g className="egg-top">
+        <path className="egg-fill" clipPath={`url(#${uid}-top)`} d={EGG_PATH} fill={`url(#${uid}-${kind})`} />
+        <path clipPath={`url(#${uid}-top)`} d={EGG_PATH} fill="none" stroke="#0a1f6b" strokeWidth="6" />
+        <ellipse cx="62" cy="54" rx="20" ry="12" fill="#fff" opacity=".8" transform="rotate(-30 62 54)" />
+      </g>
+      <path className="egg-crack" d="M4 120 L23 106 L46 130 L70 108 L95 132 L120 108 L144 130 L167 106 L186 120 M70 108 L78 86 M120 108 L114 84" fill="none" stroke="#0a1f6b" strokeWidth="5" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+};
 
 export const BoosterOpening = ({ cardId }) => {
   const [stage, setStage] = useState('sealed');
@@ -586,8 +711,9 @@ export const BoosterOpening = ({ cardId }) => {
     };
   }, [cardId]);
 
+  // Son au moment où la carte finit de se retourner.
   useEffect(() => {
-    if (stage !== 'flip') return undefined;
+    if (stage !== 'show') return undefined;
     let dead = false;
     let voiceTimer = 0;
     const run = (audio) => {
@@ -610,10 +736,6 @@ export const BoosterOpening = ({ cardId }) => {
     unlockCling();
     const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduce) {
-      playCardCling();
-      const playNow = (audio) => playDropSound(cardId, audio);
-      if (armedSound.current) playNow(armedSound.current);
-      else prepared.current.then(playNow);
       setStage('show');
       return;
     }
@@ -624,164 +746,64 @@ export const BoosterOpening = ({ cardId }) => {
       timers.current.push(setTimeout(() => setStage(next), ms));
     };
     setStage('rumble');
-    wait('charge', 900);
-    wait('tear', 1900);
-    wait('split', 2400);
-    wait('pull', 3120);
-    wait('flip', 4520);
-    wait('show', 5340);
+    wait('crack', 1300);
+    wait('burst', 2400);
+    wait('rise', 2750);
+    wait('show', 3900);
   };
 
   const card = JOKERS[cardId];
-  let caption = 'Clique sur le booster pour le déchirer';
-  if (!cardId) caption = 'Le booster arrive...';
-  else if (stage === 'rumble') caption = "Le booster s'emballe...";
-  else if (stage === 'charge') caption = 'La lumière crève le pack...';
-  else if (stage === 'tear' || stage === 'split') caption = 'Ça lâche...';
-  else if (stage === 'pull') caption = '';
-  else if (stage === 'flip' || stage === 'show') caption = card ? `${card.name} — ${card.rule}` : '';
-
-  const revealed = stage === 'flip' || stage === 'show';
-  const hot = stage === 'rumble' || stage === 'charge' || stage === 'tear';
-  const burst = stage === 'split' || stage === 'pull' || stage === 'flip' || stage === 'show';
-  const risen = stage === 'pull' || stage === 'flip' || stage === 'show';
+  const kind = EGG_KIND[jokerRarity(cardId)] || 'normal';
+  let caption = 'Un œuf de Chao…';
+  let sub = 'Clique sur l’œuf pour le faire éclore';
+  if (!cardId) {
+    caption = 'L’œuf arrive…';
+    sub = '';
+  } else if (stage === 'rumble' || stage === 'crack') {
+    caption = 'Il bouge !';
+    sub = '';
+  } else if (stage === 'burst' || stage === 'rise') {
+    caption = '';
+    sub = '';
+  } else if (stage === 'show' && card) {
+    caption = card.name;
+    sub = card.rule;
+  }
 
   return (
-    <div className={`pack-scene is-${stage}${hot ? ' is-hot' : ''}${burst ? ' is-burst' : ''}${risen ? ' is-risen' : ''}`}>
-      <div className="pack-stage">
-        <span className="pack-veil" aria-hidden="true" />
-        <span className="pack-rays" aria-hidden="true">
-          {PACK_RAYS.map((ray) => (
-            <i
-              key={`ray-${ray.a}`}
-              style={{
-                '--a': `${ray.a}deg`,
-                '--w': `${ray.w}px`,
-                '--h': `${ray.h}px`,
-                '--delay': `${ray.delay}s`
-              }}
-            />
-          ))}
-        </span>
-        <span className="pack-leak" aria-hidden="true" />
-        <span className="pack-embers" aria-hidden="true">
-          {PACK_EMBERS.map((ember, index) => (
-            <i
-              key={`ember-${index}`}
-              style={{
-                '--x': `${ember.x}px`,
-                '--delay': `${ember.delay}s`,
-                '--dur': `${ember.dur}s`,
-                '--size': `${ember.size}px`
-              }}
-            />
-          ))}
-        </span>
-        <span className="pack-flash" aria-hidden="true" />
-        <span className="pack-core" aria-hidden="true" />
-        <span className="pack-crack" aria-hidden="true" />
-        <span className="pack-rings" aria-hidden="true">
-          <i /><i /><i /><i />
-        </span>
-        <span className="pack-sparks" aria-hidden="true">
-          {PACK_SPARKS.map((spark, index) => (
-            <i
-              key={`spark-${index}`}
-              style={{
-                '--dx': `${spark.dx}px`,
-                '--dy': `${spark.dy}px`,
-                '--delay': `${spark.delay}s`,
-                '--size': `${spark.size}px`
-              }}
-            />
-          ))}
-        </span>
-        <span className="pack-streaks" aria-hidden="true">
-          {PACK_STREAKS.map((streak, index) => (
-            <i
-              key={`streak-${index}`}
-              style={{
-                '--y': `${streak.y}%`,
-                '--delay': `${streak.delay}s`,
-                '--flip': streak.flip ? '-1' : '1'
-              }}
-            />
-          ))}
-        </span>
-        <span className="pack-shell pack-shell-left" aria-hidden="true" />
-        <span className="pack-shell pack-shell-right" aria-hidden="true" />
-        <div className="sleeve">
-          <span className="pack-halo" aria-hidden="true" />
-          <div className="rising-card">
-            <div className="rising-inner">
-              <CardBack />
-              <div className="rising-front">
-                {cardId && <JokerCard cardId={cardId} size="full" reveal={stage === 'show'} />}
-              </div>
-            </div>
+    <div className={`egg-scene is-${stage} egg-${kind}`}>
+      <i className="egg-rays" aria-hidden="true" />
+      <div className="egg-grass" aria-hidden="true" />
+      <span className="egg-ball" aria-hidden="true">!</span>
+      <button
+        type="button"
+        className="egg-btn"
+        onClick={openPack}
+        disabled={stage !== 'sealed' || !cardId}
+        aria-label="Faire éclore l’œuf"
+      >
+        <ChaoEgg kind={kind} />
+      </button>
+      {EGG_RINGS.map((r) => <i key={`${r.x}${r.y}`} className="egg-ring" style={{ '--x': r.x, '--y': r.y, '--d': r.d }} aria-hidden="true" />)}
+      {EGG_FRUITS.map((f, i) => (
+        <i key={`fruit-${i}`} className={`egg-fruit ${f.k}`} style={{ left: f.x, '--d': f.d, '--r': f.r }} aria-hidden="true" />
+      ))}
+      <i className="egg-dim" aria-hidden="true" />
+      <div className="egg-card">
+        <div className="egg-flip">
+          <div className="egg-front">
+            {cardId && <JokerCard cardId={cardId} size="full" reveal={stage === 'show'} quiet />}
           </div>
+          <div className="egg-back"><div className="jc"><div className="jc-back"><b>BL</b></div></div></div>
         </div>
-        <span className="pack-glints" aria-hidden="true">
-          {PACK_GLINTS.map((glint) => (
-            <i
-              key={`glint-${glint.a}`}
-              style={{ '--a': `${glint.a}deg`, '--delay': `${glint.delay}s`, '--r': `${glint.r}px` }}
-            />
-          ))}
-        </span>
-        <span className="pack-confetti" aria-hidden="true">
-          {PACK_CONFETTI.map((bit, index) => (
-            <i
-              key={`bit-${index}`}
-              style={{
-                '--dx': `${bit.dx}px`,
-                '--dy': `${bit.dy}px`,
-                '--rot': `${bit.rot}deg`,
-                '--delay': `${bit.delay}s`,
-                '--w': `${bit.w}px`,
-                '--h': `${bit.h}px`,
-                '--c': bit.color
-              }}
-            />
-          ))}
-        </span>
-        <button type="button" className="pack" onClick={openPack} disabled={stage !== 'sealed'}>
-          <span className="pack-top">
-            <span className="pack-perf" />
-          </span>
-          <span className="pack-body">
-            <span className="pack-crest" aria-hidden="true"><b>J</b></span>
-            <span className="pack-label">
-              <strong>JOKERS</strong>
-              <em>1 carte</em>
-            </span>
-            <span className="pack-pips" aria-hidden="true"><i /><i /><i /></span>
-          </span>
-          <span className="pack-scraps" aria-hidden="true">
-            {PACK_SCRAPS.map((scrap, index) => (
-              <i
-                key={`scrap-${index}`}
-                style={{
-                  '--dx': `${scrap.dx}px`,
-                  '--dy': `${scrap.dy}px`,
-                  '--rot': `${scrap.rot}deg`,
-                  '--delay': `${scrap.delay}s`,
-                  '--w': `${scrap.w}px`,
-                  '--h': `${scrap.h}px`
-                }}
-              />
-            ))}
-          </span>
-        </button>
       </div>
-      <p className="booster-caption">
-        {revealed && card ? (
-          <>
-            <strong>{card.name}</strong>
-            <span>{card.rule}</span>
-          </>
-        ) : caption}
-      </p>
+      <i className="egg-veil" aria-hidden="true" />
+      {caption && (
+        <p className="egg-cap" aria-live="polite">
+          {caption}
+          {sub && <small>{sub}</small>}
+        </p>
+      )}
     </div>
   );
 };

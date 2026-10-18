@@ -454,7 +454,7 @@ function App() {
         setGameData((prev) => (
           prev && prev.tableShow?.id === id ? { ...prev, tableShow: null } : prev
         ));
-      }, 3800);
+      }, 4200);
     });
 
     socket.on('join-error', (data) => {

@@ -106,7 +106,7 @@ const CardVault = ({ onClose }) => {
 
   useEffect(() => {
     if (!tableDrop) return undefined;
-    const timer = setTimeout(() => setTableDrop(null), 3800);
+    const timer = setTimeout(() => setTableDrop(null), 4200);
     return () => clearTimeout(timer);
   }, [tableDrop]);
 
