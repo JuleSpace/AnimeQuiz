@@ -2,12 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createGame } from './swarmEngine';
 import { buildWorld } from './swarmWorld';
 import { drawPokemon, preloadSprites } from './swarmSprites';
-import { MAX_LEVEL, PARTNERS, PASSIVES, WEAPONS } from './swarmData';
+import { FOES, GENS, GEN_BOSSES, MAX_LEVEL, MEGA_LEVELS, PARTNERS, PASSIVES, WEAPONS } from './swarmData';
 import { musicPlayer } from './pokeArenaMusic';
 import './PokeSwarm.css';
 
 export const SWARM_HASH = '#swarm';
 const BEST_KEY = 'poke-swarm-best';
+const GEN_KEY = 'poke-swarm-gen';
 const MUSIC_KEY = 'poke-arena-music';
 
 const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
@@ -16,7 +17,17 @@ const readBest = () => {
   try { return JSON.parse(localStorage.getItem(BEST_KEY) || '{}') || {}; } catch { return {}; }
 };
 
-const optionLabel = (opt) => {
+const optionLabel = (opt, partner) => {
+  if (opt.kind === 'mega' && partner?.mega) {
+    return {
+      title: partner.mega.stone,
+      tag: opt.lv >= MEGA_LEVELS ? 'Méga-Évolution !' : `Méga-Gemme ${opt.lv}/${MEGA_LEVELS}`,
+      desc: opt.lv >= MEGA_LEVELS ? `${partner.mega.name} : +30 % de dégâts, plus rapide, PV max +60 et soin complet.` : `Rapproche de la Méga-Évolution (+4 % de dégâts). Au niveau ${MEGA_LEVELS} : ${partner.mega.name} !`,
+      color: '#ff6ad5',
+      type: 'Méga',
+      mega: true
+    };
+  }
   if (opt.kind === 'weapon') {
     const W = WEAPONS[opt.id];
     return { title: W.name, tag: opt.lv === 1 ? 'Nouvelle attaque' : `Niveau ${opt.lv}`, desc: W.desc(opt.lv), color: W.color, type: W.type };
@@ -91,6 +102,10 @@ const Pips = ({ lv }) => (
 
 const PokeSwarm = ({ onClose }) => {
   const [screen, setScreen] = useState('menu');
+  const [gen, setGen] = useState(() => {
+    try { return Number(localStorage.getItem(GEN_KEY)) || 1; } catch { return 1; }
+  });
+  const starters = PARTNERS.filter((p) => p.gen === gen);
   const [partnerId, setPartnerId] = useState(PARTNERS[0].id);
   const [hud, setHud] = useState(null);
   const [levelUp, setLevelUp] = useState(null);
@@ -109,7 +124,13 @@ const PokeSwarm = ({ onClose }) => {
     return () => clearTimeout(id);
   }, [world]);
 
-  const partner = PARTNERS.find((p) => p.id === partnerId) || PARTNERS[0];
+  const partner = starters.find((p) => p.id === partnerId) || starters[0];
+  const pickGen = (id) => {
+    setGen(id);
+    setPartnerId(PARTNERS.find((p) => p.gen === id)?.id);
+    try { localStorage.setItem(GEN_KEY, String(id)); } catch { /* stockage indisponible */ }
+  };
+  const finalBoss = FOES[GEN_BOSSES[gen][GEN_BOSSES[gen].length - 1].id];
 
   // Musique : la playlist d'Arena, au même volume.
   useEffect(() => {
@@ -141,7 +162,7 @@ const PokeSwarm = ({ onClose }) => {
         });
       },
       onPauseKey: () => setPaused((v) => !v)
-    }, world);
+    }, world, gen);
     gameRef.current = game;
     const timer = setInterval(() => setHud(game.snapshot()), 100);
     return () => {
@@ -181,12 +202,19 @@ const PokeSwarm = ({ onClose }) => {
           <div>
             <span className="sw-kicker">Mode secret</span>
             <h1>Poké Swarm</h1>
-            <p>Survis aux hordes sauvages pendant 9 minutes, puis bats Mewtwo. Tes attaques partent toutes seules : à toi de bouger et de bien choisir tes bonus.</p>
+            <p>Survis aux hordes sauvages pendant 9 minutes, puis bats {finalBoss.name}. Tes attaques partent toutes seules : à toi de bouger et de bien choisir tes bonus.</p>
           </div>
           <button type="button" className="sw-btn is-ghost" onClick={onClose}>Quitter</button>
         </header>
+        <div className="sw-gens" role="tablist" aria-label="Génération">
+          {GENS.map((gn) => (
+            <button key={gn.id} type="button" role="tab" aria-selected={gn.id === gen} className={`sw-gen${gn.id === gen ? ' is-on' : ''}`} onClick={() => pickGen(gn.id)}>
+              <b>{gn.name}</b><small>{gn.label}</small>
+            </button>
+          ))}
+        </div>
         <div className="sw-partners">
-          {PARTNERS.map((p) => {
+          {starters.map((p) => {
             const rec = best[p.id];
             return (
               <button
@@ -203,7 +231,7 @@ const PokeSwarm = ({ onClose }) => {
                 <span className="sw-type">{p.type}</span>
                 <span className="sw-attack">{WEAPONS[p.weapon].name}</span>
                 <small>{p.blurb}</small>
-                <span className="sw-stats">{p.hp} PV · vitesse {p.speed.toFixed(1)}</span>
+                <span className="sw-stats">{p.hp} PV · vitesse {p.speed.toFixed(1)}{p.mega ? ' · Méga' : ''}</span>
                 {rec && (
                   <span className={`sw-record${rec.win ? ' is-win' : ''}`}>
                     {rec.win ? `Victoire en ${clock(rec.t)}` : `Record : ${clock(rec.t)}`} · {rec.kills} K.O.
@@ -220,6 +248,7 @@ const PokeSwarm = ({ onClose }) => {
           <span><b>Bonbons</b> ramasse l'XP pour monter de niveau et choisir un bonus</span>
           <span><b>Rochers fissurés</b> casse-les : baies, aimants et Super Bonbons</span>
           <span><b>Boss</b> les zones rouges au sol vont exploser : sors-en !</span>
+          <span><b>Méga</b> une fois la dernière forme atteinte, prends 3 fois la Méga-Gemme au level-up</span>
         </div>
         <button type="button" className="sw-btn is-go" onClick={start}>Partir avec {partner.name}</button>
         <p className="sw-credit">Sprites animés : PMDCollab SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo / Game Freak</p>
@@ -253,6 +282,12 @@ const PokeSwarm = ({ onClose }) => {
                 {WEAPONS[w.id].name}<Pips lv={w.lv} />
               </span>
             ))}
+            {partner.mega && h.megaLv > 0 && (
+              <span className="sw-slot is-passive" style={{ '--c': '#ff6ad5' }} title={partner.mega.stone}>
+                {h.isMega ? partner.mega.name : partner.mega.stone}<Pips lv={h.isMega ? MAX_LEVEL : h.megaLv} />
+              </span>
+            )}
+            {partner.trait === 'turbo' && h.turbo > 0.05 && <span className="sw-slot" style={{ '--c': '#ff7a3a' }}>Turbo +{Math.round(h.turbo * 40)} %</span>}
             {h.passives.map((p) => (
               <span key={p.id} className="sw-slot is-passive" style={{ '--c': PASSIVES[p.id].color }} title={PASSIVES[p.id].name}>
                 {PASSIVES[p.id].name}<Pips lv={p.lv} />
@@ -284,9 +319,9 @@ const PokeSwarm = ({ onClose }) => {
             <h2>Choisis un bonus</h2>
             <div className="sw-choices">
               {levelUp.options.map((opt) => {
-                const l = optionLabel(opt);
+                const l = optionLabel(opt, partner);
                 return (
-                  <button key={`${opt.kind}-${opt.id}`} type="button" className="sw-choice" style={{ '--c': l.color }} onClick={() => choose(opt)}>
+                  <button key={`${opt.kind}-${opt.id}`} type="button" className={`sw-choice${l.mega ? ' is-mega' : ''}`} style={{ '--c': l.color }} onClick={() => choose(opt)}>
                     <span className="sw-choice-tag">{l.tag}</span>
                     <strong>{l.title}</strong>
                     <em>{l.type}</em>
@@ -319,7 +354,7 @@ const PokeSwarm = ({ onClose }) => {
         <div className="sw-modal">
           <div className={`sw-card is-end ${end.result === 'win' ? 'is-win' : 'is-lose'}`}>
             <PmdSprite dex={end.form.dex} anim={end.result === 'win' ? 'idle' : 'hurt'} size={120} scale={3} />
-            <h2>{end.result === 'win' ? 'Mewtwo est K.O. !' : `${end.form.name} est K.O.`}</h2>
+            <h2>{end.result === 'win' ? `${finalBoss.name} est K.O. !` : `${end.form.name} est K.O.`}</h2>
             <p>{clock(end.t)} · niveau {end.level} · {end.kills} Pokémon mis K.O.</p>
             <div className="sw-actions">
               <button type="button" className="sw-btn is-go" onClick={start}>Rejouer</button>

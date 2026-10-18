@@ -276,3 +276,26 @@
 .sw-pmd { display: block; image-rendering: pixelated; }
 .sw-me .sw-pmd { border-radius: 10px; background: rgba(255, 255, 255, 0.5); }
 .sw-card .sw-btn.is-ghost { color: #0a1f6b; background: #fff; box-shadow: inset 0 0 0 2px #9fb3e8; }
+
+/* ——— Choix de la génération ——— */
+.sw-gens { display: flex; flex-wrap: wrap; gap: 10px; }
+.sw-gen {
+  display: grid;
+  gap: 2px;
+  min-width: 120px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  color: #fff;
+  background: rgba(6, 18, 60, 0.75);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+.sw-gen b { font: italic 900 20px/1 'Saira', sans-serif; text-transform: uppercase; }
+.sw-gen small { font-weight: 700; font-size: 12px; opacity: 0.8; }
+.sw-gen.is-on { color: #3a1d00; background: linear-gradient(180deg, #fff7c2, #ffd23a 60%, #ff9a00); box-shadow: 0 0 0 3px #08164d, 0 0 18px rgba(255, 210, 58, 0.6); }
+.sw-choice.is-mega {
+  background: linear-gradient(135deg, #fff 0 55%, #ffe3f6);
+  box-shadow: inset 6px 0 0 #ff6ad5, 0 0 0 3px #08164d, 0 0 18px rgba(255, 106, 213, 0.55);
+}
