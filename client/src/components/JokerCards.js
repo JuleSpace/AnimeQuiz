@@ -298,47 +298,105 @@ export function playCardCling() {
   });
 }
 
-// Petit « toc » sec quand on tape sur l'œuf, un peu plus aigu à chaque coup.
+/* ——— Sons de l'éclosion, façon Sonic et Jardin des Chao (synthétisés, aucun extrait du jeu) ——— */
+
+// Petit cri de Chao : glissando aigu avec un vibrato rapide, comme un « tchiou ! ».
+function chaoChirp(ctx, dest, when, from, to, dur, peak) {
+  const osc = ctx.createOscillator();
+  const lfo = ctx.createOscillator();
+  const depth = ctx.createGain();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(from, when);
+  osc.frequency.exponentialRampToValueAtTime(to, when + dur * 0.6);
+  osc.frequency.exponentialRampToValueAtTime(to * 0.92, when + dur);
+  lfo.frequency.value = 26;
+  depth.gain.value = from * 0.05;
+  lfo.connect(depth);
+  depth.connect(osc.frequency);
+  gain.gain.setValueAtTime(0.0001, when);
+  gain.gain.exponentialRampToValueAtTime(peak, when + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  osc.connect(gain);
+  gain.connect(dest);
+  osc.start(when);
+  lfo.start(when);
+  osc.stop(when + dur + 0.03);
+  lfo.stop(when + dur + 0.03);
+}
+
+// « Ting » d'anneau : deux notes très aiguës et rapprochées, légèrement placées à gauche ou à droite.
+function ringTing(ctx, dest, when, peak, pan = 0) {
+  const out = ctx.createStereoPanner ? ctx.createStereoPanner() : ctx.createGain();
+  if (out.pan) out.pan.value = pan;
+  out.connect(dest);
+  tone(ctx, out, when, 1976, 0.07, peak, 'triangle');
+  tone(ctx, out, when, 3952, 0.05, peak * 0.25);
+  tone(ctx, out, when + 0.065, 2637, 0.22, peak, 'triangle');
+  tone(ctx, out, when + 0.065, 5274, 0.14, peak * 0.2);
+}
+
+// Chaque coup sur l'œuf : coquille qui craque + petit cri de Chao, un peu plus aigu à chaque fois.
 function playEggKnock(step) {
   const bus = voiceBus();
   if (!bus) return;
   const { ctx, master, now } = bus;
-  burst(ctx, master, now, 0.07, 1400 + step * 500, 1.2, 0.32, 420);
-  tone(ctx, master, now, 520 + step * 140, 0.09, 0.08);
+  burst(ctx, master, now, 0.05, 3200 + step * 400, 2.5, 0.38, 1800);
+  burst(ctx, master, now + 0.01, 0.09, 900, 1.2, 0.18, 400);
+  chaoChirp(ctx, master, now + 0.05, 700 + step * 160, 1250 + step * 220, 0.16, 0.13);
 }
 
+// L'éclosion : l'œuf se charge comme un Spin Dash, éclate en pluie d'anneaux,
+// puis le Chao pousse un cri joyeux sur un petit carillon.
 function playOpeningScore() {
   const bus = voiceBus();
   if (!bus) return;
   const { ctx, master, now } = bus;
   const splitAt = 2.4;
   const pullAt = 3.12;
-  const osc = ctx.createOscillator();
-  const lp = ctx.createBiquadFilter();
-  const gain = ctx.createGain();
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(42, now);
-  osc.frequency.exponentialRampToValueAtTime(168, now + splitAt);
-  lp.type = 'lowpass';
-  lp.frequency.setValueAtTime(90, now);
-  lp.frequency.exponentialRampToValueAtTime(720, now + splitAt);
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.26, now + splitAt - 0.04);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + splitAt + 0.08);
-  osc.connect(lp);
-  lp.connect(gain);
-  gain.connect(master);
-  osc.start(now);
-  osc.stop(now + splitAt + 0.12);
-  burst(ctx, master, now + 0.4, splitAt - 0.45, 260, 0.4, 0.07, 1900);
+
+  // Charge façon Spin Dash : des « vroum » de plus en plus aigus et rapprochés.
+  const revs = [0, 0.62, 1.1, 1.48, 1.78, 2.02, 2.2];
+  revs.forEach((at, index) => {
+    const when = now + at;
+    const base = 160 + index * 70;
+    glide(ctx, master, when, base, base * 3.2, 0.32, 0.07 + index * 0.012, 'square');
+    burst(ctx, master, when, 0.3, 900 + index * 300, 1.4, 0.05 + index * 0.01, 3200 + index * 500);
+  });
+  // Scintillement du Chaos qui monte pendant la charge.
+  for (let i = 0; i < 14; i += 1) {
+    const when = now + 0.3 + i * 0.145;
+    tone(ctx, master, when, [2093, 2637, 3136, 2349][i % 4] * (1 + i * 0.02), 0.12, 0.015 + i * 0.002);
+  }
+
+  // Éclatement : coquille, souffle et pluie d'anneaux de part et d'autre.
   const boom = now + splitAt;
-  burst(ctx, master, boom, 0.24, 130, 0.32, 0.58, 55);
-  burst(ctx, master, boom, 0.1, 3400, 0.7, 0.2, 480);
-  burst(ctx, master, boom + 0.03, 0.42, 640, 0.38, 0.15, 120);
-  metal(ctx, master, boom + 0.07, 740, 0.48, 0.05);
+  burst(ctx, master, boom, 0.22, 140, 0.4, 0.5, 60);
+  burst(ctx, master, boom, 0.12, 4200, 0.9, 0.24, 900);
+  burst(ctx, master, boom + 0.02, 0.5, 1200, 0.5, 0.12, 200);
+  [-0.8, 0.6, -0.3, 0.9, -0.6, 0.2, 0.75, -0.9].forEach((pan, index) => {
+    ringTing(ctx, master, boom + 0.04 + index * 0.075, 0.07 - index * 0.004, pan);
+  });
+
+  // Le Chao sort : trois petits cris qui montent, puis un carillon majeur.
   const rise = now + pullAt;
-  glide(ctx, master, rise, 480, 1680, 0.6, 0.055, 'triangle');
-  metal(ctx, master, rise + 0.04, 1318, 0.32, 0.035);
+  chaoChirp(ctx, master, rise, 820, 1320, 0.14, 0.12);
+  chaoChirp(ctx, master, rise + 0.16, 900, 1480, 0.14, 0.12);
+  chaoChirp(ctx, master, rise + 0.32, 1040, 1860, 0.24, 0.14);
+  [1047, 1319, 1568, 2093].forEach((freq, index) => {
+    metal(ctx, master, rise + 0.5 + index * 0.08, freq, 0.5 - index * 0.06, 0.03);
+  });
+}
+
+// La carte apparaît : un anneau ramassé et un petit rire de Chao.
+function playHatchReveal() {
+  const bus = voiceBus();
+  if (!bus) return;
+  const { ctx, master, now } = bus;
+  ringTing(ctx, master, now, 0.12, 0);
+  chaoChirp(ctx, master, now + 0.2, 1200, 1700, 0.09, 0.09);
+  chaoChirp(ctx, master, now + 0.3, 1250, 1800, 0.09, 0.08);
+  chaoChirp(ctx, master, now + 0.4, 1320, 1950, 0.13, 0.08);
 }
 
 function playCardVoice(cardId) {
@@ -743,10 +801,10 @@ export const BoosterOpening = ({ cardId }) => {
     let voiceTimer = 0;
     const run = (audio) => {
       if (dead) return;
-      playCardCling();
+      playHatchReveal();
       voiceTimer = window.setTimeout(() => {
         if (!dead) playDropSound(cardId, audio);
-      }, 160);
+      }, 520);
     };
     if (armedSound.current) run(armedSound.current);
     else prepared.current.then(run);
