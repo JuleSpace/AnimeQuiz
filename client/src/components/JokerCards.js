@@ -298,6 +298,15 @@ export function playCardCling() {
   });
 }
 
+// Petit « toc » sec quand on tape sur l'œuf, un peu plus aigu à chaque coup.
+function playEggKnock(step) {
+  const bus = voiceBus();
+  if (!bus) return;
+  const { ctx, master, now } = bus;
+  burst(ctx, master, now, 0.07, 1400 + step * 500, 1.2, 0.32, 420);
+  tone(ctx, master, now, 520 + step * 140, 0.09, 0.08);
+}
+
 function playOpeningScore() {
   const bus = voiceBus();
   if (!bus) return;
@@ -646,7 +655,21 @@ const EGG_FRUITS = Array.from({ length: 14 }, (_, i) => ({
   r: `${(i % 2 ? 1 : -1) * (180 + i * 20)}deg`
 }));
 const EGG_PATH = 'M95 4C150 4 186 90 186 150C186 206 146 236 95 236C44 236 4 206 4 150C4 90 40 4 95 4Z';
-const EGG_KIND = { 1: 'normal', 2: 'shiny', 3: 'chaos' };
+const EGG_RANK = {
+  1: { label: 'Œuf commun', tone: 'r1' },
+  2: { label: 'Œuf doré !', tone: 'r2' },
+  3: { label: 'Œuf du Chaos !!', tone: 'r3' }
+};
+const EGG_TAPS = 3;
+const EGG_CHIPS = Array.from({ length: 6 }, (_, i) => {
+  const a = ((-150 + i * 24) * Math.PI) / 180;
+  return { x: `${Math.round(Math.cos(a) * 120)}px`, y: `${Math.round(Math.sin(a) * 110)}px`, r: `${(i % 2 ? 1 : -1) * (90 + i * 40)}deg` };
+});
+const EGG_SPARKS = Array.from({ length: 16 }, (_, i) => ({
+  x: `${4 + ((i * 41) % 92)}%`,
+  y: `${8 + ((i * 29) % 70)}%`,
+  d: `${(i % 6) * 0.22}s`
+}));
 
 let eggSerial = 0;
 
@@ -689,13 +712,17 @@ const ChaoEgg = ({ kind }) => {
 };
 
 export const BoosterOpening = ({ cardId }) => {
+  // sealed → tap (1 à 3 coups) → charge (la lumière de la rareté filtre par les fêlures) → burst → rise → show
   const [stage, setStage] = useState('sealed');
+  const [taps, setTaps] = useState(0);
   const timers = useRef([]);
+  const idle = useRef(0);
   const armedSound = useRef(null);
   const prepared = useRef(Promise.resolve(null));
 
   useEffect(() => () => {
     timers.current.forEach(clearTimeout);
+    window.clearTimeout(idle.current);
   }, []);
 
   useEffect(() => {
@@ -732,36 +759,58 @@ export const BoosterOpening = ({ cardId }) => {
     };
   }, [stage, cardId]);
 
-  const openPack = () => {
-    if (stage !== 'sealed' || !cardId) return;
-    unlockCling();
-    const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) {
-      setStage('show');
-      return;
-    }
-    if (armedSound.current) unlockAudio(armedSound.current);
-    else prepared.current.then((audio) => unlockAudio(audio));
+  const hatch = () => {
     playOpeningScore();
     const wait = (next, ms) => {
       timers.current.push(setTimeout(() => setStage(next), ms));
     };
-    setStage('rumble');
-    wait('crack', 1300);
+    setStage('charge');
     wait('burst', 2400);
     wait('rise', 2750);
     wait('show', 3900);
   };
 
+  const knock = (count) => {
+    window.clearTimeout(idle.current);
+    setTaps(count);
+    playEggKnock(count);
+    if (count >= EGG_TAPS) {
+      hatch();
+      return;
+    }
+    setStage('tap');
+    // Si le joueur ne tape plus, l'œuf continue tout seul.
+    idle.current = window.setTimeout(() => knock(count + 1), 2600);
+  };
+
+  const tapEgg = () => {
+    if (!cardId || (stage !== 'sealed' && stage !== 'tap')) return;
+    if (stage === 'sealed') {
+      unlockCling();
+      if (armedSound.current) unlockAudio(armedSound.current);
+      else prepared.current.then((audio) => unlockAudio(audio));
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduce) {
+        setStage('show');
+        return;
+      }
+    }
+    knock(taps + 1);
+  };
+
   const card = JOKERS[cardId];
-  const kind = EGG_KIND[jokerRarity(cardId)] || 'normal';
+  const rank = EGG_RANK[jokerRarity(cardId)] || EGG_RANK[1];
+  const hatched = stage === 'charge' || stage === 'burst' || stage === 'rise' || stage === 'show';
   let caption = 'Un œuf de Chao…';
-  let sub = 'Clique sur l’œuf pour le faire éclore';
+  let sub = 'Tape l’œuf pour le faire éclore';
   if (!cardId) {
     caption = 'L’œuf arrive…';
     sub = '';
-  } else if (stage === 'rumble' || stage === 'crack') {
-    caption = 'Il bouge !';
+  } else if (stage === 'tap') {
+    caption = taps === 1 ? 'Il bouge !' : 'Encore !';
+    sub = '';
+  } else if (stage === 'charge') {
+    caption = 'Ça brille…';
     sub = '';
   } else if (stage === 'burst' || stage === 'rise') {
     caption = '';
@@ -772,22 +821,40 @@ export const BoosterOpening = ({ cardId }) => {
   }
 
   return (
-    <div className={`egg-scene is-${stage} egg-${kind}`}>
+    <div
+      className={`egg-scene is-${stage} egg-normal${hatched ? ` egg-${rank.tone}` : ''}`}
+      style={{ '--crack': Math.max(0, 1 - (hatched ? EGG_TAPS : taps) / EGG_TAPS) }}
+    >
       <i className="egg-rays" aria-hidden="true" />
       <div className="egg-grass" aria-hidden="true" />
-      <span className="egg-ball" aria-hidden="true">!</span>
+      {(stage === 'sealed' || stage === 'tap') && cardId && (
+        <span className="egg-pips" aria-hidden="true">
+          {Array.from({ length: EGG_TAPS }, (_, i) => <i key={i} className={i < taps ? 'is-on' : ''} />)}
+        </span>
+      )}
+      <i className="egg-glow" aria-hidden="true" />
       <button
         type="button"
         className="egg-btn"
-        onClick={openPack}
-        disabled={stage !== 'sealed' || !cardId}
-        aria-label="Faire éclore l’œuf"
+        onClick={tapEgg}
+        disabled={(stage !== 'sealed' && stage !== 'tap') || !cardId}
+        aria-label="Taper sur l’œuf"
       >
-        <ChaoEgg kind={kind} />
+        <span className="egg-hit" key={`hit-${taps}`}>
+          <ChaoEgg kind="normal" />
+        </span>
       </button>
+      {taps > 0 && (
+        <span className="egg-chips" key={`chips-${taps}`} aria-hidden="true">
+          {EGG_CHIPS.map((c) => <i key={c.x + c.y} style={{ '--x': c.x, '--y': c.y, '--r': c.r }} />)}
+        </span>
+      )}
       {EGG_RINGS.map((r) => <i key={`${r.x}${r.y}`} className="egg-ring" style={{ '--x': r.x, '--y': r.y, '--d': r.d }} aria-hidden="true" />)}
       {EGG_FRUITS.map((f, i) => (
         <i key={`fruit-${i}`} className={`egg-fruit ${f.k}`} style={{ left: f.x, '--d': f.d, '--r': f.r }} aria-hidden="true" />
+      ))}
+      {rank.tone !== 'r1' && EGG_SPARKS.map((p, i) => (
+        <i key={`spark-${i}`} className="egg-spark" style={{ left: p.x, top: p.y, '--d': p.d }} aria-hidden="true" />
       ))}
       <i className="egg-dim" aria-hidden="true" />
       <div className="egg-card">
@@ -798,6 +865,9 @@ export const BoosterOpening = ({ cardId }) => {
           <div className="egg-back"><div className="jc"><div className="jc-back"><b>BL</b></div></div></div>
         </div>
       </div>
+      {(stage === 'rise' || stage === 'show') && (
+        <span className={`egg-rank ${rank.tone}`} aria-hidden="true">{rank.label}</span>
+      )}
       <i className="egg-veil" aria-hidden="true" />
       {caption && (
         <p className="egg-cap" aria-live="polite">

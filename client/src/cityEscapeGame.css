@@ -277,17 +277,16 @@ html {
 }
 
 /* ———————————— Pictos ———————————— */
-
-.arcade-icon {
-  filter: drop-shadow(1.5px 1.5px 0 var(--ce-ink));
-}
-.arcade-icon.hero {
-  filter: drop-shadow(4px 4px 0 var(--ce-ink)) drop-shadow(0 0 18px rgba(255, 210, 58, 0.45));
-}
+/* Le contour blanc et l'ombre sont dessinés dans le SVG lui-même */
+.arcade-icon,
 .btn .arcade-icon,
 .pick-card .arcade-icon,
 .mode-card .arcade-icon {
-  filter: drop-shadow(1px 1px 0 rgba(8, 22, 77, 0.6));
+  filter: none;
+  overflow: visible;
+}
+.arcade-icon.hero {
+  filter: drop-shadow(0 0 18px rgba(255, 210, 58, 0.45));
 }
 
 /* ———————————— Roster Sonic ———————————— */

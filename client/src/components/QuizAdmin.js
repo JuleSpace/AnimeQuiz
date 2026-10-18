@@ -180,20 +180,16 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
   };
 
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.08)',
-      border: '1px solid rgba(255,255,255,0.18)',
-      borderRadius: '16px',
-      padding: '18px',
-      marginTop: '16px'
-    }}>
-      <div className="type-picker" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
+    <div className="adm-block adm-form">
+      <h4 className="adm-block-title"><Icon name="pencil" bare />{submitLabel}</h4>
+      <div className="adm-types" role="radiogroup" aria-label="Type de question">
         {TYPE_OPTIONS.map((option) => (
           <button
             key={option.id}
             type="button"
-            className={`btn${draft.type === option.id ? ' is-on' : ''}`}
-            style={{ margin: 0 }}
+            role="radio"
+            aria-checked={draft.type === option.id}
+            className={`adm-type${draft.type === option.id ? ' is-on' : ''}`}
             onClick={() => setDraft((current) => {
               if (current.type === option.id) return current;
               const next = {
@@ -253,7 +249,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
             value={draft.musicUrl}
             onChange={(event) => setDraft({ ...draft, musicUrl: event.target.value })}
           />
-          <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0' }}>
+          <label className="adm-check">
             <input
               type="checkbox"
               checked={Boolean(draft.choice)}
@@ -323,7 +319,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
             clip={{ muteStart: 0, muteEnd: 0, endAt: 6, line: '', masks: [] }}
             portrait={draft.imageUrl}
           />
-          <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0' }}>
+          <label className="adm-check">
             <input
               type="checkbox"
               checked={Boolean(draft.choice)}
@@ -351,7 +347,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
 
       { (draft.type === 'qcm' || ((draft.type === 'music' || draft.type === 'lyrics' || draft.type === 'whos') && draft.choice)) && (
         <div>
-          <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0' }}>
+          <label className="adm-check">
             <input
               type="checkbox"
               checked={draft.multiple}
@@ -364,13 +360,17 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
             Plusieurs bonnes réponses
           </label>
           {draft.options.map((option, index) => (
-            <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <button type="button" className="btn" style={{ margin: 0, minWidth: 52 }} onClick={() => toggleCorrect(index)}>
+            <div key={index} className="adm-option">
+              <button
+                type="button"
+                className={`adm-correct${draft.correctIndexes.includes(index) ? ' is-on' : ''}`}
+                onClick={() => toggleCorrect(index)}
+                aria-label={draft.correctIndexes.includes(index) ? 'Bonne réponse' : 'Marquer comme bonne réponse'}
+              >
                 {draft.correctIndexes.includes(index) ? <Icon name="check" bare /> : <Icon name="box" bare />}
               </button>
               <input
                 className="input"
-                style={{ margin: '6px 0' }}
                 placeholder={`Choix ${index + 1}`}
                 value={option}
                 onChange={(event) => {
@@ -382,8 +382,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
               {draft.options.length > 2 && (
                 <button
                   type="button"
-                  className="btn btn-danger"
-                  style={{ margin: 0 }}
+                  className="btn btn-danger adm-mini adm-icon-only"
                   onClick={() => {
                     const options = draft.options.filter((_, optionIndex) => optionIndex !== index);
                     const correctIndexes = draft.correctIndexes
@@ -404,10 +403,10 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
           {draft.options.length < 6 && (
             <button
               type="button"
-              className="btn"
+              className="btn btn-quiet adm-mini"
               onClick={() => setDraft({ ...draft, options: [...draft.options, ''] })}
             >
-              Ajouter un choix
+              <Icon name="plus" />Ajouter un choix
             </button>
           )}
         </div>
@@ -420,19 +419,18 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
             const url = String(option || '').trim();
             const preview = /^https?:\/\//i.test(url);
             return (
-              <div key={index} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div key={index} className="adm-option">
                 <button
                   type="button"
-                  className="btn"
-                  style={{ margin: 0, minWidth: 52 }}
+                  className={`adm-correct${draft.correctIndexes.includes(index) ? ' is-on' : ''}`}
                   onClick={() => setDraft({ ...draft, correctIndexes: [index] })}
+                  aria-label="Bonne image"
                 >
                   {draft.correctIndexes.includes(index) ? <Icon name="check" bare /> : <Icon name="box" bare />}
                 </button>
                 {preview && <img src={url} alt="" className="answer-thumb" />}
                 <input
                   className="input"
-                  style={{ margin: '6px 0' }}
                   placeholder={`Lien de l'image ${index + 1}`}
                   value={option}
                   onChange={(event) => {
@@ -444,8 +442,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
                 {draft.options.length > 2 && (
                   <button
                     type="button"
-                    className="btn btn-danger"
-                    style={{ margin: 0 }}
+                    className="btn btn-danger adm-mini adm-icon-only"
                     onClick={() => {
                       const options = draft.options.filter((_, optionIndex) => optionIndex !== index);
                       const correctIndexes = draft.correctIndexes
@@ -466,28 +463,26 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
           })}
           <button
             type="button"
-            className="btn"
+            className="btn btn-quiet adm-mini"
             onClick={() => setDraft({ ...draft, options: [...draft.options, ''] })}
           >
-            Ajouter une image
+            <Icon name="plus" />Ajouter une image
           </button>
         </div>
       )}
 
       {draft.type === 'boolean' && (
-        <div style={{ display: 'flex', gap: '8px', margin: '8px 0' }}>
+        <div className="adm-seg">
           <button
             type="button"
-            className="btn btn-success"
-            style={{ opacity: draft.correctBoolean ? 1 : 0.45 }}
+            className={`adm-type${draft.correctBoolean ? ' is-on' : ''}`}
             onClick={() => setDraft({ ...draft, correctBoolean: true })}
           >
             Vrai
           </button>
           <button
             type="button"
-            className="btn btn-danger"
-            style={{ opacity: draft.correctBoolean ? 0.45 : 1 }}
+            className={`adm-type${draft.correctBoolean ? '' : ' is-on'}`}
             onClick={() => setDraft({ ...draft, correctBoolean: false })}
           >
             Faux
@@ -517,19 +512,17 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
 
       {draft.type === 'layout' && (
         <div>
-          <div style={{ display: 'flex', gap: '8px', margin: '8px 0' }}>
+          <div className="adm-seg">
             <button
               type="button"
-              className="btn"
-              style={{ margin: 0, opacity: draft.layoutMode !== 'schema' ? 1 : 0.55 }}
+              className={`adm-type${draft.layoutMode !== 'schema' ? ' is-on' : ''}`}
               onClick={() => setDraft({ ...draft, layoutMode: 'timeline' })}
             >
               Frise chronologique
             </button>
             <button
               type="button"
-              className="btn"
-              style={{ margin: 0, opacity: draft.layoutMode === 'schema' ? 1 : 0.55 }}
+              className={`adm-type${draft.layoutMode === 'schema' ? ' is-on' : ''}`}
               onClick={() => setDraft({ ...draft, layoutMode: 'schema' })}
             >
               Schéma
@@ -543,7 +536,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
               onChange={(event) => setDraft({ ...draft, layoutImageUrl: event.target.value })}
             />
           ) : (
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div className="adm-fields">
               <input
                 className="input"
                 placeholder="Date de début, à gauche"
@@ -600,7 +593,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
               <p className="blind-hint">Tu peux laisser vide. Le chef corrigera à la main.</p>
             </>
           )}
-          <p style={{ opacity: 0.8, fontSize: '0.9rem' }}>
+          <p className="blind-hint">
             L'extrait est masqué. Le chef attribue les points à la main, comme pour les autres questions.
             Mets 0 seconde pour laisser le chef décider du moment.
           </p>
@@ -680,9 +673,9 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-        <label style={{ flex: 1 }}>
-          Points
+      <div className="adm-fields">
+        <label className="adm-field">
+          <span>Points</span>
           <input
             className="input"
             type="number"
@@ -691,8 +684,8 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
             onChange={(event) => setDraft({ ...draft, points: event.target.value })}
           />
         </label>
-        <label style={{ flex: 1 }}>
-          Secondes (0 = illimité)
+        <label className="adm-field">
+          <span>Secondes (0 = illimité)</span>
           <input
             className="input"
             type="number"
@@ -703,7 +696,7 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         </label>
       </div>
 
-      <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '4px 0 0' }}>
+      <label className="adm-check">
         <input
           type="checkbox"
           checked={Boolean(draft.stopOnFirstAnswer)}
@@ -712,10 +705,10 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
         Fermer dès la première réponse (joueur ou équipe)
       </label>
 
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button type="button" className="btn btn-success" onClick={onSubmit} disabled={busy}>{submitLabel}</button>
+      <div className="adm-actions">
+        <button type="button" className="btn btn-success" onClick={onSubmit} disabled={busy}><Icon name="check" />{submitLabel}</button>
         {onCancel && (
-          <button type="button" className="btn btn-danger" onClick={onCancel}>Annuler</button>
+          <button type="button" className="btn btn-quiet" onClick={onCancel}>Annuler</button>
         )}
       </div>
     </div>
@@ -926,27 +919,29 @@ const QuizAdmin = ({ admin }) => {
   if (!quiz) {
     return (
       <div>
-        <div style={{
-          background: 'rgba(81,207,102,0.12)',
-          border: '1px solid rgba(81,207,102,0.35)',
-          borderRadius: '16px',
-          padding: '18px',
-          marginBottom: '20px'
-        }}>
-          <h3 style={{ marginTop: 0 }}>Nouveau quiz</h3>
-          <input
-            className="input"
-            placeholder="Nom du quiz"
-            value={newQuiz.name}
-            onChange={(event) => setNewQuiz({ ...newQuiz, name: event.target.value })}
-          />
-          <input
-            className="input"
-            placeholder="Description"
-            value={newQuiz.description}
-            onChange={(event) => setNewQuiz({ ...newQuiz, description: event.target.value })}
-          />
-          <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0 16px' }}>
+        <section className="adm-block is-new">
+          <h3 className="adm-block-title"><Icon name="plus" bare />Nouveau quiz</h3>
+          <div className="adm-fields">
+            <label className="adm-field">
+              <span>Nom</span>
+              <input
+                className="input"
+                placeholder="Nom du quiz"
+                value={newQuiz.name}
+                onChange={(event) => setNewQuiz({ ...newQuiz, name: event.target.value })}
+              />
+            </label>
+            <label className="adm-field">
+              <span>Description</span>
+              <input
+                className="input"
+                placeholder="Description"
+                value={newQuiz.description}
+                onChange={(event) => setNewQuiz({ ...newQuiz, description: event.target.value })}
+              />
+            </label>
+          </div>
+          <label className="adm-check">
             <input
               type="checkbox"
               checked={Boolean(newQuiz.isPrivate)}
@@ -954,40 +949,43 @@ const QuizAdmin = ({ admin }) => {
             />
             Privé — masqué dans le menu des quiz
           </label>
-          <button type="button" className="btn btn-success" onClick={createQuiz} disabled={loading}>
-            Créer
-          </button>
-          <p className="blind-hint">
+          <div className="adm-actions">
+            <button type="button" className="btn btn-success" onClick={createQuiz} disabled={loading}>
+              <Icon name="check" />Créer le quiz
+            </button>
+          </div>
+          <p className="adm-note">
             {admin?.role === 'super'
               ? 'Un quiz créé t\'est attribué. Tu peux le donner à un admin : lui et toi seuls pourrez le modifier ou le supprimer.'
               : 'Un quiz que tu crées t\'est attribué. Tu modifies et tu supprimes seulement les tiens.'}
           </p>
-        </div>
+        </section>
+
+        <h3 className="adm-section-title"><Icon name="quiz" bare />Quiz <small>{quizzes.length}</small></h3>
 
         {quizzes.length === 0 ? (
-          <div style={{ textAlign: 'center', opacity: 0.8 }}>
+          <div className="adm-empty">
             <Icon name="quiz" tone="hero" />
             <p>Aucun quiz pour l'instant.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
+          <div className="adm-grid">
             {quizzes.map((item) => {
               const editable = canEdit(item) && !item.locked;
               const count = item.questions ? item.questions.length : (item.questionCount || 0);
               return (
-                <div key={item._id} className="score-card">
-                  <h3 style={{ color: '#ff2347' }}>{item.name}</h3>
-                  {item.isPrivate && (
-                    <div style={{ color: '#ff2347', fontWeight: 'bold', marginBottom: 6 }}>Privé</div>
-                  )}
-                  <p style={{ minHeight: 40, opacity: 0.85 }}>{item.description}</p>
-                  <div>{count} questions</div>
-                  <div style={{ color: '#ffd000', margin: '8px 0' }}>
-                    {item.owner ? item.owner : 'Non attribué'}
+                <article key={item._id} className={`adm-tile${item.isPrivate ? ' is-private' : ''}`}>
+                  <span className="adm-count"><Icon name="quiz" bare />{count}</span>
+                  <h4 className="adm-tile-title">{item.name}</h4>
+                  {item.isPrivate && <span className="adm-flag"><Icon name="lock" bare />Privé</span>}
+                  <p className="adm-tile-desc">{item.description || 'Sans description'}</p>
+                  <div className="adm-owner">
+                    <Icon name="crown" bare />{item.owner ? item.owner : 'Non attribué'}
                   </div>
                   {admin?.role === 'super' && (
                     <select
-                      className="input"
+                      className="input adm-select"
+                      aria-label="Attribuer le quiz"
                       value={item.owner || ''}
                       onChange={(event) => assignOwner(item._id, event.target.value)}
                     >
@@ -998,22 +996,23 @@ const QuizAdmin = ({ admin }) => {
                     </select>
                   )}
                   {editable && (
-                    <>
-                      <button type="button" className="btn" onClick={() => openQuiz(item._id)}><Icon name="pencil" />Modifier</button>
+                    <div className="adm-actions">
+                      <button type="button" className="btn adm-mini" onClick={() => openQuiz(item._id)}><Icon name="pencil" />Modifier</button>
                       <button
                         type="button"
-                        className="btn btn-danger"
+                        className="btn btn-danger adm-mini adm-icon-only"
+                        aria-label="Supprimer le quiz"
                         onClick={() => setConfirm({
                           title: 'Supprimer ce quiz ?',
                           message: `« ${item.name} » disparaît pour de bon.`,
                           run: () => removeQuiz(item._id)
                         })}
                       >
-                        <Icon name="trash" />Supprimer
+                        <Icon name="trash" bare />
                       </button>
-                    </>
+                    </div>
                   )}
-                </div>
+                </article>
               );
             })}
           </div>
@@ -1039,21 +1038,31 @@ const QuizAdmin = ({ admin }) => {
 
   return (
     <div>
-      <button type="button" className="btn" onClick={() => { setQuiz(null); setDraft(null); }}>
+      <button type="button" className="btn btn-quiet adm-mini" onClick={() => { setQuiz(null); setDraft(null); }}>
         <Icon name="back" />Tous les quiz
       </button>
-      <input
-        className="input"
-        value={quiz.name}
-        onChange={(event) => setQuiz({ ...quiz, name: event.target.value })}
-      />
-      <input
-        className="input"
-        placeholder="Description"
-        value={quiz.description || ''}
-        onChange={(event) => setQuiz({ ...quiz, description: event.target.value })}
-      />
-      <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0 16px' }}>
+      <section className="adm-block">
+        <h3 className="adm-block-title"><Icon name="quiz" bare />{quiz.name || 'Quiz sans nom'}</h3>
+        <div className="adm-fields">
+          <label className="adm-field">
+            <span>Nom</span>
+            <input
+              className="input"
+              value={quiz.name}
+              onChange={(event) => setQuiz({ ...quiz, name: event.target.value })}
+            />
+          </label>
+          <label className="adm-field">
+            <span>Description</span>
+            <input
+              className="input"
+              placeholder="Description"
+              value={quiz.description || ''}
+              onChange={(event) => setQuiz({ ...quiz, description: event.target.value })}
+            />
+          </label>
+        </div>
+      <label className="adm-check">
         <input
           type="checkbox"
           checked={Boolean(quiz.shuffle)}
@@ -1061,7 +1070,7 @@ const QuizAdmin = ({ admin }) => {
         />
         Mélanger les questions à chaque partie
       </label>
-      <label style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '8px 0 16px' }}>
+      <label className="adm-check">
         <input
           type="checkbox"
           checked={Boolean(quiz.isPrivate)}
@@ -1069,22 +1078,24 @@ const QuizAdmin = ({ admin }) => {
         />
         Privé — masqué dans le menu des quiz
       </label>
-      <button
-        type="button"
-        className="btn btn-success"
-        disabled={loading}
-        onClick={() => persist(quiz)}
-      >
-        Enregistrer
-      </button>
+        <div className="adm-actions">
+          <button
+            type="button"
+            className="btn btn-success"
+            disabled={loading}
+            onClick={() => persist(quiz)}
+          >
+            <Icon name="save" />Enregistrer
+          </button>
+        </div>
+      </section>
 
-      <h3 style={{ marginTop: 28 }}>Questions</h3>
-      <p style={{ opacity: 0.75, marginTop: 0 }}>Glisse une question pour la déplacer.</p>
+      <h3 className="adm-section-title"><Icon name="list" bare />Questions <small>{(quiz.questions || []).length}</small></h3>
+      <p className="adm-note">Glisse une question pour la déplacer.</p>
       {(quiz.questions || []).map((question, index) => (
         <div
           key={question.clientKey || index}
-          className={`correction-item question-row${dragIndex === index ? ' is-dragging' : ''}`}
-          style={{ alignItems: 'flex-start' }}
+          className={`adm-qrow question-row${dragIndex === index ? ' is-dragging' : ''}${draftIndex === index ? ' is-editing' : ''}`}
           draggable={!loading}
           onDragStart={(event) => startQuestionDrag(event, index)}
           onDragOver={(event) => hoverQuestion(event, index)}
@@ -1093,31 +1104,33 @@ const QuizAdmin = ({ admin }) => {
         >
           <div className="question-row-body">
             <span className="drag-handle" aria-hidden="true">⋮⋮</span>
-            <div>
-              <strong>{index + 1}. {typeLabel(question.type)}</strong>
-              <div style={{ opacity: 0.85 }}>{question.prompt || question.musicUrl || 'Sans énoncé'}</div>
-              <div style={{ fontSize: '0.85rem', opacity: 0.7 }}>
+            <span className="adm-qnum">{index + 1}</span>
+            <div className="adm-qtext">
+              <span className="adm-qtype">{typeLabel(question.type)}</span>
+              <div className="adm-qprompt">{question.prompt || question.musicUrl || 'Sans énoncé'}</div>
+              <div className="adm-qmeta">
                 {question.points || 1} pt · {question.timeLimit ? `${question.timeLimit}s` : 'temps libre'}
                 {question.stopOnFirstAnswer ? ' · 1ʳᵉ réponse' : ''}
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            <button type="button" className="btn" onClick={() => moveQuestion(index, -1)} disabled={index === 0}>↑</button>
-            <button type="button" className="btn" onClick={() => moveQuestion(index, 1)} disabled={index === quiz.questions.length - 1}>↓</button>
-            <button type="button" className="btn" onClick={() => { setDraft(questionFromApi(question)); setDraftIndex(index); }}>
-              Modifier
+          <div className="adm-qactions">
+            <button type="button" className="btn btn-quiet adm-mini adm-icon-only" aria-label="Monter" onClick={() => moveQuestion(index, -1)} disabled={index === 0}>↑</button>
+            <button type="button" className="btn btn-quiet adm-mini adm-icon-only" aria-label="Descendre" onClick={() => moveQuestion(index, 1)} disabled={index === quiz.questions.length - 1}>↓</button>
+            <button type="button" className="btn adm-mini" onClick={() => { setDraft(questionFromApi(question)); setDraftIndex(index); }}>
+              <Icon name="pencil" />Modifier
             </button>
             <button
               type="button"
-              className="btn btn-danger"
+              aria-label="Supprimer la question"
+              className="btn btn-danger adm-mini adm-icon-only"
               onClick={() => setConfirm({
                 title: 'Supprimer cette question ?',
                 message: `La question ${index + 1} sera retirée du quiz.`,
                 run: () => deleteQuestion(index)
               })}
             >
-              Supprimer
+              <Icon name="trash" bare />
             </button>
           </div>
         </div>
@@ -1133,9 +1146,11 @@ const QuizAdmin = ({ admin }) => {
           onSubmit={commitDraft}
         />
       ) : (
-        <button type="button" className="btn btn-success" onClick={() => { setDraft(emptyDraft()); setDraftIndex(null); }}>
-          Ajouter une question
-        </button>
+        <div className="adm-actions">
+          <button type="button" className="btn btn-success" onClick={() => { setDraft(emptyDraft()); setDraftIndex(null); }}>
+            <Icon name="plus" />Ajouter une question
+          </button>
+        </div>
       )}
 
       {error && <div className="error">{error}</div>}

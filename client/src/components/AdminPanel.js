@@ -53,42 +53,49 @@ const Accounts = ({ admin }) => {
 
   return (
     <div>
-      <p style={{ opacity: 0.85 }}>
+      <p className="adm-note">
         {admin.username}, tu es le seul superadmin. Un admin ne modifie et ne supprime que les quiz et les salles musique qui lui sont attribués.
       </p>
-      <div style={{
-        background: 'rgba(81,207,102,0.12)',
-        border: '1px solid rgba(81,207,102,0.35)',
-        borderRadius: '16px',
-        padding: '18px',
-        marginBottom: '20px'
-      }}>
-        <h3 style={{ marginTop: 0 }}>Nouvel admin</h3>
-        <input
-          className="input"
-          placeholder="Nom"
-          value={draft.username}
-          onChange={(event) => setDraft({ ...draft, username: event.target.value })}
-        />
-        <input
-          className="input"
-          type="password"
-          placeholder="Mot de passe"
-          value={draft.password}
-          onChange={(event) => setDraft({ ...draft, password: event.target.value })}
-        />
-        <button type="button" className="btn btn-success" onClick={createAccount} disabled={loading}>
-          Créer l'admin
-        </button>
-      </div>
+      <section className="adm-block is-new">
+        <h3 className="adm-block-title"><Icon name="plus" bare />Nouvel admin</h3>
+        <div className="adm-fields">
+          <label className="adm-field">
+            <span>Nom</span>
+            <input
+              className="input"
+              placeholder="Nom"
+              value={draft.username}
+              onChange={(event) => setDraft({ ...draft, username: event.target.value })}
+            />
+          </label>
+          <label className="adm-field">
+            <span>Mot de passe</span>
+            <input
+              className="input"
+              type="password"
+              placeholder="Mot de passe"
+              value={draft.password}
+              onChange={(event) => setDraft({ ...draft, password: event.target.value })}
+            />
+          </label>
+        </div>
+        <div className="adm-actions">
+          <button type="button" className="btn btn-success" onClick={createAccount} disabled={loading}>
+            <Icon name="check" />Créer l'admin
+          </button>
+        </div>
+      </section>
+      <h3 className="adm-section-title"><Icon name="crown" bare />Comptes <small>{accounts.length}</small></h3>
+      <div className="adm-grid is-tight">
       {accounts.map((account) => (
-        <div key={account.username} className="score-card" style={{ marginBottom: 12 }}>
-          <h3 style={{ color: account.role === 'super' ? '#ffd000' : '#f4f6ff' }}>{account.username}</h3>
-          <div>{account.role === 'super' ? 'Superadmin' : 'Admin'}</div>
+        <article key={account.username} className={`adm-tile${account.role === 'super' ? ' is-super' : ''}`}>
+          <h4 className="adm-tile-title">{account.username}</h4>
+          <span className={`adm-role${account.role === 'super' ? ' is-super' : ''}`}>{account.role === 'super' ? 'Superadmin' : 'Admin'}</span>
           {account.role !== 'super' && (
+            <div className="adm-actions">
             <button
               type="button"
-              className="btn btn-danger"
+              className="btn btn-danger adm-mini"
               onClick={() => setConfirm({
                 title: `Retirer ${account.username} ?`,
                 message: 'Ses quiz et ses salles musique redeviennent non attribués.',
@@ -98,9 +105,11 @@ const Accounts = ({ admin }) => {
             >
               <Icon name="trash" />Retirer
             </button>
+            </div>
           )}
-        </div>
+        </article>
       ))}
+      </div>
       {error && <div className="error">{error}</div>}
       {success && <div className="success">{success}</div>}
       {confirm && (
@@ -333,651 +342,344 @@ const AdminPanel = ({ onBack, onRoomUpdate, admin }) => {
     }
   };
 
-  const sectionTabs = (
-    <div className="admin-tabs">
-      <button type="button" className={`btn ${section === 'music' ? 'tab-active' : ''}`} onClick={() => setSection('music')}>
-        <Icon name="music" />Music Quiz
-      </button>
-      <button type="button" className={`btn ${section === 'quiz' ? 'tab-active' : ''}`} onClick={() => setSection('quiz')}>
-        <Icon name="quiz" />Quiz
-      </button>
-      <button type="button" className={`btn ${section === 'rules' ? 'tab-active' : ''}`} onClick={() => setSection('rules')}>
-        <Icon name="rules" />Règles
-      </button>
-      <button type="button" className={`btn ${section === 'boosters' ? 'tab-active' : ''}`} onClick={() => setSection('boosters')}>
-        <Icon name="booster" />Boosters
-      </button>
-      {admin?.role === 'super' && (
-        <button type="button" className={`btn ${section === 'accounts' ? 'tab-active' : ''}`} onClick={() => setSection('accounts')}>
-          <Icon name="crown" />Comptes
-        </button>
-      )}
+  const isSuper = admin?.role === 'super';
+  const TABS = [
+    { id: 'music', icon: 'music', label: 'Music Quiz' },
+    { id: 'quiz', icon: 'quiz', label: 'Quiz' },
+    { id: 'rules', icon: 'rules', label: 'Règles' },
+    { id: 'boosters', icon: 'booster', label: 'Boosters' },
+    ...(isSuper ? [{ id: 'accounts', icon: 'crown', label: 'Comptes' }] : [])
+  ];
+
+  const shell = (children, action = null) => (
+    <div className="container adm">
+      <div className="admin-panel adm-panel">
+        <header className="adm-head">
+          <button type="button" onClick={onBack} className="btn btn-quiet adm-back">
+            <Icon name="back" />Retour
+          </button>
+          <div className="adm-title">
+            <span className="adm-kicker">Atelier</span>
+            <h2><Icon name="tools" />{admin?.username || 'Admin'}</h2>
+            <span className={`adm-role${isSuper ? ' is-super' : ''}`}>{isSuper ? 'Superadmin' : 'Admin'}</span>
+          </div>
+          <div className="adm-head-action">{action}</div>
+        </header>
+        <nav className="adm-tabs" aria-label="Sections de l'atelier">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`adm-tab${section === tab.id ? ' is-on' : ''}`}
+              aria-pressed={section === tab.id}
+              onClick={() => setSection(tab.id)}
+            >
+              <Icon name={tab.icon} bare />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </nav>
+        <div className="adm-body">{children}</div>
+      </div>
     </div>
   );
 
-  if (section === 'boosters') {
-    return (
-      <div className="container">
-        <div className="admin-panel">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <button onClick={onBack} className="btn btn-danger"><Icon name="back" />Retour</button>
-            <h2 style={{ margin: 0 }}><Icon name="tools" tone="mark" />{admin?.username || 'Admin'}</h2>
-            <div style={{ width: 110 }} />
-          </div>
-          {sectionTabs}
-          <BoosterPlayground />
-        </div>
-      </div>
-    );
-  }
-
-  if (section === 'rules') {
-    return (
-      <div className="container">
-        <div className="admin-panel">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <button onClick={onBack} className="btn btn-danger"><Icon name="back" />Retour</button>
-            <h2 style={{ margin: 0 }}><Icon name="tools" tone="mark" />{admin?.username || 'Admin'}</h2>
-            <div style={{ width: 110 }} />
-          </div>
-          {sectionTabs}
-          <QuizRules />
-        </div>
-      </div>
-    );
-  }
-
-  if (section === 'accounts' && admin?.role === 'super') {
-    return (
-      <div className="container">
-        <div className="admin-panel">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <button onClick={onBack} className="btn btn-danger"><Icon name="back" />Retour</button>
-            <h2 style={{ margin: 0 }}><Icon name="tools" tone="mark" />{admin.username}</h2>
-            <div style={{ width: 110 }} />
-          </div>
-          {sectionTabs}
-          <Accounts admin={admin} />
-        </div>
-      </div>
-    );
-  }
-
-  if (section === 'quiz') {
-    return (
-      <div className="container">
-        <div className="admin-panel">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <button onClick={onBack} className="btn btn-danger"><Icon name="back" />Retour</button>
-            <h2 style={{ margin: 0 }}><Icon name="tools" tone="mark" />{admin?.username || 'Admin'}</h2>
-            <div style={{ width: 110 }} />
-          </div>
-          {sectionTabs}
-          <QuizAdmin admin={admin} />
-        </div>
-      </div>
-    );
-  }
+  if (section === 'boosters') return shell(<BoosterPlayground />);
+  if (section === 'rules') return shell(<QuizRules />);
+  if (section === 'accounts' && isSuper) return shell(<Accounts admin={admin} />);
+  if (section === 'quiz') return shell(<QuizAdmin admin={admin} />);
 
   if (loading) {
-    return (
-      <div className="container">
-        <div className="admin-panel">
-          {sectionTabs}
-          <div className="loading">
-            <div className="spinner"></div>
-            <div>Chargement...</div>
-          </div>
-        </div>
-      </div>
-    );
+    return shell(<div className="loading">Chargement</div>);
   }
 
-  return (
-    <div className="container">
-      <div className="admin-panel">
-        {/* Header avec bouton retour */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '30px' }}>
-          <button type="button" onClick={onBack} className="btn btn-danger">
-            <Icon name="back" />Retour
-          </button>
-          
-          <h2 style={{ margin: 0, textAlign: 'center' }}>
-            <Icon name="tools" tone="mark" />{admin?.username || 'Admin'}
-          </h2>
-          
-          <button type="button" onClick={() => setShowCreateForm(!showCreateForm)} className="btn btn-success">
-            <Icon name="plus" />Nouvelle salle
-          </button>
-        </div>
+  const editingRoomData = selectedRoom ? rooms.find((r) => r._id === selectedRoom) : null;
 
-        {sectionTabs}
-
-        {/* Formulaire de création de salle */}
-        {showCreateForm && (
-          <div style={{ 
-            background: 'linear-gradient(135deg, rgba(81, 207, 102, 0.2), rgba(64, 192, 87, 0.2))',
-            padding: '25px', 
-            borderRadius: '20px',
-            border: '2px solid rgba(81, 207, 102, 0.3)',
-            marginBottom: '30px'
-          }}>
-            <h3 style={{ marginBottom: '20px', color: '#51cf66' }}><Icon name="plus" />Créer une nouvelle salle</h3>
-            <input
-              type="text"
-              placeholder="Nom de la salle"
-              value={newRoom.name}
-              onChange={(e) => setNewRoom({ ...newRoom, name: e.target.value })}
-              className="input"
-              style={{ marginBottom: '15px' }}
-            />
-            <input
-              type="text"
-              placeholder="Description (optionnel)"
-              value={newRoom.description}
-              onChange={(e) => setNewRoom({ ...newRoom, description: e.target.value })}
-              className="input"
-              style={{ marginBottom: '15px' }}
-            />
-            <p style={{ opacity: 0.85, marginTop: 0 }}>
-              {admin?.role === 'super'
-                ? 'Une salle créée t\'est attribuée. Tu peux la donner à un admin : lui et toi seuls pourrez la modifier ou la supprimer.'
-                : 'Une salle que tu crées t\'est attribuée. Tu modifies et tu supprimes seulement les tiennes.'}
-            </p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={createRoom} className="btn btn-success" style={{ flex: 1 }}>
-                Créer la salle
-              </button>
-              <button 
-                onClick={() => setShowCreateForm(false)} 
-                className="btn btn-danger"
-                style={{ padding: '10px 20px' }}
-              >
-                Annuler
-              </button>
-            </div>
+  return shell(
+    <>
+      {showCreateForm && (
+        <section className="adm-block is-new">
+          <h3 className="adm-block-title"><Icon name="plus" bare />Nouvelle salle</h3>
+          <div className="adm-fields">
+            <label className="adm-field">
+              <span>Nom</span>
+              <input
+                type="text"
+                placeholder="Nom de la salle"
+                value={newRoom.name}
+                onChange={(e) => setNewRoom({ ...newRoom, name: e.target.value })}
+                className="input"
+              />
+            </label>
+            <label className="adm-field">
+              <span>Description</span>
+              <input
+                type="text"
+                placeholder="Optionnel"
+                value={newRoom.description}
+                onChange={(e) => setNewRoom({ ...newRoom, description: e.target.value })}
+                className="input"
+              />
+            </label>
           </div>
-        )}
+          <p className="adm-note">
+            {isSuper
+              ? 'Une salle créée t\'est attribuée. Tu peux la donner à un admin : lui et toi seuls pourrez la modifier ou la supprimer.'
+              : 'Une salle que tu crées t\'est attribuée. Tu modifies et tu supprimes seulement les tiennes.'}
+          </p>
+          <div className="adm-actions">
+            <button type="button" onClick={createRoom} className="btn btn-success">
+              <Icon name="check" />Créer la salle
+            </button>
+            <button type="button" onClick={() => setShowCreateForm(false)} className="btn btn-quiet">
+              Annuler
+            </button>
+          </div>
+        </section>
+      )}
 
-        {/* Grille des salles */}
-        <div style={{ marginBottom: '30px' }}>
-          <h3 style={{ textAlign: 'center', marginBottom: '25px' }}><Icon name="list" tone="mark" />Salles existantes</h3>
-          
-          {rooms.length === 0 ? (
-            <div style={{ 
-              textAlign: 'center', 
-              padding: '40px',
-              background: 'rgba(255, 255, 255, 0.1)',
-              borderRadius: '20px',
-              border: '2px dashed rgba(255, 255, 255, 0.3)'
-            }}>
-              <Icon name="music" tone="hero" />
-              <p style={{ fontSize: '1.2rem', opacity: 0.8 }}>Aucune salle créée</p>
-              <p style={{ opacity: 0.6 }}>Cliquez sur "Nouvelle Salle" pour commencer</p>
-            </div>
-          ) : (
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
-              gap: '20px' 
-            }}>
-              {rooms.map(room => {
-                const editable = canEditRoom(room);
-                return (
-                <div 
-                  key={room._id} 
-                  style={{ 
-                    background: '#14141c',
-                    padding: '25px', 
-                    borderRadius: '20px',
-                    border: '2px solid rgba(255, 255, 255, 0.1)',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%' // Même hauteur pour toutes les cartes
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-5px)';
-                    e.currentTarget.style.boxShadow = '6px 6px 0 #ff2347';
-                    e.currentTarget.style.borderColor = '#ff2347';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                  }}
-                >
-                  {/* Badge du nombre de musiques */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '15px',
-                    right: '15px',
-                    background: 'rgba(255, 35, 71, 0.9)',
-                    color: '#000',
-                    padding: '5px 12px',
-                    borderRadius: '20px',
-                    fontSize: '0.8rem',
-                    fontWeight: 'bold'
-                  }}>
-                    <Icon name="music" bare /> {room.musicLinks.length}
-                  </div>
+      <h3 className="adm-section-title"><Icon name="list" bare />Salles musique <small>{rooms.length}</small></h3>
 
-                  {/* Titre et description */}
-                  <h4 style={{ 
-                    margin: '0 0 15px 0', 
-                    color: '#ff2347', 
-                    fontSize: '1.3rem',
-                    fontWeight: 'bold',
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
-                    minHeight: '40px' // Hauteur fixe pour éviter le décalage
-                  }}>
-                    {room.name}
-                  </h4>
-                  
-                  <div style={{ 
-                    minHeight: '60px', // Hauteur fixe pour la description
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '20px'
-                  }}>
-                    {room.description && (
-                      <p style={{ 
-                        margin: 0, 
-                        opacity: 0.9,
-                        fontSize: '0.9rem',
-                        lineHeight: '1.4',
-                        textAlign: 'center',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3, // Limite à 3 lignes
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}>
-                        {room.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div style={{ color: '#ffd000', marginBottom: 12, textAlign: 'center' }}>
-                    {room.owner ? room.owner : 'Non attribuée'}
-                  </div>
-                  {admin?.role === 'super' && (
-                    <select
-                      className="input"
-                      value={room.owner || ''}
-                      onChange={(event) => assignRoomOwner(room._id, event.target.value)}
-                      style={{ marginBottom: 12 }}
-                    >
-                      <option value="">Personne</option>
-                      {admins.map((account) => (
-                        <option key={account.username} value={account.username}>{account.username}</option>
-                      ))}
-                    </select>
-                  )}
-
-                  {/* Boutons d'action */}
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '10px',
-                    justifyContent: 'center',
-                    marginTop: 'auto' // Pousse les boutons vers le bas
-                  }}>
+      {rooms.length === 0 ? (
+        <div className="adm-empty">
+          <Icon name="music" tone="hero" />
+          <p>Aucune salle pour l'instant.</p>
+          <small>« Nouvelle salle » en haut à droite pour commencer.</small>
+        </div>
+      ) : (
+        <div className="adm-grid">
+          {rooms.map((room) => {
+            const editable = canEditRoom(room);
+            return (
+              <article key={room._id} className={`adm-tile${selectedRoom === room._id ? ' is-open' : ''}`}>
+                <span className="adm-count"><Icon name="music" bare />{room.musicLinks.length}</span>
+                <h4 className="adm-tile-title">{room.name}</h4>
+                <p className="adm-tile-desc">{room.description || 'Sans description'}</p>
+                <div className="adm-owner">
+                  <Icon name="crown" bare />{room.owner ? room.owner : 'Non attribuée'}
+                </div>
+                {isSuper && (
+                  <select
+                    className="input adm-select"
+                    value={room.owner || ''}
+                    onChange={(event) => assignRoomOwner(room._id, event.target.value)}
+                    aria-label="Attribuer la salle"
+                  >
+                    <option value="">Personne</option>
+                    {admins.map((account) => (
+                      <option key={account.username} value={account.username}>{account.username}</option>
+                    ))}
+                  </select>
+                )}
+                <div className="adm-actions">
+                  <button type="button" onClick={() => setShowPopup(room)} className="btn btn-quiet adm-mini">
+                    <Icon name="eye" />Détails
+                  </button>
+                  {editable && (
                     <button
-                      onClick={() => setShowPopup(room)}
-                      className="btn"
-                      style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+                      type="button"
+                      onClick={() => setSelectedRoom(selectedRoom === room._id ? null : room._id)}
+                      className="btn adm-mini"
                     >
-                      Voir Détails
+                      <Icon name="pencil" />Modifier
                     </button>
-                    
-                    {editable && (
+                  )}
+                  {editable && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirm({
+                        title: 'Supprimer cette salle ?',
+                        message: `« ${room.name} » et ses musiques disparaissent.`,
+                        run: () => deleteRoom(room._id)
+                      })}
+                      className="btn btn-danger adm-mini adm-icon-only"
+                      aria-label="Supprimer la salle"
+                    >
+                      <Icon name="trash" bare />
+                    </button>
+                  )}
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {editingRoomData && canEditRoom(editingRoomData) && (() => {
+        const room = editingRoomData;
+        return (
+          <section className="adm-edit">
+            <h3 className="adm-section-title"><Icon name="pencil" bare />Modifier « {room.name} »</h3>
+
+            <div className="adm-block">
+              <h4 className="adm-block-title"><Icon name="quiz" bare />Informations</h4>
+              <div className="adm-fields">
+                <label className="adm-field">
+                  <span>Nom</span>
+                  <input
+                    type="text"
+                    value={editingRoom[room._id]?.name !== undefined ? editingRoom[room._id].name : room.name}
+                    onChange={(e) => handleRoomNameChange(room._id, e.target.value)}
+                    className="input"
+                    placeholder="Nom de la salle"
+                  />
+                </label>
+                <label className="adm-field">
+                  <span>Description</span>
+                  <input
+                    type="text"
+                    value={editingRoom[room._id]?.description !== undefined ? editingRoom[room._id].description : (room.description || '')}
+                    onChange={(e) => handleRoomDescriptionChange(room._id, e.target.value)}
+                    className="input"
+                    placeholder="Optionnel"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <div className="adm-block is-new">
+              <h4 className="adm-block-title"><Icon name="plus" bare />Ajouter une musique</h4>
+              <div className="adm-fields">
+                <label className="adm-field">
+                  <span>Lien</span>
+                  <input
+                    type="url"
+                    placeholder="YouTube, playlist YouTube ou fichier audio"
+                    value={newLink.url}
+                    onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                    className="input"
+                  />
+                </label>
+                <label className="adm-field">
+                  <span>Réponse</span>
+                  <input
+                    type="text"
+                    placeholder="Titre, artiste, anime…"
+                    value={newLink.answer}
+                    onChange={(e) => setNewLink({ ...newLink, answer: e.target.value })}
+                    className="input"
+                  />
+                </label>
+              </div>
+              <div className="adm-actions">
+                <button type="button" onClick={() => addMusicLink(room._id)} className="btn btn-success">
+                  <Icon name="plus" />Ajouter cette musique
+                </button>
+                {/[?&]list=([A-Za-z0-9_-]+)/.test(newLink.url) && (
+                  <button type="button" onClick={() => importPlaylist(room._id)} className="btn" disabled={importing}>
+                    <Icon name="music" />{importing ? 'Lecture de la playlist…' : 'Importer la playlist'}
+                  </button>
+                )}
+              </div>
+              <p className="adm-note">
+                Colle un lien de playlist YouTube pour ajouter toutes ses vidéos. Le titre de la vidéo devient la réponse, et tu peux le changer ensuite.
+              </p>
+            </div>
+
+            {room.musicLinks.length > 0 && (
+              <>
+                <h4 className="adm-section-title is-sub"><Icon name="music" bare />Musiques <small>{room.musicLinks.length}</small></h4>
+                <div className="adm-tracks">
+                  {room.musicLinks.map((link, index) => (
+                    <div key={index} className="adm-track">
+                      <span className="adm-track-num">{index + 1}</span>
+                      <input
+                        type="text"
+                        className="input"
+                        placeholder="Réponse"
+                        value={typeof link === 'string' ? '' : (link.answer || '')}
+                        onChange={(event) => updateMusicLink(room._id, index, 'answer', event.target.value)}
+                      />
+                      <input
+                        type="url"
+                        className="input adm-track-url"
+                        placeholder="Lien"
+                        value={typeof link === 'string' ? link : (link.url || '')}
+                        onChange={(event) => updateMusicLink(room._id, index, 'url', event.target.value)}
+                      />
                       <button
-                        onClick={() => setSelectedRoom(selectedRoom === room._id ? null : room._id)}
-                        className="btn btn-quiet"
-                        style={{ padding: '8px 16px', fontSize: '0.9rem' }}
-                      >
-                        <Icon name="pencil" />Modifier
-                      </button>
-                    )}
-                    
-                    {editable && (
-                      <button
+                        type="button"
                         onClick={() => setConfirm({
-                          title: 'Supprimer cette salle ?',
-                          message: `« ${room.name} » et ses musiques disparaissent.`,
-                          run: () => deleteRoom(room._id)
+                          title: 'Retirer cette musique ?',
+                          message: 'Elle sort de la salle. Il reste à sauvegarder pour que ce soit définitif.',
+                          run: () => removeMusicLink(room._id, index)
                         })}
-                        className="btn btn-danger"
-                        style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+                        className="btn btn-danger adm-mini adm-icon-only"
+                        aria-label="Retirer cette musique"
                       >
                         <Icon name="trash" bare />
                       </button>
-                    )}
-                  </div>
-                </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Section d'édition avec système de cartes */}
-        {selectedRoom && rooms.find(r => r._id === selectedRoom) && canEditRoom(rooms.find(r => r._id === selectedRoom)) && (
-          <div style={{ marginBottom: '30px' }}>
-            <h3 style={{ textAlign: 'center', color: '#ff2347', marginBottom: '25px' }}>
-              <Icon name="pencil" tone="mark" />Modification de la salle
-            </h3>
-            
-            {(() => {
-              const room = rooms.find(r => r._id === selectedRoom);
-              return (
-                <div>
-                  {/* Carte pour modifier les infos de base */}
-                  <div style={{ 
-                    background: 'linear-gradient(135deg, rgba(255, 217, 61, 0.2), rgba(255, 152, 0, 0.2))',
-                    padding: '25px', 
-                    borderRadius: '20px',
-                    border: '2px solid rgba(255, 217, 61, 0.3)',
-                    marginBottom: '20px'
-                  }}>
-                    <h4 style={{ color: '#ff2347', marginBottom: '20px', textAlign: 'center' }}>
-                      <Icon name="quiz" />Informations de base
-                    </h4>
-                    <input
-                      type="text"
-                      value={editingRoom[room._id]?.name !== undefined ? editingRoom[room._id].name : room.name}
-                      onChange={(e) => handleRoomNameChange(room._id, e.target.value)}
-                      className="input"
-                      style={{ marginBottom: '15px' }}
-                      placeholder="Nom de la salle"
-                    />
-                    <input
-                      type="text"
-                      value={editingRoom[room._id]?.description !== undefined ? editingRoom[room._id].description : (room.description || '')}
-                      onChange={(e) => handleRoomDescriptionChange(room._id, e.target.value)}
-                      className="input"
-                      style={{ marginBottom: '20px' }}
-                      placeholder="Description (optionnel)"
-                    />
-                  </div>
-
-                  {/* Carte pour ajouter une musique */}
-                  <div style={{ 
-                    background: 'linear-gradient(135deg, rgba(81, 207, 102, 0.2), rgba(64, 192, 87, 0.2))',
-                    padding: '25px', 
-                    borderRadius: '20px',
-                    border: '2px solid rgba(81, 207, 102, 0.3)',
-                    marginBottom: '20px'
-                  }}>
-                    <h4 style={{ color: '#51cf66', marginBottom: '20px', textAlign: 'center' }}>
-                      <Icon name="plus" />Ajouter une nouvelle musique
-                    </h4>
-                    <input
-                      type="url"
-                      placeholder="Lien YouTube ou audio..."
-                      value={newLink.url}
-                      onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
-                      className="input"
-                      style={{ marginBottom: '15px' }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Réponse (titre de la musique, artiste, etc.)"
-                      value={newLink.answer}
-                      onChange={(e) => setNewLink({ ...newLink, answer: e.target.value })}
-                      className="input"
-                      style={{ marginBottom: '20px' }}
-                    />
-                    <button
-                      onClick={() => addMusicLink(room._id)}
-                      className="btn btn-success"
-                      style={{ padding: '12px 20px', width: '100%' }}
-                    >
-                      <Icon name="plus" />Ajouter cette musique
-                    </button>
-                    {/[?&]list=([A-Za-z0-9_-]+)/.test(newLink.url) && (
-                      <button
-                        type="button"
-                        onClick={() => importPlaylist(room._id)}
-                        className="btn"
-                        disabled={importing}
-                        style={{ padding: '12px 20px', width: '100%', marginTop: '10px' }}
-                      >
-                        <Icon name="music" />{importing ? 'Lecture de la playlist…' : 'Importer la playlist'}
-                      </button>
-                    )}
-                    <p style={{ margin: '14px 0 0', opacity: 0.8, textAlign: 'center' }}>
-                      Colle un lien de playlist YouTube pour ajouter toutes ses vidéos. Le titre de la vidéo devient la réponse, et tu peux le changer ensuite.
-                    </p>
-                  </div>
-
-                  {/* Grille des musiques existantes */}
-                  {room.musicLinks.length > 0 && (
-                    <div>
-                      <h4 style={{ color: '#ff2347', marginBottom: '20px', textAlign: 'center' }}>
-                        <Icon name="music" tone="mark" />Musiques existantes ({room.musicLinks.length})
-                      </h4>
-                      <div style={{ 
-                        display: 'grid', 
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-                        gap: '15px',
-                        marginBottom: '20px'
-                      }}>
-                        {room.musicLinks.map((link, index) => (
-                          <div key={index} style={{ 
-                            background: '#14141c',
-                            padding: '16px', 
-                            borderRadius: '15px',
-                            border: '2px solid rgba(255, 255, 255, 0.1)'
-                          }}>
-                            <div style={{ fontSize: '0.75rem', letterSpacing: '0.08em', marginBottom: '8px', color: '#ffd000' }}>
-                              #{index + 1}
-                            </div>
-                            <input
-                              type="text"
-                              className="input"
-                              style={{ margin: '0 0 8px' }}
-                              placeholder="Réponse"
-                              value={typeof link === 'string' ? '' : (link.answer || '')}
-                              onChange={(event) => updateMusicLink(room._id, index, 'answer', event.target.value)}
-                            />
-                            <input
-                              type="url"
-                              className="input"
-                              style={{ margin: '0 0 12px', fontSize: '0.85rem' }}
-                              placeholder="Lien"
-                              value={typeof link === 'string' ? link : (link.url || '')}
-                              onChange={(event) => updateMusicLink(room._id, index, 'url', event.target.value)}
-                            />
-                            
-                            <button
-                              onClick={() => setConfirm({
-                                title: 'Retirer cette musique ?',
-                                message: 'Elle sort de la salle. Il reste à sauvegarder pour que ce soit définitif.',
-                                run: () => removeMusicLink(room._id, index)
-                              })}
-                              className="btn btn-danger"
-                              style={{ padding: '8px 12px', fontSize: '0.8rem', width: '100%' }}
-                            >
-                              <Icon name="trash" />Supprimer
-                            </button>
-                          </div>
-                        ))}
-                      </div>
                     </div>
-                  )}
-
-                  {/* Boutons de sauvegarde */}
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: '15px', 
-                    justifyContent: 'center',
-                    padding: '20px',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    borderRadius: '15px'
-                  }}>
-                    <button
-                      onClick={() => saveRoom(room._id)}
-                      className="btn btn-success"
-                      style={{ 
-                        padding: '12px 24px',
-                        background: 'linear-gradient(135deg, #51cf66, #40c057)',
-                        border: '2px solid rgba(81, 207, 102, 0.5)',
-                        boxShadow: '0 4px 15px rgba(81, 207, 102, 0.3)',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.05)';
-                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(81, 207, 102, 0.5)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                        e.currentTarget.style.boxShadow = '0 4px 15px rgba(81, 207, 102, 0.3)';
-                      }}
-                    >
-                      <Icon name="save" />Sauvegarder
-                    </button>
-                    <button
-                      onClick={() => setSelectedRoom(null)}
-                      className="btn btn-danger"
-                      style={{ padding: '12px 24px' }}
-                    >
-                      <Icon name="cross" />Annuler
-                    </button>
-                  </div>
+                  ))}
                 </div>
-              );
-            })()}
-          </div>
-        )}
+              </>
+            )}
 
-        {/* Popup de détails */}
-        {showPopup && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '20px'
-          }}>
-            <div style={{
-              background: '#12121a',
-              padding: '30px',
-              borderRadius: '20px',
-              border: '2px solid rgba(255, 255, 255, 0.2)',
-              maxWidth: '600px',
-              width: '100%',
-              maxHeight: '80vh',
-              overflowY: 'auto',
-              position: 'relative'
-            }}>
-              {/* Bouton fermer */}
-              <button
-                onClick={() => setShowPopup(null)}
-                style={{
-                  position: 'absolute',
-                  top: '15px',
-                  right: '15px',
-                  background: 'rgba(255, 107, 107, 0.8)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '30px',
-                  height: '30px',
-                  color: 'white',
-                  fontSize: '1.2rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                ×
-              </button>
-
-              <h3 style={{ color: '#ff2347', marginBottom: '20px', textAlign: 'center' }}>
-                <Icon name="eye" tone="mark" />Détails de la salle
-              </h3>
-              
-              <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ color: '#ff2347', marginBottom: '10px' }}><Icon name="quiz" />Informations</h4>
-                <p><strong>Nom:</strong> {showPopup.name}</p>
-                {showPopup.description && <p><strong>Description:</strong> {showPopup.description}</p>}
-                <p style={{ fontSize: '0.8rem', opacity: 0.7 }}><strong>ID:</strong> {showPopup._id}</p>
-              </div>
-
-              <div>
-                <h4 style={{ color: '#ff2347', marginBottom: '15px' }}>
-                  <Icon name="music" />Musiques ({showPopup.musicLinks.length})
-                </h4>
-                {showPopup.musicLinks.length === 0 ? (
-                  <p style={{ textAlign: 'center', opacity: 0.7, padding: '20px' }}>
-                    Aucune musique ajoutée
-                  </p>
-                ) : (
-                  <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                    {showPopup.musicLinks.map((link, index) => (
-                      <div key={index} style={{
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        padding: '15px',
-                        borderRadius: '10px',
-                        marginBottom: '10px'
-                      }}>
-                        <div style={{ fontWeight: 'bold', color: '#ff2347', marginBottom: '8px' }}>
-                          Musique {index + 1}
-                        </div>
-                        {(typeof link === 'object' && link.answer) && (
-                          <div style={{ color: '#51cf66', marginBottom: '8px' }}>
-                            <strong>Réponse:</strong> {link.answer}
-                          </div>
-                        )}
-                        <div style={{ fontSize: '0.9rem', opacity: 0.8, wordBreak: 'break-all' }}>
-                          <strong>Lien:</strong> {typeof link === 'string' ? link : link.url}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+            <div className="adm-savebar">
+              <span>Les changements de la salle ne sont pris en compte qu'à la sauvegarde.</span>
+              <div className="adm-actions">
+                <button type="button" onClick={() => saveRoom(room._id)} className="btn btn-success">
+                  <Icon name="save" />Sauvegarder
+                </button>
+                <button type="button" onClick={() => setSelectedRoom(null)} className="btn btn-quiet">
+                  <Icon name="cross" />Fermer
+                </button>
               </div>
             </div>
-          </div>
-        )}
+          </section>
+        );
+      })()}
 
-        {/* Messages d'erreur/succès */}
-        {error && (
-          <div className="error" style={{ textAlign: 'center' }}>
-            <Icon name="cross" />{error}
+      {showPopup && (
+        <div className="adm-modal" onClick={() => setShowPopup(null)}>
+          <div className="adm-modal-card" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
+            <button type="button" className="adm-close" onClick={() => setShowPopup(null)} aria-label="Fermer">
+              <Icon name="cross" bare />
+            </button>
+            <span className="adm-kicker">Salle musique</span>
+            <h3>{showPopup.name}</h3>
+            {showPopup.description && <p className="adm-note">{showPopup.description}</p>}
+            <p className="adm-id">ID {showPopup._id}</p>
+            <h4 className="adm-section-title is-sub"><Icon name="music" bare />Musiques <small>{showPopup.musicLinks.length}</small></h4>
+            {showPopup.musicLinks.length === 0 ? (
+              <p className="adm-note">Aucune musique ajoutée.</p>
+            ) : (
+              <ol className="adm-modal-list">
+                {showPopup.musicLinks.map((link, index) => (
+                  <li key={index}>
+                    <strong>{(typeof link === 'object' && link.answer) ? link.answer : 'Sans réponse'}</strong>
+                    <span>{typeof link === 'string' ? link : link.url}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {success && (
-          <div className="success" style={{ textAlign: 'center' }}>
-            <Icon name="check" />{success}
-          </div>
-        )}
-        {confirm && (
-          <ConfirmPopup
-            title={confirm.title}
-            message={confirm.message}
-            confirmLabel={confirm.confirmLabel}
-            onCancel={() => setConfirm(null)}
-            onConfirm={() => {
-              const run = confirm.run;
-              setConfirm(null);
-              run();
-            }}
-          />
-        )}
-      </div>
-    </div>
+      {error && (
+        <div className="error"><Icon name="cross" />{error}</div>
+      )}
+      {success && (
+        <div className="success"><Icon name="check" />{success}</div>
+      )}
+      {confirm && (
+        <ConfirmPopup
+          title={confirm.title}
+          message={confirm.message}
+          confirmLabel={confirm.confirmLabel}
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => {
+            const run = confirm.run;
+            setConfirm(null);
+            run();
+          }}
+        />
+      )}
+    </>,
+    <button type="button" onClick={() => setShowCreateForm(!showCreateForm)} className="btn btn-success">
+      <Icon name="plus" />Nouvelle salle
+    </button>
   );
 };
 
