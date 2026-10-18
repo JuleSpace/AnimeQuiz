@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Icon from './ArcadeIcon';
+import { Avatar } from './SonicRoster';
 import './JokerChao.css';
 
 export const JOKERS = {
@@ -833,12 +834,12 @@ export const BoosterPlayground = () => {
   );
 };
 
-export const HostJokerBoard = ({ players }) => {
+export const HostJokerBoard = ({ players, avatars = {} }) => {
   const rows = players || [];
 
   return (
     <div className="host-jokers">
-      <div className="host-jokers-title">Mains des joueurs</div>
+      <div className="host-jokers-title"><Icon name="booster" bare /> Mains des joueurs</div>
       {rows.length === 0 && <p className="host-jokers-empty">Aucune carte pour l'instant.</p>}
       <div className="host-jokers-row">
         {rows.map((entry) => {
@@ -851,7 +852,10 @@ export const HostJokerBoard = ({ players }) => {
                 <div className="tcg-empty">Sans carte</div>
               )}
               <div className="host-joker-meta">
-                <strong>{entry.username}</strong>
+                <strong>
+                  <Avatar id={avatars[entry.username]} fallbackName={entry.username} size={22} />
+                  {entry.username}
+                </strong>
                 <span>{joker ? (joker.used ? 'Jouée' : 'En main') : '—'}</span>
                 {joker?.note && joker.note !== 'En main' && <span>{joker.note}</span>}
               </div>

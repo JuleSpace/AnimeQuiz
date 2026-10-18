@@ -47,10 +47,18 @@ body::after {
     transparent 110px 190px,
     rgba(255, 255, 255, 0.035) 190px 200px
   );
+  /* Le calque déborde à droite d’une période entière (200px / sin 28° = 426.01px) :
+     on le décale d’exactement une période, la boucle est donc invisible et il n’y a jamais de vide. */
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: -440px;
+  transform: translate3d(0, 0, 0);
   animation: ce-run 9s linear infinite;
 }
 @keyframes ce-run {
-  to { transform: translate3d(-200px, 0, 0); }
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-426.01px, 0, 0); }
 }
 
 /* ———————————— Titres ———————————— */

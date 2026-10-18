@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Icon from './ArcadeIcon';
+import { Avatar, AvatarPicker, takenByMap } from './SonicRoster';
 
 const Lobby = ({
   lobby,
@@ -10,6 +11,7 @@ const Lobby = ({
   onSetTeamMode,
   onSetJokers,
   onChooseTeam,
+  onChooseAvatar,
   variant = 'music'
 }) => {
   const [numberOfSongs, setNumberOfSongs] = useState(10);
@@ -77,9 +79,10 @@ const Lobby = ({
         
         <div className={`player-list${teamMode ? ' player-list-teams' : ''}`}>
           {isQuiz && lobby.hostName && (
-            <div className="player-card leader">
+            <div className="player-card leader has-avatar">
+              <Avatar id={lobby.hostAvatar} fallbackName={lobby.hostName} size={58} />
               <div style={{ fontWeight: 'bold' }}>{lobby.hostName}</div>
-              <div style={{ fontSize: '0.8rem' }}><Icon name="crown" />Chef · ne joue pas</div>
+              <div style={{ fontSize: '0.8rem' }}><Icon name="crown" />Juge · ne joue pas</div>
             </div>
           )}
           {teamMode ? (
@@ -92,7 +95,8 @@ const Lobby = ({
                   <div key={team.id} className={`team-column team-${team.id}`}>
                     <div className="team-name">{team.label}</div>
                     {team.members.map((member) => (
-                      <div key={member.id} className="player-card">
+                      <div key={member.id} className="player-card has-avatar">
+                        <Avatar id={member.avatar} fallbackName={member.username} size={46} />
                         <div style={{ fontWeight: 'bold' }}>{member.username}</div>
                         {member.captain && <div style={{ fontSize: '0.8rem' }}>Chef d'équipe</div>}
                       </div>
@@ -110,7 +114,8 @@ const Lobby = ({
                 ))}
               </div>
               {unassigned.map((entry) => (
-                <div key={entry.id} className="player-card">
+                <div key={entry.id} className="player-card has-avatar">
+                  <Avatar id={entry.avatar} fallbackName={entry.username} size={46} />
                   <div style={{ fontWeight: 'bold' }}>{entry.username}</div>
                   <div style={{ fontSize: '0.8rem' }}>Sans équipe</div>
                 </div>
@@ -119,39 +124,37 @@ const Lobby = ({
           ) : lobby.players.map((p, index) => (
             <div
               key={p.id}
-              className={`player-card ${!isQuiz && index === 0 ? 'leader' : ''}`}
+              className={`player-card ${!isQuiz && index === 0 ? 'leader' : ''}${isQuiz ? ' has-avatar' : ''}${p.id === player.id ? ' is-me' : ''}`}
               onClick={() => {
                 if (!isQuiz && isLeader && p.id !== player.id && onTransferLeadership) {
                   onTransferLeadership(p.id);
                 }
               }}
-              style={{
-                cursor: !isQuiz && isLeader && p.id !== player.id ? 'pointer' : 'default',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => {
-                if (!isQuiz && isLeader && p.id !== player.id) {
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(255, 35, 71, 0.4)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isQuiz && isLeader && p.id !== player.id) {
-                  e.currentTarget.style.transform = 'scale(1)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }
-              }}
+              style={{ cursor: !isQuiz && isLeader && p.id !== player.id ? 'pointer' : 'default' }}
             >
+              {isQuiz && <Avatar id={p.avatar} fallbackName={p.username} size={58} />}
               <div style={{ fontWeight: 'bold' }}>{p.username}</div>
               {!isQuiz && index === 0 && <div style={{ fontSize: '0.8rem' }}><Icon name="crown" />Chef</div>}
               {!isQuiz && isLeader && p.id !== player.id && (
-                <div style={{ fontSize: '0.7rem', color: '#ff2347', marginTop: '5px', opacity: 0.8 }}>
+                <div style={{ fontSize: '0.7rem', color: 'var(--ce-gold)', marginTop: '5px', opacity: 0.8 }}>
                   Cliquer pour transmettre
                 </div>
               )}
             </div>
           ))}
         </div>
+
+        {isQuiz && onChooseAvatar && (
+          <div className="lobby-roster">
+            <h3><Icon name="star" tone="mark" />Choisis ton personnage</h3>
+            <p>Premier arrivé, premier servi : un personnage pris est bloqué pour les autres. {isLeader ? 'Le juge a le sien aussi.' : ''}</p>
+            <AvatarPicker
+              takenBy={takenByMap(lobby)}
+              mine={isLeader ? lobby.hostAvatar : lobby.players.find((entry) => entry.id === player.id)?.avatar}
+              onPick={onChooseAvatar}
+            />
+          </div>
+        )}
 
         <div style={{ textAlign: 'center', margin: '30px 0' }}>
           <div style={{ fontSize: '1.2rem', marginBottom: '20px' }}>
@@ -171,37 +174,37 @@ const Lobby = ({
           )}
 
           {teamMode && isLeader && lobby.players.length > 0 && !teamsReady && (
-            <div style={{ color: '#ff2347', marginBottom: '20px' }}>
+            <div style={{ color: 'var(--ce-gold)', marginBottom: '20px' }}>
               Chaque joueur choisit Team Shadow ou Team Sonic. Les deux équipes doivent avoir au moins un joueur.
             </div>
           )}
 
           {teamMode && !isLeader && !lobby.players.find((entry) => entry.id === player.id)?.team && (
-            <div style={{ color: '#ff2347', marginBottom: '20px' }}>
+            <div style={{ color: 'var(--ce-gold)', marginBottom: '20px' }}>
               Choisis Team Shadow ou Team Sonic.
             </div>
           )}
           
           {isQuiz && isLeader && lobby.players.length === 0 && (
-            <div style={{ color: '#ff2347', marginBottom: '20px' }}>
+            <div style={{ color: 'var(--ce-gold)', marginBottom: '20px' }}>
               <Icon name="clock" tone="mark" />En attente d'au moins un joueur. Le chef ne répond pas.
             </div>
           )}
 
           {isQuiz && !isLeader && !lobby.isGameStarted && (
-            <div style={{ color: '#ff2347', marginBottom: '20px' }}>
+            <div style={{ color: 'var(--ce-gold)', marginBottom: '20px' }}>
               <Icon name="clock" tone="mark" />En attente que le chef démarre la partie...
             </div>
           )}
 
           {!isQuiz && lobby.players.length < 2 && !isLeader && (
-            <div style={{ color: '#ff2347', marginBottom: '20px' }}>
+            <div style={{ color: 'var(--ce-gold)', marginBottom: '20px' }}>
               <Icon name="clock" tone="mark" />En attente d'un autre joueur...
             </div>
           )}
           
           {!isQuiz && lobby.players.length === 1 && isLeader && (
-            <div style={{ color: '#51cf66', marginBottom: '20px' }}>
+            <div style={{ color: 'var(--ce-green)', marginBottom: '20px' }}>
               <Icon name="check" tone="cyan" />Mode solo activé — vous pouvez démarrer !
             </div>
           )}
@@ -243,13 +246,13 @@ const Lobby = ({
           )}
 
           {!isQuiz && !canStartGame && lobby.players.length >= 2 && !isLeader && (
-            <div style={{ color: '#ff2347' }}>
+            <div style={{ color: 'var(--ce-gold)' }}>
               <Icon name="clock" tone="mark" />En attente que le chef démarre la partie...
             </div>
           )}
 
           {!isQuiz && !canStartGame && lobby.players.length >= 2 && isLeader && (
-            <div style={{ color: '#51cf66' }}>
+            <div style={{ color: 'var(--ce-green)' }}>
               <Icon name="check" tone="cyan" />Prêt à démarrer !
             </div>
           )}
@@ -261,7 +264,7 @@ const Lobby = ({
           </button>
         </div>
 
-        <div style={{ marginTop: '30px', padding: '20px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '15px' }}>
+        <div className="lobby-rules">
           <h3 style={{ marginBottom: '15px' }}><Icon name="rules" tone="mark" />Règles du jeu</h3>
           {isQuiz ? (
             <ul style={{ textAlign: 'left', lineHeight: '1.6' }}>

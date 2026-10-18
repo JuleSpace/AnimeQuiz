@@ -667,6 +667,30 @@ function validateQuestion(question, position) {
   return null;
 }
 
+// Roster Sonic : chaque joueur (et le chef) prend un personnage différent, premier arrivé premier servi.
+const AVATAR_IDS = [
+  'sonic', 'tails', 'knuckles', 'amy', 'cream', 'big', 'shadow', 'rouge', 'omega', 'eggman',
+  'metal', 'chaos', 'tikal', 'silver', 'blaze', 'espio', 'vector', 'charmy', 'jet', 'wave',
+  'storm', 'marine', 'sticks', 'mighty', 'ray', 'infinite', 'maria', 'gamma'
+];
+
+function takenAvatars(lobby, exceptId) {
+  const taken = new Set();
+  lobby.players.forEach((entry) => {
+    if (entry.avatar && entry.id !== exceptId) taken.add(entry.avatar);
+  });
+  if (lobby.hostAvatar && lobby.host?.id !== exceptId) taken.add(lobby.hostAvatar);
+  return taken;
+}
+
+function giveFreeAvatar(lobby, person) {
+  if (person.avatar && !takenAvatars(lobby, person.id).has(person.avatar)) return person.avatar;
+  const taken = takenAvatars(lobby, person.id);
+  const free = AVATAR_IDS.filter((id) => !taken.has(id));
+  person.avatar = free.length ? free[Math.floor(Math.random() * free.length)] : null;
+  return person.avatar;
+}
+
 function playerSnapshot(lobby) {
   return lobby.players.map((player) => {
     const team = player.team === 'shadow' || player.team === 'sonic' ? player.team : null;
@@ -678,7 +702,8 @@ function playerSnapshot(lobby) {
       score: player.score || 0,
       team,
       captain: Boolean(captain && captain.id === player.id),
-      captainName: captain ? captain.username : ''
+      captainName: captain ? captain.username : '',
+      avatar: player.avatar || null
     };
   });
 }
@@ -732,8 +757,10 @@ function answerProgress(lobby, index) {
     return !owesSecond;
   };
   if (!lobby.teamMode) {
+    const done = lobby.players.filter(settled);
     return {
-      answered: lobby.players.filter(settled).length,
+      answered: done.length,
+      answeredIds: done.map((player) => player.id),
       totalPlayers: lobby.players.length
     };
   }
@@ -741,8 +768,8 @@ function answerProgress(lobby, index) {
   const answered = teams.filter((team) => {
     const captain = membersOf(lobby, team)[0];
     return captain && (captain.answered?.[index] || captain.silencedOn === index);
-  }).length;
-  return { answered, totalPlayers: teams.length };
+  });
+  return { answered: answered.length, answeredIds: answered, totalPlayers: teams.length };
 }
 
 function pairScore(lobby, corrections, index) {
@@ -860,6 +887,7 @@ function publicLobby(lobby) {
     mode: 'quiz',
     hostId: lobby.host?.id || null,
     hostName: lobby.host?.username || lobby.hostName || '',
+    hostAvatar: lobby.hostAvatar || null,
     teamMode: Boolean(lobby.teamMode),
     jokersEnabled: lobby.jokersEnabled !== false,
     players: playerSnapshot(lobby),
@@ -1676,6 +1704,7 @@ function attachQuiz(app, io) {
           if (oldId) quizPlayers.delete(oldId);
           lobby.hostName = username;
           lobby.host = { id: socket.id, username };
+          lobby.hostAvatar = lobby.hostAvatar || giveFreeAvatar(lobby, { id: socket.id, avatar: null });
           const host = {
             id: socket.id,
             username,
@@ -1746,6 +1775,7 @@ function attachQuiz(app, io) {
           if (jokersActive(lobby)) {
             player.joker = freshJoker(drawJoker());
           }
+          giveFreeAvatar(lobby, player);
           lobby.players.push(player);
           quizPlayers.set(socket.id, player);
           socket.join(quizId);
@@ -1775,6 +1805,7 @@ function attachQuiz(app, io) {
         if (becomeHost) {
           lobby.hostName = username;
           lobby.host = { id: socket.id, username };
+          lobby.hostAvatar = lobby.hostAvatar || giveFreeAvatar(lobby, { id: socket.id, avatar: null });
           const host = {
             id: socket.id,
             username,
@@ -1823,6 +1854,7 @@ function attachQuiz(app, io) {
           silencedOn: null
         };
 
+        giveFreeAvatar(lobby, player);
         lobby.players.push(player);
         lobby.totalQuestions = playable.length;
         lobby.quizName = quiz.name;
@@ -1836,6 +1868,26 @@ function attachQuiz(app, io) {
       } catch (error) {
         socket.emit('join-error', { message: 'Impossible de rejoindre ce quiz' });
       }
+    });
+
+    socket.on('choose-avatar', (data) => {
+      const person = quizPlayers.get(socket.id);
+      if (!person) return;
+      const lobby = quizLobbies.get(person.roomId);
+      const avatar = String(data?.avatar || '');
+      if (!lobby || !AVATAR_IDS.includes(avatar)) return;
+      if (takenAvatars(lobby, socket.id).has(avatar)) {
+        socket.emit('quiz-error', { message: 'Ce personnage est déjà pris' });
+        return;
+      }
+      if (isHostSocket(lobby, socket.id)) {
+        lobby.hostAvatar = avatar;
+      } else {
+        const player = lobby.players.find((entry) => entry.id === socket.id);
+        if (!player) return;
+        player.avatar = avatar;
+      }
+      io.to(lobby.quizId).emit('lobby-updated', publicLobby(lobby));
     });
 
     socket.on('set-team-mode', (data) => {

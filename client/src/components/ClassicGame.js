@@ -7,8 +7,11 @@ import { OrderAnswer, OrderReview, PlaceAnswer, PlaceBoard } from './InteractQue
 import { extractYouTubeId } from '../utils/media';
 import { BoosterOpening, HostJokerBoard, JokerCard, PlayerJokerBar, TableDrop } from './JokerCards';
 import Icon from './ArcadeIcon';
+import QuizTable, { rankFor } from './QuizTable';
+import { Avatar, avatarMap } from './SonicRoster';
+import { Countdown } from './SiteFx';
 
-const CHOICE_COLORS = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#8e44ad', '#e67e22'];
+const CHOICE_COLORS = ['#ff2347', '#1f6dff', '#f0a000', '#1fae55', '#8b5cf6', '#ff7a00'];
 const CHOICE_SHAPES = ['▲', '◆', '●', '■', '★', '✚'];
 
 const imageScaleOf = (size) => {
@@ -168,6 +171,7 @@ const AnswerThumbs = ({ urls }) => {
 
 const ClassicGame = ({
   gameData,
+  lobby,
   player,
   onSubmitAnswer,
   onForceClose,
@@ -193,9 +197,35 @@ const ClassicGame = ({
   const [secondDraft, setSecondDraft] = useState(false);
   const hintAskedFor = useRef(null);
   const secondSent = useRef(false);
+  const [countId, setCountId] = useState(0);
+  const [fx, setFx] = useState(null);
+  const prevPhase = useRef(null);
+  const seatOrder = useRef([]);
 
   const question = gameData?.question;
   const phase = gameData?.phase || 'answering';
+
+  // Compte à rebours une fois le booster pioché, au lancement de la question.
+  useEffect(() => {
+    if (prevPhase.current === 'booster' && phase === 'answering') setCountId(Date.now());
+    prevPhase.current = phase;
+  }, [phase, gameData?.questionIndex]);
+
+  // Bonne ou mauvaise réponse : anneaux ramassés et rang, ou anneaux perdus.
+  useEffect(() => {
+    if (phase !== 'reveal' || !gameData?.reveal || !player) return undefined;
+    if (gameData.hostId === player.id && !gameData.solo) return undefined;
+    const reveal = gameData.reveal;
+    const rows = (reveal.teams && reveal.teams.length) ? reveal.teams : (reveal.players || []);
+    const mine = rows.find((row) => (row.memberIds ? row.memberIds.includes(player.id) : row.id === player.id));
+    if (!mine) return undefined;
+    const points = Number(mine.pointsThisRound) || 0;
+    const max = gameData.suggestedPoints || gameData.question?.points || 1;
+    const id = Date.now();
+    setFx({ id, type: points > 0 ? 'good' : 'bad', points, rank: rankFor(points, max) });
+    const timer = setTimeout(() => setFx((current) => (current && current.id === id ? null : current)), 2600);
+    return () => clearTimeout(timer);
+  }, [phase, gameData?.reveal]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setTextAnswer('');
@@ -258,7 +288,7 @@ const ClassicGame = ({
   }, [gameData?.myJoker, gameData?.questionIndex, locked, phase]);
 
   if (!gameData || !player) {
-    return <div className="loading">Chargement de la question...</div>;
+    return <div className="loading">Chargement de la question</div>;
   }
 
   if (phase === 'booster') {
@@ -273,7 +303,7 @@ const ClassicGame = ({
           </p>
           {hostOpening ? (
             <>
-              <HostJokerBoard players={gameData.jokerRoster || []} />
+              <HostJokerBoard players={gameData.jokerRoster || []} avatars={avatarMap(lobby)} />
               <div style={{ textAlign: 'center' }}>
                 <button type="button" className="btn btn-success" onClick={onStartQuestion}>
                   <Icon name="go" />Lancer la question
@@ -315,7 +345,7 @@ const ClassicGame = ({
   }
 
   if (!question) {
-    return <div className="loading">Chargement de la question...</div>;
+    return <div className="loading">Chargement de la question</div>;
   }
 
   const isHost = gameData.hostId === player.id;
@@ -366,20 +396,20 @@ const ClassicGame = ({
   const renderAnswering = () => {
     if (gameData.silenced) {
       return (
-        <div style={{ textAlign: 'center', padding: '18px' }}>
-          <div style={{ fontSize: '1.2rem', marginBottom: 8 }}>Tu es réduit au silence</div>
-          <div style={{ opacity: 0.8 }}>Ta réponse ne comptera pas sur cette question.</div>
+        <div className="quiz-wait">
+          <div className="quiz-wait-title">Tu es réduit au silence</div>
+          <div className="quiz-wait-sub">Ta réponse ne comptera pas sur cette question.</div>
         </div>
       );
     }
 
     if (locked) {
       return (
-        <div style={{ textAlign: 'center', padding: '18px' }}>
-          <div style={{ fontSize: '1.2rem', marginBottom: 8 }}>
+        <div className="quiz-wait">
+          <div className="quiz-wait-title">
             {gameData.myJoker?.redoSpent ? 'Deux réponses envoyées' : 'Réponse envoyée'}
           </div>
-          <div style={{ opacity: 0.8 }}>
+          <div className="quiz-wait-sub">
             {gameData.answered || 0}/{gameData.totalPlayers || players.length} {progressLabel}
           </div>
         </div>
@@ -388,20 +418,20 @@ const ClassicGame = ({
 
     if (teamMode && !myTeam) {
       return (
-        <div style={{ textAlign: 'center', padding: '18px' }}>
-          <div style={{ fontSize: '1.2rem', marginBottom: 8 }}>Choisis ton équipe</div>
-          <div style={{ opacity: 0.8 }}>Ensuite tu suis la question avec les autres.</div>
+        <div className="quiz-wait">
+          <div className="quiz-wait-title">Choisis ton équipe</div>
+          <div className="quiz-wait-sub">Ensuite tu suis la question avec les autres.</div>
         </div>
       );
     }
 
     if (teamMode && !iAmCaptain) {
       return (
-        <div style={{ textAlign: 'center', padding: '18px' }}>
-          <div style={{ fontSize: '1.2rem', marginBottom: 8 }}>
+        <div className="quiz-wait">
+          <div className="quiz-wait-title">
             {me?.captainName || 'Le chef d\'équipe'} envoie la réponse
           </div>
-          <div style={{ opacity: 0.8 }}>Échangez dans le chat, une seule réponse part pour l'équipe.</div>
+          <div className="quiz-wait-sub">Échangez dans le chat, une seule réponse part pour l'équipe.</div>
         </div>
       );
     }
@@ -426,11 +456,8 @@ const ClassicGame = ({
               <button
                 key={option + index}
                 type="button"
-                className="choice-btn"
-                style={{
-                  background: CHOICE_COLORS[index % CHOICE_COLORS.length],
-                  outline: isSelected ? '3px solid white' : 'none'
-                }}
+                className={`choice-btn${isSelected ? ' is-picked' : ''}`}
+                style={{ '--choice': CHOICE_COLORS[index % CHOICE_COLORS.length] }}
                 onClick={() => {
                   if (question.multiple) {
                     setSelected((current) => (
@@ -443,7 +470,7 @@ const ClassicGame = ({
                   send(index);
                 }}
               >
-                <span style={{ opacity: 0.85, marginRight: 8 }}>{CHOICE_SHAPES[index % CHOICE_SHAPES.length]}</span>
+                <span className="choice-shape">{CHOICE_SHAPES[index % CHOICE_SHAPES.length]}</span>
                 {option}
               </button>
             );
@@ -529,10 +556,10 @@ const ClassicGame = ({
     if (question.type === 'boolean') {
       return (
         <div className="choice-grid">
-          <button type="button" className="choice-btn" style={{ background: '#26890c' }} onClick={() => send(true)}>
+          <button type="button" className="choice-btn choice-true" onClick={() => send(true)}>
             Vrai
           </button>
-          <button type="button" className="choice-btn" style={{ background: '#e21b3c' }} onClick={() => send(false)}>
+          <button type="button" className="choice-btn choice-false" onClick={() => send(false)}>
             Faux
           </button>
         </div>
@@ -620,32 +647,6 @@ const ClassicGame = ({
     );
   };
 
-  const renderPlanned = (note) => (
-    <div style={{
-      textAlign: 'center',
-      margin: '12px 0 18px',
-      padding: '12px',
-      borderRadius: '10px',
-      background: 'rgba(255, 35, 71,0.15)',
-      border: '1px solid rgba(255, 35, 71,0.45)'
-    }}>
-      Réponse prévue : <strong className="quiz-answer">{gameData.expectedAnswer || '—'}</strong>
-      {note ? (
-        <div style={{ marginTop: 6, fontSize: '0.9rem', opacity: 0.85 }}>{note}</div>
-      ) : null}
-      {renderPlacement(null, true)}
-      {question.type === 'imageqcm' && (
-        <ImageChoices
-          options={question.options}
-          correctIndexes={gameData.correctIndexes}
-          imageSize={question.imageSize}
-          readOnly
-        />
-      )}
-      <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} imageSize={question.imageSize} />
-    </div>
-  );
-
   const renderAnswer = (entry) => {
     const paired = Boolean(entry.firstAnswerText);
     return (
@@ -670,34 +671,237 @@ const ClassicGame = ({
     );
   };
 
+  const avatars = avatarMap(lobby);
+  [...(lobby?.players || []), ...players].forEach((entry) => {
+    if (entry?.username && !seatOrder.current.includes(entry.username)) seatOrder.current.push(entry.username);
+  });
+  const judge = { name: gameData.hostName || lobby?.hostName || 'Juge', avatar: lobby?.hostAvatar || null };
+  const suggested = gameData.suggestedPoints || question.points || 1;
+  const answeredIds = gameData.answeredIds || [];
+  const showTable = phase === 'hold' || phase === 'correction' || phase === 'reveal'
+    || (phase === 'answering' && isHost && !solo);
+  const detailed = question.type === 'order' || question.type === 'layout';
+  const canSeeAnswers = phase === 'correction' || phase === 'reveal'
+    || (phase === 'hold' && (isHost || gameData.answersVisible));
+
+  const rowsForPhase = () => {
+    if (phase === 'reveal' && reveal) {
+      return (reveal.teams && reveal.teams.length) ? reveal.teams : (reveal.players || []);
+    }
+    if (phase === 'answering') {
+      return teamMode && (gameData.teams || []).length ? gameData.teams : players;
+    }
+    return scoreRows;
+  };
+  const teamOf = (entry) => (teamMode ? (entry.team || entry.id) : null);
+  const seatRank = (entry) => {
+    if (teamMode) return teamOf(entry) === 'shadow' ? 0 : 1;
+    const at = seatOrder.current.indexOf(entry.username);
+    return at < 0 ? 999 : at;
+  };
+  const scoreOf = (entry) => {
+    if (typeof entry.score === 'number') return entry.score;
+    const known = players.find((item) => item.username === entry.username);
+    return known ? known.score : 0;
+  };
+
+  const setScore = (key, value) => {
+    onUpdateCorrections({
+      ...corrections,
+      [key]: Math.max(0, Math.min(99, Math.round(Number(value) || 0)))
+    });
+  };
+
+  const correctionControls = (entry) => {
+    const paired = Boolean(entry.firstAnswerText) && !teamMode;
+    const pads = paired
+      ? [{ key: `${entry.id}::1`, label: '1re' }, { key: `${entry.id}::2`, label: '2e' }]
+      : [{ key: entry.id, label: '' }];
+    return pads.map((pad) => {
+      const given = Number(corrections[pad.key]) || 0;
+      return (
+        <div key={pad.key} className={`qt-pad${given > 0 ? ' is-on' : ''}`}>
+          {pad.label ? <span className="qt-pad-label">{pad.label}</span> : null}
+          <button
+            type="button"
+            className="qt-pad-ok"
+            onClick={() => setScore(pad.key, given > 0 ? 0 : suggested)}
+            title={given > 0 ? 'Retirer les points' : `Bonne réponse : ${suggested} pt`}
+          >
+            <Icon name={given > 0 ? 'check' : 'star'} bare />
+            {given > 0 ? 'Validé' : `Valider ${suggested}`}
+          </button>
+          <button type="button" className="qt-pad-step" onClick={() => setScore(pad.key, given - 1)} aria-label="Retirer un point">−</button>
+          <span className="qt-pad-value">{given}</span>
+          <button type="button" className="qt-pad-step" onClick={() => setScore(pad.key, given + 1)} aria-label="Ajouter un point">+</button>
+        </div>
+      );
+    });
+  };
+
+  const seats = showTable ? [...rowsForPhase()]
+    .sort((a, b) => seatRank(a) - seatRank(b))
+    .map((entry) => {
+      const team = teamOf(entry);
+      const hasText = entry.answerText !== undefined && entry.answerText !== null;
+      const answeredNow = phase === 'answering' ? answeredIds.includes(team || entry.id) : true;
+      const paired = Boolean(entry.firstAnswerText);
+      const teammates = (entry.members || []).filter((name) => name !== entry.captainName);
+      const isMe = entry.memberIds ? entry.memberIds.includes(player.id) : entry.id === player.id;
+      const points = phase === 'reveal' ? (Number(entry.pointsThisRound) || 0) : null;
+      const tags = isHost && phase === 'correction'
+        ? (gameData.gainPreview || [])
+          .filter((row) => (team ? row.team === team : row.id === entry.id) && (row.tags || []).length > 0)
+          .map((row) => `${row.username || ''} ${(row.tags || []).join(' · ')} → ${row.gain || 0}`)
+        : [];
+      const notes = [
+        entry.captainName ? `chef ${entry.captainName}` : '',
+        teammates.length ? teammates.join(', ') : '',
+        ...tags,
+        phase === 'reveal' && (entry.memberGains || []).length
+          ? entry.memberGains.map((gain) => `${gain.username} +${gain.points}`).join(' · ')
+          : '',
+        phase === 'reveal' && isMe && (gameData.roundNotes || []).length ? gameData.roundNotes.join(' ') : ''
+      ].filter(Boolean);
+      return {
+        key: team || entry.username || entry.id,
+        name: entry.username,
+        avatar: team || avatars[entry.username] || entry.avatar,
+        score: scoreOf(entry),
+        isMe,
+        status: answeredNow ? 'answered' : 'waiting',
+        waitLabel: phase === 'answering' ? 'Réfléchit…' : '…',
+        face: canSeeAnswers && hasText,
+        lines: paired
+          ? [
+            { label: '1re', text: entry.firstAnswerText, thumbs: entry.firstAnswerImages },
+            { label: '2e', text: entry.answerText, thumbs: entry.answerImages }
+          ]
+          : [{ text: entry.answerText, thumbs: entry.answerImages }],
+        points,
+        verdict: points === null ? null : (points > 0 ? 'good' : 'bad'),
+        note: notes.join(' · '),
+        controls: isHost && phase === 'correction' ? correctionControls(entry) : null
+      };
+    }) : [];
+
+  const expectedText = phase === 'reveal'
+    ? (reveal?.correctAnswer || gameData.expectedAnswer)
+    : (gameData.expectedAnswer || (isHost ? gameData.hostAnswer : ''));
+  const showExpected = Boolean(expectedText) && (isHost || phase === 'correction' || phase === 'reveal');
+  const lastQuestion = gameData.questionIndex + 1 >= gameData.totalQuestions;
+
+  const phaseLabel = {
+    answering: 'Question en cours',
+    hold: 'Réponses closes',
+    correction: isHost ? 'Distribue les points' : 'Le juge corrige',
+    reveal: 'Révélation'
+  }[phase] || '';
+
+  const tableCenter = (
+    <div className="qt-center-inner">
+      <span className="qt-phase">{phaseLabel}</span>
+      {phase === 'answering' && (
+        <div className="qt-count">
+          <b>{gameData.answered || 0}</b>/{gameData.totalPlayers || seats.length}
+          <small>{progressLabel}</small>
+        </div>
+      )}
+      {showExpected && (
+        <div className="qt-expected">
+          <small>Réponse prévue</small>
+          <strong className="quiz-answer">{expectedText}</strong>
+        </div>
+      )}
+      {phase === 'hold' && !isHost && (
+        <p className="qt-hint">
+          {gameData.answersVisible
+            ? 'Tu as Vol : les réponses sont là, la bonne reste cachée.'
+            : 'La bonne réponse reste cachée, le juge prépare la correction.'}
+        </p>
+      )}
+      {phase === 'hold' && isHost && (
+        <p className="qt-hint">
+          {solo
+            ? 'À toi de te noter avec la réponse prévue.'
+            : 'Les joueurs ne voient rien encore. Celui qui a Vol voit les réponses des autres.'}
+        </p>
+      )}
+      {phase === 'correction' && isHost && (
+        <p className="qt-hint">Rien n'est validé tout seul. Une bonne réponse vaut {suggested} pt.</p>
+      )}
+      {phase === 'correction' && !isHost && (
+        <p className="qt-hint">Les points ne sont pas encore validés.</p>
+      )}
+      {isHost && phase === 'answering' && (
+        <button type="button" className="btn" onClick={onForceClose}>
+          <Icon name="lock" />Clore les réponses
+        </button>
+      )}
+      {isHost && phase === 'hold' && (
+        <button type="button" className="btn btn-success" onClick={onBeginScoring}>
+          <Icon name="coin" />Distribuer les points
+        </button>
+      )}
+      {isHost && phase === 'correction' && (
+        <button type="button" className="btn btn-success" onClick={() => onSubmitCorrection(corrections)}>
+          <Icon name="check" />Valider les points
+        </button>
+      )}
+      {phase === 'reveal' && (isHost ? (
+        <button type="button" className="btn btn-success" onClick={onNext}>
+          {lastQuestion ? <><Icon name="trophy" />Voir les résultats</> : <><Icon name="go" />Question suivante</>}
+        </button>
+      ) : (
+        <p className="qt-hint qt-wait-judge"><Icon name="clock" bare /> En attente du juge</p>
+      ))}
+    </div>
+  );
+
+  const solutionExtras = (isHost && phase !== 'answering') || phase === 'correction' || phase === 'reveal';
+
   return (
     <div className="container">
       {gameData.tableShow && (
         <TableDrop cardId={gameData.tableShow.card} username={gameData.tableShow.username} />
       )}
-      <div className="card">
+      <Countdown runId={countId} />
+      <div className="card quiz-card">
         <div className="quiz-stage">
-        <div className="question-number" style={{ marginBottom: 6 }}>
-          {gameData.quizName ? `${gameData.quizName} · ` : ''}
-          Question {gameData.questionIndex + 1} / {gameData.totalQuestions}
-        </div>
-        <div style={{ fontWeight: 'bold', marginBottom: 8 }}>
-          {question.points} pt{question.points > 1 ? 's' : ''}
-          {gameData.hostName ? ` · Chef ${gameData.hostName}` : ''}
+        <div className="quiz-head">
+          <div className="question-number">
+            {gameData.quizName ? `${gameData.quizName} · ` : ''}
+            Question {gameData.questionIndex + 1} / {gameData.totalQuestions}
+          </div>
+          <div className="quiz-head-meta">
+            <span className="quiz-points">{question.points} pt{question.points > 1 ? 's' : ''}</span>
+            {judge.name && (
+              <span className="quiz-judge">
+                <Avatar id={judge.avatar} fallbackName={judge.name} size={26} />
+                Juge {judge.name}
+              </span>
+            )}
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', margin: '14px 0', width: '100%' }}>
-          {[...players].sort((a, b) => (b.score || 0) - (a.score || 0)).map((entry) => (
-            <span key={entry.id} style={{
-              padding: '6px 10px',
-              borderRadius: '999px',
-              background: entry.id === player.id ? 'rgba(255, 35, 71,0.25)' : 'rgba(255,255,255,0.12)',
-              border: '1px solid rgba(255,255,255,0.2)'
-            }}>
-              {entry.username} · {entry.score || 0}
-            </span>
-          ))}
-        </div>
+        {!showTable && (
+          <div className="ce-strip">
+            {[...players].sort((a, b) => (b.score || 0) - (a.score || 0)).map((entry, index) => {
+              const done = phase === 'answering' && answeredIds.includes(teamMode ? entry.team : entry.id);
+              return (
+                <span
+                  key={entry.id}
+                  className={['ce-chip', entry.id === player.id ? 'is-me' : '', done ? 'is-done' : ''].filter(Boolean).join(' ')}
+                >
+                  <span className="ce-chip-rank">{index + 1}</span>
+                  <Avatar id={avatars[entry.username] || entry.avatar} fallbackName={entry.username} size={30} />
+                  <span className="ce-chip-name">{entry.username}</span>
+                  <b>{entry.score || 0}</b>
+                </span>
+              );
+            })}
+          </div>
+        )}
 
         {teamMode && !isHost && !myTeam && (
           <div style={{ textAlign: 'center', margin: '14px 0' }}>
@@ -713,23 +917,17 @@ const ClassicGame = ({
           </div>
         )}
 
-        {isHost && gameData.jokersEnabled !== false && !teamMode && (
-          <HostJokerBoard players={gameData.jokerRoster || []} />
-        )}
-
         {phase === 'answering' && question.timeLimit > 0 && (
-          <div style={{ width: '100%', maxWidth: '640px', marginBottom: 16 }}>
-            <div style={{ textAlign: 'center', fontSize: '1.4rem', fontWeight: 'bold', marginBottom: 6 }}>
-              {remaining}s
-            </div>
-            <div className="timer-bar">
+          <div className="quiz-timer">
+            <div className="quiz-timer-num">{remaining}s</div>
+            <div className={`timer-bar${ratio < 0.25 ? ' is-low' : ''}`}>
               <div style={{ width: `${ratio * 100}%` }} />
             </div>
           </div>
         )}
 
         {question.prompt && (
-          <h2 className="quiz-prompt" style={{ fontSize: '1.45rem', margin: '10px auto 6px', maxWidth: '760px' }}>
+          <h2 className="quiz-prompt">
             {question.prompt}
           </h2>
         )}
@@ -771,20 +969,15 @@ const ClassicGame = ({
         {question.type === 'music' && question.imageUrl && (
           <QuestionMedia imageUrl={question.imageUrl} videoUrl="" imageSize={question.imageSize} />
         )}
-        {phase === 'reveal' && (
-          <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} imageSize={question.imageSize} />
+
+        {showTable && (
+          <QuizTable seats={seats} judge={judge} center={tableCenter} fx={fx} phase={phase} />
         )}
 
-        {phase === 'answering' && isHost && !solo && (
+        {phase === 'answering' && isHost && !solo && (gameData.hostSolution || hintRequests.length > 0) && (
           <div className="quiz-host-panel">
-            <div style={{ marginBottom: 8 }}>Tu es le chef : tu ne réponds pas.</div>
-            {gameData.hostAnswer && (
-              <div style={{ marginBottom: 8 }}>
-                Réponse prévue : <strong className="quiz-answer">{gameData.hostAnswer}</strong>
-              </div>
-            )}
             {gameData.hostSolution?.type === 'order' && (
-              <OrderReview items={gameData.hostSolution.items || []} />
+              <OrderReview title="Ordre prévu" items={gameData.hostSolution.items || []} />
             )}
             {gameData.hostSolution?.type === 'layout' && (
               <PlaceBoard
@@ -805,18 +998,14 @@ const ClassicGame = ({
                 readOnly
               />
             )}
-            <div style={{ opacity: 0.8, marginBottom: 8 }}>
-              {gameData.answered || 0}/{gameData.totalPlayers || players.length} {progressLabel}
-            </div>
-            {hintRequests.length === 0 && (
-              <div style={{ opacity: 0.75 }}>Aucun indice demandé.</div>
+            {hintRequests.length > 0 && (
+              <div className="quiz-host-hints">
+                <div className="quiz-host-title"><Icon name="search" bare /> Indices demandés</div>
+                {hintRequests.map((request) => (
+                  <HintComposer key={request.id} request={request} onSend={onSendHint} />
+                ))}
+              </div>
             )}
-            {hintRequests.map((request) => (
-              <HintComposer key={request.id} request={request} onSend={onSendHint} />
-            ))}
-            <button type="button" className="btn" onClick={onForceClose}>
-              <Icon name="lock" />Clore les réponses
-            </button>
           </div>
         )}
 
@@ -833,7 +1022,7 @@ const ClassicGame = ({
               </div>
             )}
             {secondDraft && (
-              <div style={{ textAlign: 'center', marginBottom: 10, color: '#ff2347' }}>
+              <div className="quiz-flag">
                 Première réponse gardée. Entre la deuxième.
               </div>
             )}
@@ -852,259 +1041,76 @@ const ClassicGame = ({
                 ))}
               </div>
             )}
-            <div style={{ opacity: 0.75, marginTop: 8 }}>
+            <div className="quiz-progress-line">
               {gameData.answered || 0}/{gameData.totalPlayers || players.length} {progressLabel}
             </div>
           </>
         )}
 
-        {(phase === 'hold' || phase === 'correction') && !isHost && (
-          <div className="correction-section">
-            <h3 style={{ textAlign: 'center' }}>
-              {phase === 'hold' ? 'Réponses closes' : 'Le chef distribue les points'}
-            </h3>
-            {phase === 'correction' ? (
-              <>
-                {renderPlanned('Les points ne sont pas encore validés.')}
-                {scoreRows.map((entry) => (
-                  <div key={entry.id} className="quiz-score-row">
-                    <div className="quiz-answer">
-                      <strong>{entry.username}</strong>
-                      {entry.captainName ? ` · chef ${entry.captainName}` : ''}
-                      {renderAnswer(entry)}
-                    </div>
-                  </div>
-                ))}
-              </>
-            ) : phase === 'hold' && gameData.answersVisible ? (
-              <>
-                <p style={{ textAlign: 'center', color: '#ff2347' }}>
-                  Tu as Vol. Les réponses sont là, la bonne reste cachée.
-                </p>
-                {scoreRows.map((entry) => (
-                  <div key={entry.id} className="quiz-score-row">
-                    <div className="quiz-answer">
-                      <strong>{entry.username}</strong>
-                      {entry.captainName ? ` · chef ${entry.captainName}` : ''}
-                      {renderAnswer(entry)}
-                    </div>
-                  </div>
-                ))}
-              </>
-            ) : (
-              <p style={{ textAlign: 'center', color: '#ff2347' }}>
-                La bonne réponse reste cachée, le temps que le chef prépare les points.
-              </p>
-            )}
-          </div>
-        )}
-
-        {(phase === 'hold' || phase === 'correction') && isHost && (
-          <div className="correction-section">
-            <h3 style={{ textAlign: 'center' }}>
-              {phase === 'hold' ? 'Prépare la correction' : 'Distribue les points'}
-            </h3>
-            {renderPlanned(solo
-              ? 'À toi de te noter. La réponse prévue est là, le reste se dit en face de soi.'
-              : phase === 'hold'
-                ? 'La réponse prévue reste cachée. Celui qui a Vol voit les réponses des autres.'
-                : `Rien n'est validé tout seul. Une bonne réponse vaut ${gameData.suggestedPoints || question.points || 1} pt.`)}
-            {scoreRows.map((entry) => {
-              const suggested = gameData.suggestedPoints || question.points || 1;
-              const paired = Boolean(entry.firstAnswerText) && !gameData.teamMode;
-              const pads = paired
-                ? [
-                  { key: `${entry.id}::1`, label: '1re' },
-                  { key: `${entry.id}::2`, label: '2e' }
-                ]
-                : [{ key: entry.id, label: '' }];
-              const retained = paired
-                ? Math.max(...pads.map((pad) => Number(corrections[pad.key]) || 0))
-                : 0;
-              const memberPreview = (gameData.gainPreview || []).filter((row) => (
-                entry.team ? row.team === entry.team : row.id === entry.id
-              ));
-              const setScore = (key, value) => {
-                onUpdateCorrections({
-                  ...corrections,
-                  [key]: Math.max(0, Math.min(99, Math.round(Number(value) || 0)))
-                });
-              };
-              return (
-                <div key={entry.id} className="quiz-score-row">
-                  <div className="quiz-answer">
-                    <strong>{entry.username}</strong>
-                    {entry.captainName ? ` · chef ${entry.captainName}` : ''}
-                    {(entry.members || []).filter((name) => name !== entry.captainName).length
-                      ? ` · ${(entry.members || []).filter((name) => name !== entry.captainName).join(', ')}`
-                      : ''}
-                    {renderAnswer(entry)}
-                  </div>
-                  {phase === 'correction' ? pads.map((pad) => {
-                    const given = Number(corrections[pad.key]) || 0;
-                    return (
-                      <div key={pad.key} className="quiz-score-actions" style={{ marginTop: 8 }}>
-                        {pad.label ? (
-                          <span style={{ minWidth: 28, fontWeight: 'bold' }}>{pad.label}</span>
-                        ) : null}
-                        <button
-                          type="button"
-                          className="btn btn-success"
-                          onClick={() => setScore(pad.key, suggested)}
-                        >
-                          Valider ({suggested})
-                        </button>
-                        <button
-                          type="button"
-                          className="btn"
-                          style={{ background: 'rgba(255, 35, 71,0.25)', color: '#ff2347' }}
-                          onClick={() => setScore(pad.key, Math.min(99, given + 1))}
-                        >
-                          +1
-                        </button>
-                        <button
-                          type="button"
-                          className="btn"
-                          onClick={() => setScore(pad.key, Math.max(0, given - 1))}
-                        >
-                          −1
-                        </button>
-                        <input
-                          type="number"
-                          min="0"
-                          max="99"
-                          className="input"
-                          style={{ width: '80px', margin: 0, textAlign: 'center' }}
-                          value={given}
-                          onChange={(event) => setScore(pad.key, event.target.value)}
-                        />
-                      </div>
-                    );
-                  }) : null}
-                  {phase === 'correction' && paired && (
-                    <div style={{ textAlign: 'center', marginTop: 6 }}>
-                      Retenu : {retained}
-                    </div>
-                  )}
-                  {phase === 'correction' && memberPreview.some((row) => (row.tags || []).length > 0) && (
-                    <div style={{ color: '#ff2347', fontSize: '0.9rem' }}>
-                      {memberPreview.filter((row) => (row.tags || []).length > 0).map((row) => (
-                        `${row.username || ''} ${(row.tags || []).join(' · ')} → ${row.gain || 0}`
-                      )).join(' · ')}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            <div style={{ textAlign: 'center' }}>
-              {phase === 'hold' ? (
-                <button type="button" className="btn btn-success" onClick={onBeginScoring}>
-                  <Icon name="coin" />Distribuer les points
-                </button>
-              ) : (
-                <button type="button" className="btn btn-success" onClick={() => onSubmitCorrection(corrections)}>
-                  <Icon name="check" />Valider les points
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {phase === 'reveal' && reveal && (
-          <div style={{ marginTop: 18 }}>
-            <div style={{
-              textAlign: 'center',
-              padding: '16px',
-              borderRadius: '12px',
-              background: 'rgba(81,207,102,0.18)',
-              border: '1px solid rgba(81,207,102,0.45)',
-              marginBottom: 16
-            }}>
-              <div style={{ opacity: 0.8, marginBottom: 6 }}>Réponse prévue</div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 'bold' }} className="quiz-answer">{reveal.correctAnswer}</div>
-              {renderPlacement(null, true)}
-            </div>
-
-            {question.type === 'boolean' && (
-              <div className="choice-grid">
-                <div className="choice-btn" style={{ background: reveal.correctBoolean ? '#26890c' : 'rgba(255,255,255,0.12)', opacity: reveal.correctBoolean ? 1 : 0.45 }}>
-                  Vrai
-                </div>
-                <div className="choice-btn" style={{ background: reveal.correctBoolean === false ? '#e21b3c' : 'rgba(255,255,255,0.12)', opacity: reveal.correctBoolean === false ? 1 : 0.45 }}>
-                  Faux
-                </div>
-              </div>
-            )}
-
-            {(question.type === 'qcm' || ((question.type === 'music' || question.type === 'lyrics' || question.type === 'whos') && (question.options || []).length > 0)) && (
-              <div className="choice-grid">
-                {(question.options || []).map((option, index) => {
-                  const isCorrect = (reveal.correctIndexes || []).includes(index);
-                  return (
-                    <div
-                      key={option + index}
-                      className="choice-btn"
-                      style={{
-                        background: isCorrect ? '#26890c' : 'rgba(255,255,255,0.12)',
-                        opacity: isCorrect ? 1 : 0.55,
-                        cursor: 'default'
-                      }}
-                    >
-                      {option}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {question.type === 'imageqcm' && (
+        {showTable && solutionExtras && (
+          <div className="qt-extras">
+            {renderPlacement(null, true)}
+            {question.type === 'imageqcm' && phase !== 'reveal' && (
               <ImageChoices
                 options={question.options}
-                correctIndexes={reveal.correctIndexes}
+                correctIndexes={gameData.correctIndexes}
                 imageSize={question.imageSize}
                 readOnly
               />
             )}
+            <QuestionMedia imageUrl={gameData.answerImageUrl} videoUrl={gameData.answerVideoUrl} imageSize={question.imageSize} />
+          </div>
+        )}
 
-            <div style={{ marginTop: 16, width: '100%' }}>
-              {((reveal.teams && reveal.teams.length) ? reveal.teams : (reveal.players || [])).map((entry) => {
-                const teammates = (entry.members || []).filter((name) => name !== entry.captainName);
-                const onThisRow = entry.memberIds
-                  ? entry.memberIds.includes(player.id)
-                  : entry.id === player.id;
-                return (
-                  <div key={entry.id} className="quiz-score-row">
-                    <div className="quiz-answer">
-                      <strong>{entry.username}</strong>
-                      {entry.captainName ? ` · chef ${entry.captainName}` : ''}
-                      {teammates.length ? ` · ${teammates.join(', ')}` : ''}
-                      {renderAnswer(entry)}
-                    </div>
-                    <div style={{ fontWeight: 'bold', color: entry.pointsThisRound > 0 ? '#51cf66' : '#ff6b6b' }}>
-                      +{entry.pointsThisRound || 0}
-                    </div>
-                    {(entry.memberGains || []).length > 0 && (
-                      <div style={{ fontSize: '0.9rem', opacity: 0.85 }}>
-                        {entry.memberGains.map((gain) => `${gain.username} +${gain.points}`).join(' · ')}
-                      </div>
-                    )}
-                    {onThisRow && (gameData.roundNotes || []).length > 0 && (
-                      <div style={{ color: '#ff2347', fontSize: '0.9rem' }}>{gameData.roundNotes.join(' ')}</div>
-                    )}
+        {phase === 'reveal' && reveal && question.type === 'boolean' && (
+          <div className="choice-grid is-reveal">
+            <div className={`choice-btn choice-true${reveal.correctBoolean ? ' is-right' : ' is-off'}`}>Vrai</div>
+            <div className={`choice-btn choice-false${reveal.correctBoolean === false ? ' is-right' : ' is-off'}`}>Faux</div>
+          </div>
+        )}
+
+        {phase === 'reveal' && reveal && (question.type === 'qcm' || ((question.type === 'music' || question.type === 'lyrics' || question.type === 'whos') && (question.options || []).length > 0)) && (
+          <div className="choice-grid is-reveal">
+            {(question.options || []).map((option, index) => {
+              const isCorrect = (reveal.correctIndexes || []).includes(index);
+              return (
+                <div
+                  key={option + index}
+                  className={`choice-btn${isCorrect ? ' is-right' : ' is-off'}`}
+                  style={{ '--choice': CHOICE_COLORS[index % CHOICE_COLORS.length] }}
+                >
+                  <span className="choice-shape">{CHOICE_SHAPES[index % CHOICE_SHAPES.length]}</span>
+                  {option}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {phase === 'reveal' && reveal && question.type === 'imageqcm' && (
+          <ImageChoices
+            options={question.options}
+            correctIndexes={reveal.correctIndexes}
+            imageSize={question.imageSize}
+            readOnly
+          />
+        )}
+
+        {showTable && detailed && canSeeAnswers && (
+          <div className="qt-details">
+            <div className="qt-details-title">Détail des réponses</div>
+            {seats.map((seat) => {
+              const entry = rowsForPhase().find((row) => (teamOf(row) || row.username || row.id) === seat.key);
+              if (!entry) return null;
+              return (
+                <div key={seat.key} className="quiz-score-row">
+                  <div className="quiz-answer">
+                    <strong>{entry.username}</strong>
+                    {renderAnswer(entry)}
                   </div>
-                );
-              })}
-            </div>
-
-            <div style={{ textAlign: 'center', marginTop: 16 }}>
-              {isHost ? (
-                <button type="button" className="btn btn-success" onClick={onNext}>
-                  {gameData.questionIndex + 1 >= gameData.totalQuestions ? <><Icon name="trophy" />Voir les résultats</> : <><Icon name="go" />Question suivante</>}
-                </button>
-              ) : (
-                <p style={{ color: '#ff2347' }}><Icon name="clock" tone="mark" />En attente du chef...</p>
-              )}
-            </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -1112,6 +1118,10 @@ const ClassicGame = ({
           <button type="button" className="btn btn-success" onClick={onNext}>
             <Icon name="go" />Question suivante
           </button>
+        )}
+
+        {isHost && gameData.jokersEnabled !== false && !teamMode && (
+          <HostJokerBoard players={gameData.jokerRoster || []} avatars={avatars} />
         )}
 
         {!isHost && (

@@ -1,14 +1,15 @@
 import React from 'react';
 
-const G = '#ffd000';
+// Palette City Escape : or « anneau », blanc, bleu ciel, rouge Shadow, contour marine.
+const G = '#ffd23a';
 const R = '#ff2347';
-const B = '#1f6dff';
-const K = '#111318';
-const W = '#f4f6ff';
+const B = '#58a6ff';
+const K = '#08164d';
+const W = '#ffffff';
 
 const edge = {
   stroke: K,
-  strokeWidth: 1.5,
+  strokeWidth: 2,
   strokeLinejoin: 'round',
   strokeLinecap: 'round'
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
 import Lobby from './components/Lobby';
@@ -57,6 +57,20 @@ function App() {
   const [adminAuth, setAdminAuth] = useState({ username: '', password: '' });
   const [adminSession, setAdminSession] = useState(readAdminSession);
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => Boolean(readAdminSession()));
+  const [dash, setDash] = useState(0);
+  const firstView = useRef(true);
+
+  // Changement de page : une bande bleue et or traverse l'écran, la page arrive dans son sillage.
+  useEffect(() => {
+    if (firstView.current) {
+      firstView.current = false;
+      return undefined;
+    }
+    const id = Date.now();
+    setDash(id);
+    const timer = setTimeout(() => setDash((current) => (current === id ? 0 : current)), 950);
+    return () => clearTimeout(timer);
+  }, [currentView]);
 
   // Vérifier si un utilisateur est déjà connecté au chargement
   useEffect(() => {
@@ -205,6 +219,7 @@ function App() {
         teamChat: [],
         deadline: data.deadline,
         answered: data.answered,
+        answeredIds: data.answeredIds || [],
         totalPlayers: data.totalPlayers,
         phase: 'answering',
         reveal: null,
@@ -341,7 +356,7 @@ function App() {
 
     socket.on('quiz-progress', (data) => {
       setGameData((prev) => (
-        prev ? { ...prev, answered: data.answered, totalPlayers: data.totalPlayers } : prev
+        prev ? { ...prev, answered: data.answered, answeredIds: data.answeredIds || [], totalPlayers: data.totalPlayers } : prev
       ));
     });
 
@@ -667,7 +682,7 @@ function App() {
         return (
           <div className="container">
             <div className="card">
-              <h2 style={{ textAlign: 'center' }}>Reconnexion à la partie...</h2>
+              <div className="loading">Reconnexion à la partie</div>
             </div>
           </div>
         );
@@ -866,19 +881,10 @@ function App() {
             </div>
               
               <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  marginBottom: '20px',
-                  padding: '15px',
-                  background: '#14141c',
-                  borderRadius: '10px',
-                  border: '3px solid #1f6dff'
-                }}>
+                <div className="ce-user-panel">
                   <div>
-                    <span style={{ opacity: 0.7, fontSize: '0.9rem' }}>Connecté en tant que :</span>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white', marginTop: '5px' }}>
+                    <span className="ce-user-label">Connecté en tant que</span>
+                    <div className="ce-user-name">
                       <Icon name="pad" tone="cyan" />{username}
                     </div>
                   </div>
@@ -939,6 +945,7 @@ function App() {
             onSetTeamMode={(enabled) => socket.emit('set-team-mode', { enabled })}
             onSetJokers={(enabled) => socket.emit('set-jokers', { enabled })}
             onChooseTeam={(team) => socket.emit('choose-team', { team })}
+            onChooseAvatar={(avatar) => socket.emit('choose-avatar', { avatar })}
           />
         );
 
@@ -946,6 +953,7 @@ function App() {
         return (
           <ClassicGame
             gameData={gameData}
+            lobby={lobby}
             player={player}
             onSubmitAnswer={(answer) => socket.emit('submit-quiz-answer', { answer })}
             onForceClose={() => socket.emit('quiz-force-close')}
@@ -1113,7 +1121,10 @@ function App() {
           {success}
         </div>
       )}
-      {renderCurrentView()}
+      <div className="ce-page" key={currentView}>
+        {renderCurrentView()}
+      </div>
+      {dash ? <i key={dash} className="ce-dash" aria-hidden="true" /> : null}
     </div>
   );
 }
