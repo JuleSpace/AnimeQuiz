@@ -631,3 +631,7 @@
 .sw-tile .sw-pips { gap: 3px; } .sw-tile .sw-pips i { width: 10px; height: 10px; }
 .sw-card.is-pause .sw-pause-title { grid-column: 1 / -1; margin: 0; }
 .sw-recap h3 { -webkit-text-stroke: 0; text-shadow: none; background: none; }
+.sw-actions[hidden] { display: none; }
+/* le reflet holo passe sous le Pokémon (sinon il délave les sprites clairs) */
+.tcg-shine { z-index: 2; }
+.tcg-art .sw-pmd, .tcg-art .tcg-item { position: relative; z-index: 3; }

@@ -68,8 +68,20 @@ export const PARTNERS = [
   },
   {
     id: 'cyndaquil', gen: 2, name: 'Héricendre', dex: 155, type: 'Feu', color: '#ee8130', hp: 95, speed: 3.1, weapon: 'flametrail',
-    blurb: 'Laisse une traînée de feu derrière lui : plus tu bouges, plus ça brûle.',
-    evolutions: [{ level: 8, name: 'Feurisson', dex: 156, hp: 25 }, { level: 16, name: 'Typhlosion', dex: 157, hp: 45 }]
+    blurb: 'Laisse une traînée de feu derrière lui : plus tu bouges, plus ça brûle. Évolue en Typhlosion de Johto ou d’Hisui, au choix.',
+    evolutions: [
+      { level: 8, name: 'Feurisson', dex: 156, hp: 25 },
+      {
+        level: 16, name: 'Typhlosion', dex: 157, hp: 45,
+        // Au moment d'évoluer, on choisit sa forme
+        choices: [
+          { id: 'johto', name: 'Typhlosion', dex: 157, type: 'Feu', color: '#ff7a1f',
+            perk: 'Éruption : les flammes de la Roue de Feu sont 30 % plus larges et brûlent 25 % plus fort.' },
+          { id: 'hisui', name: 'Typhlosion d’Hisui', dex: '157-hisui', type: 'Spectre', color: '#a35cff',
+            perk: 'Feu Ensorcelé : des flammes spectrales violettes qui durent deux fois plus longtemps et maudissent les ennemis (+25 % de dégâts subis).' }
+        ]
+      }
+    ]
   },
   {
     id: 'totodile', gen: 2, name: 'Kaiminus', dex: 158, type: 'Eau', color: '#6390f0', hp: 115, speed: 2.8, weapon: 'bite',

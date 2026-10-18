@@ -41,7 +41,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   const BOSSES = (GEN_BOSSES[gen] || GEN_BOSSES[1]).map((b) => ({ ...b, at: Math.round(b.at * E.bossTime) }));
   const foeIds = new Set([...WAVES.flatMap((w) => w.foes), ...BOSSES.map((b) => b.id)]);
   preloadSprites([
-    partner.dex, ...partner.evolutions.map((e) => e.dex), ...(partner.mega ? [partner.mega.sprite, ...(partner.mega.choices || []).map((c) => c.sprite)] : []),
+    partner.dex, ...partner.evolutions.flatMap((e) => [e.dex, ...(e.choices || []).map((c) => c.dex)]), ...(partner.mega ? [partner.mega.sprite, ...(partner.mega.choices || []).map((c) => c.sprite)] : []),
     ...[...foeIds].map((id) => FOES[id].dex)
   ]);
 
@@ -98,6 +98,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     },
     megaLv: 0,
     megaChoice: null,
+    pendingEvo: null,
+    evoKind: null,
     sunT: 1.5,
     weapons: { [partner.weapon]: { lv: E.headstart ? 2 : 1, timer: 0.4 } },
     passives: {},
@@ -286,7 +288,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     const s = stats();
     const crit = !f.inert && Math.random() < s.crit;
     const exec = E.execute && f.hp < f.maxHp * 0.3 ? 1 + E.execute : 1;
-    const dmg = Math.max(1, Math.round(amount * s.dmg * (crit ? 1.8 : 1) * (f.trapT > 0 ? 1.25 : 1) * exec));
+    const dmg = Math.max(1, Math.round(amount * s.dmg * (crit ? 1.8 : 1) * (f.trapT > 0 ? 1.25 : 1) * (f.curseT > 0 ? 1.25 : 1) * exec));
     f.hp -= dmg;
     f.flash = 0.1;
     // Recul (les boss et les lourds bougent à peine)
@@ -607,7 +609,24 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   };
 
   /* ——— Montée de niveau ——— */
+  const evolveTo = (evo, choice) => {
+    const p = g.player;
+    const c = evo.choices.find((x) => x.id === choice) || evo.choices[0];
+    const before = p.form.name;
+    g.evoKind = c.id;
+    p.form = { name: c.name, dex: c.dex };
+    p.maxHp += evo.hp;
+    p.hp = Math.min(p.maxHp, p.hp + evo.hp + 20);
+    p.evolving = 0.9;
+    g.banner = { text: `${before} évolue en ${c.name} !`, life: 2.6 };
+    g.fx.push({ kind: 'ring', x: p.x, y: p.y, r: 10, max: 140, life: 0.7, color: c.color || '#ffffff' });
+    g.flash = { color: '#ffffff', life: 0.3, max: 0.3 };
+    burst(p.x, p.y - 20, c.color || '#ffffff', 24, 6);
+    near(p.x, p.y, 160).forEach((f) => { if (!f.inert) hurt(f, 1, p, { knock: 9, silent: true }); });
+  };
+
   const levelOptions = () => {
+    if (g.pendingEvo) return g.pendingEvo.choices.map((c) => ({ kind: 'evo', id: c.id, lv: 0 }));
     const opts = [];
     const ownedW = Object.keys(g.weapons);
     const ownedP = Object.keys(g.passives);
@@ -618,7 +637,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     if (ownedP.length < MAX_PASSIVES) Object.keys(PASSIVES).filter((id) => !g.passives[id]).forEach((id) => opts.push({ kind: 'passive', id, lv: 1 }));
     const shuffled = opts.sort(() => Math.random() - 0.5).slice(0, E.cards);
     // Méga-Gemme : toujours proposée une fois la dernière forme atteinte
-    const finalForm = partner.evolutions.length === 0 || g.player.form.dex === partner.evolutions[partner.evolutions.length - 1].dex;
+    const last = partner.evolutions[partner.evolutions.length - 1];
+    const finalForm = partner.evolutions.length === 0 || g.player.form.dex === last.dex || (last.choices || []).some((c) => c.dex === g.player.form.dex);
     if (partner.mega && finalForm && !g.player.mega) {
       if (partner.mega.choices && !g.megaChoice) {
         // Dracaufeu : on choisit sa pierre (X ou Y), deux cartes côte à côte
@@ -647,7 +667,11 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       p.need = xpToNext(p.level);
       g.pendingLevels += 1;
       const evo = partner.evolutions.find((e) => Math.max(2, e.level - E.evolveEarly) === p.level);
-      if (evo) {
+      if (evo && evo.choices) {
+        // Évolution au choix (Typhlosion de Johto ou d'Hisui) : proposée avant les cartes
+        g.pendingEvo = evo;
+        g.fx.push({ kind: 'ring', x: p.x, y: p.y, r: 10, max: 90, life: 0.5, color: '#ffffff' });
+      } else if (evo) {
         p.form = { name: evo.name, dex: evo.dex };
         p.maxHp += evo.hp;
         p.hp = Math.min(p.maxHp, p.hp + evo.hp + 20);
@@ -684,6 +708,15 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   };
 
   const choose = (opt) => {
+    if (g.pendingEvo) {
+      // le choix d'évolution ne consomme pas la montée de niveau
+      const evo = g.pendingEvo;
+      g.pendingEvo = null;
+      evolveTo(evo, opt.kind === 'evo' ? opt.id : null);
+      g.paused = false;
+      askLevel();
+      return;
+    }
     if (opt.kind === 'weapon') {
       if (g.weapons[opt.id]) g.weapons[opt.id].lv += 1;
       else g.weapons[opt.id] = { lv: 1, timer: 0.2 };
@@ -764,6 +797,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       return;
     }
     if (f.slowT > 0) f.slowT -= dt;
+    if (f.curseT > 0) { f.curseT -= dt; if (Math.random() < dt * 3) particle({ kind: 'dot', x: f.x + rand(-8, 8), y: f.y - rand(10, 30), vx: 0, vy: -0.6, life: 0.5, color: pick(['#c79bff', '#7a3dff']), size: 3 }); }
     let tx = p.x; let ty = p.y;
     if (!flying && world.tileAt(f.x, f.y) !== TILE.BRIDGE && world.sideOf(f.x, f.y) !== world.sideOf(p.x, p.y)) {
       const b = bridgeTarget(f);
@@ -1114,10 +1148,13 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     // Roue de Feu : des flammes au sol tous les quelques pas
     if (g.weapons.flametrail) {
       const v = WEAPONS.flametrail.at(g.weapons.flametrail.lv);
+      const ek = g.evoKind;
+      const r = v.radius * (ek === 'johto' ? 1.3 : 1);
+      const life = v.life * (ek === 'hisui' ? 2 : 1);
       p.trailAcc += Math.hypot(dx, dy);
-      if (p.trailAcc > v.radius * 0.9) {
+      if (p.trailAcc > r * 0.9) {
         p.trailAcc = 0;
-        g.zones.push({ kind: 'fire', x: p.x + rand(-3, 3), y: p.y + 2 + rand(-3, 3), r: v.radius, life: v.life, max: v.life, dps: v.dps, tick: rand(0, 0.25) });
+        g.zones.push({ kind: ek === 'hisui' ? 'ghostfire' : 'fire', x: p.x + rand(-3, 3), y: p.y + 2 + rand(-3, 3), r, life, max: life, dps: v.dps * (ek === 'johto' ? 1.25 : 1), curse: ek === 'hisui', tick: rand(0, 0.25) });
       }
     }
     // Zones au sol (fleurs, flammes, boue) : dégâts par petites touches, ralentissement, soin
@@ -1130,7 +1167,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       near(z.x, z.y, z.r + 20).forEach((f) => {
         if (f.dead || (f.def.flying && z.kind === 'mud') || (f.x - z.x) ** 2 + (f.y - z.y) ** 2 > (z.r + f.size * 0.3) ** 2) return;
         if (z.slow) { f.slowT = 0.35; f.slowK = z.slow; }
-        if (z.dps) hurt(f, z.dps * 0.25, null, { silent: z.kind === 'fire' && Math.random() < 0.6 });
+        if (z.curse) f.curseT = 2;
+        if (z.dps) hurt(f, z.dps * 0.25, null, { silent: (z.kind === 'fire' || z.kind === 'ghostfire') && Math.random() < 0.6 });
       });
     });
     g.zones = g.zones.filter((z) => z.life > 0);
@@ -1571,6 +1609,14 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
         ctx.fillStyle = `rgba(255,220,90,${0.5 * a * fl})`;
         ctx.beginPath(); ctx.ellipse(z.x, z.y - 2, z.r * 0.45, z.r * 0.3, 0, 0, TAU); ctx.fill();
         if (Math.random() < 0.08) particle({ kind: 'dot', x: z.x + rand(-z.r, z.r) * 0.6, y: z.y, vx: 0, vy: -rand(0.6, 1.4), life: 0.35, color: pick(['#ffdd57', '#ff9a3c']), size: 3 });
+      } else if (z.kind === 'ghostfire') {
+        // Feu Ensorcelé : flammes spectrales violettes
+        const fl = 0.8 + Math.sin(g.t * 14 + z.x) * 0.2;
+        ctx.fillStyle = `rgba(110,40,200,${0.38 * a * fl})`;
+        ctx.beginPath(); ctx.ellipse(z.x, z.y, z.r, z.r * 0.6, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = `rgba(200,150,255,${0.55 * a * fl})`;
+        ctx.beginPath(); ctx.ellipse(z.x, z.y - 2, z.r * 0.45, z.r * 0.3, 0, 0, TAU); ctx.fill();
+        if (Math.random() < 0.1) particle({ kind: 'dot', x: z.x + rand(-z.r, z.r) * 0.6, y: z.y, vx: rand(-0.2, 0.2), vy: -rand(0.5, 1.2), life: 0.5, color: pick(['#e0c8ff', '#a35cff', '#5a1fd0']), size: 3 });
       } else if (z.kind === 'mud') {
         ctx.fillStyle = `rgba(110,72,36,${0.55 * a})`;
         ctx.beginPath(); ctx.ellipse(z.x, z.y, z.r, z.r * 0.6, 0, 0, TAU); ctx.fill();

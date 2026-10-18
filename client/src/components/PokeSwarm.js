@@ -38,6 +38,10 @@ const optionLabel = (opt, partner, ML = MEGA_LEVELS) => {
       mega: true
     };
   }
+  if (opt.kind === 'evo') {
+    const c = partner.evolutions.find((e) => e.choices)?.choices.find((x) => x.id === opt.id);
+    return { title: c.name, tag: 'Évolution', desc: c.perk, color: c.color, type: c.type, evoDex: c.dex };
+  }
   if (opt.kind === 'weapon') {
     const W = WEAPONS[opt.id];
     return { title: W.name, tag: opt.lv === 1 ? 'Nouvelle attaque' : `Niveau ${opt.lv}`, desc: W.desc(opt.lv), color: W.color, type: W.type };
@@ -123,14 +127,14 @@ const TcgCard = ({ opt, partner, formDex, index, onPick, gen, megaLevels = MEGA_
   const tc = TYPE_COLORS[type] || l.color;
   const [failed, setFailed] = useState(false);
   const ref = useRef(null);
-  const rarity = opt.kind === 'mega' ? 'ultra' : (opt.kind === 'weapon' && opt.lv >= MAX_LEVEL) || (opt.kind === 'passive' && opt.lv >= MAX_LEVEL) ? 'rare' : opt.lv === 1 ? 'common' : 'uncommon';
+  const rarity = opt.kind === 'mega' || opt.kind === 'evo' ? 'ultra' : (opt.kind === 'weapon' && opt.lv >= MAX_LEVEL) || (opt.kind === 'passive' && opt.lv >= MAX_LEVEL) ? 'rare' : opt.lv === 1 ? 'common' : 'uncommon';
   const holo = rarity === 'rare' || rarity === 'ultra';
   let power = null;
   if (opt.kind === 'weapon') {
     const v = WEAPONS[opt.id].at(opt.lv);
     power = v.dmg ? Math.round(v.dmg) : v.dps ? `${Math.round(v.dps)}/s` : null;
   }
-  const kindLabel = opt.kind === 'weapon' ? 'Attaque' : opt.kind === 'passive' ? 'Objet' : opt.kind === 'mega' ? 'Méga-Gemme' : 'Baie';
+  const kindLabel = opt.kind === 'evo' ? `Évolution · ${type}` : opt.kind === 'weapon' ? 'Attaque' : opt.kind === 'passive' ? 'Objet' : opt.kind === 'mega' ? 'Méga-Gemme' : 'Baie';
   const tilt = (e) => {
     const el = ref.current;
     if (!el) return;
@@ -148,6 +152,7 @@ const TcgCard = ({ opt, partner, formDex, index, onPick, gen, megaLevels = MEGA_
   };
   let art;
   if (opt.kind === 'weapon') art = <PmdSprite dex={formDex} anim={['quake', 'bite', 'leafblade', 'doublekick', 'machpunch'].includes(opt.id) ? 'attack' : 'shoot'} size={118} scale={2.6} dir={1} />;
+  else if (opt.kind === 'evo') art = <PmdSprite dex={l.evoDex} anim="idle" size={118} scale={2.6} />;
   else if (opt.kind === 'mega') {
     const m = megaOf(partner, opt.id) || partner.mega;
     art = <PmdSprite dex={opt.lv >= MEGA_LEVELS || partner.mega.choices ? m.sprite : formDex} anim="idle" size={118} scale={2.6} />;
@@ -686,13 +691,13 @@ const PokeSwarm = ({ onClose }) => {
         <div className="sw-modal">
           <div className="sw-card is-deal">
             <span className="sw-kicker">Niveau {levelUp.level}</span>
-            <h2>Pioche une carte</h2>
+            <h2>{levelUp.options[0]?.kind === 'evo' ? 'Choisis ton évolution' : 'Pioche une carte'}</h2>
             <div className="sw-choices is-tcg" key={levelUp.options.map((o) => o.kind + o.id + o.lv).join('|')}>
               {levelUp.options.map((opt, i) => (
                 <TcgCard key={`${opt.kind}-${opt.id}`} opt={opt} partner={partner} formDex={hud?.form?.dex ?? partner.dex} index={i} onPick={choose} gen={gen} megaLevels={hud?.megaLevels} />
               ))}
             </div>
-            <div className="sw-actions">
+            <div className="sw-actions" hidden={levelUp.options[0]?.kind === 'evo'}>
               <button type="button" className="sw-btn is-small" disabled={!levelUp.rerolls} onClick={reroll}>Relancer ({levelUp.rerolls})</button>
               <button type="button" className="sw-btn is-small is-ghost" onClick={() => choose({ kind: 'skip', id: 'skip', lv: 0 })}>Passer (+15 PV)</button>
             </div>
