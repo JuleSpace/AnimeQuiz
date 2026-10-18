@@ -10,6 +10,7 @@ import { playDropSound } from './components/JokerCards';
 import CardVault, { RELIC_HASH } from './components/CardVault';
 import AcademyGuide, { ACADEMY_HASH } from './components/AcademyGuide';
 import PokeArena, { ARENA_HASH } from './components/PokeArena';
+import PokeSwarm, { SWARM_HASH } from './components/PokeSwarm';
 import { readAdminSession, storeAdminSession, clearAdminSession } from './utils/adminSession';
 import './index.css';
 
@@ -20,6 +21,7 @@ const secretViewFromHash = () => {
   if (window.location.hash === RELIC_HASH) return 'reliques';
   if (window.location.hash === ACADEMY_HASH) return 'academy';
   if (window.location.hash === ARENA_HASH) return 'arena';
+  if (window.location.hash === SWARM_HASH) return 'swarm';
   return null;
 };
 
@@ -700,11 +702,21 @@ function App() {
                 <h1 className="stage-title">
                   Bully's Lair
                 </h1>
-                <img 
-                  src="https://media.tenor.com/-oEgnxYtci4AAAAj/kirby-dancing-bop.gif" 
-                  alt="Kirby Dancing"
-                  style={{ width: '60px', height: '60px', borderRadius: '10px' }}
-                />
+                <button
+                  type="button"
+                  className="arena-secret"
+                  onClick={() => {
+                    window.location.hash = SWARM_HASH;
+                    setCurrentView('swarm');
+                  }}
+                  aria-label=" "
+                >
+                  <img
+                    src="https://media.tenor.com/-oEgnxYtci4AAAAj/kirby-dancing-bop.gif"
+                    alt=""
+                    style={{ width: '60px', height: '60px', borderRadius: '10px', pointerEvents: 'none' }}
+                  />
+                </button>
               </div>
               
               <p style={{ textAlign: 'center', marginBottom: '15px', fontSize: '1.2rem', opacity: 0.9 }}>
@@ -1062,6 +1074,14 @@ function App() {
       case 'academy':
         return (
           <AcademyGuide onClose={() => {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            setCurrentView('login');
+          }} />
+        );
+
+      case 'swarm':
+        return (
+          <PokeSwarm onClose={() => {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
             setCurrentView('login');
           }} />
