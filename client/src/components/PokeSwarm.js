@@ -2,7 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createGame } from './swarmEngine';
 import { buildWorld } from './swarmWorld';
 import { drawPokemon, preloadSprites } from './swarmSprites';
-import { FOES, GENS, GEN_BOSSES, MAX_LEVEL, MEGA_LEVELS, PARTNERS, PASSIVES, WEAPONS } from './swarmData';
+import { FOES, GENS, GEN_BOSSES, GEN_WAVES, MAX_LEVEL, MEGA_LEVELS, PARTNERS, PASSIVES, WEAPONS } from './swarmData';
+import {
+  ACHIEVEMENTS, ALL_FOE_IDS, BRANCHES, REGION_COST, TALENTS, TIER_NEEDS, branchPoints, buyTalent, dailyChallenge,
+  loadMeta, metaEffects, rankOf, recordRun, refundAll, talentCost, talentLocked, unlockRegion
+} from './swarmMeta';
 import { musicPlayer } from './pokeArenaMusic';
 import './PokeSwarm.css';
 
@@ -17,12 +21,12 @@ const readBest = () => {
   try { return JSON.parse(localStorage.getItem(BEST_KEY) || '{}') || {}; } catch { return {}; }
 };
 
-const optionLabel = (opt, partner) => {
+const optionLabel = (opt, partner, ML = MEGA_LEVELS) => {
   if (opt.kind === 'mega' && partner?.mega) {
     return {
       title: partner.mega.stone,
-      tag: opt.lv >= MEGA_LEVELS ? 'Méga-Évolution !' : `Méga-Gemme ${opt.lv}/${MEGA_LEVELS}`,
-      desc: opt.lv >= MEGA_LEVELS ? `${partner.mega.name} : +30 % de dégâts, plus rapide, PV max +60 et soin complet.` : `Rapproche de la Méga-Évolution (+4 % de dégâts). Au niveau ${MEGA_LEVELS} : ${partner.mega.name} !`,
+      tag: opt.lv >= ML ? 'Méga-Évolution !' : `Méga-Gemme ${opt.lv}/${ML}`,
+      desc: opt.lv >= ML ? `${partner.mega.name} : +30 % de dégâts, plus rapide, PV max +60 et soin complet.` : `Rapproche de la Méga-Évolution (+4 % de dégâts). Au niveau ${ML} : ${partner.mega.name} !`,
       color: '#ff6ad5',
       type: 'Méga',
       mega: true
@@ -40,7 +44,7 @@ const optionLabel = (opt, partner) => {
 };
 
 /** Petit Pokémon animé (planches Donjon Mystère) dessiné dans un canvas. */
-const PmdSprite = ({ dex, anim = 'idle', size = 96, scale = 3, dir = 0 }) => {
+const PmdSprite = ({ dex, anim = 'idle', size = 96, scale = 3, dir = 0, still = false }) => {
   const ref = useRef(null);
   useEffect(() => {
     const c = ref.current;
@@ -55,12 +59,12 @@ const PmdSprite = ({ dex, anim = 'idle', size = 96, scale = 3, dir = 0 }) => {
     const loop = (now) => {
       x.setTransform(dpr, 0, 0, dpr, 0, 0);
       x.clearRect(0, 0, size, size);
-      drawPokemon(x, dex, anim, (now - t0) / 1000, dir, size / 2, size * 0.8, scale);
-      raf = requestAnimationFrame(loop);
+      const drawn = drawPokemon(x, dex, anim, still ? 0 : (now - t0) / 1000, dir, size / 2, size * 0.8, scale);
+      if (!(still && drawn)) raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [dex, anim, size, scale, dir]);
+  }, [dex, anim, size, scale, dir, still]);
   return <canvas ref={ref} className="sw-pmd" style={{ width: size, height: size }} />;
 };
 
@@ -106,8 +110,9 @@ const itemSprite = (slug) => `https://raw.githubusercontent.com/PokeAPI/sprites/
 // numéro « de collection » stable pour chaque carte
 const cardNo = (id) => (([...String(id)].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 150) + 1);
 
-const TcgCard = ({ opt, partner, formDex, index, onPick, gen }) => {
-  const l = optionLabel(opt, partner);
+const TcgCard = ({ opt, partner, formDex, index, onPick, gen, megaLevels = MEGA_LEVELS }) => {
+  const MEGA_LEVELS = megaLevels; // eslint-disable-line no-shadow
+  const l = optionLabel(opt, partner, megaLevels);
   const type = l.type;
   const tc = TYPE_COLORS[type] || l.color;
   const [failed, setFailed] = useState(false);
@@ -185,6 +190,121 @@ const Pips = ({ lv }) => (
   </span>
 );
 
+const FOE_GEN = (() => {
+  const out = {};
+  Object.entries(GEN_WAVES).forEach(([g, waves]) => waves.forEach((w) => w.foes.forEach((id) => { if (!out[id]) out[id] = Number(g); })));
+  Object.entries(GEN_BOSSES).forEach(([g, list]) => list.forEach((b) => { if (!out[b.id]) out[b.id] = Number(g); }));
+  return out;
+})();
+
+/** Panneaux de progression : talents, défis, Pokédex. */
+const MetaPanel = ({ panel, meta, setMeta, onClose }) => {
+  const [tab, setTab] = useState(panel);
+  useEffect(() => setTab(panel), [panel]);
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  const seen = ALL_FOE_IDS.filter((id) => meta.dex[id] > 0).length;
+  return (
+    <div className="sw-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="sw-card is-panel">
+        <div className="sw-panel-head">
+          <div className="sw-tabs" role="tablist">
+            {[['talents', 'Talents'], ['achievements', `Défis ${Object.keys(meta.achievements).length}/${ACHIEVEMENTS.length}`], ['dex', `Pokédex ${seen}/${ALL_FOE_IDS.length}`]].map(([id, label]) => (
+              <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>{label}</button>
+            ))}
+          </div>
+          <span className="sw-dust">✦ {meta.dust.toLocaleString('fr-FR')}</span>
+          <button type="button" className="sw-btn is-small is-ghost" onClick={onClose}>Fermer</button>
+        </div>
+
+        {tab === 'talents' && (
+          <>
+            <p className="sw-panel-note">Chaque talent acheté rend tous les suivants un peu plus chers. Les paliers se débloquent avec {TIER_NEEDS[1]} puis {TIER_NEEDS[2]} points dans la branche.</p>
+            <div className="sw-tree">
+              {BRANCHES.map((b) => (
+                <div key={b.id} className="sw-branch" style={{ '--c': b.color }}>
+                  <h3>{b.name}<small>{branchPoints(meta, b.id)} pts</small></h3>
+                  {[0, 1, 2].map((tier) => (
+                    <div key={tier} className="sw-tier">
+                      {TALENTS.filter((t) => t.branch === b.id && t.tier === tier).map((t) => {
+                        const r = rankOf(meta, t.id);
+                        const maxed = r >= t.max;
+                        const locked = talentLocked(meta, t);
+                        const cost = talentCost(meta, t);
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            className={`sw-talent${maxed ? ' is-max' : ''}${locked ? ' is-locked' : ''}${r ? ' is-owned' : ''}`}
+                            disabled={maxed || locked || meta.dust < cost}
+                            onClick={() => setMeta(buyTalent(meta, t.id))}
+                          >
+                            <span className="sw-talent-top"><b>{t.name}</b><i>{r}/{t.max}</i></span>
+                            <span className="sw-talent-desc">{r ? t.desc(r) : t.desc(1)}</span>
+                            {!maxed && r > 0 && <span className="sw-talent-next">Ensuite : {t.desc(r + 1)}</span>}
+                            <span className="sw-talent-cost">
+                              {maxed ? 'Maximum' : locked ? `${branchPoints(meta, t.branch)}/${TIER_NEEDS[t.tier]} pts dans la branche` : `${cost} ✦`}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <div className="sw-actions">
+              <button type="button" className="sw-btn is-small is-ghost" disabled={!meta.spent} onClick={() => setMeta(refundAll(meta))}>Tout rembourser ({meta.spent || 0} ✦)</button>
+            </div>
+          </>
+        )}
+
+        {tab === 'achievements' && (
+          <div className="sw-achs">
+            {ACHIEVEMENTS.map((a) => {
+              const done = meta.achievements[a.id];
+              return (
+                <div key={a.id} className={`sw-ach${done ? ' is-done' : ''}`}>
+                  <i>{done ? '★' : '☆'}</i>
+                  <div><b>{a.name}</b><small>{a.desc}</small></div>
+                  <span>{done ? 'Réussi' : `+${a.reward} ✦`}</span>
+                </div>
+              );
+            })}
+            <p className="sw-panel-note">Parties jouées : {meta.runs || 0} · K.O. au total : {(meta.kills || 0).toLocaleString('fr-FR')} · Poussière gagnée au total : {(meta.totalDust || 0).toLocaleString('fr-FR')} ✦</p>
+          </div>
+        )}
+
+        {tab === 'dex' && (
+          <div className="sw-dex">
+            {GENS.map((gn) => (
+              <section key={gn.id}>
+                <h3>{gn.name}</h3>
+                <div className="sw-dex-grid">
+                  {ALL_FOE_IDS.filter((id) => FOE_GEN[id] === gn.id).map((id) => {
+                    const n = meta.dex[id] || 0;
+                    const f = FOES[id];
+                    return (
+                      <div key={id} className={`sw-dex-cell${n ? '' : ' is-unseen'}${f.boss ? ' is-boss' : ''}`} title={n ? f.name : '???'}>
+                        <PmdSprite dex={f.dex} anim="idle" size={64} scale={f.boss ? 1.2 : 1.8} still />
+                        <b>{n ? f.name : '???'}</b>
+                        <small>{n ? `${n.toLocaleString('fr-FR')} K.O.` : 'Jamais vaincu'}</small>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const PokeSwarm = ({ onClose }) => {
   const [screen, setScreen] = useState('menu');
   const [gen, setGen] = useState(() => {
@@ -201,6 +321,14 @@ const PokeSwarm = ({ onClose }) => {
   const canvasRef = useRef(null);
   const gameRef = useRef(null);
   const [world, setWorld] = useState(null);
+  const [meta, setMetaState] = useState(loadMeta);
+  const metaRef = useRef(meta);
+  const setMeta = (m) => { metaRef.current = m; setMetaState(m); };
+  const [panel, setPanel] = useState(null);
+  const dailyRef = useRef(null);
+  const daily = dailyChallenge();
+  const dailyPartner = PARTNERS.find((p) => p.id === daily.partnerId);
+  const dailyDone = Boolean(meta.daily[daily.key]);
 
   // La carte se génère une fois le menu affiché (pour ne pas bloquer l'ouverture).
   useEffect(() => {
@@ -235,7 +363,14 @@ const PokeSwarm = ({ onClose }) => {
     const game = createGame(canvasRef.current, partner, {
       onLevelUp: (options, level, rerolls) => setLevelUp({ options, level, rerolls }),
       onEnd: (result, snap) => {
-        setEnd({ result, ...snap });
+        const rec = recordRun(metaRef.current, {
+          t: snap.t, kills: snap.kills, level: snap.level, bosses: snap.bosses, result, daily: dailyRef.current,
+          killsBy: snap.killsBy, partnerId: partner.id, gen, reachedFinal: snap.reachedFinal, mega: snap.isMega,
+          maxWeapon: snap.maxWeapon, weapons: snap.weaponCount, passives: snap.passiveCount,
+          rocks: snap.rocks, noHit: snap.noHit, dashes: snap.dashes
+        });
+        setMeta(rec.meta);
+        setEnd({ result, ...snap, reward: rec });
         setBest((prev) => {
           const mine = prev[partner.id] || {};
           const better = result === 'win'
@@ -247,7 +382,7 @@ const PokeSwarm = ({ onClose }) => {
         });
       },
       onPauseKey: () => setPaused((v) => !v)
-    }, world, gen);
+    }, world, gen, metaEffects(metaRef.current, dailyRef.current?.mod));
     gameRef.current = game;
     const timer = setInterval(() => setHud(game.snapshot()), 100);
     return () => {
@@ -261,7 +396,9 @@ const PokeSwarm = ({ onClose }) => {
     if (gameRef.current) gameRef.current.setPaused(paused || Boolean(levelUp) || Boolean(end));
   }, [paused, levelUp, end]);
 
-  const start = () => {
+  const start = (dly = null) => {
+    dailyRef.current = dly && dly.key ? dly : null;
+    setPanel(null);
     setEnd(null);
     setLevelUp(null);
     setPaused(false);
@@ -269,6 +406,13 @@ const PokeSwarm = ({ onClose }) => {
     setRun((n) => n + 1);
     setScreen('play');
   };
+
+  const playDaily = () => {
+    setGen(daily.gen);
+    setPartnerId(daily.partnerId);
+    start(daily);
+  };
+  const unlocked = Boolean(meta.regions[gen]);
 
   const choose = (opt) => {
     setLevelUp(null);
@@ -289,16 +433,41 @@ const PokeSwarm = ({ onClose }) => {
             <h1>Poké Swarm</h1>
             <p>Survis aux hordes sauvages pendant 9 minutes, puis bats {finalBoss.name}. Tes attaques partent toutes seules : à toi de bouger et de bien choisir tes bonus.</p>
           </div>
-          <button type="button" className="sw-btn is-ghost" onClick={onClose}>Quitter</button>
+          <div className="sw-head-side">
+            <span className="sw-dust" title="Poussière Étoile : gagnée à chaque partie">✦ {meta.dust.toLocaleString('fr-FR')}</span>
+            <button type="button" className="sw-btn is-ghost" onClick={onClose}>Quitter</button>
+          </div>
         </header>
-        <div className="sw-gens" role="tablist" aria-label="Génération">
-          {GENS.map((gn) => (
-            <button key={gn.id} type="button" role="tab" aria-selected={gn.id === gen} className={`sw-gen${gn.id === gen ? ' is-on' : ''}`} onClick={() => pickGen(gn.id)}>
-              <b>{gn.name}</b><small>{gn.label}</small>
-            </button>
-          ))}
+        <div className="sw-metabar">
+          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('talents')}>
+            Talents <small>{Object.values(meta.talents).reduce((a, b) => a + b, 0)} pts</small>
+          </button>
+          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('achievements')}>
+            Défis <small>{Object.keys(meta.achievements).length}/{ACHIEVEMENTS.length}</small>
+          </button>
+          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('dex')}>
+            Pokédex <small>{ALL_FOE_IDS.filter((id) => meta.dex[id] > 0).length}/{ALL_FOE_IDS.length}</small>
+          </button>
+          <div className={`sw-daily${dailyDone ? ' is-done' : ''}`}>
+            <PmdSprite dex={dailyPartner.dex} anim="idle" size={44} scale={1.4} />
+            <div>
+              <span className="sw-kicker">Défi du jour · {daily.mod.name}</span>
+              <small>{dailyPartner.name} · {GENS.find((g) => g.id === daily.gen)?.name} · {daily.mod.desc}</small>
+            </div>
+            <button type="button" className="sw-btn is-small" onClick={playDaily}>{dailyDone ? 'Rejouer' : 'Jouer (+200 ✦)'}</button>
+          </div>
         </div>
-        <div className="sw-partners">
+        <div className="sw-gens" role="tablist" aria-label="Génération">
+          {GENS.map((gn) => {
+            const open = meta.regions[gn.id];
+            return (
+              <button key={gn.id} type="button" role="tab" aria-selected={gn.id === gen} className={`sw-gen${gn.id === gen ? ' is-on' : ''}${open ? '' : ' is-locked'}`} onClick={() => pickGen(gn.id)}>
+                <b>{open ? '' : '🔒 '}{gn.name}</b><small>{open ? gn.label : `${REGION_COST[gn.id]} ✦ pour débloquer`}</small>
+              </button>
+            );
+          })}
+        </div>
+        <div className={`sw-partners${unlocked ? '' : ' is-locked'}`}>
           {starters.map((p) => {
             const rec = best[p.id];
             return (
@@ -308,7 +477,7 @@ const PokeSwarm = ({ onClose }) => {
                 className={`sw-partner${p.id === partnerId ? ' is-on' : ''}`}
                 style={{ '--c': p.color }}
                 onClick={() => setPartnerId(p.id)}
-                onDoubleClick={() => { setPartnerId(p.id); start(); }}
+                onDoubleClick={() => { if (unlocked) { setPartnerId(p.id); start(); } }}
                 aria-pressed={p.id === partnerId}
               >
                 <PmdSprite dex={p.dex} anim={p.id === partnerId ? 'walk' : 'idle'} size={112} scale={3} />
@@ -335,7 +504,14 @@ const PokeSwarm = ({ onClose }) => {
           <span><b>Boss</b> les zones rouges au sol vont exploser : sors-en !</span>
           <span><b>Méga</b> une fois la dernière forme atteinte, prends 3 fois la Méga-Gemme au level-up</span>
         </div>
-        <button type="button" className="sw-btn is-go" onClick={start}>Partir avec {partner.name}</button>
+        {unlocked
+          ? <button type="button" className="sw-btn is-go" onClick={() => start()}>Partir avec {partner.name}</button>
+          : (
+            <button type="button" className="sw-btn is-go is-unlock" disabled={meta.dust < REGION_COST[gen]} onClick={() => setMeta(unlockRegion(meta, gen))}>
+              {meta.dust < REGION_COST[gen] ? `Région verrouillée : ${REGION_COST[gen]} ✦ (il t'en manque ${REGION_COST[gen] - meta.dust})` : `Débloquer ${GENS.find((g) => g.id === gen)?.name} : ${REGION_COST[gen]} ✦`}
+            </button>
+          )}
+        {panel && <MetaPanel panel={panel} meta={meta} setMeta={setMeta} onClose={() => setPanel(null)} />}
         <p className="sw-credit">Sprites animés : PMDCollab SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo / Game Freak</p>
       </div>
     );
@@ -369,7 +545,7 @@ const PokeSwarm = ({ onClose }) => {
             ))}
             {partner.mega && h.megaLv > 0 && (
               <span className="sw-slot is-passive" style={{ '--c': '#ff6ad5' }} title={partner.mega.stone}>
-                {h.isMega ? partner.mega.name : partner.mega.stone}<Pips lv={h.isMega ? MAX_LEVEL : h.megaLv} />
+                {h.isMega ? partner.mega.name : partner.mega.stone}<Pips lv={h.isMega ? MAX_LEVEL : Math.round((h.megaLv / h.megaLevels) * MAX_LEVEL)} />
               </span>
             )}
             {partner.trait === 'turbo' && h.turbo > 0.05 && <span className="sw-slot" style={{ '--c': '#ff7a3a' }}>Turbo +{Math.round(h.turbo * 40)} %</span>}
@@ -404,7 +580,7 @@ const PokeSwarm = ({ onClose }) => {
             <h2>Pioche une carte</h2>
             <div className="sw-choices is-tcg" key={levelUp.options.map((o) => o.kind + o.id + o.lv).join('|')}>
               {levelUp.options.map((opt, i) => (
-                <TcgCard key={`${opt.kind}-${opt.id}`} opt={opt} partner={partner} formDex={hud?.form?.dex ?? partner.dex} index={i} onPick={choose} gen={gen} />
+                <TcgCard key={`${opt.kind}-${opt.id}`} opt={opt} partner={partner} formDex={hud?.form?.dex ?? partner.dex} index={i} onPick={choose} gen={gen} megaLevels={hud?.megaLevels} />
               ))}
             </div>
             <div className="sw-actions">
@@ -433,8 +609,20 @@ const PokeSwarm = ({ onClose }) => {
             <PmdSprite dex={end.form.dex} anim={end.result === 'win' ? 'idle' : 'hurt'} size={120} scale={3} />
             <h2>{end.result === 'win' ? `${finalBoss.name} est K.O. !` : `${end.form.name} est K.O.`}</h2>
             <p>{clock(end.t)} · niveau {end.level} · {end.kills} Pokémon mis K.O.</p>
+            {end.reward && (
+              <div className="sw-reward">
+                <ul>
+                  {end.reward.lines.map((l) => <li key={l.label}><span>{l.label}</span><b>+{l.v} ✦</b></li>)}
+                  {end.reward.unlocked.map((a) => <li key={a.id} className="is-ach"><span>Défi réussi : {a.name}</span><b>+{a.reward} ✦</b></li>)}
+                </ul>
+                <div className="sw-reward-total">
+                  <span>Total</span><b>+{end.reward.earned + end.reward.bonus} ✦</b>
+                  <small>Tu as maintenant {meta.dust.toLocaleString('fr-FR')} ✦</small>
+                </div>
+              </div>
+            )}
             <div className="sw-actions">
-              <button type="button" className="sw-btn is-go" onClick={start}>Rejouer</button>
+              <button type="button" className="sw-btn is-go" onClick={() => start(dailyRef.current)}>Rejouer</button>
               <button type="button" className="sw-btn" onClick={() => setScreen('menu')}>Changer de partenaire</button>
               <button type="button" className="sw-btn is-ghost" onClick={onClose}>Quitter</button>
             </div>

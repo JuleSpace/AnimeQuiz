@@ -25,14 +25,20 @@ const pick = (list) => list[Math.floor(Math.random() * list.length)];
 const dist2 = (a, b) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen = partner.gen || 1) => {
+export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen = partner.gen || 1, effects = null) => {
+  // Effets des talents et du défi du jour (valeurs neutres par défaut)
+  const E = {
+    dmg: 1, crit: 0, cd: 1, execute: 0, hp: 0, hpMul: 1, armor: 1, regen: 0, revive: false, speed: 1, magnet: 1, dashCd: 1, phase: 0,
+    xp: 1, rerolls: 0, luck: 1, headstart: false, evolveEarly: 0, cards: 3, megaLevels: MEGA_LEVELS, spawn: 1, foeHp: 1, foeSpeed: 1,
+    bossTime: 1, noBerry: false, ...(effects || {})
+  };
   const ctx = canvas.getContext('2d');
   const keys = new Set();
   const stick = { active: false, ox: 0, oy: 0, x: 0, y: 0 };
   const world = prebuilt || buildWorld();
 
   const WAVES = GEN_WAVES[gen] || GEN_WAVES[1];
-  const BOSSES = GEN_BOSSES[gen] || GEN_BOSSES[1];
+  const BOSSES = (GEN_BOSSES[gen] || GEN_BOSSES[1]).map((b) => ({ ...b, at: Math.round(b.at * E.bossTime) }));
   const foeIds = new Set([...WAVES.flatMap((w) => w.foes), ...BOSSES.map((b) => b.id)]);
   preloadSprites([
     partner.dex, ...partner.evolutions.map((e) => e.dex), ...(partner.mega ? [partner.mega.sprite] : []),
@@ -47,7 +53,15 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     spawnAcc: 0,
     bossIdx: 0,
     pendingLevels: 0,
-    rerolls: 2,
+    rerolls: 2 + E.rerolls,
+    killsBy: {},
+    bossKills: 0,
+    rocks: 0,
+    dashes: 0,
+    lastHitT: 0,
+    maxNoHit: 0,
+    revived: false,
+    reachedFinal: false,
     banner: null,
     trauma: 0,
     flash: null,
@@ -56,8 +70,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     player: {
       x: world.start.x,
       y: world.start.y,
-      hp: partner.hp,
-      maxHp: partner.hp,
+      hp: Math.round((partner.hp + E.hp) * E.hpMul),
+      maxHp: Math.round((partner.hp + E.hp) * E.hpMul),
       speed: partner.speed,
       face: { x: 0, y: 1 },
       dir: 0,
@@ -83,7 +97,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       trailAcc: 0
     },
     megaLv: 0,
-    weapons: { [partner.weapon]: { lv: 1, timer: 0.4 } },
+    weapons: { [partner.weapon]: { lv: E.headstart ? 2 : 1, timer: 0.4 } },
     passives: {},
     foes: [],
     dying: [],
@@ -109,13 +123,13 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     const p = g.player;
     const mega = p.mega ? 1 : 0;
     return {
-      dmg: (1 + 0.12 * (g.passives.protein || 0) + 0.04 * g.megaLv) * (mega ? 1.3 : 1),
-      speed: (1 + 0.08 * (g.passives.carbos || 0) + mega * 0.12) * (p.slowT > 0 ? 0.55 : 1),
-      magnet: 80 * (1 + 0.35 * (g.passives.magnet || 0)),
+      dmg: (1 + 0.12 * (g.passives.protein || 0) + 0.04 * g.megaLv) * (mega ? 1.3 : 1) * E.dmg,
+      speed: (1 + 0.08 * (g.passives.carbos || 0) + mega * 0.12) * (p.slowT > 0 ? 0.55 : 1) * E.speed,
+      magnet: 80 * (1 + 0.35 * (g.passives.magnet || 0)) * E.magnet,
       // Turbo (Poussifeu) : jusqu'à −40 % de recharge tant qu'on n'est pas touché
-      cd: (1 - 0.07 * (g.passives.quickclaw || 0)) * (1 - p.turbo * 0.4) * (mega ? 0.85 : 1),
-      regen: 0.6 * (g.passives.leftovers || 0) + mega * 1,
-      crit: 0.05 + 0.06 * (g.passives.scope || 0) + mega * 0.05
+      cd: (1 - 0.07 * (g.passives.quickclaw || 0)) * (1 - p.turbo * 0.4) * (mega ? 0.85 : 1) * E.cd,
+      regen: 0.6 * (g.passives.leftovers || 0) + mega * 1 + E.regen,
+      crit: 0.05 + 0.06 * (g.passives.scope || 0) + mega * 0.05 + E.crit
     };
   };
 
@@ -198,7 +212,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     if (!at) return null;
     const elite = !def.boss && g.t > 60 && Math.random() < 0.025;
     const grow = def.boss ? 1 : 1 + g.t / 140;
-    const hp = Math.round(def.hp * grow * (elite ? 4 : 1));
+    const hp = Math.round(def.hp * grow * (elite ? 4 : 1) * (def.boss ? 1 : E.foeHp));
     const f = {
       id,
       def,
@@ -206,7 +220,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       y: at.y,
       hp,
       maxHp: hp,
-      speed: def.speed * (def.boss ? 1 : rand(0.9, 1.1)) * (elite ? 1.1 : 1),
+      speed: def.speed * (def.boss ? 1 : rand(0.9, 1.1)) * (elite ? 1.1 : 1) * E.foeSpeed,
       dmg: Math.max(2, Math.round(def.dmg * (def.boss ? 1 : 0.7 + g.t / 360) * (elite ? 1.4 : 1))),
       size: def.size * (elite ? 1.2 : 1),
       scale: (def.scale || SPR) * (elite ? 1.25 : 1),
@@ -232,7 +246,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   };
 
   const spawnTick = (dt) => {
-    const interval = Math.max(0.11, 0.5 - g.t / 1000);
+    const interval = Math.max(0.11, 0.5 - g.t / 1000) * E.spawn;
     const batch = 1 + Math.floor(g.t / 85);
     g.spawnAcc += dt;
     const alive = g.foes.length - world.breakables.length;
@@ -252,6 +266,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       g.bossIdx += 1;
       const b = spawnFoe(next.id);
       if (b) {
+        if (b.boss === 'final') g.reachedFinal = true;
         g.banner = { text: next.title, life: 3.2 };
         shake(0.6);
         smoke(b.x, b.y, 18, 'rgba(120,100,80,.8)', 22);
@@ -267,7 +282,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     if (f.dead) return;
     const s = stats();
     const crit = !f.inert && Math.random() < s.crit;
-    const dmg = Math.max(1, Math.round(amount * s.dmg * (crit ? 1.8 : 1) * (f.trapT > 0 ? 1.25 : 1)));
+    const exec = E.execute && f.hp < f.maxHp * 0.3 ? 1 + E.execute : 1;
+    const dmg = Math.max(1, Math.round(amount * s.dmg * (crit ? 1.8 : 1) * (f.trapT > 0 ? 1.25 : 1) * exec));
     f.hp -= dmg;
     f.flash = 0.1;
     // Recul (les boss et les lourds bougent à peine)
@@ -294,17 +310,20 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     f.dead = true;
     if (f.inert) {
       // Rocher fissuré : éclats + récompense
+      g.rocks += 1;
       burst(f.x, f.y - 10, '#946a4a', 14, 5, { grav: 0.35, up: 2 });
       burst(f.x, f.y - 10, '#b98c62', 8, 4, { grav: 0.35, up: 2 });
       smoke(f.x, f.y, 6, 'rgba(180,150,120,.8)');
       shake(0.12);
       const r = Math.random();
-      const kind = r < 0.45 ? 'oran' : r < 0.7 ? 'magnet' : r < 0.82 ? 'candy' : 'xp';
+      const kind = r < 0.45 ? (E.noBerry ? 'xp' : 'oran') : r < 0.7 ? 'magnet' : r < 0.82 ? 'candy' : 'xp';
       if (kind === 'xp') for (let i = 0; i < 8; i += 1) dropOrb(f.x, f.y, 3);
       else g.pickups.push({ x: f.x, y: f.y, kind, z: 4, vz: 4 });
       return;
     }
     g.kills += 1;
+    g.killsBy[f.id] = (g.killsBy[f.id] || 0) + 1;
+    if (f.boss) g.bossKills += 1;
     g.dying.push({ dex: f.def.dex, x: f.x, y: f.y, z: f.z, dir: f.dir, t: 0, vx: f.kx * 0.6 + rand(-0.5, 0.5), vy: f.ky * 0.6, scale: f.scale, elite: f.elite });
     smoke(f.x, f.y - 8, f.boss ? 20 : 4, 'rgba(240,240,240,.85)', f.boss ? 26 : 9);
     burst(f.x, f.y - 12, f.def.color || '#ffffff', f.boss ? 30 : 5, f.boss ? 8 : 4);
@@ -327,17 +346,20 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     }
     if (f.elite) {
       for (let i = 0; i < 6; i += 1) dropOrb(f.x, f.y, 3);
-      if (Math.random() < 0.5) g.pickups.push({ x: f.x, y: f.y, kind: 'oran', z: 4, vz: 4 });
+      if (!E.noBerry && Math.random() < 0.5) g.pickups.push({ x: f.x, y: f.y, kind: 'oran', z: 4, vz: 4 });
       shake(0.15);
       return;
     }
     dropOrb(f.x, f.y, f.def.xp);
-    if (Math.random() < 0.01) g.pickups.push({ x: f.x, y: f.y, kind: 'oran', z: 4, vz: 4 });
+    if (!E.noBerry && Math.random() < 0.01 * E.luck) g.pickups.push({ x: f.x, y: f.y, kind: 'oran', z: 4, vz: 4 });
+    else if (E.luck > 1 && Math.random() < 0.003 * E.luck) g.pickups.push({ x: f.x, y: f.y, kind: 'magnet', z: 4, vz: 4 });
   };
 
   const hurtPlayer = (amount, src = null) => {
     const p = g.player;
     if (p.inv > 0 || g.over || p.dash.t > 0) return;
+    amount = Math.max(1, Math.round(amount * E.armor));
+    g.lastHitT = g.t;
     p.turbo = 0; // Turbo retombe à chaque coup reçu
     p.barkCd = 5;
     if (p.bark > 0) {
@@ -361,6 +383,17 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     g.flash = { color: '#ff2a2a', life: 0.22, max: 0.22, vignette: true };
     text(p.x, p.y - 56, `-${amount}`, '#ff5a5a', true);
     burst(p.x, p.y - 16, '#ff5a5a', 6, 3.5);
+    if (p.hp <= 0 && E.revive && !g.revived) {
+      // Talent « Rappel » : une seconde chance par partie
+      g.revived = true;
+      p.hp = Math.round(p.maxHp * 0.4);
+      p.inv = 2;
+      g.banner = { text: 'Rappel ! Ton Pokémon se relève', life: 2.4 };
+      g.flash = { color: '#ffffff', life: 0.4, max: 0.4 };
+      g.fx.push({ kind: 'ring', x: p.x, y: p.y, r: 10, max: 220, life: 0.6, color: '#ffd23a' });
+      near(p.x, p.y, 200).forEach((f) => { if (!f.inert) hurt(f, 1, p, { knock: 12, silent: true }); });
+      return;
+    }
     if (p.hp <= 0) {
       p.hp = 0;
       g.over = 'lose';
@@ -564,8 +597,9 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     if (p.dash.cd > 0 || g.paused || g.over) return;
     let dx = p.face.x; let dy = p.face.y;
     if (!p.moving) { const t = nearest(p.x, p.y, 300); if (t) { dx = p.x - t.x; dy = p.y - t.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; } }
-    p.dash = { cd: DASH_CD * stats().cd, t: 0.17, vx: dx * 15, vy: dy * 15 };
-    p.inv = Math.max(p.inv, 0.3);
+    p.dash = { cd: DASH_CD * stats().cd * E.dashCd, t: 0.17, vx: dx * 15, vy: dy * 15 };
+    p.inv = Math.max(p.inv, 0.3 + E.phase);
+    g.dashes += 1;
     smoke(p.x, p.y, 6, 'rgba(255,255,255,.7)', 10);
   };
 
@@ -579,12 +613,12 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     if (ownedW.length < MAX_WEAPONS) Object.keys(WEAPONS).filter((id) => !g.weapons[id] && (WEAPONS[id].gen === 0 || WEAPONS[id].gen === gen)).forEach((id) => opts.push({ kind: 'weapon', id, lv: 1 }));
     ownedP.forEach((id) => { if (g.passives[id] < MAX_LEVEL) opts.push({ kind: 'passive', id, lv: g.passives[id] + 1 }); });
     if (ownedP.length < MAX_PASSIVES) Object.keys(PASSIVES).filter((id) => !g.passives[id]).forEach((id) => opts.push({ kind: 'passive', id, lv: 1 }));
-    const shuffled = opts.sort(() => Math.random() - 0.5).slice(0, 3);
+    const shuffled = opts.sort(() => Math.random() - 0.5).slice(0, E.cards);
     // Méga-Gemme : toujours proposée une fois la dernière forme atteinte
     const finalForm = partner.evolutions.length === 0 || g.player.form.dex === partner.evolutions[partner.evolutions.length - 1].dex;
     if (partner.mega && finalForm && !g.player.mega) {
       const megaOpt = { kind: 'mega', id: 'mega', lv: g.megaLv + 1 };
-      if (shuffled.length >= 3) shuffled[2] = megaOpt; else shuffled.push(megaOpt);
+      if (shuffled.length >= E.cards) shuffled[E.cards - 1] = megaOpt; else shuffled.push(megaOpt);
     }
     return shuffled.length ? shuffled : [{ kind: 'heal', id: 'oran', lv: 0 }];
   };
@@ -597,13 +631,13 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
 
   const gainXp = (v) => {
     const p = g.player;
-    p.xp += v;
+    p.xp += v * E.xp;
     while (p.xp >= p.need) {
       p.xp -= p.need;
       p.level += 1;
       p.need = xpToNext(p.level);
       g.pendingLevels += 1;
-      const evo = partner.evolutions.find((e) => e.level === p.level);
+      const evo = partner.evolutions.find((e) => Math.max(2, e.level - E.evolveEarly) === p.level);
       if (evo) {
         p.form = { name: evo.name, dex: evo.dex };
         p.maxHp += evo.hp;
@@ -651,7 +685,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       }
     } else if (opt.kind === 'mega') {
       g.megaLv += 1;
-      if (g.megaLv >= MEGA_LEVELS) megaEvolve();
+      if (g.megaLv >= E.megaLevels) megaEvolve();
     } else {
       g.player.hp = Math.min(g.player.maxHp, g.player.hp + (opt.kind === 'skip' ? 15 : 30));
     }
@@ -1012,6 +1046,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     p.inv = Math.max(0, p.inv - dt);
     p.evolving = Math.max(0, p.evolving - dt);
     p.slowT = Math.max(0, p.slowT - dt);
+    g.maxNoHit = Math.max(g.maxNoHit, g.t - g.lastHitT);
     if (partner.trait === 'turbo') p.turbo = Math.min(1, p.turbo + dt / 10); // Turbo : +4 %/s, max +40 %
     if (partner.trait === 'bark') { p.barkCd -= dt; if (p.barkCd <= 0 && p.bark < 25 + g.megaLv * 5) p.bark = Math.min(25, p.bark + dt * 8); }
     if (p.comboT > 0) { p.comboT -= dt; if (p.comboT <= 0) p.combo = 0; }
@@ -1983,6 +2018,16 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     need: g.player.need,
     form: g.player.form,
     megaLv: g.megaLv,
+    megaLevels: E.megaLevels,
+    killsBy: g.killsBy,
+    bosses: g.bossKills,
+    rocks: g.rocks,
+    dashes: g.dashes,
+    noHit: g.maxNoHit,
+    reachedFinal: g.reachedFinal,
+    maxWeapon: Object.values(g.weapons).some((w) => w.lv >= MAX_LEVEL),
+    weaponCount: Object.keys(g.weapons).length,
+    passiveCount: Object.keys(g.passives).length,
     isMega: g.player.mega,
     turbo: g.player.turbo,
     combo: g.player.combo,
