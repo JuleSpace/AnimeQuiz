@@ -1,8 +1,6 @@
 /**
- * Musique du mode PokeArena : uniquement des pistes YouTube (sélection de Jules),
- * lues dans un mini-lecteur (bouton ♪). Chaque situation (menu, lieu, dresseur) demande une piste ;
- * si la situation n’a pas encore de piste (ou si sa vidéo est indisponible), une musique des menus
- * est tirée au hasard à la place.
+ * Musique du mode PokeArena : uniquement des pistes YouTube (sélection de Jules), lues en playlist
+ * dans un mini-lecteur (bouton ♪). Voir « Playlist » plus bas.
  */
 
 /** Hash FNV-1a : choix stables (même région → même musique). */
@@ -193,13 +191,34 @@ const createDeck = (handlers) => {
   };
 };
 
+/* ——————————————————————— Playlist ———————————————————————
+ * Toutes les pistes de Jules tournent à la suite, dans un ordre mélangé une fois par session.
+ * On ne change jamais de musique en changeant d'écran : seulement à la fin d'un morceau (ou avec « Suivante »).
+ * Seule exception : pendant la Ligue, Cynthia et Hélio s'enchaînent en boucle.
+ */
+const LEAGUE_TRACKS = ['battle-cynthia-dp', 'battle-cyrus-dp'];
+
+const shuffled = (list) => {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+};
+
 const createPlayer = () => {
   let volume = 0.5;
-  let current = null; // { req (piste demandée), key (piste jouée), id, playing, ytTitle }
-  let wanted = null;
+  let current = null; // { key, id, playing, ytTitle }
   let listeners = [];
   let unlocked = false;
   let deck = null;
+  let mode = null; // 'main' | 'league'
+  const lists = {
+    main: shuffled(Object.keys(TRACKS).filter((key) => !LEAGUE_TRACKS.includes(key))),
+    league: shuffled(LEAGUE_TRACKS)
+  };
+  const cursor = { main: 0, league: 0 };
 
   const notify = () => listeners.forEach((fn) => fn(current ? {
     key: current.key,
@@ -213,7 +232,33 @@ const createPlayer = () => {
     call((p) => p.pauseVideo());
   };
 
-  /** Vidéo morte : identifiant suivant de la même piste, sinon une musique des menus au hasard. */
+  const trackAt = (m) => {
+    const list = lists[m] || [];
+    for (let step = 0; step < list.length; step += 1) {
+      const key = list[(cursor[m] + step) % list.length];
+      if (liveIds(key).length) {
+        cursor[m] = (cursor[m] + step) % list.length;
+        return key;
+      }
+    }
+    return null;
+  };
+
+  /** Morceau suivant de la liste en cours (fin du morceau, vidéo morte ou bouton « Suivante »). */
+  const advance = () => {
+    if (!mode) return;
+    const list = lists[mode];
+    cursor[mode] = (cursor[mode] + 1) % list.length;
+    const key = trackAt(mode);
+    if (!key) { pause(); notify(); return; }
+    if (current?.key === key && list.length === 1) {
+      call((p) => { p.seekTo(0); p.playVideo(); });
+      return;
+    }
+    load(key);
+  };
+
+  /** Vidéo morte : identifiant suivant de la même piste, sinon la piste suivante. */
   const skip = () => {
     const c = current;
     if (!c) return;
@@ -224,27 +269,13 @@ const createPlayer = () => {
       call((p) => p.loadVideoById(nextId));
       return;
     }
-    const menus = liveMenus().filter((k) => k !== c.key);
-    if (!menus.length) { pause(); notify(); return; }
-    load(menus[Math.floor(Math.random() * menus.length)], c.req);
-  };
-
-  /** Fin d’un morceau : on enchaîne sur une autre musique du même lieu, sinon des menus. */
-  const next = () => {
-    const c = current;
-    if (!c) return;
-    const pool = (Object.values(BIOME_TRACKS).find((list) => list.includes(c.key)) || TOWN_TRACKS)
-      .filter((k) => k !== c.key && liveIds(k).length);
-    const fallback = liveMenus().filter((k) => k !== c.key);
-    const list = pool.length ? pool : fallback;
-    if (!list.length) { call((p) => { p.seekTo(0); p.playVideo(); }); return; }
-    load(list[Math.floor(Math.random() * list.length)], c.req);
+    advance();
   };
 
   const ensureDeck = () => {
     if (deck) return deck;
     deck = createDeck({
-      ended: () => next(),
+      ended: () => advance(),
       playing: () => {
         if (current && !current.playing) {
           current.playing = true;
@@ -261,10 +292,10 @@ const createPlayer = () => {
     return deck;
   };
 
-  const load = (key, req = key) => {
+  const load = (key) => {
     const id = liveIds(key)[0];
-    if (!id) { skip(); return; }
-    const entry = { req, key, id, playing: false };
+    if (!id) { advance(); return; }
+    const entry = { key, id, playing: false };
     current = entry;
     notify();
     ensureDeck().init().then((p) => {
@@ -276,39 +307,46 @@ const createPlayer = () => {
     }).catch(() => { if (current === entry) { current = null; notify(); } });
   };
 
-  const start = (key) => {
-    if (!key || volume <= 0 || !unlocked || typeof document === 'undefined') return;
-    if (current?.req === key) return;
+  /** Lance (ou reprend) la piste en cours de la liste active. */
+  const start = () => {
+    if (!mode || volume <= 0 || !unlocked || typeof document === 'undefined') return;
+    const key = trackAt(mode);
+    if (!key) return;
+    if (current?.key === key) return;
     load(key);
   };
 
   const unlock = () => {
     if (unlocked) return;
     unlocked = true;
-    start(wanted);
+    start();
   };
   if (typeof window !== 'undefined') {
     ['pointerdown', 'keydown'].forEach((ev) => window.addEventListener(ev, unlock, { once: true, capture: true }));
   }
 
   return {
-    /** Demande une piste ; `null` ou `undefined` : on garde la musique en cours. */
-    play(key) {
-      if (!key) return;
-      wanted = key;
-      start(key);
+    /** 'main' : la playlist ; 'league' : Cynthia et Hélio. Ne relance rien si on reste dans la même liste. */
+    setMode(next) {
+      const wantedMode = next === 'league' ? 'league' : 'main';
+      if (mode === wantedMode) return;
+      // En quittant une liste, la prochaine fois on repartira sur le morceau d'après.
+      if (mode && current) cursor[mode] = (cursor[mode] + 1) % lists[mode].length;
+      mode = wantedMode;
+      current = null;
+      start();
     },
     setVolume(v) {
       volume = Math.max(0, Math.min(1, v));
       call((p) => p.setVolume(Math.round(volume * 100)));
-      if (volume <= 0) { pause(); notify(); } else if (!current) start(wanted);
+      if (volume <= 0) { pause(); notify(); } else if (!current) start();
     },
-    /** Passe au morceau suivant (même lieu, sinon menus). */
+    /** Passe au morceau suivant de la liste en cours. */
     next() {
-      next();
+      advance();
     },
     stop() {
-      wanted = null;
+      mode = null;
       pause();
       notify();
     },

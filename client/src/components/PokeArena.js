@@ -57,7 +57,7 @@ import {
   regionAt,
   rewardChoices
 } from './pokeArenaCampaign';
-import { OPENING_TRACKS, TOWN_TRACKS, battleTrack, musicPlayer, regionTrack, versusTrack } from './pokeArenaMusic';
+import { musicPlayer } from './pokeArenaMusic';
 import {
   VERSUS_MAX_PLAYERS,
   rebuildBoard,
@@ -296,7 +296,6 @@ const PokeArena = ({ onClose }) => {
   const [rewardOpts, setRewardOpts] = useState(null);
   const [musicVol, setMusicVol] = useState(readMusic);
   const [nowPlaying, setNowPlaying] = useState(null);
-  const [townTrack] = useState(() => TOWN_TRACKS[Math.floor(Math.random() * TOWN_TRACKS.length)]);
   const [wins, setWins] = useState(0);
   // Interface
   const [toast, setToast] = useState('');
@@ -401,16 +400,13 @@ const PokeArena = ({ onClose }) => {
     musicPlayer().setVolume(musicVol);
     try { localStorage.setItem(MUSIC_KEY, String(musicVol)); } catch { /* stockage indisponible */ }
   }, [musicVol]);
-  const wonRun = floor >= totalFloors && hp > 0;
+  // Playlist continue ; seule la Ligue a sa propre musique (Cynthia et Hélio en boucle).
+  const inLeague = mode !== 'versus'
+    && (phase === 'map' || phase === 'mart' || phase === 'event' || phase === 'battle')
+    && regionAt(map, floor)?.biome === 'ligue';
   useEffect(() => {
-    let key = townTrack;
-    if (phase === 'map' || phase === 'mart' || phase === 'event') key = regionTrack(regionAt(map, floor));
-    else if (phase === 'battle' && mode === 'versus') key = versusTrack(vsRound, vsRoom?.code);
-    else if (phase === 'battle') key = battleTrack(node);
-    else if (phase === 'over' || phase === 'vs-over') key = (phase === 'vs-over' || wonRun) ? OPENING_TRACKS[Math.floor(Math.random() * OPENING_TRACKS.length)] : townTrack;
-    musicPlayer().play(key);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, mode, node?.id, floor, map, vsRound, wonRun]);
+    musicPlayer().setMode(inLeague ? 'league' : 'main');
+  }, [inLeague]);
   const musicButton = <MusicControl volume={musicVol} onVolume={setMusicVol} now={nowPlaying} />;
 
   const openTrait = (trait, event, extra = {}) => {
