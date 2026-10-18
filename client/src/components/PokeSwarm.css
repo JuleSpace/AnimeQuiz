@@ -299,3 +299,165 @@
   background: linear-gradient(135deg, #fff 0 55%, #ffe3f6);
   box-shadow: inset 6px 0 0 #ff6ad5, 0 0 0 3px #08164d, 0 0 18px rgba(255, 106, 213, 0.55);
 }
+
+/* ——— Bonus en cartes à collectionner ——— */
+.sw-card.is-deal {
+  width: min(980px, 100%);
+  background: radial-gradient(120% 90% at 50% 0%, #1d3a9a, #0a1a5a 60%, #050d33);
+  color: #fff;
+  box-shadow: 0 0 0 4px #08164d, 0 0 0 7px #ffd23a, 0 24px 50px rgba(0, 0, 0, 0.5);
+}
+.sw-card.is-deal h2 { color: #fff; -webkit-text-stroke: 0; text-shadow: 3px 3px 0 #08164d; }
+.sw-choices.is-tcg { display: flex; justify-content: center; gap: clamp(10px, 2.5vw, 26px); flex-wrap: wrap; perspective: 1200px; }
+.tcg {
+  --rx: 0deg;
+  --ry: 0deg;
+  --mx: 50%;
+  --my: 50%;
+  width: clamp(190px, 26vw, 236px);
+  aspect-ratio: 63 / 88;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transform: rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform 0.12s ease-out;
+  transform-style: preserve-3d;
+}
+.tcg:hover { transform: rotateX(var(--rx)) rotateY(var(--ry)) translateY(-8px) scale(1.04); }
+.tcg-inner {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: tcg-deal 0.6s cubic-bezier(.2, .8, .3, 1.2) both;
+  animation-delay: calc(var(--i) * 0.12s);
+}
+@keyframes tcg-deal {
+  0% { transform: translateY(60px) rotateY(180deg) scale(0.8); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: translateY(0) rotateY(0deg) scale(1); opacity: 1; }
+}
+.tcg-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+}
+.tcg-front {
+  padding: 9px 9px 7px;
+  gap: 5px;
+  text-align: left;
+  color: #14204a;
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--tc) 30%, #fff) 0%, color-mix(in srgb, var(--tc) 60%, #fff) 100%);
+  box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--tc) 75%, #14204a), inset 0 0 0 6px rgba(255, 255, 255, 0.7), 0 10px 24px rgba(0, 0, 0, 0.45);
+}
+.tcg-back {
+  display: grid;
+  place-items: center;
+  transform: rotateY(180deg);
+  background:
+    radial-gradient(circle at 50% 50%, #ffd23a 0 16%, #08164d 16% 20%, transparent 20%),
+    repeating-conic-gradient(from 0deg, #1d3fb8 0 15deg, #13308f 15deg 30deg);
+  box-shadow: inset 0 0 0 6px #ffd23a, inset 0 0 0 9px #08164d;
+}
+.tcg-back span { margin-top: 70%; font: italic 900 20px/1 'Saira', sans-serif; letter-spacing: 0.2em; color: #ffd23a; text-shadow: 2px 2px 0 #08164d; }
+.tcg-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 2px 4px 0; }
+.tcg-head b { font: italic 900 15px/1.05 'Saira', sans-serif; text-transform: uppercase; }
+.tcg-lv { display: inline-flex; align-items: center; gap: 4px; font: italic 900 12px/1 'Saira', sans-serif; white-space: nowrap; }
+.tcg-energy {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font: normal 900 11px/1 'Saira', sans-serif;
+  color: #fff;
+  background: radial-gradient(circle at 35% 30%, #fff8, transparent 45%), var(--tc);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px #14204a;
+}
+.tcg-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 44%;
+  border-radius: 6px;
+  background:
+    radial-gradient(70% 60% at 50% 40%, rgba(255, 255, 255, 0.85), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--tc) 35%, #dff3ff), color-mix(in srgb, var(--tc) 70%, #2a3a6a));
+  box-shadow: inset 0 0 0 3px #c9a74a, inset 0 0 0 4px #fff4c2, 0 2px 0 rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+.tcg-art .sw-pmd { filter: drop-shadow(0 4px 2px rgba(0, 0, 0, 0.25)); }
+.tcg-item { width: 72px; height: 72px; image-rendering: pixelated; filter: drop-shadow(0 4px 2px rgba(0, 0, 0, 0.3)); }
+.tcg-glyph { font: italic 900 40px/1 'Saira', sans-serif; color: #fff; text-shadow: 2px 2px 0 #14204a; }
+.tcg-strip {
+  align-self: center;
+  max-width: 100%;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font: italic 800 10px/1.4 'Saira', sans-serif;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+  background: linear-gradient(90deg, #c9a74a, #a8862e);
+}
+.tcg-text { flex: 1; display: grid; align-content: start; gap: 4px; padding: 6px 7px; border-radius: 6px; background: rgba(255, 255, 255, 0.72); }
+.tcg-move { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.tcg-move b { font: 900 13px/1.1 'Saira Semi Condensed', sans-serif; }
+.tcg-move em { font: italic 900 20px/1 'Saira', sans-serif; color: #14204a; }
+.tcg-desc { font: 600 11.5px/1.3 'Saira Semi Condensed', sans-serif; color: #2a3566; }
+.tcg-foot { display: flex; justify-content: space-between; padding: 0 4px; font: 700 9.5px/1 'Saira Semi Condensed', sans-serif; color: #2a3566; opacity: 0.85; }
+.tcg-rarity { font-size: 12px; }
+/* Holo : reflets qui suivent la souris (cartes rares et Méga) */
+.tcg-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: 14px;
+  mix-blend-mode: color-dodge;
+  opacity: 0.55;
+  background:
+    radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, 0.75), transparent 38%),
+    repeating-linear-gradient(115deg, #ff6ad5 0%, #ffd23a 8%, #7fe0ff 16%, #9b8cff 24%, #ff6ad5 32%);
+  background-size: 100% 100%, 300% 300%;
+  animation: tcg-holo 6s linear infinite;
+}
+@keyframes tcg-holo { from { background-position: 0 0, 0% 50%; } to { background-position: 0 0, 300% 50%; } }
+.tcg.is-ultra .tcg-front { box-shadow: inset 0 0 0 4px #ff6ad5, inset 0 0 0 6px #fff, 0 0 26px rgba(255, 106, 213, 0.7), 0 10px 24px rgba(0, 0, 0, 0.45); }
+.tcg.is-ultra .tcg-shine { opacity: 0.75; }
+.tcg:hover .tcg-front, .tcg:focus-visible .tcg-front { outline: 3px solid #ffd23a; outline-offset: 3px; }
+@media (max-width: 700px) {
+  .sw-choices.is-tcg { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; padding: 8px 4px 14px; }
+  .tcg { flex: 0 0 170px; width: 170px; }
+  .tcg-desc { font-size: 10.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tcg-inner { animation: none; }
+  .tcg-shine { animation: none; }
+}
+.tcg-shine {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0 52%, transparent 60% 94%, #000 100%);
+  mask-image: linear-gradient(to bottom, #000 0 52%, transparent 60% 94%, #000 100%);
+}
+.tcg-new {
+  position: absolute;
+  top: 34px;
+  right: -6px;
+  padding: 3px 12px 3px 10px;
+  font: italic 900 11px/1.2 'Saira', sans-serif;
+  text-transform: uppercase;
+  color: #3a1d00;
+  background: linear-gradient(180deg, #fff7c2, #ffd23a 60%, #ff9a00);
+  box-shadow: 0 2px 0 #b35c00;
+  transform: rotate(8deg);
+}
+.tcg.is-ultra .tcg-desc, .tcg.is-ultra .tcg-move b { color: #14204a; }

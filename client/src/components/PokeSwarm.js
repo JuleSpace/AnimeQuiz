@@ -94,6 +94,91 @@ const MenuBackdrop = ({ world }) => {
   return <canvas ref={ref} className="sw-backdrop" />;
 };
 
+/* ——— Cartes de bonus façon jeu de cartes à collectionner ——— */
+const TYPE_COLORS = {
+  Électrik: '#f7d02c', Feu: '#ee8130', Eau: '#6390f0', Plante: '#7ac74c', Sol: '#d9b25a', Normal: '#b8b48a',
+  Spectre: '#8a6bc4', Ténèbres: '#6b5a4c', Combat: '#d2513f', Objet: '#9fb3d6', Baie: '#4f8fe0', Méga: '#ff6ad5'
+};
+const ITEM_SLUG = {
+  protein: 'protein', carbos: 'carbos', hpup: 'hp-up', magnet: 'magnet', quickclaw: 'quick-claw', leftovers: 'leftovers', scope: 'scope-lens'
+};
+const itemSprite = (slug) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${slug}.png`;
+// numéro « de collection » stable pour chaque carte
+const cardNo = (id) => (([...String(id)].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 150) + 1);
+
+const TcgCard = ({ opt, partner, formDex, index, onPick, gen }) => {
+  const l = optionLabel(opt, partner);
+  const type = l.type;
+  const tc = TYPE_COLORS[type] || l.color;
+  const [failed, setFailed] = useState(false);
+  const ref = useRef(null);
+  const rarity = opt.kind === 'mega' ? 'ultra' : (opt.kind === 'weapon' && opt.lv >= MAX_LEVEL) || (opt.kind === 'passive' && opt.lv >= MAX_LEVEL) ? 'rare' : opt.lv === 1 ? 'common' : 'uncommon';
+  const holo = rarity === 'rare' || rarity === 'ultra';
+  let power = null;
+  if (opt.kind === 'weapon') {
+    const v = WEAPONS[opt.id].at(opt.lv);
+    power = v.dmg ? Math.round(v.dmg) : v.dps ? `${Math.round(v.dps)}/s` : null;
+  }
+  const kindLabel = opt.kind === 'weapon' ? 'Attaque' : opt.kind === 'passive' ? 'Objet' : opt.kind === 'mega' ? 'Méga-Gemme' : 'Baie';
+  const tilt = (e) => {
+    const el = ref.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width; const y = (e.clientY - r.top) / r.height;
+    el.style.setProperty('--rx', `${(0.5 - y) * 14}deg`);
+    el.style.setProperty('--ry', `${(x - 0.5) * 18}deg`);
+    el.style.setProperty('--mx', `${x * 100}%`);
+    el.style.setProperty('--my', `${y * 100}%`);
+  };
+  const reset = () => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg');
+  };
+  let art;
+  if (opt.kind === 'weapon') art = <PmdSprite dex={formDex} anim={['quake', 'bite', 'leafblade', 'doublekick', 'machpunch'].includes(opt.id) ? 'attack' : 'shoot'} size={118} scale={2.6} dir={1} />;
+  else if (opt.kind === 'mega') art = <PmdSprite dex={opt.lv >= MEGA_LEVELS ? partner.mega.sprite : formDex} anim="idle" size={118} scale={2.6} />;
+  else {
+    const slug = opt.kind === 'passive' ? ITEM_SLUG[opt.id] : 'oran-berry';
+    art = failed
+      ? <span className="tcg-glyph">{l.title.slice(0, 2)}</span>
+      : <img src={itemSprite(slug)} alt="" className="tcg-item" onError={() => setFailed(true)} />;
+  }
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={`tcg is-${rarity}${holo ? ' is-holo' : ''}`}
+      style={{ '--tc': tc, '--i': index }}
+      onClick={() => onPick(opt)}
+      onPointerMove={tilt}
+      onPointerLeave={reset}
+    >
+      <span className="tcg-inner">
+        <span className="tcg-face tcg-front">
+          <span className="tcg-head">
+            <b>{l.title}</b>
+            <span className="tcg-lv">{opt.kind === 'mega' ? `${Math.min(opt.lv, MEGA_LEVELS)}/${MEGA_LEVELS}` : opt.lv ? `Niv. ${opt.lv}` : ''}<i className="tcg-energy">{type.slice(0, 1)}</i></span>
+          </span>
+          <span className="tcg-art">{art}</span>
+          <span className="tcg-strip">{opt.kind === 'weapon' ? `Attaque ${type}` : opt.kind === 'mega' ? l.tag : kindLabel}</span>
+          {opt.lv === 1 && opt.kind !== 'mega' && <span className="tcg-new">Nouveau !</span>}
+          <span className="tcg-text">
+            <span className="tcg-move"><b>{l.title}</b>{power !== null && <em>{power}</em>}</span>
+            <span className="tcg-desc">{l.desc}</span>
+          </span>
+          <span className="tcg-foot">
+            <span>{['', 'Kanto', 'Johto', 'Hoenn', 'Sinnoh'][gen] || 'Swarm'} · {String(cardNo(`${opt.kind}${opt.id}`)).padStart(3, '0')}/151</span>
+            <span className="tcg-rarity">{rarity === 'ultra' ? '★★' : rarity === 'rare' ? '★' : rarity === 'uncommon' ? '◆' : '●'}</span>
+          </span>
+          {holo && <span className="tcg-shine" aria-hidden="true" />}
+        </span>
+        <span className="tcg-face tcg-back" aria-hidden="true"><span>SWARM</span></span>
+      </span>
+    </button>
+  );
+};
+
 const Pips = ({ lv }) => (
   <span className="sw-pips">
     {Array.from({ length: MAX_LEVEL }, (_, i) => <i key={i} className={i < lv ? 'on' : ''} />)}
@@ -314,21 +399,13 @@ const PokeSwarm = ({ onClose }) => {
 
       {levelUp && !end && (
         <div className="sw-modal">
-          <div className="sw-card">
+          <div className="sw-card is-deal">
             <span className="sw-kicker">Niveau {levelUp.level}</span>
-            <h2>Choisis un bonus</h2>
-            <div className="sw-choices">
-              {levelUp.options.map((opt) => {
-                const l = optionLabel(opt, partner);
-                return (
-                  <button key={`${opt.kind}-${opt.id}`} type="button" className={`sw-choice${l.mega ? ' is-mega' : ''}`} style={{ '--c': l.color }} onClick={() => choose(opt)}>
-                    <span className="sw-choice-tag">{l.tag}</span>
-                    <strong>{l.title}</strong>
-                    <em>{l.type}</em>
-                    <p>{l.desc}</p>
-                  </button>
-                );
-              })}
+            <h2>Pioche une carte</h2>
+            <div className="sw-choices is-tcg" key={levelUp.options.map((o) => o.kind + o.id + o.lv).join('|')}>
+              {levelUp.options.map((opt, i) => (
+                <TcgCard key={`${opt.kind}-${opt.id}`} opt={opt} partner={partner} formDex={hud?.form?.dex ?? partner.dex} index={i} onPick={choose} gen={gen} />
+              ))}
             </div>
             <div className="sw-actions">
               <button type="button" className="sw-btn is-small" disabled={!levelUp.rerolls} onClick={reroll}>Relancer ({levelUp.rerolls})</button>
