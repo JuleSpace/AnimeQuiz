@@ -1350,7 +1350,7 @@ const PokeArena = ({ onClose }) => {
             <span>Tactics</span>
           </h1>
           <p className="pa-hub-copy">
-            Recrute, fusionne trois exemplaires pour faire évoluer, place ton équipe et traverse trois chapitres jusqu’au Maître de la Ligue.
+            Recrute, fusionne trois exemplaires pour faire évoluer, place ton équipe et traverse trois régions jusqu’à la Ligue et son Maître.
           </p>
           <div className="pa-hub-actions">
             {canContinue && <button type="button" className="ui-btn is-primary is-big" onClick={resumeSave}>Continuer la partie</button>}
