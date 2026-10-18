@@ -1,0 +1,161 @@
+/**
+ * Données du mode « Sonic Bonk » (un survivors en 3D façon Megabonk) :
+ * personnages, attaques, objets, robots ennemis, vagues et boss.
+ */
+
+export const RUN_SECONDS = 8 * 60;
+
+export const CHARACTERS = [
+  {
+    id: 'sonic',
+    name: 'Sonic',
+    color: '#1f6dff',
+    hp: 100,
+    speed: 11,
+    jump: 13,
+    weapon: 'homing',
+    air: 'dash',
+    blurb: 'Le plus rapide. Attaque Téléguidée de départ et dash aérien.'
+  },
+  {
+    id: 'tails',
+    name: 'Tails',
+    color: '#ffb02e',
+    hp: 95,
+    speed: 10,
+    jump: 14,
+    weapon: 'tornado',
+    air: 'fly',
+    blurb: 'Vole quelques secondes en restant appuyé sur Saut. Ses tornades repoussent tout.'
+  },
+  {
+    id: 'knuckles',
+    name: 'Knuckles',
+    color: '#ff3b4e',
+    hp: 140,
+    speed: 9.4,
+    jump: 12,
+    weapon: 'quake',
+    air: 'glide',
+    blurb: 'Très résistant. Plane en restant appuyé sur Saut, frappe le sol à la ronde.'
+  },
+  {
+    id: 'shadow',
+    name: 'Shadow',
+    color: '#2a2d3a',
+    hp: 105,
+    speed: 10.6,
+    jump: 13,
+    weapon: 'spear',
+    air: 'dash',
+    blurb: 'Lances du Chaos perçantes et dash aérien. Le plus offensif.'
+  },
+  {
+    id: 'amy',
+    name: 'Amy',
+    color: '#ff7ac0',
+    hp: 115,
+    speed: 9.8,
+    jump: 13.5,
+    weapon: 'hammer',
+    air: 'double',
+    blurb: 'Double saut. Son Piko Piko Hammer écrase tout autour d’elle.'
+  }
+];
+
+/* ——— Attaques automatiques (niveau 1 à 5) ——— */
+export const WEAPONS = {
+  homing: {
+    name: 'Attaque Téléguidée',
+    color: '#4fb3ff',
+    desc: (lv) => `Une sphère bleue fonce sur l’ennemi le plus proche et rebondit sur ${lv} autre${lv > 1 ? 's' : ''}.`,
+    at: (lv) => ({ cd: 1.1 - lv * 0.08, dmg: 16 + lv * 6, chains: lv, speed: 34 })
+  },
+  rings: {
+    name: 'Lancer d’anneaux',
+    color: '#ffd23a',
+    desc: (lv) => `${lv + 2} anneaux tranchants lancés en éventail devant toi.`,
+    at: (lv) => ({ cd: 1.3 - lv * 0.07, dmg: 11 + lv * 4, count: lv + 2, speed: 26, pierce: 1 + Math.floor(lv / 2) })
+  },
+  tornado: {
+    name: 'Tornade',
+    color: '#bff3ff',
+    desc: (lv) => `${lv >= 3 ? 2 : 1} tornade${lv >= 3 ? 's' : ''} qui s’éloigne${lv >= 3 ? 'nt' : ''} en spirale et repousse${lv >= 3 ? 'nt' : ''} les robots.`,
+    at: (lv) => ({ cd: 2.4 - lv * 0.18, dmg: 9 + lv * 3.5, count: lv >= 3 ? 2 : 1, size: 2.2 + lv * 0.35, life: 2.6 + lv * 0.2 })
+  },
+  quake: {
+    name: 'Poing sismique',
+    color: '#ff8a5a',
+    desc: () => 'Frappe le sol : une onde de choc part de toi et projette les robots.',
+    at: (lv) => ({ cd: 2.8 - lv * 0.22, dmg: 22 + lv * 8, radius: 7 + lv * 1.3 })
+  },
+  spear: {
+    name: 'Lance du Chaos',
+    color: '#ffe14a',
+    desc: (lv) => `${Math.min(lv + 1, 5)} lances jaunes qui transpercent tout sur leur passage.`,
+    at: (lv) => ({ cd: 1.25 - lv * 0.07, dmg: 14 + lv * 5, count: Math.min(lv + 1, 5), speed: 42 })
+  },
+  hammer: {
+    name: 'Piko Piko Hammer',
+    color: '#ff5aa8',
+    desc: () => 'Un grand coup de marteau qui tourne autour de toi.',
+    at: (lv) => ({ cd: 1.6 - lv * 0.12, dmg: 20 + lv * 7, radius: 4.2 + lv * 0.5 })
+  },
+  lightning: {
+    name: 'Bouclier foudre',
+    color: '#c79bff',
+    desc: (lv) => `Foudroie ${lv + 1} robots proches à intervalles réguliers.`,
+    at: (lv) => ({ cd: 1.5 - lv * 0.1, dmg: 15 + lv * 5, count: lv + 1, range: 14 + lv })
+  },
+  flame: {
+    name: 'Bouclier flamme',
+    color: '#ff6a1f',
+    desc: () => 'Un cercle de flammes brûle en continu les robots qui t’approchent.',
+    at: (lv) => ({ dps: 10 + lv * 6, radius: 3.4 + lv * 0.5 })
+  }
+};
+
+/* ——— Objets passifs (niveau 1 à 5) ——— */
+export const PASSIVES = {
+  shoes: { name: 'Chaussures de vitesse', desc: '+8 % de vitesse de course.', color: '#ff3b4e' },
+  gloves: { name: 'Gants de puissance', desc: '+12 % de dégâts.', color: '#ffffff' },
+  magnet: { name: 'Aimant', desc: '+40 % de portée pour ramasser XP et anneaux.', color: '#c0c6d6' },
+  heart: { name: 'Vie supplémentaire', desc: '+25 PV max et soigne d’autant.', color: '#6bd17a' },
+  clock: { name: 'Chrono', desc: '−7 % de temps de recharge.', color: '#4fb3ff' },
+  chao: { name: 'Chao porte-bonheur', desc: '+10 % d’XP et +5 % de coups critiques.', color: '#8ff2ff' }
+};
+
+export const MAX_WEAPONS = 4;
+export const MAX_PASSIVES = 4;
+export const MAX_LEVEL = 5;
+
+/* ——— Robots (designs originaux) ——— */
+export const ENEMIES = {
+  beetle: { name: 'Scarabot', hp: 14, speed: 4.4, dmg: 6, size: 0.9, xp: 1, kind: 'beetle' },
+  wasp: { name: 'Guêpobot', hp: 10, speed: 5.4, dmg: 5, size: 0.8, xp: 1, kind: 'wasp', fly: true },
+  crab: { name: 'Crabot', hp: 34, speed: 3.2, dmg: 9, size: 1.1, xp: 2, kind: 'crab', shoots: true },
+  pawn: { name: 'Sentinelle', hp: 26, speed: 4.6, dmg: 8, size: 1, xp: 2, kind: 'pawn' },
+  roller: { name: 'Roulobot', hp: 20, speed: 7.2, dmg: 10, size: 0.85, xp: 2, kind: 'roller', charge: true },
+  brute: { name: 'Cuirassé', hp: 120, speed: 2.9, dmg: 16, size: 1.8, xp: 5, kind: 'brute' },
+  // Boss
+  titan: { name: 'Titan d’acier', hp: 2600, speed: 3.4, dmg: 22, size: 4.2, xp: 40, kind: 'titan', boss: 'mini' },
+  colossus: { name: 'Le Colosse', hp: 9000, speed: 3.8, dmg: 30, size: 5.2, xp: 0, kind: 'colossus', boss: 'final' }
+};
+
+export const WAVES = [
+  { from: 0, list: ['beetle', 'beetle', 'wasp'] },
+  { from: 45, list: ['beetle', 'wasp', 'pawn'] },
+  { from: 100, list: ['pawn', 'wasp', 'crab', 'roller'] },
+  { from: 170, list: ['pawn', 'crab', 'roller', 'beetle'] },
+  { from: 250, list: ['pawn', 'roller', 'brute', 'wasp'] },
+  { from: 330, list: ['crab', 'roller', 'brute', 'pawn'] },
+  { from: 400, list: ['brute', 'roller', 'pawn', 'wasp', 'crab'] }
+];
+
+export const BOSSES = [
+  { at: 210, id: 'titan', title: 'Un Titan d’acier débarque !' },
+  { at: 420, id: 'colossus', title: 'Le Colosse arrive. Détruis-le pour gagner !' }
+];
+
+/** XP pour passer du niveau `lv` au suivant. */
+export const xpToNext = (lv) => Math.round(6 + lv * 4.5 + lv * lv * 0.4);

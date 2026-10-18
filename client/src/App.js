@@ -11,6 +11,7 @@ import CardVault, { RELIC_HASH } from './components/CardVault';
 import AcademyGuide, { ACADEMY_HASH } from './components/AcademyGuide';
 import PokeArena, { ARENA_HASH } from './components/PokeArena';
 import PokeSwarm, { SWARM_HASH } from './components/PokeSwarm';
+import SonicBonk, { BONK_HASH } from './components/SonicBonk';
 import { readAdminSession, storeAdminSession, clearAdminSession } from './utils/adminSession';
 import './index.css';
 
@@ -22,6 +23,7 @@ const secretViewFromHash = () => {
   if (window.location.hash === ACADEMY_HASH) return 'academy';
   if (window.location.hash === ARENA_HASH) return 'arena';
   if (window.location.hash === SWARM_HASH) return 'swarm';
+  if (window.location.hash === BONK_HASH) return 'bonk';
   return null;
 };
 
@@ -694,11 +696,21 @@ function App() {
           <div className="container">
             <div className="card">
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '20px' }}>
-                <img 
-                  src="https://media.tenor.com/PxudDH41WKcAAAAj/pepe-music-pepe-listening-to-music.gif" 
-                  alt="Pepe Music"
-                  style={{ width: '60px', height: '60px', borderRadius: '10px' }}
-                />
+                <button
+                  type="button"
+                  className="arena-secret"
+                  onClick={() => {
+                    window.location.hash = BONK_HASH;
+                    setCurrentView('bonk');
+                  }}
+                  aria-label=" "
+                >
+                  <img
+                    src="https://media.tenor.com/PxudDH41WKcAAAAj/pepe-music-pepe-listening-to-music.gif"
+                    alt="Pepe Music"
+                    style={{ width: '60px', height: '60px', borderRadius: '10px', pointerEvents: 'none' }}
+                  />
+                </button>
                 <h1 className="stage-title">
                   Bully's Lair
                 </h1>
@@ -1074,6 +1086,14 @@ function App() {
       case 'academy':
         return (
           <AcademyGuide onClose={() => {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            setCurrentView('login');
+          }} />
+        );
+
+      case 'bonk':
+        return (
+          <SonicBonk onClose={() => {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
             setCurrentView('login');
           }} />

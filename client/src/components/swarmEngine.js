@@ -1489,7 +1489,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null) => 
   let raf = 0;
   let last = performance.now();
   const frame = (now) => {
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const dt = clamp((now - last) / 1000, 0, 0.05);
     last = now;
     update(dt);
     render();
