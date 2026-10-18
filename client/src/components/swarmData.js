@@ -16,14 +16,14 @@ export const GENS = [
 /**
  * Partenaires. `trait` = mécanique propre au starter, `mega` = Méga-Évolution débloquée par la Méga-Gemme
  * (proposée au level-up une fois la dernière forme atteinte ; niveau 3 de la gemme = Méga).
- * `mega.sprite` : planche animée de la Méga si elle existe, sinon la forme finale (avec une aura).
+ * `mega.sprite` : planche de la Méga (PMDCollab, ou sprites de pokeemerald-expansion convertis : voir LISEZMOI).
  */
 export const PARTNERS = [
   {
     id: 'bulbasaur', gen: 1, name: 'Bulbizarre', dex: 1, type: 'Plante', color: '#7ac74c', hp: 130, speed: 2.6, weapon: 'leaf',
     blurb: 'Le plus résistant. Des Tranch’Herbe tournent autour de lui.',
     evolutions: [{ level: 8, name: 'Herbizarre', dex: 2, hp: 30 }, { level: 16, name: 'Florizarre', dex: 3, hp: 50 }],
-    mega: { name: 'Méga-Florizarre', stone: 'Florizarrite', sprite: 3 }
+    mega: { name: 'Méga-Florizarre', stone: 'Florizarrite', sprite: '3-mega', scale: 1.3 }
   },
   {
     id: 'charmander', gen: 1, name: 'Salamèche', dex: 4, type: 'Feu', color: '#ee8130', hp: 100, speed: 2.9, weapon: 'ember',
@@ -35,7 +35,7 @@ export const PARTNERS = [
       choices: [
         { id: 'x', name: 'Méga-Dracaufeu X', stone: 'Dracaufite X', sprite: '6-mega', type: 'Dragon', color: '#3aa0ff',
           perk: 'Flammes bleues : +45 % de dégâts et plus rapide.' },
-        { id: 'y', name: 'Méga-Dracaufeu Y', stone: 'Dracaufite Y', sprite: 6, type: 'Feu', color: '#ff7a1f',
+        { id: 'y', name: 'Méga-Dracaufeu Y', stone: 'Dracaufite Y', sprite: '6-megay', scale: 1.3, type: 'Feu', color: '#ff7a1f',
           perk: 'Sécheresse : un soleil brûlant frappe tout autour de toi et les attaques rechargent 25 % plus vite.' }
       ]
     }
@@ -44,19 +44,19 @@ export const PARTNERS = [
     id: 'squirtle', gen: 1, name: 'Carapuce', dex: 7, type: 'Eau', color: '#6390f0', hp: 120, speed: 2.7, weapon: 'watergun',
     blurb: 'Solide. Son Pistolet à O transperce toute une file d’ennemis.',
     evolutions: [{ level: 8, name: 'Carabaffe', dex: 8, hp: 30 }, { level: 16, name: 'Tortank', dex: 9, hp: 45 }],
-    mega: { name: 'Méga-Tortank', stone: 'Tortankite', sprite: 9 }
+    mega: { name: 'Méga-Tortank', stone: 'Tortankite', sprite: '9-mega', scale: 1.3 }
   },
   {
     id: 'pikachu', gen: 1, name: 'Pikachu', dex: 25, type: 'Électrik', color: '#f7d02c', hp: 90, speed: 3.2, weapon: 'thunder',
     blurb: 'Le plus rapide. Son Tonnerre rebondit d’un ennemi à l’autre.',
     evolutions: [{ level: 12, name: 'Raichu', dex: 26, hp: 40 }],
-    mega: { name: 'Méga-Raichu X', stone: 'Raichite X', sprite: 26 }
+    mega: { name: 'Méga-Raichu X', stone: 'Raichite X', sprite: '26-megax', scale: 1.0 }
   },
   {
     id: 'chikorita', gen: 2, name: 'Germignon', dex: 152, type: 'Plante', color: '#7ac74c', hp: 125, speed: 2.6, weapon: 'bloom',
     blurb: 'Fait pousser des champs de fleurs : tu t’y soignes, les ennemis y ralentissent et fanent.',
     evolutions: [{ level: 8, name: 'Macronium', dex: 153, hp: 30 }, { level: 16, name: 'Méganium', dex: 154, hp: 50 }],
-    mega: { name: 'Méga-Méganium', stone: 'Méganiumite', sprite: 154 }
+    mega: { name: 'Méga-Méganium', stone: 'Méganiumite', sprite: '154-mega', scale: 1.0 }
   },
   {
     id: 'cyndaquil', gen: 2, name: 'Héricendre', dex: 155, type: 'Feu', color: '#ee8130', hp: 95, speed: 3.1, weapon: 'flametrail',
@@ -67,7 +67,7 @@ export const PARTNERS = [
     id: 'totodile', gen: 2, name: 'Kaiminus', dex: 158, type: 'Eau', color: '#6390f0', hp: 115, speed: 2.8, weapon: 'bite',
     blurb: 'Croque tout ce qui s’approche et se soigne à chaque morsure.',
     evolutions: [{ level: 8, name: 'Crocrodil', dex: 159, hp: 30 }, { level: 16, name: 'Aligatueur', dex: 160, hp: 45 }],
-    mega: { name: 'Méga-Aligatueur', stone: 'Aligatueurite', sprite: 160 }
+    mega: { name: 'Méga-Aligatueur', stone: 'Aligatueurite', sprite: '160-mega', scale: 1.0 }
   },
   {
     id: 'treecko', gen: 3, name: 'Arcko', dex: 252, type: 'Plante', color: '#7ac74c', hp: 95, speed: 3.2, weapon: 'leafblade',
@@ -79,13 +79,13 @@ export const PARTNERS = [
     id: 'torchic', gen: 3, name: 'Poussifeu', dex: 255, type: 'Feu', color: '#ee8130', hp: 100, speed: 2.9, weapon: 'doublekick', trait: 'turbo',
     blurb: 'Turbo : il attaque de plus en plus vite tant qu’il n’est pas touché.',
     evolutions: [{ level: 8, name: 'Galifeu', dex: 256, hp: 30 }, { level: 16, name: 'Braségali', dex: 257, hp: 45 }],
-    mega: { name: 'Méga-Braségali', stone: 'Braségalite', sprite: 257 }
+    mega: { name: 'Méga-Braségali', stone: 'Braségalite', sprite: '257-mega', scale: 1.3 }
   },
   {
     id: 'mudkip', gen: 3, name: 'Gobou', dex: 258, type: 'Eau', color: '#6390f0', hp: 125, speed: 2.7, weapon: 'mudbomb',
     blurb: 'Ses Boue-Bombes laissent des flaques qui engluent la horde.',
     evolutions: [{ level: 8, name: 'Flobio', dex: 259, hp: 30 }, { level: 16, name: 'Laggron', dex: 260, hp: 50 }],
-    mega: { name: 'Méga-Laggron', stone: 'Laggronite', sprite: 260 }
+    mega: { name: 'Méga-Laggron', stone: 'Laggronite', sprite: '260-mega', scale: 1.3 }
   },
   {
     id: 'turtwig', gen: 4, name: 'Tortipouss', dex: 387, type: 'Plante', color: '#7ac74c', hp: 140, speed: 2.5, weapon: 'seedbomb', trait: 'bark',

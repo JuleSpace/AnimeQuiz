@@ -521,7 +521,7 @@ const PokeSwarm = ({ onClose }) => {
             </button>
           )}
         {panel && <MetaPanel panel={panel} meta={meta} setMeta={setMeta} onClose={() => setPanel(null)} />}
-        <p className="sw-credit">Sprites animés : PMDCollab SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo / Game Freak</p>
+        <p className="sw-credit">Sprites animés : PMDCollab SpriteCollab (CC BY-NC 4.0) · Méga-Évolutions manquantes : sprites de la communauté pokeemerald-expansion (RHH) · Pokémon © Nintendo / Game Freak</p>
       </div>
     );
   }

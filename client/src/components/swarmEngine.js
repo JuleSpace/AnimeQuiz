@@ -670,7 +670,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     const m = megaOf(partner, g.megaChoice) || partner.mega;
     p.mega = true;
     p.megaKind = g.megaChoice;
-    p.form = { name: m.name, dex: m.sprite, mega: true };
+    p.form = { name: m.name, dex: m.sprite, mega: true, scale: m.scale };
     p.maxHp += 60;
     p.hp = p.maxHp;
     p.evolving = 1.4;
@@ -1450,7 +1450,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       ctx.strokeStyle = `rgba(155,224,106,${0.35 + (p.bark / 25) * 0.4})`; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.ellipse(p.x, p.y - 18, 22, 26, 0, 0, TAU); ctx.stroke();
     }
-    const sc = SPR * (p.mega && typeof p.form.dex === 'number' ? 1.2 : 1);
+    const sc = SPR * (p.mega ? (p.form.scale || 1.15) : 1);
     if (p.slowT > 0) { ctx.save(); ctx.filter = 'saturate(.4) brightness(1.15)'; }
     const ok = drawPokemon(ctx, p.form.dex, anim, at, dir, p.x, p.y, sc, { loop, alpha: blink ? 0.4 : 1, white: p.evolving > 0 && Math.floor(p.evolving * 12) % 2 === 0 });
     if (p.slowT > 0) {
