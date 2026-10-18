@@ -436,8 +436,10 @@ function playEggKnock(step) {
     burst(ctx, master, now, 0.05, 3200 + step * 400, 2.5, 0.38, 1800);
     burst(ctx, master, now + 0.01, 0.09, 900, 1.2, 0.18, 400);
   }
-  if (!sample('chirp', ctx, master, now + 0.05, { rate: 1 + (step - 1) * 0.08 })) {
-    chaoChirp(ctx, master, now + 0.05, 700 + step * 160, 1250 + step * 220, 0.16, 0.13);
+  // Un seul cri de Chao, sur le dernier coup.
+  if (step < EGG_TAPS) return;
+  if (!sample('chirp', ctx, master, now + 0.05, { gain: 0.6 })) {
+    chaoChirp(ctx, master, now + 0.05, 1180, 1900, 0.16, 0.08);
   }
 }
 
@@ -481,7 +483,7 @@ function playOpeningScore() {
 
   // Le Chao sort : trois petits cris qui montent, puis un carillon majeur.
   const rise = now + pullAt;
-  if (!sample('happy', ctx, master, rise)) {
+  if (!sample('happy', ctx, master, rise, { gain: 0.55 })) {
     chaoChirp(ctx, master, rise, 820, 1320, 0.14, 0.12);
     chaoChirp(ctx, master, rise + 0.16, 900, 1480, 0.14, 0.12);
     chaoChirp(ctx, master, rise + 0.32, 1040, 1860, 0.24, 0.14);
@@ -491,16 +493,12 @@ function playOpeningScore() {
   });
 }
 
-// La carte apparaît : un anneau ramassé et un petit rire de Chao.
+// La carte apparaît : un anneau ramassé.
 function playHatchReveal() {
   const bus = voiceBus();
   if (!bus) return;
   const { ctx, master, now } = bus;
   if (!sample('ring', ctx, master, now)) ringTing(ctx, master, now, 0.12, 0);
-  if (sample('laugh', ctx, master, now + 0.2)) return;
-  chaoChirp(ctx, master, now + 0.2, 1200, 1700, 0.09, 0.09);
-  chaoChirp(ctx, master, now + 0.3, 1250, 1800, 0.09, 0.08);
-  chaoChirp(ctx, master, now + 0.4, 1320, 1950, 0.13, 0.08);
 }
 
 function playCardVoice(cardId) {
