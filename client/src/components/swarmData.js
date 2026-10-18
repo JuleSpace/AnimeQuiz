@@ -50,7 +50,15 @@ export const PARTNERS = [
     id: 'pikachu', gen: 1, name: 'Pikachu', dex: 25, type: 'Électrik', color: '#f7d02c', hp: 90, speed: 3.2, weapon: 'thunder',
     blurb: 'Le plus rapide. Son Tonnerre rebondit d’un ennemi à l’autre.',
     evolutions: [{ level: 12, name: 'Raichu', dex: 26, hp: 40 }],
-    mega: { name: 'Méga-Raichu X', stone: 'Raichite X', sprite: '26-megax', scale: 1.0 }
+    mega: {
+      name: 'Méga-Raichu', stone: 'Raichite', sprite: '26-megax', scale: 1.0,
+      choices: [
+        { id: 'x', name: 'Méga-Raichu X', stone: 'Raichite X', sprite: '26-megax', scale: 1.0, type: 'Électrik', color: '#f7c61c',
+          perk: 'Survolté : +45 % de dégâts et plus rapide.' },
+        { id: 'y', name: 'Méga-Raichu Y', stone: 'Raichite Y', sprite: '26-megay', scale: 1.0, type: 'Électrik', color: '#ff9a2e',
+          perk: 'Champ électrique : des décharges frappent tout autour de toi et les attaques rechargent 25 % plus vite.' }
+      ]
+    }
   },
   {
     id: 'chikorita', gen: 2, name: 'Germignon', dex: 152, type: 'Plante', color: '#7ac74c', hp: 125, speed: 2.6, weapon: 'bloom',

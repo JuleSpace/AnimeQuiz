@@ -1065,9 +1065,14 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       if (g.sunT <= 0) {
         g.sunT = 1.3;
         const R = 170;
-        g.fx.push({ kind: 'ring', x: p.x, y: p.y, r: 20, max: R, life: 0.45, color: '#ffb02e' });
-        near(p.x, p.y, R + 40).forEach((f) => { if (!f.inert && (f.x - p.x) ** 2 + (f.y - p.y) ** 2 < (R + f.size * 0.4) ** 2) hurt(f, 16, p, { knock: 2.5, color: '#ffcf6a' }); });
-        for (let i = 0; i < 10; i += 1) { const a = rand(0, TAU); particle({ kind: 'dot', x: p.x + Math.cos(a) * R * 0.8, y: p.y + Math.sin(a) * R * 0.5, vx: 0, vy: -rand(0.5, 1.4), life: rand(0.3, 0.6), color: pick(['#fff1a8', '#ffb347', '#ff6a1f']), size: rand(2, 4) }); }
+        const elec = partner.id === 'pikachu'; // Méga-Raichu Y : décharges au lieu du soleil
+        g.fx.push({ kind: 'ring', x: p.x, y: p.y, r: 20, max: R, life: 0.45, color: elec ? '#fff35a' : '#ffb02e' });
+        near(p.x, p.y, R + 40).forEach((f) => {
+          if (f.inert || (f.x - p.x) ** 2 + (f.y - p.y) ** 2 >= (R + f.size * 0.4) ** 2) return;
+          hurt(f, 16, p, { knock: 2.5, color: elec ? '#fff8a0' : '#ffcf6a' });
+          if (elec) burst(f.x, f.y - 14, '#fff35a', 3, 3);
+        });
+        for (let i = 0; i < 10; i += 1) { const a = rand(0, TAU); particle({ kind: 'dot', x: p.x + Math.cos(a) * R * 0.8, y: p.y + Math.sin(a) * R * 0.5, vx: 0, vy: -rand(0.5, 1.4), life: rand(0.3, 0.6), color: pick(elec ? ['#ffffff', '#fff35a', '#ffd21a'] : ['#fff1a8', '#ffb347', '#ff6a1f']), size: rand(2, 4) }); }
       }
     }
     if (partner.trait === 'bark') { p.barkCd -= dt; if (p.barkCd <= 0 && p.bark < 25 + g.megaLv * 5) p.bark = Math.min(25, p.bark + dt * 8); }
@@ -1430,7 +1435,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       const R = 170;
       const k = 1 - g.sunT / 1.3;
       const gr = ctx.createRadialGradient(p.x, p.y, 10, p.x, p.y, R);
-      gr.addColorStop(0, `rgba(255,200,80,${0.3 + k * 0.15})`); gr.addColorStop(0.7, "rgba(255,140,40,.14)"); gr.addColorStop(1, 'rgba(255,120,30,0)');
+      if (partner.id === 'pikachu') { gr.addColorStop(0, `rgba(255,245,120,${0.25 + k * 0.2})`); gr.addColorStop(0.7, 'rgba(255,230,60,.12)'); gr.addColorStop(1, 'rgba(255,220,40,0)'); }
+      else { gr.addColorStop(0, `rgba(255,200,80,${0.3 + k * 0.15})`); gr.addColorStop(0.7, 'rgba(255,140,40,.14)'); gr.addColorStop(1, 'rgba(255,120,30,0)'); }
       ctx.fillStyle = gr;
       ctx.beginPath(); ctx.ellipse(p.x, p.y, R, R * 0.6, 0, 0, TAU); ctx.fill();
     }
