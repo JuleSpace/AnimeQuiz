@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createBonk } from './bonkEngine';
-import { CHARACTERS, MAX_LEVEL, PASSIVES, RUN_SECONDS, WEAPONS } from './bonkData';
+import { CHARACTERS, MAX_LEVEL, MODELS, PASSIVES, RUN_SECONDS, WEAPONS } from './bonkData';
 import { Avatar } from './SonicRoster';
 import './SonicBonk.css';
 
@@ -128,7 +128,10 @@ const SonicBonk = ({ onClose }) => {
           <span><b>Téléphone</b> joystick à gauche, caméra à droite, boutons Saut / Spin</span>
         </div>
         <button type="button" className="bk-btn is-go" onClick={start}>Jouer avec {character.name}</button>
-        <p className="bk-credit">Modèle 3D par défaut : RobotExpressive de Tomás Laulhé (CC0)</p>
+        <p className="bk-credit">
+          Modèles 3D (Sketchfab) — {CHARACTERS.map((c) => MODELS[c.id]?.credit).filter(Boolean).join(' · ')} · Modèle de secours : RobotExpressive, Tomás Laulhé (CC0).
+          Personnages © SEGA, projet de fans non commercial.
+        </p>
       </div>
     );
   }

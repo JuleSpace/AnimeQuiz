@@ -7,7 +7,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {
-  BOSSES, ENEMIES, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, PASSIVES, RUN_SECONDS, WAVES, WEAPONS, xpToNext
+  BOSSES, ENEMIES, MAX_LEVEL, MODELS as CHAR_MODELS, MAX_PASSIVES, MAX_WEAPONS, PASSIVES, RUN_SECONDS, WAVES, WEAPONS, xpToNext
 } from './bonkData';
 
 const TAU = Math.PI * 2;
@@ -431,29 +431,32 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
    * On essaie d'abord public/bonk/models/<perso>.glb (ton propre modèle), sinon le modèle
    * par défaut (RobotExpressive, CC0) teinté à la couleur du perso. */
   const charColor = new THREE.Color(character.color);
-  const avatar = { root: new THREE.Group(), model: null, mixer: null, actions: {}, current: null, mats: [], yaw: 0, lean: 0, squash: 0, punchT: 0, wasGrounded: true, jumpT: 0 };
+  const avatar = {
+    root: new THREE.Group(), model: null, mixer: null, actions: {}, current: null, mats: [], yaw: 0, lean: 0, squash: 0,
+    punchT: 0, wasGrounded: true, rig: null, cfg: null, phase: 0, deadT: 0, spin: 0
+  };
   scene.add(avatar.root);
   const MODEL_BASE = `${process.env.PUBLIC_URL || ''}/bonk/models`;
-  const CLIPS = {
-    idle: /idle|stand/i,
-    run: /run|sprint/i,
-    walk: /walk(?!jump)/i,
-    jump: /jump|fall|air/i,
-    punch: /punch|attack|slash/i,
-    death: /death|die|dead/i,
-    win: /dance|victory|wave|thumb/i
-  };
+  // Pour le modèle par défaut (RobotExpressive), les animations sont reconnues par leur nom.
+  const DEFAULT_CLIPS = { idle: 'Idle', run: 'Running', walk: 'Walking', jump: 'Jump', punch: 'Punch', death: 'Death', win: 'Dance' };
   const play = (key, fade = 0.18) => {
     let k = key;
-    if (!avatar.actions[k]) k = k === 'run' ? 'walk' : k === 'walk' ? 'run' : 'idle';
-    const next = avatar.actions[k];
-    if (!next || avatar.current === next) return next || null;
-    next.reset().setEffectiveWeight(1).fadeIn(fade).play();
+    if (!avatar.actions[k]) k = k === 'run' ? 'walk' : k === 'walk' ? 'run' : k === 'hurt' ? 'idle' : 'idle';
+    const next = avatar.actions[k] || null;
+    if (avatar.current === next) return next;
+    if (next) next.reset().setEffectiveWeight(1).fadeIn(fade).play();
     if (avatar.current) avatar.current.fadeOut(fade);
     avatar.current = next;
     return next;
   };
-  const setupModel = (gltf, tint) => {
+  const findBone = (model, suffix) => {
+    if (!suffix) return null;
+    let found = null;
+    const re = new RegExp(`${suffix}$`);
+    model.traverse((o) => { if (!found && (o.isBone || o.type === 'Object3D') && re.test(o.name)) found = o; });
+    return found;
+  };
+  const setupModel = (gltf, tint, cfg) => {
     const model = gltf.scene;
     model.traverse((o) => {
       if (!o.isMesh) return;
@@ -468,22 +471,44 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
       });
       o.material = Array.isArray(o.material) ? cloned : cloned[0];
     });
-    const box = new THREE.Box3().setFromObject(model);
-    const h = (box.max.y - box.min.y) || 1;
-    const sc = 2 / h;
+    model.updateMatrixWorld(true);
+    // Les maillages « skinnés » ne connaissent leur forme qu'après la mise à jour du squelette.
+    model.traverse((o) => { if (o.isSkinnedMesh) { o.skeleton.update(); o.computeBoundingBox?.(); } });
+    const box = new THREE.Box3().setFromObject(model, true);
+    let h = box.max.y - box.min.y;
+    if (!(h > 1e-4)) {
+      // secours : hauteur d'après les os
+      box.makeEmpty();
+      model.traverse((o) => { if (o.isBone) box.expandByPoint(o.getWorldPosition(new THREE.Vector3())); });
+      h = (box.max.y - box.min.y) * 1.25 || 1;
+    }
+    const sc = 2.1 / h;
     model.scale.multiplyScalar(sc);
     model.position.y = -box.min.y * sc;
     avatar.root.add(model);
     avatar.model = model;
+    avatar.cfg = cfg;
     avatar.mixer = new THREE.AnimationMixer(model);
-    Object.entries(CLIPS).forEach(([key, re]) => {
-      const clip = gltf.animations.find((a) => (key === 'jump' ? /^jump$/i.test(a.name) : false)) || gltf.animations.find((a) => re.test(a.name));
+    const names = cfg.clips || {};
+    Object.entries(names).forEach(([key, part]) => {
+      const clip = gltf.animations.find((a) => a.name === part) || gltf.animations.find((a) => a.name.includes(part));
       if (clip) avatar.actions[key] = avatar.mixer.clipAction(clip);
     });
-    ['jump', 'punch', 'death', 'win'].forEach((k) => {
+    ['jump', 'punch', 'death', 'win', 'hurt'].forEach((k) => {
       const a = avatar.actions[k];
       if (a) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
     });
+    // Os animés par le code (modèles sans animation de course)
+    if (cfg.rig) {
+      const r = cfg.rig;
+      const bone = (sfx) => { const b = findBone(model, sfx); if (b) b.userData.bind = b.quaternion.clone(); return b; };
+      avatar.rig = {
+        legs: r.legs.map(([t, k]) => [bone(t), bone(k)]),
+        arms: r.arms.map(([t, k]) => [bone(t), bone(k)]),
+        lower: r.lower || 0,
+        spinner: bone(r.spinner)
+      };
+    }
     play('idle', 0);
   };
   const fallbackModel = () => {
@@ -500,8 +525,10 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
     avatar.model = m;
   };
   const gltfLoader = new GLTFLoader();
-  const loadDefault = () => gltfLoader.load(`${MODEL_BASE}/default.glb`, (gl) => setupModel(gl, true), undefined, fallbackModel);
-  gltfLoader.load(`${MODEL_BASE}/${character.id}.glb`, (gl) => setupModel(gl, false), undefined, loadDefault);
+  const loadDefault = () => gltfLoader.load(`${MODEL_BASE}/default.glb`, (gl) => setupModel(gl, true, { clips: DEFAULT_CLIPS }), undefined, fallbackModel);
+  const modelCfg = CHAR_MODELS[character.id];
+  if (modelCfg) gltfLoader.load(`${MODEL_BASE}/${modelCfg.file}`, (gl) => setupModel(gl, false, modelCfg), undefined, loadDefault);
+  else loadDefault();
 
   const ball = new THREE.Mesh(track(merge([
     part(new THREE.IcosahedronGeometry(0.7, 1), character.color),
@@ -1432,13 +1459,73 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
     mx.putImageData(img, 0, 0);
   }
 
+  // Rotation autour d'un axe exprimé dans le repère du perso (appliquée dans l'espace du parent de l'os).
+  const qa = new THREE.Quaternion(); const qb = new THREE.Quaternion(); const va = new THREE.Vector3();
+  const AX = { x: new THREE.Vector3(1, 0, 0), y: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(0, 0, 1) };
+  const turnBone = (bone, axis, angle) => {
+    if (!bone || !angle) return;
+    avatar.root.getWorldQuaternion(qb);
+    va.copy(axis).applyQuaternion(qb);
+    bone.parent.getWorldQuaternion(qa);
+    va.applyQuaternion(qa.invert()).normalize();
+    qa.setFromAxisAngle(va, angle);
+    bone.quaternion.premultiply(qa);
+    bone.updateMatrixWorld(true);
+  };
+  const animateRig = (state, spd, dt) => {
+    const r = avatar.rig;
+    const p = g.player;
+    // on repart de la pose de base (les os non animés par le clip garderaient sinon nos rotations)
+    [...r.legs.flat(), ...r.arms.flat(), r.spinner].forEach((b) => { if (b && b.userData.bind) b.quaternion.copy(b.userData.bind); });
+    avatar.root.updateMatrixWorld(true);
+    const run = state === 'run' || state === 'walk';
+    avatar.phase += dt * (run ? 4 + spd * 0.75 : 2);
+    const ph = avatar.phase;
+    const amp = state === 'run' ? clamp(0.45 + spd * 0.035, 0.5, 1.1) : state === 'walk' ? 0.45 : 0;
+    // Jambes : balancier + genou qui plie
+    r.legs.forEach(([thigh, knee], i) => {
+      const s2 = i === 0 ? 1 : -1;
+      if (state === 'glide') { turnBone(thigh, AX.x, 0.5); turnBone(knee, AX.x, 0.4); return; }
+      if (state === 'fly') { turnBone(thigh, AX.x, -0.25 + Math.sin(g.t * 6 + i) * 0.15); turnBone(knee, AX.x, 0.5); return; }
+      if (!run) return;
+      const sw = Math.sin(ph) * s2;
+      turnBone(thigh, AX.x, -sw * amp);
+      turnBone(knee, AX.x, (0.35 + Math.max(0, Math.sin(ph * s2 + 1.2 * s2)) * 1.1) * amp);
+    });
+    // Bras : on les baisse (pose en A), puis ils balancent à l'opposé des jambes
+    r.arms.forEach(([arm, elbow], i) => {
+      const side = i === 0 ? 1 : -1;
+      if (state === 'glide') { turnBone(arm, AX.y, side * 1.0); turnBone(arm, AX.z, side * 0.25); return; }
+      turnBone(arm, AX.z, -side * r.lower);
+      if (run) {
+        turnBone(arm, AX.x, Math.sin(ph) * side * amp * 0.9);
+        turnBone(elbow, AX.y, side * 0.9);
+      } else if (state === 'fly') {
+        turnBone(arm, AX.z, -side * 0.3);
+      } else {
+        turnBone(arm, AX.x, Math.sin(g.t * 2 + i) * 0.04);
+      }
+    });
+    // Queues de Tails : hélice en vol, tournoient en courant
+    if (r.spinner) {
+      const rate = state === 'fly' ? 26 : run ? 8 : 0;
+      avatar.spin += dt * rate;
+      if (rate) turnBone(r.spinner, AX.z, avatar.spin);
+    }
+    if (p.hp <= 0) return;
+  };
+
   const animateAvatar = (dt) => {
     const p = g.player;
     const spd = Math.hypot(p.vx, p.vz);
-    const balled = p.spin > 0;
-    ball.visible = balled;
-    avatar.root.visible = !balled && !(p.inv > 0 && p.spin <= 0 && !g.over && Math.floor(p.inv * 18) % 2 === 0);
-    if (balled) {
+    const hasBall = !!avatar.actions.ball;
+    const rollAir = character.air === 'dash' || character.air === 'double';
+    const airBall = !p.grounded && !p.gliding && !p.flying && (rollAir || p.vy > 2) && !avatar.actions.jump;
+    const balledMesh = (p.spin > 0 || airBall) && !hasBall && !g.over;
+    ball.visible = balledMesh;
+    const blinkOff = p.inv > 0 && p.spin <= 0 && !g.over && Math.floor(p.inv * 18) % 2 === 0;
+    avatar.root.visible = !balledMesh && !blinkOff;
+    if (balledMesh) {
       ball.position.set(p.x, p.y + 0.7, p.z);
       ball.rotation.x -= 0.5;
       ball.rotation.y = p.face;
@@ -1449,13 +1536,15 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
     while (diff < -Math.PI) diff += TAU;
     avatar.yaw += diff * Math.min(1, dt * 12);
     avatar.lean += (clamp(diff * 0.6, -0.35, 0.35) * Math.min(1, spd / 8) - avatar.lean) * Math.min(1, dt * 8);
-    if (!p.grounded && avatar.wasGrounded) avatar.jumpT = 0;
     if (p.grounded && !avatar.wasGrounded) avatar.squash = 0.18;
     avatar.wasGrounded = p.grounded;
     avatar.squash = Math.max(0, avatar.squash - dt * 1.2);
     avatar.punchT = Math.max(0, avatar.punchT - dt);
     avatar.root.position.set(p.x, p.y, p.z);
-    avatar.root.rotation.set(Math.min(0.18, spd * 0.007), avatar.yaw, -avatar.lean, 'YXZ');
+    let tiltX = Math.min(0.18, spd * 0.007);
+    if (g.over === 'lose' && !avatar.actions.death) { avatar.deadT = Math.min(1, avatar.deadT + dt * 2.5); tiltX = -avatar.deadT * Math.PI / 2; }
+    if (p.gliding) tiltX = 0.9;
+    avatar.root.rotation.set(tiltX, avatar.yaw, -avatar.lean, 'YXZ');
     const sq = avatar.squash;
     avatar.root.scale.set(1 + sq * 0.6, 1 - sq, 1 + sq * 0.6);
     // flash rouge quand on est touché
@@ -1468,22 +1557,24 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
     let state;
     if (g.over === 'lose') state = 'death';
     else if (g.over === 'win') state = 'win';
-    else if (!p.grounded) state = 'jump';
-    else if (avatar.punchT > 0) state = 'punch';
-    else if (spd > 7) state = 'run';
+    else if (p.spin > 0 && hasBall) state = 'ball';
+    else if (!p.grounded) state = p.gliding ? 'glide' : p.flying ? 'fly' : (hasBall && (rollAir || p.vy > 2)) ? 'ball' : 'jump';
+    else if (avatar.punchT > 0 && avatar.actions.punch) state = 'punch';
+    else if (g.hurtFlash > 0.15 && avatar.actions.hurt) state = 'hurt';
+    else if (spd > 6) state = 'run';
     else if (spd > 0.6) state = 'walk';
     else state = 'idle';
-    const action = play(state, state === 'jump' ? 0.08 : 0.18);
+    const clipState = (state === 'glide' || state === 'fly') ? (avatar.actions.jump ? 'jump' : 'idle') : state;
+    const action = play(clipState, clipState === 'jump' || clipState === 'ball' ? 0.08 : 0.18);
     if (action) {
-      if (state === 'run') action.timeScale = clamp(spd / 9, 0.8, 2.4);
-      else if (state === 'walk') action.timeScale = clamp(spd / 3.2, 0.6, 1.8);
-      else if (state === 'jump') {
-        avatar.jumpT += dt;
-        // en plané / vol, on fige la pose « en l'air » du saut
-        action.timeScale = p.gliding || p.flying ? 0 : 1.3;
-      } else action.timeScale = 1;
+      if (clipState === 'run') action.timeScale = clamp(spd / 10, 0.8, 2.2);
+      else if (clipState === 'walk') action.timeScale = clamp(spd / 3.2, 0.6, 1.8);
+      else if (clipState === 'jump') action.timeScale = p.gliding || p.flying ? 0 : 1.3;
+      else if (clipState === 'ball') action.timeScale = 1.6;
+      else action.timeScale = 1;
     }
     avatar.mixer.update(dt);
+    if (avatar.rig) animateRig(state, spd, dt);
   };
 
   const render = (dt = 1 / 60) => {

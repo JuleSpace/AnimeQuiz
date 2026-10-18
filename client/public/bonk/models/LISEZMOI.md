@@ -1,26 +1,23 @@
 # Modèles 3D du mode Sonic Bonk
 
-- `default.glb` : « RobotExpressive » de Tomás Laulhé (modifié par Don McCurdy), domaine public (CC0 1.0).
-  Utilisé pour tous les persos, teinté à leur couleur.
+| Fichier | Modèle | Auteur | Licence |
+|---|---|---|---|
+| `sonic.glb` | Sonic the Hedgehog | Sonic the Hedgehog Fan # 9,945,677 (sketchfab.com/sonicmaniafan994878) | CC BY 4.0 |
+| `shadow.glb` | Shadow The Hedgehog (Sonic Forces/GMOD) | Portycraft (sketchfab.com/Portycraft) | CC BY-NC 4.0 |
+| `knuckles.glb` | Knuckles (Sonic The Hedgehog) | Guilherme Navarro (sketchfab.com/guinavarro.al) | CC BY 4.0 |
+| `amy.glb` | Amy Rose (Sonic The Hedgehog) | Guilherme Navarro (sketchfab.com/guinavarro.al) | CC BY 4.0 |
+| `tails.glb` | Tails (Sonic The Hedgehog) | Guilherme Navarro (sketchfab.com/guinavarro.al) | CC BY 4.0 |
+| `default.glb` | RobotExpressive (modèle de secours) | Tomás Laulhé, modifié par Don McCurdy | CC0 1.0 |
 
-## Mettre ton propre modèle pour un perso
+Personnages © SEGA ; projet de fans non commercial (obligatoire pour le modèle de Shadow, en CC BY-NC).
 
-Dépose un fichier `<id>.glb` ici : `sonic.glb`, `tails.glb`, `knuckles.glb`, `shadow.glb` ou `amy.glb`.
-Il remplace automatiquement le modèle par défaut pour ce perso, sans toucher au code.
+Retouches faites sur les fichiers : matériaux d'Amy convertis (l'ancien format « spéculaire / brillance »
+n'est plus lu par Three.js) et binaire réécrit. Aucune géométrie modifiée.
 
-Le modèle doit être riggé (squelette) et contenir ses animations dans le même fichier.
-Les animations sont reconnues par leur nom :
+## Comment ils sont animés (voir `MODELS` dans `src/components/bonkData.js`)
 
-| Rôle | Noms reconnus (contient…) |
-|---|---|
-| Repos | idle, stand |
-| Course | run, sprint |
-| Marche | walk |
-| Saut | jump, fall, air |
-| Attaque | punch, attack, slash |
-| K.O. | death, die |
-| Victoire | dance, victory, wave, thumb |
-
-La taille est ajustée automatiquement (2 m de haut), le perso doit regarder vers +Z.
-Astuce : Mixamo (gratuit) rigge un modèle humanoïde et ajoute Idle / Run / Jump ; exporte en FBX,
-puis convertis en .glb avec Blender (Fichier > Exporter > glTF 2.0, animations cochées).
+- Shadow utilise ses propres animations (repos, marche, course, chute, boule, Lance du Chaos, dégâts…).
+- Sonic, Knuckles, Amy et Tails n'ont pas d'animation de course utilisable : le jeu anime directement
+  leurs os (cuisses, genoux, bras, et les queues de Tails en hélice).
+- Pour changer de modèle : remplace le fichier et mets à jour l'entrée `MODELS` (noms des animations
+  ou suffixes des os).

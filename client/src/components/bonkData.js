@@ -159,3 +159,42 @@ export const BOSSES = [
 
 /** XP pour passer du niveau `lv` au suivant. */
 export const xpToNext = (lv) => Math.round(6 + lv * 4.5 + lv * lv * 0.4);
+
+/**
+ * Modèles 3D des persos (public/bonk/models), téléchargés sur Sketchfab.
+ * `clips` : nom (ou morceau de nom) de l'animation à utiliser pour chaque état.
+ * `rig` : pour les modèles sans animation de course, os animés par le code
+ * (suffixe « _N » du nom de l'os : [cuisse, genou] et [bras, coude]).
+ */
+export const MODELS = {
+  sonic: {
+    file: 'sonic.glb',
+    credit: 'Sonic : « Sonic the Hedgehog » par Sonic the Hedgehog Fan # 9,945,677 (CC BY 4.0)',
+    // Les animations de ce fichier sont abîmées (jambes écrasées) : on anime ses os nous-mêmes.
+    clips: {},
+    rig: { legs: [['L_Thigh_5', 'L_Calf_4'], ['R_Thigh_9', 'R_Calf_8']], arms: [['L_UpperArm_25', 'L_Forearm_24'], ['R_UpperArm_33', 'R_Forearm_32']], lower: 0 }
+  },
+  shadow: {
+    file: 'shadow.glb',
+    credit: 'Shadow : « Shadow The Hedgehog (Sonic Forces/GMOD) » par Portycraft (CC BY-NC 4.0)',
+    clips: { idle: '|idle', run: '|run', walk: '|walk', jump: '|fall', ball: '|ball', punch: '|chaosspearground', death: '|damage', hurt: '|damage', win: '|chaoscontrolloop', boost: '|boost' }
+  },
+  knuckles: {
+    file: 'knuckles.glb',
+    credit: 'Knuckles : « Knuckles (Sonic The Hedgehog) » par Guilherme Navarro (CC BY 4.0)',
+    clips: {},
+    rig: { legs: [['_26', '_23'], ['_36', '_33']], arms: [['_101', null], ['_120', null]], lower: 0.75 }
+  },
+  amy: {
+    file: 'amy.glb',
+    credit: 'Amy : « Amy Rose (Sonic The Hedgehog) » par Guilherme Navarro (CC BY 4.0)',
+    clips: {},
+    rig: { legs: [['_130', '_128'], ['_137', '_135']], arms: [['_95', '_93'], ['_120', '_118']], lower: 0.35 }
+  },
+  tails: {
+    file: 'tails.glb',
+    credit: 'Tails : « Tails (Sonic The Hedgehog) » par Guilherme Navarro (CC BY 4.0)',
+    clips: {},
+    rig: { legs: [['_36', '_34'], ['_46', '_44']], arms: [['_114', '_112'], ['_139', '_137']], lower: 0.35, spinner: '_26' }
+  }
+};
