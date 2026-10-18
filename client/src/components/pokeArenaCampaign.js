@@ -311,7 +311,7 @@ export const DIFFICULTY = [
 ];
 export const KIND_SCALE = { combat: 1, elite: 1.0, rival: 0.97, villain: 0.98, boss: 0.93 };
 /** Un cran de difficulté en plus sur toute la campagne (PV et ATK des adversaires). */
-export const HARDER = 1.06;
+export const HARDER = 1.1;
 const EXTRA_UNITS = { elite: 1, rival: 0, villain: 1 };
 const EXTRA_STARS = { elite: 1, rival: 0, villain: 0.5 };
 

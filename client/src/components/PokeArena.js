@@ -21,6 +21,7 @@ import {
   addXp,
   rollComponent,
   applyEvolutionChoice,
+  applyMegaChoice,
   autoSeat,
   buildRunPool,
   clearCampaign,
@@ -610,6 +611,8 @@ const PokeArena = ({ onClose }) => {
 
   const pendingEvo = useMemo(() => [...board, ...bench].find((u) => u?.pendingEvo) || null, [board, bench]);
 
+  const pendingMega = useMemo(() => [...board, ...bench].find((u) => u?.pendingMega && !u.pendingEvo) || null, [board, bench]);
+
   const mapUnit = (uid, fn) => {
     setBoard((cur) => cur.map((u) => (u?.uid === uid ? fn(u) : u)));
     setBench((cur) => cur.map((u) => (u?.uid === uid ? fn(u) : u)));
@@ -623,6 +626,16 @@ const PokeArena = ({ onClose }) => {
     setEvolving([next.uid]);
     setTimeout(() => setEvolving([]), 1400);
     say(`${pendingEvo.name} évolue en ${displayName(next.name)} !`);
+  };
+
+  const chooseMega = (index) => {
+    if (!pendingMega) return;
+    const next = applyMegaChoice(pendingMega, index);
+    if (!next) return;
+    mapUnit(pendingMega.uid, () => next);
+    setEvolving([next.uid]);
+    setTimeout(() => setEvolving([]), 1400);
+    say(`${displayName(pendingMega.name)} Méga-évolue en ${displayName(next.name)} !`);
   };
 
   const canEdit = phase === 'battle' && stage === 'prep' && !result && !(mode === 'versus' && vsReady);
@@ -954,6 +967,10 @@ const PokeArena = ({ onClose }) => {
       say('Choisis d’abord une évolution.');
       return;
     }
+    if (pendingMega) {
+      say('Choisis d’abord sa Méga-Évolution.');
+      return;
+    }
     const capped = enforceBoardCap(board, bench, boardCap);
     const fighters = capped.board.filter(Boolean);
     if (!fighters.length) {
@@ -1156,6 +1173,7 @@ const PokeArena = ({ onClose }) => {
 
   const setPendingEvoSafe = () => {
     // Un choix d’évolution en attente est résolu automatiquement avant le combat.
+    if (pendingMega && !pendingEvo) chooseMega(0);
     if (!pendingEvo) return;
     const form = LINE_MAP[pendingEvo.lineId]?.forms?.[0];
     if (form) chooseEvo(form.id);
@@ -1883,6 +1901,30 @@ const PokeArena = ({ onClose }) => {
                       <strong>{displayName(u.name)}</strong>
                       <span className="ui-chips">{u.types.map((t) => <TypeChip key={t} type={t} small />)}</span>
                       {u.ab && <span><b>{u.ab.name}</b> : {u.ab.desc}</span>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {pendingMega && !pendingEvo && (pendingMega.megaOptions || []).length > 1 && (
+        <div className="ui-modal" role="dialog" aria-label="Méga-Évolution">
+          <div className="ui-modal-card">
+            <header><h2>{displayName(pendingMega.name)} va Méga-évoluer !</h2></header>
+            <p className="ui-muted">Il existe plusieurs Méga-Évolutions : choisis la sienne. Mêmes stats, types différents.</p>
+            <ul className="ui-reward">
+              {pendingMega.megaOptions.map((m, i) => {
+                const u = applyMegaChoice({ ...pendingMega, uid: `mega-${i}` }, i);
+                if (!u) return null;
+                return (
+                  <li key={m.dex}>
+                    <button type="button" className="ui-reward-card" style={{ '--t': tint(u.type) }} onClick={() => chooseMega(i)}>
+                      <PokeSprite unit={u} size="lg" />
+                      <strong>{displayName(u.name)}</strong>
+                      <span className="ui-chips">{u.types.map((t) => <TypeChip key={t} type={t} small />)}</span>
                     </button>
                   </li>
                 );

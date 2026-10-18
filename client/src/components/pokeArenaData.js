@@ -1386,6 +1386,22 @@ export const MEGA_STONES = {
   71: [{ name: 'Méga-Empiflor', types: ['Plante', 'Poison'], dex: 10279 }]
 };
 
+/**
+ * Lignées qui ont plusieurs Méga-Évolutions possibles en 3★ (sans Bracelet) : le joueur choisit laquelle.
+ * Pour les Méga obtenues avec le Bracelet, les variantes sont dans MEGA_STONES.
+ */
+export const MEGA_CHOICES = {
+  448: [MEGA_BY_DEX[448], { name: 'Méga-Lucario Z', types: ['Combat', 'Acier'], dex: 10310 }],
+  359: [MEGA_BY_DEX[359], { name: 'Méga-Absol Z', types: ['Ténèbres', 'Spectre'], dex: 10307 }],
+  26: [{ name: 'Méga-Raichu X', types: ['Électrik'], dex: 10304 }, { name: 'Méga-Raichu Y', types: ['Électrik'], dex: 10305 }]
+};
+
+/** Forme d'une unité : « kanto », « kanto#1 » (Méga n°1 choisie), « #0 »… */
+export const splitForm = (formId) => {
+  const [form, mega] = String(formId || '').split('#');
+  return { form: form || null, mega: mega === undefined || mega === '' ? null : Number(mega) };
+};
+
 const promoteMegaStar = (stages) => {
   if (!stages || stages.length < 2) return;
   const prev = stages[stages.length - 2];
@@ -1393,7 +1409,7 @@ const promoteMegaStar = (stages) => {
   if (!prev || !last || prev.dex !== last.dex) return;
   const mega = MEGA_BY_DEX[last.dex];
   if (!mega) return;
-  stages[stages.length - 1] = S(mega.name, mega.types, last.hp, last.atk, last.spd, mega.dex);
+  stages[stages.length - 1] = { ...S(mega.name, mega.types, last.hp, last.atk, last.spd, mega.dex), megaOf: last.dex };
 };
 
 const applyBalance = (line) => {
@@ -1943,29 +1959,54 @@ const pickMegaStone = (dex, range = 1) => {
 };
 
 /** La forme finale de cette lignée (ou de la forme choisie) peut-elle Méga-évoluer avec le Bracelet ? */
-export const canMegaEvolve = (lineId, formId = null) => {
+export const canMegaEvolve = (lineId, rawFormId = null) => {
   const line = LINE_MAP[lineId];
   if (!line) return false;
+  const formId = splitForm(rawFormId).form;
   const finals = line.forms?.length
     ? line.forms.filter((f) => !formId || f.id === formId).map((f) => f.stages[f.stages.length - 1])
     : [line.stages[line.stages.length - 1]];
   return finals.some((st) => st && MEGA_STONES[st.dex]);
 };
 
-export const unitFromLine = (lineId, star = 1, uid, items = [], formId = null, autoForm = false) => {
+/** Les Méga possibles pour cette unité en ce moment (au moins 2 = un choix est à faire). */
+const megaOptionsFor = (line, resolved, items) => {
+  if (resolved.stageN < 3) return null;
+  if (resolved.base?.megaOf && MEGA_CHOICES[resolved.base.megaOf]) return { via: 'star', list: MEGA_CHOICES[resolved.base.megaOf] };
+  if (items.includes('megaring') && (MEGA_STONES[resolved.base?.dex] || []).length > 1) return { via: 'ring', list: MEGA_STONES[resolved.base.dex] };
+  return null;
+};
+
+export const unitFromLine = (lineId, star = 1, uid, items = [], rawFormId = null, autoForm = false) => {
   const line = LINE_MAP[lineId];
   if (!line) return null;
-  const resolved = resolveStage(line, star, formId, autoForm);
-  const base = resolved.base;
+  const split = splitForm(rawFormId);
+  const resolved = resolveStage(line, star, split.form, autoForm);
+  let base = resolved.base;
   if (!base) return null;
+  const options = megaOptionsFor(line, resolved, items);
+  let megaPick = split.mega;
+  if (options && (megaPick === null || !options.list[megaPick]) && autoForm) megaPick = Math.floor(Math.random() * options.list.length);
+  const pendingMega = Boolean(options && (megaPick === null || !options.list[megaPick]));
+  const formId = options && !pendingMega ? `${resolved.formId || ''}#${megaPick}` : resolved.formId;
+  // 3★ à Méga multiple : la Méga choisie remplace le stade final (mêmes stats).
+  if (options?.via === 'star' && !pendingMega) {
+    const m = options.list[megaPick];
+    base = { ...base, name: m.name, types: m.types, type: m.types[0], dex: m.dex };
+  }
   const types = base.types || [base.type];
   const roles = (line.traits || []).filter((t) => ROLE_TRAITS.has(t));
-  const megaForm = items.includes('megaring') && resolved.stageN >= 3 ? pickMegaStone(base.dex, line.range) : null;
+  const megaForm = items.includes('megaring') && resolved.stageN >= 3
+    ? (options?.via === 'ring' && !pendingMega ? options.list[megaPick] : pickMegaStone(base.dex, line.range))
+    : null;
   if (megaForm) {
     const mTypes = megaForm.types;
     const megaDex = megaForm.dex;
     return {
-      ...unitFromLine(lineId, star, uid, items.filter((id) => id !== 'megaring'), formId, autoForm),
+      ...unitFromLine(lineId, star, uid, items.filter((id) => id !== 'megaring'), resolved.formId, autoForm),
+      formId,
+      pendingMega,
+      megaOptions: options?.list || null,
       items: items.slice(0, ITEM_SLOTS),
       name: megaForm.name,
       type: mTypes[0],
@@ -1997,8 +2038,10 @@ export const unitFromLine = (lineId, star = 1, uid, items = [], formId = null, a
     name: base.name,
     type: types[0],
     types,
-    formId: resolved.formId,
+    formId,
     pendingEvo: resolved.pending,
+    pendingMega,
+    megaOptions: options?.list || null,
     hp: base.hp,
     atk: base.atk,
     spd: base.spd,
@@ -2012,6 +2055,13 @@ export const unitFromLine = (lineId, star = 1, uid, items = [], formId = null, a
     model: homeUrl(dex),
     items: items.slice(0, ITEM_SLOTS)
   };
+};
+
+/** Applique le choix de Méga-Évolution (index dans unit.megaOptions). */
+export const applyMegaChoice = (unit, index) => {
+  if (!unit) return null;
+  const form = splitForm(unit.formId).form;
+  return unitFromLine(unit.lineId, unit.star, unit.uid, unit.items || [], `${form || ''}#${index}`, false);
 };
 
 /** Applique le choix d’évolution (même uid / objets / étoile). */
@@ -2167,9 +2217,10 @@ const itemMods = (items = []) => {
 /* ——————————————————————————— Moteur de combat ——————————————————————————— */
 
 /** Talent d’une unité selon sa lignée et sa forme. */
-export const talentOf = (lineId, formId) => {
+export const talentOf = (lineId, rawFormId) => {
   const line = LINE_MAP[lineId];
   if (!line) return null;
+  const formId = splitForm(rawFormId).form;
   return (formId && line.forms?.find((f) => f.id === formId)?.ab) || line.ab || null;
 };
 
