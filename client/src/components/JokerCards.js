@@ -298,7 +298,98 @@ export function playCardCling() {
   });
 }
 
-/* ——— Sons de l'éclosion, façon Sonic et Jardin des Chao (synthétisés, aucun extrait du jeu) ——— */
+/* ——— Sons de l'éclosion, façon Sonic et Jardin des Chao ———
+ * Par défaut ils sont synthétisés. Pour mettre les vrais sons du jeu, déposer les fichiers dans
+ * client/public/sounds/booster/ et les déclarer dans index.json (voir le README du dossier) :
+ * chaque son déclaré remplace sa version synthétisée, les autres restent synthétisés.
+ */
+const SAMPLE_DIR = `${process.env.PUBLIC_URL || ''}/sounds/booster`;
+const sampleBuffers = {};
+const sampleElements = {};
+let samplesLoad = null;
+
+const sampleUrl = (file) => (/^https?:\/\//i.test(file) ? file : `${SAMPLE_DIR}/${encodeURIComponent(file)}`);
+
+// Si le site du son refuse la lecture directe (CORS), on passe par une balise audio classique.
+const elementFallback = (key, url) => new Promise((resolve) => {
+  try {
+    const audio = new window.Audio();
+    audio.preload = 'auto';
+    audio.src = url;
+    audio.addEventListener('canplaythrough', () => {
+      sampleElements[key] = audio;
+      resolve();
+    }, { once: true });
+    audio.addEventListener('error', () => resolve(), { once: true });
+    audio.load();
+  } catch (error) {
+    resolve();
+  }
+});
+
+export function loadBoosterSamples() {
+  if (samplesLoad) return samplesLoad;
+  const ctx = clingContext();
+  if (!ctx || typeof fetch !== 'function') {
+    samplesLoad = Promise.resolve();
+    return samplesLoad;
+  }
+  const decode = (data) => new Promise((resolve) => {
+    ctx.decodeAudioData(data, resolve, () => resolve(null));
+  });
+  samplesLoad = fetch(`${SAMPLE_DIR}/index.json`, { cache: 'no-cache' })
+    .then((response) => (response.ok ? response.json() : {}))
+    .then((list) => Promise.all(Object.entries(list || {})
+      .filter(([, file]) => typeof file === 'string' && file.trim())
+      .map(([key, file]) => {
+        const url = sampleUrl(file.trim());
+        return fetch(url)
+          .then((response) => (response.ok ? response.arrayBuffer() : null))
+          .then((data) => (data ? decode(data) : null))
+          .then((buffer) => {
+            if (buffer) sampleBuffers[key] = buffer;
+            else if (/^https?:\/\//i.test(file)) return elementFallback(key, url);
+            return null;
+          })
+          .catch(() => (/^https?:\/\//i.test(file) ? elementFallback(key, url) : null));
+      })))
+    .catch(() => null);
+  return samplesLoad;
+}
+
+// Joue un vrai son s'il a été déposé ; renvoie false sinon (on garde alors la version synthétisée).
+function sample(key, ctx, dest, when, { gain = 1, rate = 1, pan = 0 } = {}) {
+  const buffer = sampleBuffers[key];
+  if (!buffer) {
+    const element = sampleElements[key];
+    if (!element) return false;
+    const delay = Math.max(0, (when - ctx.currentTime) * 1000);
+    window.setTimeout(() => {
+      const copy = element.cloneNode();
+      copy.volume = Math.min(1, gain);
+      copy.playbackRate = rate;
+      copy.preservesPitch = false;
+      copy.play().catch(() => {});
+    }, delay);
+    return true;
+  }
+  const src = ctx.createBufferSource();
+  const level = ctx.createGain();
+  src.buffer = buffer;
+  src.playbackRate.value = rate;
+  level.gain.value = gain;
+  src.connect(level);
+  if (pan && ctx.createStereoPanner) {
+    const panner = ctx.createStereoPanner();
+    panner.pan.value = pan;
+    level.connect(panner);
+    panner.connect(dest);
+  } else {
+    level.connect(dest);
+  }
+  src.start(when);
+  return true;
+}
 
 // Petit cri de Chao : glissando aigu avec un vibrato rapide, comme un « tchiou ! ».
 function chaoChirp(ctx, dest, when, from, to, dur, peak) {
@@ -341,9 +432,13 @@ function playEggKnock(step) {
   const bus = voiceBus();
   if (!bus) return;
   const { ctx, master, now } = bus;
-  burst(ctx, master, now, 0.05, 3200 + step * 400, 2.5, 0.38, 1800);
-  burst(ctx, master, now + 0.01, 0.09, 900, 1.2, 0.18, 400);
-  chaoChirp(ctx, master, now + 0.05, 700 + step * 160, 1250 + step * 220, 0.16, 0.13);
+  if (!sample('crack', ctx, master, now, { rate: 1 + step * 0.06 })) {
+    burst(ctx, master, now, 0.05, 3200 + step * 400, 2.5, 0.38, 1800);
+    burst(ctx, master, now + 0.01, 0.09, 900, 1.2, 0.18, 400);
+  }
+  if (!sample('chirp', ctx, master, now + 0.05, { rate: 1 + (step - 1) * 0.08 })) {
+    chaoChirp(ctx, master, now + 0.05, 700 + step * 160, 1250 + step * 220, 0.16, 0.13);
+  }
 }
 
 // L'éclosion : l'œuf se charge comme un Spin Dash, éclate en pluie d'anneaux,
@@ -359,6 +454,8 @@ function playOpeningScore() {
   const revs = [0, 0.62, 1.1, 1.48, 1.78, 2.02, 2.2];
   revs.forEach((at, index) => {
     const when = now + at;
+    // Le vrai Spin Dash monte d'un cran à chaque relance, comme dans le jeu.
+    if (sample('rev', ctx, master, when, { rate: 1 + index * 0.09, gain: 0.8 })) return;
     const base = 160 + index * 70;
     glide(ctx, master, when, base, base * 3.2, 0.32, 0.07 + index * 0.012, 'square');
     burst(ctx, master, when, 0.3, 900 + index * 300, 1.4, 0.05 + index * 0.01, 3200 + index * 500);
@@ -371,18 +468,24 @@ function playOpeningScore() {
 
   // Éclatement : coquille, souffle et pluie d'anneaux de part et d'autre.
   const boom = now + splitAt;
-  burst(ctx, master, boom, 0.22, 140, 0.4, 0.5, 60);
-  burst(ctx, master, boom, 0.12, 4200, 0.9, 0.24, 900);
-  burst(ctx, master, boom + 0.02, 0.5, 1200, 0.5, 0.12, 200);
-  [-0.8, 0.6, -0.3, 0.9, -0.6, 0.2, 0.75, -0.9].forEach((pan, index) => {
-    ringTing(ctx, master, boom + 0.04 + index * 0.075, 0.07 - index * 0.004, pan);
-  });
+  if (!sample('hatch', ctx, master, boom)) {
+    burst(ctx, master, boom, 0.22, 140, 0.4, 0.5, 60);
+    burst(ctx, master, boom, 0.12, 4200, 0.9, 0.24, 900);
+    burst(ctx, master, boom + 0.02, 0.5, 1200, 0.5, 0.12, 200);
+  }
+  if (!sample('rings', ctx, master, boom + 0.04)) {
+    [-0.8, 0.6, -0.3, 0.9, -0.6, 0.2, 0.75, -0.9].forEach((pan, index) => {
+      ringTing(ctx, master, boom + 0.04 + index * 0.075, 0.07 - index * 0.004, pan);
+    });
+  }
 
   // Le Chao sort : trois petits cris qui montent, puis un carillon majeur.
   const rise = now + pullAt;
-  chaoChirp(ctx, master, rise, 820, 1320, 0.14, 0.12);
-  chaoChirp(ctx, master, rise + 0.16, 900, 1480, 0.14, 0.12);
-  chaoChirp(ctx, master, rise + 0.32, 1040, 1860, 0.24, 0.14);
+  if (!sample('happy', ctx, master, rise)) {
+    chaoChirp(ctx, master, rise, 820, 1320, 0.14, 0.12);
+    chaoChirp(ctx, master, rise + 0.16, 900, 1480, 0.14, 0.12);
+    chaoChirp(ctx, master, rise + 0.32, 1040, 1860, 0.24, 0.14);
+  }
   [1047, 1319, 1568, 2093].forEach((freq, index) => {
     metal(ctx, master, rise + 0.5 + index * 0.08, freq, 0.5 - index * 0.06, 0.03);
   });
@@ -393,7 +496,8 @@ function playHatchReveal() {
   const bus = voiceBus();
   if (!bus) return;
   const { ctx, master, now } = bus;
-  ringTing(ctx, master, now, 0.12, 0);
+  if (!sample('ring', ctx, master, now)) ringTing(ctx, master, now, 0.12, 0);
+  if (sample('laugh', ctx, master, now + 0.2)) return;
   chaoChirp(ctx, master, now + 0.2, 1200, 1700, 0.09, 0.09);
   chaoChirp(ctx, master, now + 0.3, 1250, 1800, 0.09, 0.08);
   chaoChirp(ctx, master, now + 0.4, 1320, 1950, 0.13, 0.08);
@@ -775,9 +879,12 @@ export const BoosterOpening = ({ cardId }) => {
   const armedSound = useRef(null);
   const prepared = useRef(Promise.resolve(null));
 
-  useEffect(() => () => {
-    timers.current.forEach(clearTimeout);
-    window.clearTimeout(idle.current);
+  useEffect(() => {
+    loadBoosterSamples();
+    return () => {
+      timers.current.forEach(clearTimeout);
+      window.clearTimeout(idle.current);
+    };
   }, []);
 
   useEffect(() => {
