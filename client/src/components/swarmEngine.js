@@ -1444,7 +1444,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     // « ! » quand il va charger
     if (f.state === 'windup') {
       const h = bodyHeight(def.dex) * f.scale * 0.55 + f.z;
-      ctx.font = '900 18px "Barlow Condensed", Arial, sans-serif';
+      ctx.font = '700 20px "Pixelify Sans", "Barlow Condensed", Arial, sans-serif';
       ctx.textAlign = 'center';
       ctx.lineWidth = 4; ctx.strokeStyle = '#000'; ctx.strokeText('!', f.x, f.y - h);
       ctx.fillStyle = '#ff4a3a'; ctx.fillText('!', f.x, f.y - h);
@@ -1937,7 +1937,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       const k = 1 - tx.life / tx.max;
       const pop = k < 0.15 ? 1 + (0.15 - k) * 5 : 1;
       const size = (tx.big ? 20 : 14) * pop;
-      ctx.font = `900 ${size}px "Barlow Condensed", "Arial Narrow", sans-serif`;
+      ctx.font = `700 ${size}px "Pixelify Sans", "Barlow Condensed", "Arial Narrow", sans-serif`;
       ctx.globalAlpha = Math.min(1, (tx.life / tx.max) * 2.5);
       ctx.lineWidth = 4;
       ctx.strokeStyle = 'rgba(0,0,0,.75)';

@@ -220,11 +220,12 @@ const createPlayer = () => {
   };
   const cursor = { main: 0, league: 0 };
 
-  const notify = () => listeners.forEach((fn) => fn(current ? {
+  const snap = () => (current ? {
     key: current.key,
     kind: 'yt',
     title: current.ytTitle || TRACKS[current.key]?.title || ''
-  } : null));
+  } : null);
+  const notify = () => listeners.forEach((fn) => fn(snap()));
   const call = (fn) => { try { if (deck?.player) fn(deck.player); } catch { /* lecteur pas prêt */ } };
 
   const pause = () => {
@@ -352,6 +353,7 @@ const createPlayer = () => {
     },
     subscribe(fn) {
       listeners.push(fn);
+      fn(snap()); // état actuel tout de suite (sinon rien ne s'affiche avant le prochain morceau)
       return () => { listeners = listeners.filter((x) => x !== fn); };
     }
   };
