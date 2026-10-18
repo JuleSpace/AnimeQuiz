@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createBonk } from './bonkEngine';
 import { CHARACTERS, MAX_LEVEL, PASSIVES, RUN_SECONDS, WEAPONS } from './bonkData';
-import { Avatar, loadPortraits } from './SonicRoster';
+import { Avatar } from './SonicRoster';
 import './SonicBonk.css';
 
 export const BONK_HASH = '#bonk';
@@ -11,8 +11,6 @@ const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStar
 const readBest = () => {
   try { return JSON.parse(localStorage.getItem(BEST_KEY) || '{}') || {}; } catch { return {}; }
 };
-// Image un peu plus grande que la vignette du roster pour rester nette en 3D.
-const bigger = (url) => (url ? url.replace(/scale-to-width-down\/\d+/, 'scale-to-width-down/512') : null);
 
 const optionLabel = (opt) => {
   if (opt.kind === 'weapon') {
@@ -39,21 +37,14 @@ const SonicBonk = ({ onClose }) => {
   const [end, setEnd] = useState(null);
   const [best, setBest] = useState(readBest);
   const [run, setRun] = useState(0);
-  const [portraits, setPortraits] = useState({});
   const mountRef = useRef(null);
   const overlayRef = useRef(null);
   const gameRef = useRef(null);
   const character = CHARACTERS.find((c) => c.id === charId) || CHARACTERS[0];
 
   useEffect(() => {
-    let alive = true;
-    loadPortraits().then((map) => { if (alive) setPortraits({ ...map }); });
-    return () => { alive = false; };
-  }, []);
-
-  useEffect(() => {
     if (screen !== 'play' || !mountRef.current || !overlayRef.current) return undefined;
-    const game = createBonk(mountRef.current, overlayRef.current, character, bigger(portraits[character.id]), {
+    const game = createBonk(mountRef.current, overlayRef.current, character, {
       onLevelUp: (options, level, rerolls) => setLevelUp({ options, level, rerolls }),
       onEnd: (result, snap) => {
         setEnd({ result, ...snap });
@@ -137,6 +128,7 @@ const SonicBonk = ({ onClose }) => {
           <span><b>Téléphone</b> joystick à gauche, caméra à droite, boutons Saut / Spin</span>
         </div>
         <button type="button" className="bk-btn is-go" onClick={start}>Jouer avec {character.name}</button>
+        <p className="bk-credit">Modèle 3D par défaut : RobotExpressive de Tomás Laulhé (CC0)</p>
       </div>
     );
   }

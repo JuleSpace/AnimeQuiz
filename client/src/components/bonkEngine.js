@@ -5,6 +5,7 @@
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {
   BOSSES, ENEMIES, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, PASSIVES, RUN_SECONDS, WAVES, WEAPONS, xpToNext
 } from './bonkData';
@@ -201,7 +202,7 @@ const chestGeo = () => merge([
   part(B(0.12, 1.2, 1.2), '#ffd23a', M(-0.6, 0.7, 0))
 ]);
 
-export const createBonk = (mount, overlay, character, portraitUrl, callbacks = {}) => {
+export const createBonk = (mount, overlay, character, callbacks = {}) => {
   /* ——— Rendu ——— */
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
@@ -426,35 +427,82 @@ export const createBonk = (mount, overlay, character, portraitUrl, callbacks = {
   const cloudList = Array.from({ length: 26 }, () => ({ x: rand(-200, 200), z: rand(-200, 200), y: rand(38, 60), s: rand(1, 2.4) }));
   scene.add(clouds);
 
-  /* ——— Joueur ——— */
+  /* ——— Joueur : vrai modèle 3D animé (squelette + animations) ———
+   * On essaie d'abord public/bonk/models/<perso>.glb (ton propre modèle), sinon le modèle
+   * par défaut (RobotExpressive, CC0) teinté à la couleur du perso. */
   const charColor = new THREE.Color(character.color);
-  const spriteMat = track(new THREE.SpriteMaterial({ transparent: true, alphaTest: 0.08, depthWrite: true }));
-  const sprite = new THREE.Sprite(spriteMat);
-  sprite.center.set(0.5, 0);
-  scene.add(sprite);
-  let spriteAspect = 1;
-  const fallbackTexture = () => {
-    const c = document.createElement('canvas');
-    c.width = 128; c.height = 160;
-    const x = c.getContext('2d');
-    x.fillStyle = character.color;
-    x.beginPath(); x.arc(64, 70, 56, 0, TAU); x.fill();
-    x.fillStyle = '#fff'; x.font = '900 48px Arial'; x.textAlign = 'center';
-    x.fillText(character.name.slice(0, 2).toUpperCase(), 64, 88);
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.SRGBColorSpace;
-    return t;
+  const avatar = { root: new THREE.Group(), model: null, mixer: null, actions: {}, current: null, mats: [], yaw: 0, lean: 0, squash: 0, punchT: 0, wasGrounded: true, jumpT: 0 };
+  scene.add(avatar.root);
+  const MODEL_BASE = `${process.env.PUBLIC_URL || ''}/bonk/models`;
+  const CLIPS = {
+    idle: /idle|stand/i,
+    run: /run|sprint/i,
+    walk: /walk(?!jump)/i,
+    jump: /jump|fall|air/i,
+    punch: /punch|attack|slash/i,
+    death: /death|die|dead/i,
+    win: /dance|victory|wave|thumb/i
   };
-  const applyTexture = (tex) => {
-    spriteMat.map = track(tex);
-    spriteMat.needsUpdate = true;
-    spriteAspect = tex.image.width / tex.image.height || 1;
+  const play = (key, fade = 0.18) => {
+    let k = key;
+    if (!avatar.actions[k]) k = k === 'run' ? 'walk' : k === 'walk' ? 'run' : 'idle';
+    const next = avatar.actions[k];
+    if (!next || avatar.current === next) return next || null;
+    next.reset().setEffectiveWeight(1).fadeIn(fade).play();
+    if (avatar.current) avatar.current.fadeOut(fade);
+    avatar.current = next;
+    return next;
   };
-  if (portraitUrl) {
-    const loader = new THREE.TextureLoader();
-    loader.setCrossOrigin('anonymous');
-    loader.load(portraitUrl, (tex) => { tex.colorSpace = THREE.SRGBColorSpace; applyTexture(tex); }, undefined, () => applyTexture(fallbackTexture()));
-  } else applyTexture(fallbackTexture());
+  const setupModel = (gltf, tint) => {
+    const model = gltf.scene;
+    model.traverse((o) => {
+      if (!o.isMesh) return;
+      o.frustumCulled = false;
+      const list = Array.isArray(o.material) ? o.material : [o.material];
+      const cloned = list.map((m) => {
+        const c = track(m.clone());
+        if (tint && /main/i.test(m.name || '')) c.color.copy(charColor);
+        if (!c.emissive) c.emissive = new THREE.Color(0, 0, 0);
+        avatar.mats.push(c);
+        return c;
+      });
+      o.material = Array.isArray(o.material) ? cloned : cloned[0];
+    });
+    const box = new THREE.Box3().setFromObject(model);
+    const h = (box.max.y - box.min.y) || 1;
+    const sc = 2 / h;
+    model.scale.multiplyScalar(sc);
+    model.position.y = -box.min.y * sc;
+    avatar.root.add(model);
+    avatar.model = model;
+    avatar.mixer = new THREE.AnimationMixer(model);
+    Object.entries(CLIPS).forEach(([key, re]) => {
+      const clip = gltf.animations.find((a) => (key === 'jump' ? /^jump$/i.test(a.name) : false)) || gltf.animations.find((a) => re.test(a.name));
+      if (clip) avatar.actions[key] = avatar.mixer.clipAction(clip);
+    });
+    ['jump', 'punch', 'death', 'win'].forEach((k) => {
+      const a = avatar.actions[k];
+      if (a) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
+    });
+    play('idle', 0);
+  };
+  const fallbackModel = () => {
+    // Si aucun modèle ne charge : un coureur simple aux couleurs du perso.
+    const geo = merge([
+      part(C(0.32, 0.38, 0.9, 10), character.color, M(0, 1.05, 0)),
+      part(S(0.36, 12, 9), character.color, M(0, 1.75, 0)),
+      part(C(0.12, 0.12, 0.7), '#2a2d3a', M(0.16, 0.35, 0)),
+      part(C(0.12, 0.12, 0.7), '#2a2d3a', M(-0.16, 0.35, 0))
+    ]);
+    const m = new THREE.Mesh(track(geo), track(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })));
+    avatar.mats.push(m.material);
+    avatar.root.add(m);
+    avatar.model = m;
+  };
+  const gltfLoader = new GLTFLoader();
+  const loadDefault = () => gltfLoader.load(`${MODEL_BASE}/default.glb`, (gl) => setupModel(gl, true), undefined, fallbackModel);
+  gltfLoader.load(`${MODEL_BASE}/${character.id}.glb`, (gl) => setupModel(gl, false), undefined, loadDefault);
+
   const ball = new THREE.Mesh(track(merge([
     part(new THREE.IcosahedronGeometry(0.7, 1), character.color),
     part(new THREE.TorusGeometry(0.55, 0.1, 5, 12), '#ffffff', M(0, 0, 0, 0, Math.PI / 2, 0))
@@ -787,6 +835,7 @@ export const createBonk = (mount, overlay, character, portraitUrl, callbacks = {
     }
     if (id === 'quake') {
       if (!nearest(p.x, p.z, v.radius + 2)) return 0.3;
+      avatar.punchT = 0.45;
       wave(p.x, groundAt(p.x, p.z) + 0.15, p.z, v.radius, '#ff8a5a', 0.45);
       near(p.x, p.z, v.radius).forEach((e) => { if ((e.x - p.x) ** 2 + (e.z - p.z) ** 2 < v.radius ** 2 && !e.def.fly) hurt(e, v.dmg, p, 9, '#ffb347'); });
       particle(p.x, p.y + 0.3, p.z, '#b8642a', 26, 9, { up: 3 });
@@ -796,6 +845,7 @@ export const createBonk = (mount, overlay, character, portraitUrl, callbacks = {
     if (id === 'hammer') {
       if (!nearest(p.x, p.z, v.radius + 1.5)) return 0.25;
       g.hammer = { t: 0, dur: 0.32, radius: v.radius, dmg: v.dmg, hit: new Set() };
+      avatar.punchT = 0.4;
       return v.cd;
     }
     if (id === 'lightning') {
@@ -1382,7 +1432,61 @@ export const createBonk = (mount, overlay, character, portraitUrl, callbacks = {
     mx.putImageData(img, 0, 0);
   }
 
-  const render = () => {
+  const animateAvatar = (dt) => {
+    const p = g.player;
+    const spd = Math.hypot(p.vx, p.vz);
+    const balled = p.spin > 0;
+    ball.visible = balled;
+    avatar.root.visible = !balled && !(p.inv > 0 && p.spin <= 0 && !g.over && Math.floor(p.inv * 18) % 2 === 0);
+    if (balled) {
+      ball.position.set(p.x, p.y + 0.7, p.z);
+      ball.rotation.x -= 0.5;
+      ball.rotation.y = p.face;
+    }
+    // orientation douce + inclinaison dans les virages et en pleine course
+    let diff = p.face - avatar.yaw;
+    while (diff > Math.PI) diff -= TAU;
+    while (diff < -Math.PI) diff += TAU;
+    avatar.yaw += diff * Math.min(1, dt * 12);
+    avatar.lean += (clamp(diff * 0.6, -0.35, 0.35) * Math.min(1, spd / 8) - avatar.lean) * Math.min(1, dt * 8);
+    if (!p.grounded && avatar.wasGrounded) avatar.jumpT = 0;
+    if (p.grounded && !avatar.wasGrounded) avatar.squash = 0.18;
+    avatar.wasGrounded = p.grounded;
+    avatar.squash = Math.max(0, avatar.squash - dt * 1.2);
+    avatar.punchT = Math.max(0, avatar.punchT - dt);
+    avatar.root.position.set(p.x, p.y, p.z);
+    avatar.root.rotation.set(Math.min(0.18, spd * 0.007), avatar.yaw, -avatar.lean, 'YXZ');
+    const sq = avatar.squash;
+    avatar.root.scale.set(1 + sq * 0.6, 1 - sq, 1 + sq * 0.6);
+    // flash rouge quand on est touché
+    const hurt = g.hurtFlash > 0 ? g.hurtFlash * 2 : 0;
+    avatar.mats.forEach((m) => { if (m.emissive) m.emissive.setRGB(hurt, hurt * 0.1, hurt * 0.1); });
+    if (!avatar.mixer) {
+      if (avatar.model) avatar.model.position.y = p.grounded && spd > 1 ? Math.abs(Math.sin(p.step * 1.6)) * 0.15 : 0;
+      return;
+    }
+    let state;
+    if (g.over === 'lose') state = 'death';
+    else if (g.over === 'win') state = 'win';
+    else if (!p.grounded) state = 'jump';
+    else if (avatar.punchT > 0) state = 'punch';
+    else if (spd > 7) state = 'run';
+    else if (spd > 0.6) state = 'walk';
+    else state = 'idle';
+    const action = play(state, state === 'jump' ? 0.08 : 0.18);
+    if (action) {
+      if (state === 'run') action.timeScale = clamp(spd / 9, 0.8, 2.4);
+      else if (state === 'walk') action.timeScale = clamp(spd / 3.2, 0.6, 1.8);
+      else if (state === 'jump') {
+        avatar.jumpT += dt;
+        // en plané / vol, on fige la pose « en l'air » du saut
+        action.timeScale = p.gliding || p.flying ? 0 : 1.3;
+      } else action.timeScale = 1;
+    }
+    avatar.mixer.update(dt);
+  };
+
+  const render = (dt = 1 / 60) => {
     const p = g.player;
     // Caméra 3e personne
     const cp = Math.cos(g.cam.pitch); const sp = Math.sin(g.cam.pitch);
@@ -1399,28 +1503,8 @@ export const createBonk = (mount, overlay, character, portraitUrl, callbacks = {
     camera.fov = 62 + Math.min(14, Math.hypot(p.vx, p.vz) * 0.35);
     camera.updateProjectionMatrix();
 
-    // Joueur : sprite ou boule
-    const rollAir = character.air === 'dash' || character.air === 'double';
-    const balled = p.spin > 0 || (!p.grounded && !p.gliding && !p.flying && (rollAir || p.vy > 0));
-    sprite.visible = !balled;
-    ball.visible = balled;
-    const blink = p.inv > 0 && p.spin <= 0 && Math.floor(p.inv * 18) % 2 === 0;
-    const spd = Math.hypot(p.vx, p.vz);
-    if (!balled) {
-      const run = p.grounded && spd > 1;
-      const bob = run ? Math.abs(Math.sin(p.step * 1.6)) * 0.18 : Math.sin(g.t * 3) * 0.04;
-      const sq = run ? 1 + Math.sin(p.step * 3.2) * 0.05 : 1;
-      const hgt = 2.1;
-      sprite.scale.set(hgt * spriteAspect * p.flip / sq, hgt * sq, 1);
-      sprite.position.set(p.x, p.y + bob, p.z);
-      spriteMat.rotation = clamp(-(p.vx * Math.cos(g.cam.yaw) - p.vz * Math.sin(g.cam.yaw)) * 0.012, -0.25, 0.25) + (p.gliding ? 0.4 * p.flip : 0);
-      spriteMat.opacity = blink ? 0.35 : 1;
-      spriteMat.color.set(g.hurtFlash > 0.15 ? '#ff8080' : '#ffffff');
-    } else {
-      ball.position.set(p.x, p.y + 0.7, p.z);
-      ball.rotation.x -= 0.5;
-      ball.rotation.y = p.face;
-    }
+    // Joueur : modèle animé (boule pendant le spin dash)
+    animateAvatar(dt);
     shieldMesh.visible = p.shield > 0;
     shieldMesh.position.set(p.x, p.y + 1, p.z);
     shieldMesh.material.opacity = 0.18 + Math.sin(g.t * 6) * 0.06;
@@ -1654,7 +1738,7 @@ export const createBonk = (mount, overlay, character, portraitUrl, callbacks = {
     const dt = clamp((now - last) / 1000, 0, 0.05);
     last = Math.max(last, now);
     update(dt);
-    render();
+    render(g.paused ? 0 : dt);
     raf = requestAnimationFrame(frame);
   };
   raf = requestAnimationFrame(frame);
