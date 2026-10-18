@@ -309,7 +309,9 @@ export const DIFFICULTY = [
   0.96, 0.96, 0.97, 0.97, 0.98, 0.98, 0.99, 0.99,
   1.0, 1.0, 1.01, 1.02, 1.02, 1.03, 1.04, 1.06
 ];
-export const KIND_SCALE = { combat: 1, elite: 1.0, rival: 0.95, villain: 0.96, boss: 0.9 };
+export const KIND_SCALE = { combat: 1, elite: 1.0, rival: 0.97, villain: 0.98, boss: 0.93 };
+/** Un cran de difficulté en plus sur toute la campagne (PV et ATK des adversaires). */
+export const HARDER = 1.06;
 const EXTRA_UNITS = { elite: 1, rival: 0, villain: 1 };
 const EXTRA_STARS = { elite: 1, rival: 0, villain: 0.5 };
 
@@ -362,7 +364,7 @@ export const enemyTeam = (node) => {
   const trainer = node.trainer || { types: [] };
   const level = EXPECT_LEVEL[floor] || 8;
   const size = clamp((TEAM_SIZE[floor] || 10) + (EXTRA_UNITS[kind] || 0), 2, 10);
-  const scale = (DIFFICULTY[floor] || 1.15) * (KIND_SCALE[kind] || 1);
+  const scale = (DIFFICULTY[floor] || 1.15) * (KIND_SCALE[kind] || 1) * HARDER;
   const picks = [];
   const aced = kind !== 'combat' && kind !== 'elite' && trainer.ace && LINE_MAP[trainer.ace];
   if (aced) picks.push(trainer.ace);

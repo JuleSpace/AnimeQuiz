@@ -322,7 +322,7 @@ export const StarterScreen = ({ onPick, onBack, onTrait, trainer, onTrainer }) =
   const line = LINE_MAP[pickId] || list[0];
   const unit = line ? unitFromLine(line.id, 1, `starter-${line.id}`) : null;
   const evo = line ? evolutionPreview(line) : null;
-  const typeFilters = ['Feu', 'Eau', 'Plante', 'Normal'];
+  const typeFilters = ['Feu', 'Eau', 'Plante', 'Normal', 'Électrik'];
   return (
     <div className="ui-starter">
       <header className="ui-screen-head">

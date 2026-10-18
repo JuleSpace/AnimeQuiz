@@ -373,7 +373,7 @@ export const LINES = [
   L('rayquaza', 5, [], 2,
     { name: 'Draco-Météore', desc: 'Tous les 3 tours : 230% ATK Dragon zone.', every: 3, mult: 2.3, aim: 'aoe2' },
     [S('Rayquaza', ['Dragon', 'Vol'], 780, 120, 16, 384), S('Rayquaza ★', ['Dragon', 'Vol'], 1280, 190, 17, 384), S('Rayquaza ★★', ['Dragon', 'Vol'], 1950, 265, 18, 384)]),
-  L('raichu', 2, [], 3,
+  L('raichu', 2, ['Starter'], 3,
     { name: 'Tonnerre', desc: 'Tous les 2 tours : 160% ATK Électrik.', every: 2, mult: 1.6, aim: 'random' },
     [S('Pikachu', 'Électrik', 340, 52, 18, 25)],
     { at: 2, forms: [
