@@ -29,7 +29,16 @@ export const PARTNERS = [
     id: 'charmander', gen: 1, name: 'Salamèche', dex: 4, type: 'Feu', color: '#ee8130', hp: 100, speed: 2.9, weapon: 'ember',
     blurb: 'Crache des Flammèches sur l’ennemi le plus proche.',
     evolutions: [{ level: 8, name: 'Reptincel', dex: 5, hp: 25 }, { level: 16, name: 'Dracaufeu', dex: 6, hp: 40 }],
-    mega: { name: 'Méga-Dracaufeu X', stone: 'Dracaufite X', sprite: '6-mega' }
+    // Deux Méga-Évolutions : le premier niveau de Méga-Gemme fait choisir la pierre
+    mega: {
+      name: 'Méga-Dracaufeu', stone: 'Dracaufite', sprite: '6-mega',
+      choices: [
+        { id: 'x', name: 'Méga-Dracaufeu X', stone: 'Dracaufite X', sprite: '6-mega', type: 'Dragon', color: '#3aa0ff',
+          perk: 'Flammes bleues : +45 % de dégâts et plus rapide.' },
+        { id: 'y', name: 'Méga-Dracaufeu Y', stone: 'Dracaufite Y', sprite: 6, type: 'Feu', color: '#ff7a1f',
+          perk: 'Sécheresse : un soleil brûlant frappe tout autour de toi et les attaques rechargent 25 % plus vite.' }
+      ]
+    }
   },
   {
     id: 'squirtle', gen: 1, name: 'Carapuce', dex: 7, type: 'Eau', color: '#6390f0', hp: 120, speed: 2.7, weapon: 'watergun',
@@ -394,6 +403,13 @@ export const CAST_ANIM = {
   thunder: 'shoot', ember: 'shoot', watergun: 'shoot', quake: 'attack', swift: 'shoot', shadow: 'shoot',
   bloom: 'shoot', bite: 'attack', leafblade: 'attack', doublekick: 'attack', mudbomb: 'shoot',
   seedbomb: 'shoot', machpunch: 'attack', bubble: 'shoot'
+};
+
+/** Méga choisie (Dracaufeu X ou Y) ou unique. */
+export const megaOf = (partner, choice) => {
+  if (!partner?.mega) return null;
+  if (!partner.mega.choices) return partner.mega;
+  return partner.mega.choices.find((c) => c.id === choice) || null;
 };
 
 export const spriteOf = (dex) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${dex}.png`;

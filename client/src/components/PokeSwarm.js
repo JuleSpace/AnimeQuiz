@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createGame } from './swarmEngine';
 import { buildWorld } from './swarmWorld';
 import { drawPokemon, preloadSprites } from './swarmSprites';
-import { FOES, GENS, GEN_BOSSES, GEN_WAVES, MAX_LEVEL, MEGA_LEVELS, PARTNERS, PASSIVES, WEAPONS } from './swarmData';
+import { FOES, GENS, GEN_BOSSES, GEN_WAVES, MAX_LEVEL, MEGA_LEVELS, PARTNERS, PASSIVES, WEAPONS, megaOf } from './swarmData';
 import {
   ACHIEVEMENTS, ALL_FOE_IDS, BRANCHES, REGION_COST, TALENTS, TIER_NEEDS, branchPoints, buyTalent, dailyChallenge,
   loadMeta, metaEffects, rankOf, recordRun, refundAll, talentCost, talentLocked, unlockRegion
@@ -23,11 +23,17 @@ const readBest = () => {
 
 const optionLabel = (opt, partner, ML = MEGA_LEVELS) => {
   if (opt.kind === 'mega' && partner?.mega) {
+    const m = megaOf(partner, opt.id) || partner.mega;
+    const choosing = partner.mega.choices && opt.lv === 1;
+    let desc;
+    if (opt.lv >= ML) desc = `${m.name} : ${m.perk || '+30 % de dégâts, plus rapide.'} PV max +60 et soin complet.`;
+    else if (choosing) desc = `Choisis ta pierre : ${m.name}. ${m.perk} Au niveau ${ML}, la Méga-Évolution !`;
+    else desc = `Rapproche de la Méga-Évolution (+4 % de dégâts). Au niveau ${ML} : ${m.name} !`;
     return {
-      title: partner.mega.stone,
-      tag: opt.lv >= ML ? 'Méga-Évolution !' : `Méga-Gemme ${opt.lv}/${ML}`,
-      desc: opt.lv >= ML ? `${partner.mega.name} : +30 % de dégâts, plus rapide, PV max +60 et soin complet.` : `Rapproche de la Méga-Évolution (+4 % de dégâts). Au niveau ${ML} : ${partner.mega.name} !`,
-      color: '#ff6ad5',
+      title: m.stone,
+      tag: opt.lv >= ML ? 'Méga-Évolution !' : choosing ? `Choix de la pierre · 1/${ML}` : `Méga-Gemme ${opt.lv}/${ML}`,
+      desc,
+      color: m.color || '#ff6ad5',
       type: 'Méga',
       mega: true
     };
@@ -142,7 +148,10 @@ const TcgCard = ({ opt, partner, formDex, index, onPick, gen, megaLevels = MEGA_
   };
   let art;
   if (opt.kind === 'weapon') art = <PmdSprite dex={formDex} anim={['quake', 'bite', 'leafblade', 'doublekick', 'machpunch'].includes(opt.id) ? 'attack' : 'shoot'} size={118} scale={2.6} dir={1} />;
-  else if (opt.kind === 'mega') art = <PmdSprite dex={opt.lv >= MEGA_LEVELS ? partner.mega.sprite : formDex} anim="idle" size={118} scale={2.6} />;
+  else if (opt.kind === 'mega') {
+    const m = megaOf(partner, opt.id) || partner.mega;
+    art = <PmdSprite dex={opt.lv >= MEGA_LEVELS || partner.mega.choices ? m.sprite : formDex} anim="idle" size={118} scale={2.6} />;
+  }
   else {
     const slug = opt.kind === 'passive' ? ITEM_SLUG[opt.id] : 'oran-berry';
     art = failed
@@ -154,7 +163,7 @@ const TcgCard = ({ opt, partner, formDex, index, onPick, gen, megaLevels = MEGA_
       ref={ref}
       type="button"
       className={`tcg is-${rarity}${holo ? ' is-holo' : ''}`}
-      style={{ '--tc': tc, '--i': index }}
+      style={{ '--tc': opt.kind === 'mega' && l.color !== '#ff6ad5' ? l.color : tc, '--i': index }}
       onClick={() => onPick(opt)}
       onPointerMove={tilt}
       onPointerLeave={reset}
@@ -544,8 +553,8 @@ const PokeSwarm = ({ onClose }) => {
               </span>
             ))}
             {partner.mega && h.megaLv > 0 && (
-              <span className="sw-slot is-passive" style={{ '--c': '#ff6ad5' }} title={partner.mega.stone}>
-                {h.isMega ? partner.mega.name : partner.mega.stone}<Pips lv={h.isMega ? MAX_LEVEL : Math.round((h.megaLv / h.megaLevels) * MAX_LEVEL)} />
+              <span className="sw-slot is-passive" style={{ '--c': (megaOf(partner, h.megaChoice) || partner.mega).color || '#ff6ad5' }} title={(megaOf(partner, h.megaChoice) || partner.mega).stone}>
+                {h.isMega ? h.form.name : (megaOf(partner, h.megaChoice) || partner.mega).stone}<Pips lv={h.isMega ? MAX_LEVEL : Math.round((h.megaLv / h.megaLevels) * MAX_LEVEL)} />
               </span>
             )}
             {partner.trait === 'turbo' && h.turbo > 0.05 && <span className="sw-slot" style={{ '--c': '#ff7a3a' }}>Turbo +{Math.round(h.turbo * 40)} %</span>}

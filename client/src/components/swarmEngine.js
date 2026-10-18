@@ -7,7 +7,7 @@
  * Le composant React ne fait qu'afficher l'interface.
  */
 import {
-  CAST_ANIM, FOES, GEN_BOSSES, GEN_WAVES, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PASSIVES, RUN_SECONDS, WEAPONS, xpToNext
+  CAST_ANIM, FOES, GEN_BOSSES, GEN_WAVES, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PASSIVES, RUN_SECONDS, WEAPONS, megaOf, xpToNext
 } from './swarmData';
 import { animLength, bodyHeight, dirOf, drawPokemon, hitTime, preloadSprites } from './swarmSprites';
 import { TILE, buildWorld } from './swarmWorld';
@@ -41,7 +41,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   const BOSSES = (GEN_BOSSES[gen] || GEN_BOSSES[1]).map((b) => ({ ...b, at: Math.round(b.at * E.bossTime) }));
   const foeIds = new Set([...WAVES.flatMap((w) => w.foes), ...BOSSES.map((b) => b.id)]);
   preloadSprites([
-    partner.dex, ...partner.evolutions.map((e) => e.dex), ...(partner.mega ? [partner.mega.sprite] : []),
+    partner.dex, ...partner.evolutions.map((e) => e.dex), ...(partner.mega ? [partner.mega.sprite, ...(partner.mega.choices || []).map((c) => c.sprite)] : []),
     ...[...foeIds].map((id) => FOES[id].dex)
   ]);
 
@@ -97,6 +97,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       trailAcc: 0
     },
     megaLv: 0,
+    megaChoice: null,
+    sunT: 1.5,
     weapons: { [partner.weapon]: { lv: E.headstart ? 2 : 1, timer: 0.4 } },
     passives: {},
     foes: [],
@@ -122,12 +124,13 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   const stats = () => {
     const p = g.player;
     const mega = p.mega ? 1 : 0;
+    const mk = p.megaKind;
     return {
-      dmg: (1 + 0.12 * (g.passives.protein || 0) + 0.04 * g.megaLv) * (mega ? 1.3 : 1) * E.dmg,
-      speed: (1 + 0.08 * (g.passives.carbos || 0) + mega * 0.12) * (p.slowT > 0 ? 0.55 : 1) * E.speed,
+      dmg: (1 + 0.12 * (g.passives.protein || 0) + 0.04 * g.megaLv) * (mega ? (mk === 'x' ? 1.45 : 1.3) : 1) * E.dmg,
+      speed: (1 + 0.08 * (g.passives.carbos || 0) + mega * (mk === 'x' ? 0.22 : 0.12)) * (p.slowT > 0 ? 0.55 : 1) * E.speed,
       magnet: 80 * (1 + 0.35 * (g.passives.magnet || 0)) * E.magnet,
       // Turbo (Poussifeu) : jusqu'à −40 % de recharge tant qu'on n'est pas touché
-      cd: (1 - 0.07 * (g.passives.quickclaw || 0)) * (1 - p.turbo * 0.4) * (mega ? 0.85 : 1) * E.cd,
+      cd: (1 - 0.07 * (g.passives.quickclaw || 0)) * (1 - p.turbo * 0.4) * (mega ? (mk === 'y' ? 0.75 : 0.85) : 1) * E.cd,
       regen: 0.6 * (g.passives.leftovers || 0) + mega * 1 + E.regen,
       crit: 0.05 + 0.06 * (g.passives.scope || 0) + mega * 0.05 + E.crit
     };
@@ -443,7 +446,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       const base = Math.atan2(target.y - p.y, target.x - p.x);
       for (let i = 0; i < v.count; i += 1) {
         const a = base + (i - (v.count - 1) / 2) * 0.22;
-        g.shots.push({ kind: 'ember', x: from.x, y: from.y, vx: Math.cos(a) * v.speed, vy: Math.sin(a) * v.speed, r: 8, dmg: v.dmg, blast: v.blast, life: 1.4, color: W.color });
+        g.shots.push({ kind: 'ember', x: from.x, y: from.y, vx: Math.cos(a) * v.speed, vy: Math.sin(a) * v.speed, r: 8, dmg: v.dmg, blast: v.blast, life: 1.4, color: W.color, blue: p.mega && p.megaKind === 'x' });
       }
       burst(from.x, from.y, '#ffb347', 5, 3);
       return v.cd;
@@ -617,7 +620,13 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     // Méga-Gemme : toujours proposée une fois la dernière forme atteinte
     const finalForm = partner.evolutions.length === 0 || g.player.form.dex === partner.evolutions[partner.evolutions.length - 1].dex;
     if (partner.mega && finalForm && !g.player.mega) {
-      const megaOpt = { kind: 'mega', id: 'mega', lv: g.megaLv + 1 };
+      if (partner.mega.choices && !g.megaChoice) {
+        // Dracaufeu : on choisit sa pierre (X ou Y), deux cartes côte à côte
+        const pair = partner.mega.choices.map((c) => ({ kind: 'mega', id: c.id, lv: g.megaLv + 1 }));
+        const keep = shuffled.slice(0, Math.max(0, E.cards - 2));
+        return [...keep, ...pair];
+      }
+      const megaOpt = { kind: 'mega', id: g.megaChoice || 'mega', lv: g.megaLv + 1 };
       if (shuffled.length >= E.cards) shuffled[E.cards - 1] = megaOpt; else shuffled.push(megaOpt);
     }
     return shuffled.length ? shuffled : [{ kind: 'heal', id: 'oran', lv: 0 }];
@@ -658,8 +667,9 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
 
   const megaEvolve = () => {
     const p = g.player;
-    const m = partner.mega;
+    const m = megaOf(partner, g.megaChoice) || partner.mega;
     p.mega = true;
+    p.megaKind = g.megaChoice;
     p.form = { name: m.name, dex: m.sprite, mega: true };
     p.maxHp += 60;
     p.hp = p.maxHp;
@@ -684,6 +694,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
         g.player.hp = Math.min(g.player.maxHp, g.player.hp + 25);
       }
     } else if (opt.kind === 'mega') {
+      if (partner.mega?.choices && !g.megaChoice) g.megaChoice = opt.id;
       g.megaLv += 1;
       if (g.megaLv >= E.megaLevels) megaEvolve();
     } else {
@@ -1048,6 +1059,17 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     p.slowT = Math.max(0, p.slowT - dt);
     g.maxNoHit = Math.max(g.maxNoHit, g.t - g.lastHitT);
     if (partner.trait === 'turbo') p.turbo = Math.min(1, p.turbo + dt / 10); // Turbo : +4 %/s, max +40 %
+    if (p.mega && p.megaKind === 'y') {
+      // Sécheresse (Méga-Dracaufeu Y) : vague de chaleur régulière
+      g.sunT -= dt;
+      if (g.sunT <= 0) {
+        g.sunT = 1.3;
+        const R = 170;
+        g.fx.push({ kind: 'ring', x: p.x, y: p.y, r: 20, max: R, life: 0.45, color: '#ffb02e' });
+        near(p.x, p.y, R + 40).forEach((f) => { if (!f.inert && (f.x - p.x) ** 2 + (f.y - p.y) ** 2 < (R + f.size * 0.4) ** 2) hurt(f, 16, p, { knock: 2.5, color: '#ffcf6a' }); });
+        for (let i = 0; i < 10; i += 1) { const a = rand(0, TAU); particle({ kind: 'dot', x: p.x + Math.cos(a) * R * 0.8, y: p.y + Math.sin(a) * R * 0.5, vx: 0, vy: -rand(0.5, 1.4), life: rand(0.3, 0.6), color: pick(['#fff1a8', '#ffb347', '#ff6a1f']), size: rand(2, 4) }); }
+      }
+    }
     if (partner.trait === 'bark') { p.barkCd -= dt; if (p.barkCd <= 0 && p.bark < 25 + g.megaLv * 5) p.bark = Math.min(25, p.bark + dt * 8); }
     if (p.comboT > 0) { p.comboT -= dt; if (p.comboT <= 0) p.combo = 0; }
     if (p.act) { p.act.t += dt; if (p.act.t >= p.act.dur) { p.act = null; p.castDir = null; } }
@@ -1203,7 +1225,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       sh.x += sh.vx * 60 * dt;
       sh.y += sh.vy * 60 * dt;
       sh.life -= dt;
-      if (sh.kind === 'ember' && Math.random() < 0.8) particle({ kind: 'dot', x: sh.x + rand(-3, 3), y: sh.y + rand(-3, 3), vx: -sh.vx * 0.1, vy: -rand(0.3, 1), life: rand(0.2, 0.4), color: pick(['#ffdd57', '#ff9a3c', '#ff5a1f']), size: rand(2, 4) });
+      if (sh.kind === 'ember' && Math.random() < 0.8) particle({ kind: 'dot', x: sh.x + rand(-3, 3), y: sh.y + rand(-3, 3), vx: -sh.vx * 0.1, vy: -rand(0.3, 1), life: rand(0.2, 0.4), color: pick(sh.blue ? ['#d8f4ff', '#6ac8ff', '#2a6bff'] : ['#ffdd57', '#ff9a3c', '#ff5a1f']), size: rand(2, 4) });
       if (sh.kind === 'water' && Math.random() < 0.6) particle({ kind: 'dot', x: sh.x, y: sh.y, vx: rand(-0.5, 0.5), vy: rand(-0.5, 0.5), life: 0.25, color: pick(['#bfe3ff', '#6390f0']), size: 2 });
       if (sh.kind === 'shadow' && Math.random() < 0.7) particle({ kind: 'smoke', x: sh.x + rand(-sh.r, sh.r) * 0.6, y: sh.y + rand(-sh.r, sh.r) * 0.6, vx: 0, vy: -0.4, life: 0.4, color: 'rgba(90,50,140,.55)', size: sh.r * 0.6 });
       const sy = sh.y + 14; // les projectiles volent à hauteur de corps
@@ -1221,7 +1243,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
           g.fx.push({ kind: 'blast', x: sh.x, y: sh.y, r: sh.blast, life: 0.28, max: 0.28 });
           for (let i = 0; i < 12; i += 1) {
             const a = rand(0, TAU); const v = rand(2, 5);
-            particle({ kind: 'dot', x: sh.x, y: sh.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1, life: rand(0.25, 0.5), color: pick(['#fff1a8', '#ffb347', '#ff6a1f']), size: rand(2, 5) });
+            particle({ kind: 'dot', x: sh.x, y: sh.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1, life: rand(0.25, 0.5), color: pick(sh.blue ? ['#e8f8ff', '#6ac8ff', '#2a6bff'] : ['#fff1a8', '#ffb347', '#ff6a1f']), size: rand(2, 5) });
           }
           smoke(sh.x, sh.y, 3, 'rgba(90,80,80,.55)', 12);
           decal({ kind: 'scorch', x: sh.x, y: sy, r: sh.blast * 0.7, life: 2.5 });
@@ -1403,6 +1425,15 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     let dir = p.dir;
     if (p.act) { anim = p.act.anim; at = p.act.t * (p.act.speed || 1); loop = false; if (p.castDir !== null && p.castDir !== undefined) dir = p.castDir; }
     if (p.dash.t > 0) { anim = 'walk'; at = 0.1; }
+    if (p.mega && p.megaKind === 'y') {
+      // Soleil de Sécheresse : halo chaud au sol
+      const R = 170;
+      const k = 1 - g.sunT / 1.3;
+      const gr = ctx.createRadialGradient(p.x, p.y, 10, p.x, p.y, R);
+      gr.addColorStop(0, `rgba(255,200,80,${0.3 + k * 0.15})`); gr.addColorStop(0.7, "rgba(255,140,40,.14)"); gr.addColorStop(1, 'rgba(255,120,30,0)');
+      ctx.fillStyle = gr;
+      ctx.beginPath(); ctx.ellipse(p.x, p.y, R, R * 0.6, 0, 0, TAU); ctx.fill();
+    }
     if (p.mega) {
       // Aura Méga : anneaux arc-en-ciel qui tournent sous le Pokémon
       ctx.save();
@@ -1722,7 +1753,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       }
       // Flammèche
       const grad = ctx.createRadialGradient(sh.x, sh.y, 1, sh.x, sh.y, sh.r * 2);
-      grad.addColorStop(0, '#fffbe0'); grad.addColorStop(0.3, '#ffd34a'); grad.addColorStop(0.65, '#ff6a1f'); grad.addColorStop(1, 'rgba(255,60,0,0)');
+      if (sh.blue) { grad.addColorStop(0, '#f2fbff'); grad.addColorStop(0.3, '#8ad8ff'); grad.addColorStop(0.65, '#2a6bff'); grad.addColorStop(1, 'rgba(20,60,255,0)'); }
+      else { grad.addColorStop(0, '#fffbe0'); grad.addColorStop(0.3, '#ffd34a'); grad.addColorStop(0.65, '#ff6a1f'); grad.addColorStop(1, 'rgba(255,60,0,0)'); }
       ctx.fillStyle = grad;
       ctx.beginPath(); ctx.arc(sh.x, sh.y, sh.r * 2, 0, TAU); ctx.fill();
     });
@@ -2018,6 +2050,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     need: g.player.need,
     form: g.player.form,
     megaLv: g.megaLv,
+    megaChoice: g.megaChoice,
     megaLevels: E.megaLevels,
     killsBy: g.killsBy,
     bosses: g.bossKills,
