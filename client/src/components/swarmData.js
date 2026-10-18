@@ -62,8 +62,8 @@ export const WEAPONS = {
     name: 'Tonnerre',
     type: 'Électrik',
     color: '#f7d02c',
-    desc: (lv) => `Foudroie l’ennemi le plus proche et rebondit sur ${lv} autre${lv > 1 ? 's' : ''}.`,
-    at: (lv) => ({ cd: 1.15 - lv * 0.08, dmg: 12 + lv * 4, chains: lv, range: 260 })
+    desc: (lv) => `Foudroie l’ennemi le plus proche et rebondit sur ${lv + 1} autres.`,
+    at: (lv) => ({ cd: 1.05 - lv * 0.08, dmg: 14 + lv * 4, chains: lv + 1, range: 270 })
   },
   ember: {
     name: 'Flammèche',
@@ -116,7 +116,8 @@ export const PASSIVES = {
   hpup: { name: 'PV Plus', desc: '+25 PV max et soigne d’autant.', color: '#6bd17a' },
   magnet: { name: 'Aimant', desc: '+35 % de portée pour ramasser l’XP.', color: '#c0c6d6' },
   quickclaw: { name: 'Vive Griffe', desc: '−7 % de temps de recharge.', color: '#f0c34a' },
-  leftovers: { name: 'Restes', desc: 'Récupère 0,6 PV par seconde.', color: '#9bd36b' }
+  leftovers: { name: 'Restes', desc: 'Récupère 0,6 PV par seconde.', color: '#9bd36b' },
+  scope: { name: 'Lentilscope', desc: '+6 % de chances de coup critique (dégâts ×1,8).', color: '#ff9a3c' }
 };
 
 export const MAX_WEAPONS = 4;
@@ -125,21 +126,21 @@ export const MAX_LEVEL = 5;
 
 /* ——— Ennemis ——— */
 export const FOES = {
-  rattata: { name: 'Rattata', dex: 19, hp: 10, speed: 1.35, dmg: 5, size: 30, xp: 1 },
-  pidgey: { name: 'Roucool', dex: 16, hp: 8, speed: 1.75, dmg: 4, size: 30, xp: 1 },
-  caterpie: { name: 'Chenipan', dex: 10, hp: 14, speed: 0.95, dmg: 4, size: 28, xp: 1 },
-  zubat: { name: 'Nosferapti', dex: 41, hp: 12, speed: 2.25, dmg: 5, size: 30, xp: 1 },
-  ekans: { name: 'Abo', dex: 23, hp: 24, speed: 1.4, dmg: 7, size: 32, xp: 2 },
-  geodude: { name: 'Racaillou', dex: 74, hp: 45, speed: 0.9, dmg: 10, size: 34, xp: 2 },
-  gastly: { name: 'Fantominus', dex: 92, hp: 32, speed: 1.6, dmg: 8, size: 34, xp: 2 },
-  raticate: { name: 'Rattatac', dex: 20, hp: 55, speed: 1.55, dmg: 10, size: 38, xp: 3 },
-  golbat: { name: 'Nosferalto', dex: 42, hp: 60, speed: 2.1, dmg: 11, size: 40, xp: 3 },
-  graveler: { name: 'Gravalanch', dex: 75, hp: 130, speed: 0.85, dmg: 16, size: 44, xp: 4 },
-  haunter: { name: 'Spectrum', dex: 93, hp: 90, speed: 1.7, dmg: 13, size: 42, xp: 4 },
+  rattata: { name: 'Rattata', dex: 19, ai: 'charge', color: '#a77fc4', hp: 10, speed: 1.35, dmg: 5, size: 30, xp: 1 },
+  pidgey: { name: 'Roucool', dex: 16, ai: 'fly', flying: true, color: '#c9a36b', hp: 8, speed: 1.75, dmg: 4, size: 30, xp: 1 },
+  caterpie: { name: 'Chenipan', dex: 10, ai: 'walk', color: '#7ac74c', hp: 14, speed: 0.95, dmg: 4, size: 28, xp: 1 },
+  zubat: { name: 'Nosferapti', dex: 41, ai: 'fly', flying: true, color: '#6c8fd6', hp: 12, speed: 2.25, dmg: 5, size: 30, xp: 1 },
+  ekans: { name: 'Abo', dex: 23, ai: 'spit', color: '#a35cc4', hp: 24, speed: 1.4, dmg: 7, size: 32, xp: 2 },
+  geodude: { name: 'Racaillou', dex: 74, ai: 'walk', heavy: true, color: '#9b8a6a', hp: 45, speed: 0.9, dmg: 10, size: 34, xp: 2 },
+  gastly: { name: 'Fantominus', dex: 92, ai: 'ghost', flying: true, color: '#8b6bd6', hp: 32, speed: 1.6, dmg: 8, size: 34, xp: 2 },
+  raticate: { name: 'Rattatac', dex: 20, ai: 'charge', color: '#c9a36b', hp: 55, speed: 1.55, dmg: 10, size: 38, xp: 3 },
+  golbat: { name: 'Nosferalto', dex: 42, ai: 'fly', flying: true, color: '#6c8fd6', hp: 60, speed: 2.1, dmg: 11, size: 40, xp: 3 },
+  graveler: { name: 'Gravalanch', dex: 75, ai: 'charge', heavy: true, color: '#9b8a6a', hp: 130, speed: 0.85, dmg: 16, size: 44, xp: 4 },
+  haunter: { name: 'Spectrum', dex: 93, ai: 'ghost', flying: true, blink: true, color: '#8b6bd6', hp: 90, speed: 1.7, dmg: 13, size: 42, xp: 4 },
   // Boss
-  onix: { name: 'Onix', dex: 95, hp: 900, speed: 1.05, dmg: 18, size: 92, xp: 25, boss: 'mini' },
-  snorlax: { name: 'Ronflex', dex: 143, hp: 2200, speed: 0.75, dmg: 26, size: 104, xp: 40, boss: 'mini' },
-  mewtwo: { name: 'Mewtwo', dex: 150, hp: 7000, speed: 1.25, dmg: 30, size: 112, xp: 0, boss: 'final', shoots: true }
+  onix: { name: 'Onix', dex: 95, ai: 'onix', scale: 2, color: '#9b8a6a', hp: 900, speed: 1.05, dmg: 18, size: 92, xp: 25, boss: 'mini' },
+  snorlax: { name: 'Ronflex', dex: 143, ai: 'snorlax', scale: 3.4, color: '#3d6f8a', hp: 2200, speed: 0.75, dmg: 26, size: 104, xp: 40, boss: 'mini' },
+  mewtwo: { name: 'Mewtwo', dex: 150, ai: 'mewtwo', flying: true, scale: 2.8, color: '#c77dd6', hp: 7000, speed: 1.25, dmg: 30, size: 112, xp: 0, boss: 'final', shoots: true }
 };
 
 /** Qui apparaît à quel moment (en secondes). */
@@ -159,6 +160,9 @@ export const BOSSES = [
   { at: 360, id: 'snorlax', title: 'Un Ronflex bloque le passage !' },
   { at: 540, id: 'mewtwo', title: 'Mewtwo apparaît. Bats-le pour gagner !' }
 ];
+
+/** Animation jouée par le partenaire quand l'attaque part. */
+export const CAST_ANIM = { thunder: 'shoot', ember: 'shoot', watergun: 'shoot', quake: 'attack', swift: 'shoot', shadow: 'shoot' };
 
 export const spriteOf = (dex) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${dex}.png`;
 

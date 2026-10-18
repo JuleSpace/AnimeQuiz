@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createGame } from './swarmEngine';
-import { MAX_LEVEL, PARTNERS, PASSIVES, WEAPONS, spriteOf } from './swarmData';
+import { buildWorld } from './swarmWorld';
+import { drawPokemon, preloadSprites } from './swarmSprites';
+import { MAX_LEVEL, PARTNERS, PASSIVES, WEAPONS } from './swarmData';
 import { musicPlayer } from './pokeArenaMusic';
 import './PokeSwarm.css';
 
@@ -26,6 +28,61 @@ const optionLabel = (opt) => {
   return { title: 'Baie Oran', tag: 'Soin', desc: 'Récupère 30 PV.', color: '#3d7bdb', type: 'Baie' };
 };
 
+/** Petit Pokémon animé (planches Donjon Mystère) dessiné dans un canvas. */
+const PmdSprite = ({ dex, anim = 'idle', size = 96, scale = 3, dir = 0 }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return undefined;
+    preloadSprites([dex]);
+    const dpr = window.devicePixelRatio || 1;
+    c.width = size * dpr;
+    c.height = size * dpr;
+    const x = c.getContext('2d');
+    let raf = 0;
+    const t0 = performance.now();
+    const loop = (now) => {
+      x.setTransform(dpr, 0, 0, dpr, 0, 0);
+      x.clearRect(0, 0, size, size);
+      drawPokemon(x, dex, anim, (now - t0) / 1000, dir, size / 2, size * 0.8, scale);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [dex, anim, size, scale, dir]);
+  return <canvas ref={ref} className="sw-pmd" style={{ width: size, height: size }} />;
+};
+
+/** Fond du menu : la vraie carte, qui défile lentement. */
+const MenuBackdrop = ({ world }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const c = ref.current;
+    if (!c || !world) return undefined;
+    const x = c.getContext('2d');
+    let raf = 0;
+    const t0 = performance.now();
+    const loop = (now) => {
+      const w = c.clientWidth; const h = c.clientHeight;
+      const dpr = window.devicePixelRatio || 1;
+      if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+      const t = (now - t0) / 1000;
+      const cx = world.plaza.x + Math.cos(t / 40) * 700;
+      const cy = world.plaza.y - 250 + Math.sin(t / 40) * 420;
+      const zoom = Math.max(1, Math.min(w / 1100, h / 760) * 1.1);
+      const vw = w / zoom; const vh = h / zoom;
+      const x0 = cx - vw / 2; const y0 = cy - vh / 2;
+      x.setTransform(dpr * zoom, 0, 0, dpr * zoom, -x0 * dpr * zoom, -y0 * dpr * zoom);
+      world.drawGround(x, x0 - 20, y0 - 20, vw + 40, vh + 40);
+      world.propsIn(x0 - 60, y0 - 40, x0 + vw + 60, y0 + vh + 200).sort((a, b) => a.y - b.y).forEach((p) => world.drawProp(x, p, t));
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [world]);
+  return <canvas ref={ref} className="sw-backdrop" />;
+};
+
 const Pips = ({ lv }) => (
   <span className="sw-pips">
     {Array.from({ length: MAX_LEVEL }, (_, i) => <i key={i} className={i < lv ? 'on' : ''} />)}
@@ -43,6 +100,14 @@ const PokeSwarm = ({ onClose }) => {
   const [run, setRun] = useState(0);
   const canvasRef = useRef(null);
   const gameRef = useRef(null);
+  const [world, setWorld] = useState(null);
+
+  // La carte se génère une fois le menu affiché (pour ne pas bloquer l'ouverture).
+  useEffect(() => {
+    if (world) return undefined;
+    const id = setTimeout(() => setWorld(buildWorld()), 60);
+    return () => clearTimeout(id);
+  }, [world]);
 
   const partner = PARTNERS.find((p) => p.id === partnerId) || PARTNERS[0];
 
@@ -62,7 +127,7 @@ const PokeSwarm = ({ onClose }) => {
   useEffect(() => {
     if (screen !== 'play' || !canvasRef.current) return undefined;
     const game = createGame(canvasRef.current, partner, {
-      onLevelUp: (options, level) => setLevelUp({ options, level }),
+      onLevelUp: (options, level, rerolls) => setLevelUp({ options, level, rerolls }),
       onEnd: (result, snap) => {
         setEnd({ result, ...snap });
         setBest((prev) => {
@@ -76,7 +141,7 @@ const PokeSwarm = ({ onClose }) => {
         });
       },
       onPauseKey: () => setPaused((v) => !v)
-    });
+    }, world);
     gameRef.current = game;
     const timer = setInterval(() => setHud(game.snapshot()), 100);
     return () => {
@@ -103,10 +168,15 @@ const PokeSwarm = ({ onClose }) => {
     setLevelUp(null);
     gameRef.current?.choose(opt);
   };
+  const reroll = () => {
+    const options = gameRef.current?.reroll();
+    if (options) setLevelUp((cur) => ({ ...cur, options, rerolls: cur.rerolls - 1 }));
+  };
 
   if (screen === 'menu') {
     return (
       <div className="sw-root sw-menu">
+        <MenuBackdrop world={world} />
         <header className="sw-head">
           <div>
             <span className="sw-kicker">Mode secret</span>
@@ -128,7 +198,7 @@ const PokeSwarm = ({ onClose }) => {
                 onDoubleClick={() => { setPartnerId(p.id); start(); }}
                 aria-pressed={p.id === partnerId}
               >
-                <img src={spriteOf(p.dex)} alt="" draggable={false} />
+                <PmdSprite dex={p.dex} anim={p.id === partnerId ? 'walk' : 'idle'} size={112} scale={3} />
                 <strong>{p.name}</strong>
                 <span className="sw-type">{p.type}</span>
                 <span className="sw-attack">{WEAPONS[p.weapon].name}</span>
@@ -145,11 +215,14 @@ const PokeSwarm = ({ onClose }) => {
         </div>
         <div className="sw-howto">
           <span><b>Bouger</b> ZQSD, WASD ou flèches · au doigt, glisse sur l'écran</span>
+          <span><b>Esquive</b> Espace ou Maj : un bond rapide, invincible pendant le saut</span>
           <span><b>Pause</b> Échap ou P</span>
           <span><b>Bonbons</b> ramasse l'XP pour monter de niveau et choisir un bonus</span>
-          <span><b>Évolution</b> ton partenaire évolue en route</span>
+          <span><b>Rochers fissurés</b> casse-les : baies, aimants et Super Bonbons</span>
+          <span><b>Boss</b> les zones rouges au sol vont exploser : sors-en !</span>
         </div>
         <button type="button" className="sw-btn is-go" onClick={start}>Partir avec {partner.name}</button>
+        <p className="sw-credit">Sprites animés : PMDCollab SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo / Game Freak</p>
       </div>
     );
   }
@@ -164,7 +237,7 @@ const PokeSwarm = ({ onClose }) => {
           <div className="sw-xp"><b style={{ width: `${(h.xp / h.need) * 100}%` }} /><span>Niv. {h.level}</span></div>
           <div className="sw-top">
             <div className="sw-me">
-              <img src={spriteOf(h.form.dex)} alt="" />
+              <PmdSprite dex={h.form.dex} size={46} scale={1.5} />
               <div>
                 <strong>{h.form.name}</strong>
                 <div className="sw-hp"><b style={{ width: `${(h.hp / h.maxHp) * 100}%` }} /><span>{Math.ceil(h.hp)} / {h.maxHp}</span></div>
@@ -193,6 +266,14 @@ const PokeSwarm = ({ onClose }) => {
             </div>
           )}
           {h.banner && <div key={h.banner} className="sw-banner">{h.banner}</div>}
+          <button
+            type="button"
+            className={`sw-dash${h.dash >= 1 ? ' is-ready' : ''}`}
+            style={{ '--k': Math.min(1, h.dash) }}
+            onPointerDown={(e) => { e.stopPropagation(); gameRef.current?.dash(); }}
+          >
+            <b>Esquive</b><small>Espace</small>
+          </button>
         </div>
       )}
 
@@ -214,6 +295,10 @@ const PokeSwarm = ({ onClose }) => {
                 );
               })}
             </div>
+            <div className="sw-actions">
+              <button type="button" className="sw-btn is-small" disabled={!levelUp.rerolls} onClick={reroll}>Relancer ({levelUp.rerolls})</button>
+              <button type="button" className="sw-btn is-small is-ghost" onClick={() => choose({ kind: 'skip', id: 'skip', lv: 0 })}>Passer (+15 PV)</button>
+            </div>
           </div>
         </div>
       )}
@@ -233,7 +318,7 @@ const PokeSwarm = ({ onClose }) => {
       {end && (
         <div className="sw-modal">
           <div className={`sw-card is-end ${end.result === 'win' ? 'is-win' : 'is-lose'}`}>
-            <img src={spriteOf(end.form.dex)} alt="" />
+            <PmdSprite dex={end.form.dex} anim={end.result === 'win' ? 'idle' : 'hurt'} size={120} scale={3} />
             <h2>{end.result === 'win' ? 'Mewtwo est K.O. !' : `${end.form.name} est K.O.`}</h2>
             <p>{clock(end.t)} · niveau {end.level} · {end.kills} Pokémon mis K.O.</p>
             <div className="sw-actions">

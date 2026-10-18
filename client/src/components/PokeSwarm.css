@@ -219,3 +219,60 @@
   .sw-clock { font-size: 22px; }
   .sw-loadout { max-width: 100%; right: 12px; }
 }
+
+/* ——— Esquive (bouton + recharge) ——— */
+.sw-dash {
+  position: absolute;
+  right: 212px;
+  bottom: 14px;
+  width: 74px;
+  height: 74px;
+  display: grid;
+  place-content: center;
+  gap: 2px;
+  border: 0;
+  border-radius: 18px;
+  cursor: pointer;
+  color: #fff;
+  background:
+    conic-gradient(rgba(127, 224, 255, 0.85) calc(var(--k) * 360deg), rgba(8, 22, 77, 0.85) 0);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.55), 0 6px 14px rgba(0, 0, 0, 0.35);
+  touch-action: none;
+}
+.sw-dash::before { content: ''; position: absolute; inset: 6px; border-radius: 13px; background: rgba(8, 22, 77, 0.92); }
+.sw-dash b, .sw-dash small { position: relative; }
+.sw-dash b { font: italic 900 14px/1 'Saira', sans-serif; text-transform: uppercase; }
+.sw-dash small { font: 700 10px/1 'Saira Semi Condensed', sans-serif; opacity: 0.75; }
+.sw-dash.is-ready { box-shadow: 0 0 0 3px #7fe0ff, 0 0 18px rgba(127, 224, 255, 0.65); }
+.sw-loadout { max-width: calc(100% - 330px); }
+.sw-btn:disabled { opacity: 0.45; cursor: default; }
+.sw-credit { margin: 0; font-size: 11px; opacity: 0.6; text-align: center; }
+@media (max-width: 700px) {
+  .sw-dash { right: 140px; width: 64px; height: 64px; }
+  .sw-loadout { max-width: calc(100% - 230px); right: auto; }
+}
+
+/* ——— Menu sur la carte ——— */
+.sw-menu { background: #0b2a1a; }
+.sw-menu > :not(.sw-backdrop) { position: relative; z-index: 1; }
+.sw-backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  filter: brightness(0.62) saturate(1.1);
+  image-rendering: pixelated;
+}
+.sw-menu::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 40%, rgba(5, 20, 60, 0.15), rgba(3, 10, 40, 0.75));
+}
+.sw-howto { background: rgba(6, 18, 60, 0.82) !important; }
+.sw-pmd { display: block; image-rendering: pixelated; }
+.sw-me .sw-pmd { border-radius: 10px; background: rgba(255, 255, 255, 0.5); }
+.sw-card .sw-btn.is-ghost { color: #0a1f6b; background: #fff; box-shadow: inset 0 0 0 2px #9fb3e8; }
