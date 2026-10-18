@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createGame } from './swarmEngine';
 import { buildWorld } from './swarmWorld';
 import { drawPokemon, preloadSprites } from './swarmSprites';
-import { FOES, GENS, GEN_BOSSES, GEN_WAVES, MAX_LEVEL, MEGA_LEVELS, PARTNERS, PASSIVES, WEAPONS, megaOf } from './swarmData';
+import { FOES, GENS, GEN_BOSSES, GEN_WAVES, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PARTNERS, PASSIVES, WEAPONS, megaOf } from './swarmData';
 import {
   ACHIEVEMENTS, ALL_FOE_IDS, BRANCHES, REGION_COST, TALENTS, TIER_NEEDS, branchPoints, buyTalent, dailyChallenge,
   loadMeta, metaEffects, rankOf, recordRun, refundAll, talentCost, talentLocked, unlockRegion
@@ -190,6 +190,106 @@ const TcgCard = ({ opt, partner, formDex, index, onPick, gen, megaLevels = MEGA_
         <span className="tcg-face tcg-back" aria-hidden="true"><span>SWARM</span></span>
       </span>
     </button>
+  );
+};
+
+/** Musique : titre en cours, volume (partagé avec Arena) et morceau suivant. */
+const MusicControls = () => {
+  const [now, setNow] = useState(null);
+  const [volume, setVolume] = useState(() => {
+    try { const raw = localStorage.getItem(MUSIC_KEY); const v = raw === null ? 0.5 : Number(raw); return Number.isFinite(v) ? v : 0.5; } catch { return 0.5; }
+  });
+  useEffect(() => musicPlayer().subscribe(setNow), []);
+  const set = (v) => {
+    setVolume(v);
+    musicPlayer().setVolume(v);
+    try { localStorage.setItem(MUSIC_KEY, String(v)); } catch { /* stockage indisponible */ }
+  };
+  const pct = Math.round(volume * 100);
+  return (
+    <div className="sw-music">
+      <span className="sw-kicker">Musique</span>
+      <strong className="sw-music-title">{now?.title || (volume > 0 ? 'La musique démarre…' : 'Musique coupée')}</strong>
+      <div className="sw-music-row">
+        <button type="button" className="sw-music-mute" onClick={() => set(volume > 0 ? 0 : 0.5)} aria-label={volume > 0 ? 'Couper la musique' : 'Remettre la musique'}>
+          {volume > 0 ? '🔊' : '🔇'}
+        </button>
+        <input type="range" min="0" max="100" step="1" value={pct} style={{ '--p': `${pct}%` }} aria-label="Volume de la musique" onChange={(e) => set(Number(e.target.value) / 100)} />
+        <em>{pct} %</em>
+      </div>
+      <button type="button" className="sw-btn is-small" disabled={volume <= 0} onClick={() => musicPlayer().next()}>Morceau suivant ⏭</button>
+    </div>
+  );
+};
+
+const pctTxt = (v) => `${v >= 0 ? '+' : '−'}${Math.abs(Math.round(v * 100))} %`;
+
+/** Récapitulatif de la partie en cours (écran de pause). */
+const RunRecap = ({ h, partner }) => {
+  const s = h.stats || {};
+  const m = megaOf(partner, h.megaChoice) || partner.mega;
+  const chips = [
+    ['Dégâts', pctTxt((s.dmg || 1) - 1), '#ff6a5a'],
+    ['Vitesse', pctTxt((s.speed || 1) - 1), '#4fa8ff'],
+    ['Recharge', pctTxt((s.cd || 1) - 1), '#f0c34a'],
+    ['Critique', `${Math.round((s.crit || 0) * 100)} %`, '#ff9a3c'],
+    ['Régén.', `${(s.regen || 0).toFixed(1)} PV/s`, '#5fd06a'],
+    ['Ramassage', `${Math.round(s.magnet || 80)} px`, '#b8c2dc']
+  ];
+  return (
+    <div className="sw-recap">
+      <div className="sw-recap-head">
+        <PmdSprite dex={h.form.dex} anim="idle" size={84} scale={2.2} />
+        <div>
+          <strong>{h.form.name}</strong>
+          <span>Niveau {h.level} · {clock(h.t)} · {h.kills} K.O.</span>
+          <div className="sw-hp is-recap"><b style={{ width: `${(h.hp / h.maxHp) * 100}%` }} /><span>{Math.ceil(h.hp)} / {h.maxHp} PV</span></div>
+        </div>
+      </div>
+      <div className="sw-chips">
+        {chips.map(([k, v, c]) => <span key={k} style={{ '--c': c }}><small>{k}</small><b>{v}</b></span>)}
+      </div>
+      <h3>Attaques <small>{h.weapons.length}/{MAX_WEAPONS}</small></h3>
+      <div className="sw-recap-grid">
+        {h.weapons.map((w) => {
+          const W = WEAPONS[w.id];
+          const v = W.at(w.lv);
+          const power = v.dmg ? Math.round(v.dmg * (s.dmg || 1)) : v.dps ? `${Math.round(v.dps * (s.dmg || 1))}/s` : null;
+          return (
+            <div key={w.id} className="sw-tile" style={{ '--c': TYPE_COLORS[W.type] || W.color }}>
+              <div className="sw-tile-top"><b>{W.name}</b>{power !== null && <em>{power}</em>}</div>
+              <small className="sw-tile-type">{W.type || 'Attaque'} · Niv. {w.lv}</small>
+              <Pips lv={w.lv} />
+              <p>{W.desc(w.lv)}</p>
+            </div>
+          );
+        })}
+        {Array.from({ length: Math.max(0, MAX_WEAPONS - h.weapons.length) }, (_, i) => <div key={`ew${i}`} className="sw-tile is-empty">Emplacement libre</div>)}
+      </div>
+      <h3>Objets <small>{h.passives.length}/{MAX_PASSIVES}</small></h3>
+      <div className="sw-recap-grid is-items">
+        {h.passives.map((pv) => {
+          const P = PASSIVES[pv.id];
+          return (
+            <div key={pv.id} className="sw-tile is-item" style={{ '--c': P.color }}>
+              <img src={itemSprite(ITEM_SLUG[pv.id])} alt="" onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }} />
+              <div>
+                <div className="sw-tile-top"><b>{P.name}</b><small>Niv. {pv.lv}</small></div>
+                <Pips lv={pv.lv} />
+                <p>{P.desc}{pv.lv > 1 ? ` (×${pv.lv})` : ''}</p>
+              </div>
+            </div>
+          );
+        })}
+        {Array.from({ length: Math.max(0, MAX_PASSIVES - h.passives.length) }, (_, i) => <div key={`ep${i}`} className="sw-tile is-empty">Emplacement libre</div>)}
+      </div>
+      {partner.mega && (h.megaLv > 0 || h.isMega) && (
+        <div className="sw-tile is-mega" style={{ '--c': m?.color || '#ff6ad5' }}>
+          <div className="sw-tile-top"><b>{h.isMega ? h.form.name : (m?.stone || 'Méga-Gemme')}</b><small>{h.isMega ? 'Méga-Évolué !' : `${h.megaLv}/${h.megaLevels}`}</small></div>
+          <p>{m?.perk || (h.isMega ? '+30 % de dégâts, plus rapide.' : 'Continue de prendre la Méga-Gemme pour Méga-Évoluer.')}</p>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -602,12 +702,19 @@ const PokeSwarm = ({ onClose }) => {
 
       {paused && !levelUp && !end && (
         <div className="sw-modal">
-          <div className="sw-card is-small">
-            <h2>Pause</h2>
-            <div className="sw-actions">
-              <button type="button" className="sw-btn is-go" onClick={() => setPaused(false)}>Reprendre</button>
-              <button type="button" className="sw-btn" onClick={() => { setPaused(false); setScreen('menu'); }}>Abandonner</button>
+          <div className="sw-card is-pause">
+            <h2 className="sw-pause-title">Pause</h2>
+            <div className="sw-pause-main">
+              {h && <RunRecap h={h} partner={partner} />}
             </div>
+            <aside className="sw-pause-side">
+              <MusicControls />
+              <div className="sw-pause-actions">
+                <button type="button" className="sw-btn is-go" onClick={() => setPaused(false)}>Reprendre</button>
+                <button type="button" className="sw-btn" onClick={() => { setPaused(false); setScreen('menu'); }}>Abandonner</button>
+              </div>
+              <small className="sw-pause-hint">Échap ou P pour reprendre</small>
+            </aside>
           </div>
         </div>
       )}

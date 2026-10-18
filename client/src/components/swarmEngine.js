@@ -2057,6 +2057,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     form: g.player.form,
     megaLv: g.megaLv,
     megaChoice: g.megaChoice,
+    stats: stats(),
     megaLevels: E.megaLevels,
     killsBy: g.killsBy,
     bosses: g.bossKills,
