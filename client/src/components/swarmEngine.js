@@ -7,7 +7,7 @@
  * Le composant React ne fait qu'afficher l'interface.
  */
 import {
-  CAST_ANIM, FOES, GEN_BOSSES, GEN_WAVES, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PASSIVES, RUN_SECONDS, WEAPONS, megaOf, xpToNext
+  CAST_ANIM, FOES, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PASSIVES, RUN_SECONDS, WEAPONS, buildRoster, canHold, canLearn, megaOf, xpToNext
 } from './swarmData';
 import { animLength, bodyHeight, dirOf, drawPokemon, hitTime, preloadSprites } from './swarmSprites';
 import { TILE, buildWorld } from './swarmWorld';
@@ -30,15 +30,17 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   const E = {
     dmg: 1, crit: 0, cd: 1, execute: 0, hp: 0, hpMul: 1, armor: 1, regen: 0, revive: false, speed: 1, magnet: 1, dashCd: 1, phase: 0,
     xp: 1, rerolls: 0, luck: 1, headstart: false, evolveEarly: 0, cards: 3, megaLevels: MEGA_LEVELS, spawn: 1, foeHp: 1, foeSpeed: 1,
-    bossTime: 1, noBerry: false, ...(effects || {})
+    bossTime: 1, noBerry: false, foeDmg: 1, bossHp: 1, unlocks: {}, roster: null, ...(effects || {})
   };
   const ctx = canvas.getContext('2d');
   const keys = new Set();
   const stick = { active: false, ox: 0, oy: 0, x: 0, y: 0 };
   const world = prebuilt || buildWorld();
 
-  const WAVES = GEN_WAVES[gen] || GEN_WAVES[1];
-  const BOSSES = (GEN_BOSSES[gen] || GEN_BOSSES[1]).map((b) => ({ ...b, at: Math.round(b.at * E.bossTime) }));
+  // Roster de la partie : espèces et boss tirés au sort dans le pool de la génération
+  const roster = E.roster || buildRoster(gen);
+  const WAVES = roster.waves;
+  const BOSSES = roster.bosses.map((b) => ({ ...b, at: Math.round(b.at * E.bossTime) }));
   const foeIds = new Set([...WAVES.flatMap((w) => w.foes), ...BOSSES.map((b) => b.id)]);
   preloadSprites([
     partner.dex, ...partner.evolutions.flatMap((e) => [e.dex, ...(e.choices || []).map((c) => c.dex)]), ...(partner.mega ? [partner.mega.sprite, ...(partner.mega.choices || []).map((c) => c.sprite)] : []),
@@ -55,6 +57,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     pendingLevels: 0,
     rerolls: 2 + E.rerolls,
     killsBy: {},
+    met: {},
     bossKills: 0,
     rocks: 0,
     dashes: 0,
@@ -117,6 +120,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     zones: [],
     boss: null
   };
+  if (world.biomeName) g.banner = { text: world.biomeName, life: 2.6 };
 
   // Rochers fissurés : des cibles fixes qui lâchent des objets.
   world.breakables.forEach((b) => g.foes.push({
@@ -218,6 +222,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     const elite = !def.boss && g.t > 60 && Math.random() < 0.025;
     const grow = def.boss ? 1 : 1 + g.t / 140;
     const hp = Math.round(def.hp * grow * (elite ? 4 : 1) * (def.boss ? 1 : E.foeHp));
+    if (!def.inert) g.met[id] = 1;
     const f = {
       id,
       def,
@@ -226,7 +231,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       hp,
       maxHp: hp,
       speed: def.speed * (def.boss ? 1 : rand(0.9, 1.1)) * (elite ? 1.1 : 1) * E.foeSpeed,
-      dmg: Math.max(2, Math.round(def.dmg * (def.boss ? 1 : 0.7 + g.t / 360) * (elite ? 1.4 : 1))),
+      dmg: Math.max(2, Math.round(def.dmg * (def.boss ? 1 : 0.7 + g.t / 360) * (elite ? 1.4 : 1) * E.foeDmg)),
       size: def.size * (elite ? 1.2 : 1),
       scale: (def.scale || SPR) * (elite ? 1.25 : 1),
       elite,
@@ -271,6 +276,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       g.bossIdx += 1;
       const b = spawnFoe(next.id);
       if (b) {
+        b.hp = Math.round(b.hp * (next.hpMul || 1) * E.bossHp);
+        b.maxHp = b.hp;
         if (b.boss === 'final') g.reachedFinal = true;
         g.banner = { text: next.title, life: 3.2 };
         shake(0.6);
@@ -312,6 +319,11 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   };
 
   const kill = (f) => {
+    if (!f.inert && g.passives.shellbell && Math.random() < 0.06 * g.passives.shellbell) {
+      const pl = g.player;
+      pl.hp = Math.min(pl.maxHp, pl.hp + 3);
+      text(pl.x + 12, pl.y - 52, '+3', '#6bd17a');
+    }
     f.dead = true;
     if (f.inert) {
       // Rocher fissuré : éclats + récompense
@@ -363,6 +375,12 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   const hurtPlayer = (amount, src = null) => {
     const p = g.player;
     if (p.inv > 0 || g.over || p.dash.t > 0) return;
+    // Poudre Claire : petite chance d'esquiver
+    if (g.passives.brightpowder && Math.random() < 0.04 * g.passives.brightpowder) {
+      p.inv = 0.35;
+      text(p.x, p.y - 56, 'Esquivé !', '#fff6c2');
+      return;
+    }
     amount = Math.max(1, Math.round(amount * E.armor));
     g.lastHitT = g.t;
     p.turbo = 0; // Turbo retombe à chaque coup reçu
@@ -572,6 +590,65 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       if (p.combo >= 3 && p.combo % 3 === 0) text(p.x - 26, p.y - 62, `Combo ×${p.combo}`, '#ffb347');
       return v.cd;
     }
+    if (id === 'icebeam') {
+      // Laser Glace : rayon instantané qui traverse la ligne et ralentit
+      const target = nearest(p.x, p.y, v.len);
+      if (!target) return 0.2;
+      cast(id, target);
+      const a = Math.atan2(target.y - p.y, target.x - p.x);
+      const ux = Math.cos(a); const uy = Math.sin(a);
+      near(p.x + ux * v.len / 2, p.y + uy * v.len / 2, v.len / 2 + 40).forEach((f) => {
+        if (f.dead) return;
+        const rx = f.x - p.x; const ry = f.y - p.y;
+        const along = rx * ux + ry * uy; const across = Math.abs(-rx * uy + ry * ux);
+        if (along < 0 || along > v.len || across > v.w + f.size * 0.4) return;
+        hurt(f, v.dmg, p, { knock: 1.5, color: '#d8f6ff' });
+        if (!f.inert && !f.boss) { f.slowT = v.slowT; f.slowK = v.slow; }
+      });
+      g.fx.push({ kind: 'icebeam', x: from.x, y: from.y, ang: a, len: v.len, w: v.w, life: 0.3, max: 0.3 });
+      return v.cd;
+    }
+    if (id === 'sludge') {
+      const targets = [nearest(p.x, p.y, 420)].filter(Boolean);
+      if (!targets.length) return 0.2;
+      if (v.count > 1) { const t2 = nearest(p.x, p.y, 420, new Set(targets)); if (t2) targets.push(t2); }
+      cast(id, targets[0]);
+      targets.forEach((t) => g.shots.push({ kind: 'lob', sub: 'toxic', x: p.x, y: p.y, sx: p.x, sy: p.y, tx: t.x, ty: t.y, t: 0, dur: 0.6, h: 80, dmg: v.dmg, blast: v.puddle * 0.7, puddle: v.puddle, dps: v.dps, zlife: v.life, life: 1 }));
+      return v.cd;
+    }
+    if (id === 'psychic') {
+      // Psyko : vise les ennemis les plus résistants
+      const pool = near(p.x, p.y, v.range).filter((f) => !f.inert && !f.dead && dist2(f, p) < v.range ** 2).sort((a, b) => b.hp - a.hp).slice(0, v.count);
+      if (!pool.length) return 0.25;
+      cast(id, pool[0]);
+      pool.forEach((f, i) => {
+        hurt(f, v.dmg, p, { knock: 9, color: '#ffc6ea' });
+        g.fx.push({ kind: 'psy', x: f.x, y: f.y - 16 - f.z, r: f.size * 0.7, life: 0.4 + i * 0.03, max: 0.4 + i * 0.03 });
+      });
+      g.fx.push({ kind: 'ring', x: p.x, y: p.y - 10, r: 10, max: 60, life: 0.3, color: '#ff7ac8' });
+      return v.cd;
+    }
+    if (id === 'hurricane') {
+      cast(id, nearest(p.x, p.y, 500));
+      for (let i = 0; i < v.count; i += 1) {
+        const t = nearest(p.x, p.y, 500);
+        const a = t ? Math.atan2(t.y - p.y, t.x - p.x) + (i ? Math.PI : 0) : rand(0, TAU);
+        g.shots.push({ kind: 'tornado', x: p.x, y: p.y, vx: Math.cos(a) * 1.6, vy: Math.sin(a) * 1.6, r: v.radius, dps: v.dps, pull: v.pull, life: v.life, max: v.life, tick: 0, spin: 0 });
+      }
+      return v.cd;
+    }
+    if (id === 'dracometeor') {
+      // Draco-Météore : des météores tombent sur les ennemis proches après un sifflement
+      const pool = near(p.x, p.y, v.range).filter((f) => !f.inert && !f.dead && dist2(f, p) < v.range ** 2);
+      if (!pool.length) return 0.3;
+      cast(id, pool[0]);
+      for (let i = 0; i < v.count; i += 1) {
+        const t = pool[Math.floor(Math.random() * pool.length)];
+        const delay = 0.45 + i * 0.12;
+        g.fx.push({ kind: 'meteor', x: t.x + rand(-20, 20), y: t.y + rand(-20, 20), life: 0.35 + delay, max: 0.35, fall: delay, done: false, dmg: v.dmg, blast: v.blast });
+      }
+      return v.cd;
+    }
     if (id === 'bubble') {
       const target = nearest(p.x, p.y, 380);
       if (!target) return 0.2;
@@ -631,10 +708,10 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     const ownedW = Object.keys(g.weapons);
     const ownedP = Object.keys(g.passives);
     ownedW.forEach((id) => { if (g.weapons[id].lv < MAX_LEVEL) opts.push({ kind: 'weapon', id, lv: g.weapons[id].lv + 1 }); });
-    // Attaques proposées : celles de la génération choisie + les communes
-    if (ownedW.length < MAX_WEAPONS) Object.keys(WEAPONS).filter((id) => !g.weapons[id] && (WEAPONS[id].gen === 0 || WEAPONS[id].gen === gen)).forEach((id) => opts.push({ kind: 'weapon', id, lv: 1 }));
+    // Attaques proposées : celles du même type que le starter + les capacités communes débloquées
+    if (ownedW.length < MAX_WEAPONS) Object.keys(WEAPONS).filter((id) => !g.weapons[id] && canLearn(partner, id, E.unlocks)).forEach((id) => opts.push({ kind: 'weapon', id, lv: 1 }));
     ownedP.forEach((id) => { if (g.passives[id] < MAX_LEVEL) opts.push({ kind: 'passive', id, lv: g.passives[id] + 1 }); });
-    if (ownedP.length < MAX_PASSIVES) Object.keys(PASSIVES).filter((id) => !g.passives[id]).forEach((id) => opts.push({ kind: 'passive', id, lv: 1 }));
+    if (ownedP.length < MAX_PASSIVES) Object.keys(PASSIVES).filter((id) => !g.passives[id] && canHold(id, E.unlocks)).forEach((id) => opts.push({ kind: 'passive', id, lv: 1 }));
     const shuffled = opts.sort(() => Math.random() - 0.5).slice(0, E.cards);
     // Méga-Gemme : toujours proposée une fois la dernière forme atteinte
     const last = partner.evolutions[partner.evolutions.length - 1];
@@ -660,7 +737,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
 
   const gainXp = (v) => {
     const p = g.player;
-    p.xp += v * E.xp;
+    p.xp += v * E.xp * (1 + 0.08 * (g.passives.expshare || 0));
     while (p.xp >= p.need) {
       p.xp -= p.need;
       p.level += 1;
@@ -1173,6 +1250,16 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     });
     g.zones = g.zones.filter((z) => z.life > 0);
     if (g.zones.length > 140) g.zones.splice(0, g.zones.length - 140);
+    // Draco-Météore : impact à la fin de la chute
+    g.fx.forEach((fx) => {
+      if (fx.kind !== 'meteor' || fx.done || fx.life > fx.max) return;
+      fx.done = true;
+      near(fx.x, fx.y, fx.blast + 30).forEach((f) => { if ((f.x - fx.x) ** 2 + (f.y - fx.y) ** 2 < (fx.blast + f.size * 0.4) ** 2) hurt(f, fx.dmg, fx, { knock: 6, color: '#d8c8ff' }); });
+      burst(fx.x, fx.y - 6, '#b49cff', 12, 5, { grav: 0.3, up: 1.5 });
+      burst(fx.x, fx.y - 6, '#ffb347', 6, 4, { grav: 0.3, up: 1.5 });
+      decal({ kind: 'crack', x: fx.x, y: fx.y, r: fx.blast * 0.7, life: 2, seed: Math.random() * 1000 });
+      shake(0.08);
+    });
     // Double Pied : les coups partent avec un léger décalage
     g.fx.forEach((fx) => {
       if (fx.kind !== 'kick' || fx.done || fx.life > fx.max) return;
@@ -1187,6 +1274,25 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
 
     // Projectiles
     g.shots.forEach((sh) => {
+      if (sh.kind === 'tornado') {
+        // Vent Violent : erre vers la horde, aspire et frappe
+        sh.life -= dt; sh.spin += dt * 9; sh.tick -= dt;
+        const t = nearest(sh.x, sh.y, 360);
+        if (t) { const a = Math.atan2(t.y - sh.y, t.x - sh.x); sh.vx += Math.cos(a) * 0.06; sh.vy += Math.sin(a) * 0.06; }
+        sh.vx += rand(-0.08, 0.08); sh.vy += rand(-0.08, 0.08);
+        const sp = Math.hypot(sh.vx, sh.vy); if (sp > 2) { sh.vx = (sh.vx / sp) * 2; sh.vy = (sh.vy / sp) * 2; }
+        sh.x += sh.vx * 60 * dt; sh.y += sh.vy * 60 * dt;
+        near(sh.x, sh.y, sh.r * 1.8).forEach((f) => {
+          if (f.dead || f.inert) return;
+          const dx = sh.x - f.x; const dy = sh.y - f.y; const d = Math.hypot(dx, dy) || 1;
+          if (d > sh.r * 1.8) return;
+          if (!f.boss) { f.kx += (dx / d) * sh.pull * dt * 6; f.ky += (dy / d) * sh.pull * dt * 6; }
+          if (sh.tick <= 0 && d < sh.r + f.size * 0.4) hurt(f, sh.dps * 0.25, null, { silent: Math.random() < 0.5, color: '#e0f2ff' });
+        });
+        if (sh.tick <= 0) sh.tick = 0.25;
+        if (Math.random() < 0.5) particle({ kind: 'dot', x: sh.x + rand(-sh.r, sh.r), y: sh.y + rand(-10, 4), vx: rand(-1, 1), vy: -rand(0.5, 1.6), life: 0.4, color: pick(['#ffffff', '#c8e8ff', '#a8c8e8']), size: 2 });
+        return;
+      }
       if (sh.kind === 'blade') {
         // Lame-Feuille : boomerang qui revient vers le joueur
         sh.spin += dt * 20;
@@ -1221,6 +1327,9 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
           if (sh.sub === 'mud') {
             g.zones.push({ kind: 'mud', x: sh.tx, y: sh.ty, r: sh.puddle, life: 3, max: 3, dps: sh.dps, slow: 0.5, tick: 0 });
             burst(sh.tx, sh.ty - 6, '#8a5a2a', 12, 4, { grav: 0.3, up: 1.5 });
+          } else if (sh.sub === 'toxic') {
+            g.zones.push({ kind: 'toxic', x: sh.tx, y: sh.ty, r: sh.puddle, life: sh.zlife, max: sh.zlife, dps: sh.dps, tick: 0, seed: Math.random() * 1000 });
+            burst(sh.tx, sh.ty - 6, '#b06ad6', 12, 4, { grav: 0.3, up: 1.5 });
           } else {
             g.fx.push({ kind: 'blast', x: sh.tx, y: sh.ty - 6, r: sh.blast, life: 0.28, max: 0.28 });
             burst(sh.tx, sh.ty - 6, '#c9a36b', 10, 5, { grav: 0.3, up: 1.5 });
@@ -1609,6 +1718,13 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
         ctx.fillStyle = `rgba(255,220,90,${0.5 * a * fl})`;
         ctx.beginPath(); ctx.ellipse(z.x, z.y - 2, z.r * 0.45, z.r * 0.3, 0, 0, TAU); ctx.fill();
         if (Math.random() < 0.08) particle({ kind: 'dot', x: z.x + rand(-z.r, z.r) * 0.6, y: z.y, vx: 0, vy: -rand(0.6, 1.4), life: 0.35, color: pick(['#ffdd57', '#ff9a3c']), size: 3 });
+      } else if (z.kind === 'toxic') {
+        // Bombe Beurk : flaque violette qui bouillonne
+        ctx.fillStyle = `rgba(90,30,120,${0.5 * a})`;
+        ctx.beginPath(); ctx.ellipse(z.x, z.y, z.r, z.r * 0.6, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = `rgba(176,106,214,${0.45 * a})`;
+        ctx.beginPath(); ctx.ellipse(z.x - z.r * 0.15, z.y - z.r * 0.08, z.r * 0.55, z.r * 0.3, 0, 0, TAU); ctx.fill();
+        if (Math.random() < 0.12) particle({ kind: 'dot', x: z.x + rand(-z.r, z.r) * 0.6, y: z.y + rand(-z.r, z.r) * 0.3, vx: 0, vy: -rand(0.3, 0.8), life: 0.5, color: pick(['#d9a6ff', '#b06ad6']), size: 3 });
       } else if (z.kind === 'ghostfire') {
         // Feu Ensorcelé : flammes spectrales violettes
         const fl = 0.8 + Math.sin(g.t * 14 + z.x) * 0.2;
@@ -1745,13 +1861,32 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       if (sh.kind === 'lob') {
         shadow(sh.x, sh.y + 4, 7, 0.25);
         const y = sh.y - (sh.z || 0);
-        if (sh.sub === 'mud') {
+        if (sh.sub === 'toxic') {
+          ctx.fillStyle = '#5a2a7a'; ctx.beginPath(); ctx.arc(sh.x, y, 8, 0, TAU); ctx.fill();
+          ctx.fillStyle = '#b06ad6'; ctx.beginPath(); ctx.arc(sh.x - 2, y - 2, 5, 0, TAU); ctx.fill();
+        } else if (sh.sub === 'mud') {
           ctx.fillStyle = '#5a3a1a'; ctx.beginPath(); ctx.arc(sh.x, y, 8, 0, TAU); ctx.fill();
           ctx.fillStyle = '#8a5a2a'; ctx.beginPath(); ctx.arc(sh.x - 2, y - 2, 5, 0, TAU); ctx.fill();
         } else {
           ctx.fillStyle = '#6b4a2a'; ctx.beginPath(); ctx.ellipse(sh.x, y, 7, 9, sh.t * 6, 0, TAU); ctx.fill();
           ctx.fillStyle = '#c9a36b'; ctx.beginPath(); ctx.ellipse(sh.x - 2, y - 2, 3, 4, sh.t * 6, 0, TAU); ctx.fill();
         }
+        return;
+      }
+      if (sh.kind === 'tornado') {
+        const a = Math.min(1, sh.life / 0.4) * Math.min(1, (sh.max - sh.life) / 0.2 + 0.2);
+        shadow(sh.x, sh.y + 2, sh.r * 0.7, 0.18 * a);
+        ctx.save();
+        ctx.globalAlpha = a;
+        for (let i = 0; i < 6; i += 1) {
+          const k = i / 5;
+          const w = sh.r * (0.35 + k * 0.75);
+          const yy = sh.y - k * sh.r * 1.6;
+          ctx.strokeStyle = i % 2 ? 'rgba(255,255,255,.85)' : 'rgba(170,210,240,.75)';
+          ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.ellipse(sh.x + Math.sin(sh.spin + i) * 6, yy, w, w * 0.32, 0, sh.spin + i, sh.spin + i + 4.2); ctx.stroke();
+        }
+        ctx.restore();
         return;
       }
       if (sh.kind === 'bubble') {
@@ -1847,6 +1982,41 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
         line(5, '#ffe14a');
         line(2, '#ffffff');
         ctx.globalAlpha = 1;
+      } else if (f.kind === 'icebeam') {
+        ctx.save();
+        ctx.translate(f.x, f.y); ctx.rotate(f.ang);
+        ctx.globalAlpha = 1 - k;
+        ctx.fillStyle = 'rgba(140,220,255,.45)'; ctx.fillRect(0, -f.w, f.len, f.w * 2);
+        ctx.fillStyle = '#c8f2ff'; ctx.fillRect(0, -f.w * 0.5, f.len, f.w);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, -f.w * 0.18, f.len, f.w * 0.36);
+        for (let i = 0; i < 8; i += 1) { ctx.fillStyle = '#ffffff'; ctx.fillRect((i / 8) * f.len + rand(0, 20), rand(-f.w, f.w), 4, 4); }
+        ctx.restore();
+      } else if (f.kind === 'psy') {
+        ctx.strokeStyle = `rgba(255,122,200,${1 - k})`;
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 3; i += 1) {
+          const r = f.r * (0.3 + k + i * 0.25);
+          ctx.beginPath(); ctx.ellipse(f.x, f.y, r, r * 0.6, 0, 0, TAU); ctx.stroke();
+        }
+      } else if (f.kind === 'meteor') {
+        if (!f.done) {
+          // chute : traînée en diagonale + cercle d'impact au sol
+          const fall = 1 - Math.max(0, (f.life - f.max) / f.fall);
+          ctx.strokeStyle = `rgba(180,156,255,${0.3 + fall * 0.5})`; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.ellipse(f.x, f.y, f.blast * fall, f.blast * fall * 0.6, 0, 0, TAU); ctx.stroke();
+          const sx = f.x - 220 * (1 - fall); const sy = f.y - 420 * (1 - fall);
+          ctx.strokeStyle = 'rgba(255,200,120,.5)'; ctx.lineWidth = 8;
+          ctx.beginPath(); ctx.moveTo(sx - 40, sy - 76); ctx.lineTo(sx, sy); ctx.stroke();
+          ctx.fillStyle = '#8a6aff'; ctx.beginPath(); ctx.arc(sx, sy, 9, 0, TAU); ctx.fill();
+          ctx.fillStyle = '#fff1c8'; ctx.beginPath(); ctx.arc(sx - 2, sy - 2, 4, 0, TAU); ctx.fill();
+        } else {
+          const kk = 1 - f.life / f.max;
+          const r = f.blast * (0.4 + kk * 0.9);
+          const grad = ctx.createRadialGradient(f.x, f.y, 1, f.x, f.y, r);
+          grad.addColorStop(0, `rgba(255,250,235,${1 - kk})`); grad.addColorStop(0.45, `rgba(160,120,255,${0.9 - kk})`); grad.addColorStop(1, 'rgba(90,40,200,0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, TAU); ctx.fill();
+        }
       } else if (f.kind === 'spark') {
         ctx.fillStyle = `rgba(255,250,200,${1 - k})`;
         ctx.beginPath(); ctx.arc(f.x, f.y, f.r * (0.5 + k), 0, TAU); ctx.fill();
@@ -1964,6 +2134,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
     }
+    // Ambiance du biome (brume du marais, froid de la neige…)
+    if (world.ambient) { ctx.fillStyle = world.ambient; ctx.fillRect(0, 0, w, h); }
     // Vignette
     const vg = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.45, w / 2, h / 2, Math.max(w, h) * 0.75);
     vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.35)');
@@ -2103,6 +2275,9 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     form: g.player.form,
     megaLv: g.megaLv,
     megaChoice: g.megaChoice,
+    finalBoss: roster.final,
+    met: Object.keys(g.met),
+    roster: { minis: roster.minis, final: roster.final, foes: roster.foes },
     stats: stats(),
     megaLevels: E.megaLevels,
     killsBy: g.killsBy,

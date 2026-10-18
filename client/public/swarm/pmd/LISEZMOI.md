@@ -5,3 +5,4 @@
   sprites overworld et de face de pokeemerald-expansion (Rom Hacking Hideout, https://github.com/rh-hideout/pokeemerald-expansion)
   et de leurs artistes, remis au format des planches PMD (8 directions).
 - Pokémon © Nintendo / Creatures / Game Freak.
+- `157-hisui` (Typhlosion d'Hisui) et les 68 espèces ajoutées aux pools d'ennemis : PMDCollab SpriteCollab (CC BY-NC 4.0).

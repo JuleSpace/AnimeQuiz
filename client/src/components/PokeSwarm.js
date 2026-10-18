@@ -1,11 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createGame } from './swarmEngine';
-import { buildWorld } from './swarmWorld';
-import { drawPokemon, preloadSprites } from './swarmSprites';
-import { FOES, GENS, GEN_BOSSES, GEN_WAVES, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PARTNERS, PASSIVES, WEAPONS, megaOf } from './swarmData';
+import { BIOMES, buildWorld } from './swarmWorld';
+import { animLength, drawPokemon, preloadSprites } from './swarmSprites';
 import {
-  ACHIEVEMENTS, ALL_FOE_IDS, BRANCHES, REGION_COST, TALENTS, TIER_NEEDS, branchPoints, buyTalent, dailyChallenge,
-  loadMeta, metaEffects, rankOf, recordRun, refundAll, talentCost, talentLocked, unlockRegion
+  AI_INFO, FOES, FOE_INFO, GENS, GEN_POOLS, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PARTNERS, PASSIVES, TRAIT_INFO, WEAPONS,
+  buildRoster, megaOf, seededRng
+} from './swarmData';
+import {
+  ACHIEVEMENTS, ALL_FOE_IDS, BRANCHES, MAX_RANK, REGION_COST, TALENTS, TIER_NEEDS, UNLOCKABLES, branchPoints, buyTalent, buyUnlock,
+  dailyChallenge, loadMeta, metaEffects, rankLabel, rankOf, recordRun, refundAll, talentCost, talentLocked, unlockRegion
 } from './swarmMeta';
 import { musicPlayer } from './pokeArenaMusic';
 import './PokeSwarm.css';
@@ -54,7 +57,7 @@ const optionLabel = (opt, partner, ML = MEGA_LEVELS) => {
 };
 
 /** Petit Pokémon animé (planches Donjon Mystère) dessiné dans un canvas. */
-const PmdSprite = ({ dex, anim = 'idle', size = 96, scale = 3, dir = 0, still = false }) => {
+const PmdSprite = ({ dex, anim = 'idle', size = 96, scale = 3, dir = 0, still = false, cycle = null, rate = 0.55, hold = 1.1, foot = 0.8 }) => {
   const ref = useRef(null);
   useEffect(() => {
     const c = ref.current;
@@ -69,12 +72,21 @@ const PmdSprite = ({ dex, anim = 'idle', size = 96, scale = 3, dir = 0, still = 
     const loop = (now) => {
       x.setTransform(dpr, 0, 0, dpr, 0, 0);
       x.clearRect(0, 0, size, size);
-      const drawn = drawPokemon(x, dex, anim, still ? 0 : (now - t0) / 1000, dir, size / 2, size * 0.8, scale);
+      let drawn;
+      const t = (now - t0) / 1000;
+      if (cycle) {
+        // Carte d'attaque : le Pokémon attend, puis joue son attaque au ralenti
+        const len = animLength(dex, cycle) / rate;
+        const tt = t % (len + hold);
+        drawn = tt < hold
+          ? drawPokemon(x, dex, 'idle', t, dir, size / 2, size * foot, scale)
+          : drawPokemon(x, dex, cycle, (tt - hold) * rate, dir, size / 2, size * foot, scale, { loop: false });
+      } else drawn = drawPokemon(x, dex, anim, still ? 0 : t, dir, size / 2, size * foot, scale);
       if (!(still && drawn)) raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [dex, anim, size, scale, dir, still]);
+  }, [dex, anim, size, scale, dir, still, cycle, rate, hold, foot]);
   return <canvas ref={ref} className="sw-pmd" style={{ width: size, height: size }} />;
 };
 
@@ -111,10 +123,12 @@ const MenuBackdrop = ({ world }) => {
 /* ——— Cartes de bonus façon jeu de cartes à collectionner ——— */
 const TYPE_COLORS = {
   Électrik: '#f7d02c', Feu: '#ee8130', Eau: '#6390f0', Plante: '#7ac74c', Sol: '#d9b25a', Normal: '#b8b48a',
-  Spectre: '#8a6bc4', Ténèbres: '#6b5a4c', Combat: '#d2513f', Objet: '#9fb3d6', Baie: '#4f8fe0', Méga: '#ff6ad5'
+  Spectre: '#8a6bc4', Ténèbres: '#6b5a4c', Combat: '#d2513f', Objet: '#9fb3d6', Baie: '#4f8fe0', Méga: '#ff6ad5',
+  Glace: '#7fd8e8', Poison: '#a35cc4', Psy: '#f95587', Vol: '#a98ff3', Dragon: '#6f35fc'
 };
 const ITEM_SLUG = {
-  protein: 'protein', carbos: 'carbos', hpup: 'hp-up', magnet: 'magnet', quickclaw: 'quick-claw', leftovers: 'leftovers', scope: 'scope-lens'
+  protein: 'protein', carbos: 'carbos', hpup: 'hp-up', magnet: 'magnet', quickclaw: 'quick-claw', leftovers: 'leftovers', scope: 'scope-lens',
+  shellbell: 'shell-bell', expshare: 'exp-share', brightpowder: 'bright-powder'
 };
 const itemSprite = (slug) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${slug}.png`;
 // numéro « de collection » stable pour chaque carte
@@ -151,7 +165,7 @@ const TcgCard = ({ opt, partner, formDex, index, onPick, gen, megaLevels = MEGA_
     el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg');
   };
   let art;
-  if (opt.kind === 'weapon') art = <PmdSprite dex={formDex} anim={['quake', 'bite', 'leafblade', 'doublekick', 'machpunch'].includes(opt.id) ? 'attack' : 'shoot'} size={118} scale={2.6} dir={1} />;
+  if (opt.kind === 'weapon') art = <PmdSprite dex={formDex} cycle={['quake', 'bite', 'leafblade', 'doublekick', 'machpunch'].includes(opt.id) ? 'attack' : 'shoot'} size={150} scale={2.1} dir={1} foot={0.78} />;
   else if (opt.kind === 'evo') art = <PmdSprite dex={l.evoDex} anim="idle" size={118} scale={2.6} />;
   else if (opt.kind === 'mega') {
     const m = megaOf(partner, opt.id) || partner.mega;
@@ -304,17 +318,44 @@ const Pips = ({ lv }) => (
   </span>
 );
 
-const FOE_GEN = (() => {
-  const out = {};
-  Object.entries(GEN_WAVES).forEach(([g, waves]) => waves.forEach((w) => w.foes.forEach((id) => { if (!out[id]) out[id] = Number(g); })));
-  Object.entries(GEN_BOSSES).forEach(([g, list]) => list.forEach((b) => { if (!out[b.id]) out[b.id] = Number(g); }));
-  return out;
-})();
+const TIER_LABEL = { t1: 'Commun', t2: 'Peu commun', t3: 'Redoutable', minis: 'Boss', finals: 'Légendaire' };
+
+/** Fiche d'un ennemi : ce qu'il fait et comment le gérer. */
+const FoeSheet = ({ id, meta, onClose }) => {
+  const f = FOES[id];
+  const info = FOE_INFO[id];
+  const n = meta.dex[id] || 0;
+  const traits = [f.flying && 'flying', f.heavy && 'heavy', f.blink && 'blink', f.boss].filter(Boolean);
+  return (
+    <div className="sw-foe" role="dialog" aria-label={f.name}>
+      <button type="button" className="sw-foe-close sw-btn is-small is-ghost" onClick={onClose}>Retour</button>
+      <div className="sw-foe-art" style={{ '--c': f.color }}>
+        <PmdSprite dex={f.dex} anim="walk" size={150} scale={f.boss ? 1.6 : 2.6} dir={0} />
+      </div>
+      <div className="sw-foe-body">
+        <h3>{f.name}</h3>
+        <span className="sw-foe-tag">{GENS.find((g) => g.id === info.gen)?.name} · {TIER_LABEL[info.tier]}</span>
+        <div className="sw-chips is-foe">
+          <span style={{ '--c': '#5fd98a' }}><small>PV</small><b>{f.hp.toLocaleString('fr-FR')}</b></span>
+          <span style={{ '--c': '#ff6b57' }}><small>Dégâts</small><b>{f.dmg}</b></span>
+          <span style={{ '--c': '#4fa8ff' }}><small>Vitesse</small><b>{f.speed.toFixed(1)}</b></span>
+          <span style={{ '--c': '#ffd447' }}><small>Vaincus</small><b>{n.toLocaleString('fr-FR')}</b></span>
+        </div>
+        <h4>Ce qu’il fait</h4>
+        <p>{AI_INFO[f.ai]}</p>
+        {traits.map((t) => <p key={t} className="sw-foe-trait">{TRAIT_INFO[t]}</p>)}
+        {!f.boss && <p className="sw-foe-note">Ses PV et ses dégâts augmentent avec le temps. Les versions « élites », plus grandes, ont 4 fois plus de PV.</p>}
+      </div>
+    </div>
+  );
+};
 
 /** Panneaux de progression : talents, défis, Pokédex. */
 const MetaPanel = ({ panel, meta, setMeta, onClose }) => {
   const [tab, setTab] = useState(panel);
+  const [foe, setFoe] = useState(null);
   useEffect(() => setTab(panel), [panel]);
+  useEffect(() => setFoe(null), [tab]);
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -326,7 +367,7 @@ const MetaPanel = ({ panel, meta, setMeta, onClose }) => {
       <div className="sw-card is-panel">
         <div className="sw-panel-head">
           <div className="sw-tabs" role="tablist">
-            {[['talents', 'Talents'], ['achievements', `Défis ${Object.keys(meta.achievements).length}/${ACHIEVEMENTS.length}`], ['dex', `Pokédex ${seen}/${ALL_FOE_IDS.length}`]].map(([id, label]) => (
+            {[['talents', 'Talents'], ['moves', `Capacités ${UNLOCKABLES.filter((u) => meta.unlocks?.[u.id]).length}/${UNLOCKABLES.length}`], ['achievements', `Défis ${Object.keys(meta.achievements).length}/${ACHIEVEMENTS.length}`], ['dex', `Pokédex ${seen}/${ALL_FOE_IDS.length}`]].map(([id, label]) => (
               <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>{label}</button>
             ))}
           </div>
@@ -376,6 +417,26 @@ const MetaPanel = ({ panel, meta, setMeta, onClose }) => {
           </>
         )}
 
+        {tab === 'moves' && (
+          <>
+            <p className="sw-panel-note">Débloque de nouvelles capacités et de nouveaux objets : ils pourront ensuite sortir dans les cartes de level-up, pour tous les starters. Les attaques signature des autres starters du même type sont déjà disponibles.</p>
+            <div className="sw-shop">
+              {UNLOCKABLES.map((u) => {
+                const owned = meta.unlocks?.[u.id];
+                return (
+                  <div key={u.id} className={`sw-shop-item${owned ? ' is-owned' : ''}`} style={{ '--c': u.color }}>
+                    <div className="sw-tile-top"><b>{u.name}</b><small>{u.kind === 'weapon' ? u.type : 'Objet'}</small></div>
+                    <p>{u.desc}</p>
+                    <button type="button" className={`sw-btn is-small${owned ? '' : ' is-go'}`} disabled={owned || meta.dust < u.cost} onClick={() => setMeta(buyUnlock(meta, u.id))}>
+                      {owned ? 'Débloqué' : `Débloquer · ${u.cost} ✦`}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
         {tab === 'achievements' && (
           <div className="sw-achs">
             {ACHIEVEMENTS.map((a) => {
@@ -392,21 +453,31 @@ const MetaPanel = ({ panel, meta, setMeta, onClose }) => {
           </div>
         )}
 
-        {tab === 'dex' && (
+        {tab === 'dex' && foe && <FoeSheet id={foe} meta={meta} onClose={() => setFoe(null)} />}
+        {tab === 'dex' && !foe && (
           <div className="sw-dex">
+            <p className="sw-panel-note">Clique sur un Pokémon déjà croisé pour voir ce qu’il sait faire. À chaque partie, seule une partie du pool de la région apparaît.</p>
             {GENS.map((gn) => (
               <section key={gn.id}>
                 <h3>{gn.name}</h3>
                 <div className="sw-dex-grid">
-                  {ALL_FOE_IDS.filter((id) => FOE_GEN[id] === gn.id).map((id) => {
+                  {ALL_FOE_IDS.filter((id) => FOE_INFO[id].gen === gn.id).map((id) => {
                     const n = meta.dex[id] || 0;
+                    const known = n > 0 || meta.met?.[id];
                     const f = FOES[id];
                     return (
-                      <div key={id} className={`sw-dex-cell${n ? '' : ' is-unseen'}${f.boss ? ' is-boss' : ''}`} title={n ? f.name : '???'}>
+                      <button
+                        key={id}
+                        type="button"
+                        disabled={!known}
+                        onClick={() => setFoe(id)}
+                        className={`sw-dex-cell${known ? '' : ' is-unseen'}${f.boss ? ' is-boss' : ''}`}
+                        title={known ? `${f.name} : voir sa fiche` : '???'}
+                      >
                         <PmdSprite dex={f.dex} anim="idle" size={64} scale={f.boss ? 1.2 : 1.8} still />
-                        <b>{n ? f.name : '???'}</b>
-                        <small>{n ? `${n.toLocaleString('fr-FR')} K.O.` : 'Jamais vaincu'}</small>
-                      </div>
+                        <b>{known ? f.name : '???'}</b>
+                        <small>{n ? `${n.toLocaleString('fr-FR')} K.O.` : known ? 'Croisé' : 'Jamais vu'}</small>
+                      </button>
                     );
                   })}
                 </div>
@@ -435,6 +506,7 @@ const PokeSwarm = ({ onClose }) => {
   const canvasRef = useRef(null);
   const gameRef = useRef(null);
   const [world, setWorld] = useState(null);
+  const [rank, setRank] = useState(0);
   const [meta, setMetaState] = useState(loadMeta);
   const metaRef = useRef(meta);
   const setMeta = (m) => { metaRef.current = m; setMetaState(m); };
@@ -450,6 +522,13 @@ const PokeSwarm = ({ onClose }) => {
     const id = setTimeout(() => setWorld(buildWorld()), 60);
     return () => clearTimeout(id);
   }, [world]);
+  // Et la prochaine carte se prépare pendant qu'on est au menu ou sur l'écran de fin (jamais en pleine partie)
+  const nextWorldRef = useRef(null);
+  useEffect(() => {
+    if (nextWorldRef.current || (screen === 'play' && !end)) return undefined;
+    const id = setTimeout(() => { if (!nextWorldRef.current) nextWorldRef.current = buildWorld(); }, 700);
+    return () => clearTimeout(id);
+  }, [screen, end, world]);
 
   const partner = starters.find((p) => p.id === partnerId) || starters[0];
   const pickGen = (id) => {
@@ -457,7 +536,9 @@ const PokeSwarm = ({ onClose }) => {
     setPartnerId(PARTNERS.find((p) => p.gen === id)?.id);
     try { localStorage.setItem(GEN_KEY, String(id)); } catch { /* stockage indisponible */ }
   };
-  const finalBoss = FOES[GEN_BOSSES[gen][GEN_BOSSES[gen].length - 1].id];
+  const pool = GEN_POOLS[gen];
+  const maxRank = Math.min(MAX_RANK, meta.ranks?.[gen] || 0);
+  useEffect(() => { setRank((r) => Math.min(r, maxRank)); }, [gen, maxRank]);
 
   // Musique : la playlist d'Arena, au même volume.
   useEffect(() => {
@@ -481,7 +562,8 @@ const PokeSwarm = ({ onClose }) => {
           t: snap.t, kills: snap.kills, level: snap.level, bosses: snap.bosses, result, daily: dailyRef.current,
           killsBy: snap.killsBy, partnerId: partner.id, gen, reachedFinal: snap.reachedFinal, mega: snap.isMega,
           maxWeapon: snap.maxWeapon, weapons: snap.weaponCount, passives: snap.passiveCount,
-          rocks: snap.rocks, noHit: snap.noHit, dashes: snap.dashes
+          rocks: snap.rocks, noHit: snap.noHit, dashes: snap.dashes,
+          rank: runRef.current.rank, biome: runRef.current.biome, finalBoss: snap.finalBoss, met: snap.met
         });
         setMeta(rec.meta);
         setEnd({ result, ...snap, reward: rec });
@@ -496,7 +578,7 @@ const PokeSwarm = ({ onClose }) => {
         });
       },
       onPauseKey: () => setPaused((v) => !v)
-    }, world, gen, metaEffects(metaRef.current, dailyRef.current?.mod));
+    }, world, gen, { ...metaEffects(metaRef.current, dailyRef.current?.mod, runRef.current.rank), roster: runRef.current.roster });
     gameRef.current = game;
     const timer = setInterval(() => setHud(game.snapshot()), 100);
     return () => {
@@ -510,8 +592,19 @@ const PokeSwarm = ({ onClose }) => {
     if (gameRef.current) gameRef.current.setPaused(paused || Boolean(levelUp) || Boolean(end));
   }, [paused, levelUp, end]);
 
-  const start = (dly = null) => {
+  const runRef = useRef({ rank: 0, biome: null, roster: null });
+  const start = (dly = null, forGen = gen) => {
     dailyRef.current = dly && dly.key ? dly : null;
+    // Nouvelle carte et nouveau roster à chaque partie (identiques pour tout le monde au défi du jour)
+    const seed = dailyRef.current ? [...dailyRef.current.key].reduce((a, ch) => (Math.imul(a, 31) + ch.charCodeAt(0)) | 0, 17) : Math.floor(Math.random() * 1e9);
+    const rng = dailyRef.current ? seededRng(seed) : Math.random;
+    const roster = buildRoster(forGen, rng);
+    // La carte suivante est préparée à l'avance (menu, écran de fin) pour un départ instantané
+    const w = (!dailyRef.current && nextWorldRef.current) || buildWorld(seed);
+    nextWorldRef.current = null;
+    w.setStatues([FOES[roster.minis[0]].dex, FOES[roster.minis[1]].dex, FOES[roster.final].dex]);
+    runRef.current = { rank: dailyRef.current ? 0 : rank, biome: w.biome, roster };
+    setWorld(w);
     setPanel(null);
     setEnd(null);
     setLevelUp(null);
@@ -524,7 +617,7 @@ const PokeSwarm = ({ onClose }) => {
   const playDaily = () => {
     setGen(daily.gen);
     setPartnerId(daily.partnerId);
-    start(daily);
+    start(daily, daily.gen);
   };
   const unlocked = Boolean(meta.regions[gen]);
 
@@ -545,7 +638,7 @@ const PokeSwarm = ({ onClose }) => {
           <div>
             <span className="sw-kicker">Mode secret</span>
             <h1>Poké Swarm</h1>
-            <p>Survis aux hordes sauvages pendant 9 minutes, puis bats {finalBoss.name}. Tes attaques partent toutes seules : à toi de bouger et de bien choisir tes bonus.</p>
+            <p>Survis aux hordes sauvages pendant 9 minutes, puis bats le Pokémon légendaire de la région. Ennemis, boss et décor changent à chaque partie. Tes attaques partent toutes seules : à toi de bouger et de bien choisir tes bonus.</p>
           </div>
           <div className="sw-head-side">
             <span className="sw-dust" title="Poussière Étoile : gagnée à chaque partie">✦ {meta.dust.toLocaleString('fr-FR')}</span>
@@ -555,6 +648,9 @@ const PokeSwarm = ({ onClose }) => {
         <div className="sw-metabar">
           <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('talents')}>
             Talents <small>{Object.values(meta.talents).reduce((a, b) => a + b, 0)} pts</small>
+          </button>
+          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('moves')}>
+            Capacités <small>{UNLOCKABLES.filter((u) => meta.unlocks?.[u.id]).length}/{UNLOCKABLES.length}</small>
           </button>
           <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('achievements')}>
             Défis <small>{Object.keys(meta.achievements).length}/{ACHIEVEMENTS.length}</small>
@@ -580,6 +676,50 @@ const PokeSwarm = ({ onClose }) => {
               </button>
             );
           })}
+        </div>
+        <div className="sw-pool">
+          <div>
+            <span className="sw-kicker">Légendaires possibles</span>
+            <div className="sw-pool-row">
+              {pool.finals.map((id) => (
+                <span key={id} className={`sw-pool-mon${meta.legends?.[id] ? ' is-beaten' : ''}`} title={meta.legends?.[id] ? `${FOES[id].name} : déjà vaincu` : FOES[id].name}>
+                  <PmdSprite dex={FOES[id].dex} anim="idle" size={52} scale={0.7} foot={0.9} still />
+                  <small>{FOES[id].name}</small>
+                </span>
+              ))}
+            </div>
+          </div>
+          <div>
+            <span className="sw-kicker">Boss possibles</span>
+            <div className="sw-pool-row">
+              {pool.minis.map((id) => (
+                <span key={id} className="sw-pool-mon" title={FOES[id].name}>
+                  <PmdSprite dex={FOES[id].dex} anim="idle" size={52} scale={0.7} foot={0.9} still />
+                  <small>{FOES[id].name}</small>
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="sw-rank">
+            <span className="sw-kicker">Rang de menace</span>
+            <div className="sw-rank-row" role="radiogroup" aria-label="Rang de menace">
+              {Array.from({ length: MAX_RANK + 1 }, (_, r) => (
+                <button
+                  key={r}
+                  type="button"
+                  role="radio"
+                  aria-checked={r === rank}
+                  disabled={r > maxRank}
+                  className={`sw-rank-pip${r === rank ? ' is-on' : ''}`}
+                  title={r > maxRank ? `Gagne au rang ${r - 1} dans cette région pour le débloquer` : rankLabel(r)}
+                  onClick={() => setRank(r)}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+            <small>{rankLabel(rank)}</small>
+          </div>
         </div>
         <div className={`sw-partners${unlocked ? '' : ' is-locked'}`}>
           {starters.map((p) => {
@@ -728,8 +868,9 @@ const PokeSwarm = ({ onClose }) => {
         <div className="sw-modal">
           <div className={`sw-card is-end ${end.result === 'win' ? 'is-win' : 'is-lose'}`}>
             <PmdSprite dex={end.form.dex} anim={end.result === 'win' ? 'idle' : 'hurt'} size={120} scale={3} />
-            <h2>{end.result === 'win' ? `${finalBoss.name} est K.O. !` : `${end.form.name} est K.O.`}</h2>
-            <p>{clock(end.t)} · niveau {end.level} · {end.kills} Pokémon mis K.O.</p>
+            <h2>{end.result === 'win' ? `${FOES[end.finalBoss]?.name || 'Le légendaire'} est K.O. !` : `${end.form.name} est K.O.`}</h2>
+            <p>{clock(end.t)} · niveau {end.level} · {end.kills} Pokémon mis K.O. · {BIOMES[runRef.current.biome]?.name}{runRef.current.rank ? ` · rang ${runRef.current.rank}` : ''}</p>
+            {end.reward?.rankUp > 0 && <p className="sw-rankup">Rang {end.reward.rankUp} débloqué dans cette région !</p>}
             {end.reward && (
               <div className="sw-reward">
                 <ul>

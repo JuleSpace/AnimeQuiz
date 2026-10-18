@@ -2,7 +2,9 @@
  * Progression entre les parties du Swarm (sauvegardée dans le navigateur) :
  * Poussière Étoile, arbre de talents, régions à débloquer, défis, défi du jour et Pokédex.
  */
-import { FOES, GEN_BOSSES, GEN_WAVES, PARTNERS } from './swarmData';
+import { ALL_FOE_IDS, FOES, PARTNERS, PASSIVES, WEAPONS } from './swarmData';
+
+export { ALL_FOE_IDS };
 
 const KEY = 'poke-swarm-meta';
 
@@ -65,8 +67,44 @@ export const ACHIEVEMENTS = [
   { id: 'dex30', name: 'Chercheur', desc: 'Pokédex : 30 espèces vaincues.', reward: 150 },
   { id: 'dexall', name: 'Professeur', desc: 'Pokédex complet.', reward: 400 },
   { id: 'life10k', name: 'Infatigable', desc: '10 000 K.O. au total.', reward: 300 },
-  { id: 'daily', name: 'Régulier', desc: 'Réussis un défi du jour.', reward: 100 }
+  { id: 'daily', name: 'Régulier', desc: 'Réussis un défi du jour.', reward: 100 },
+  { id: 'legends3', name: 'Chasseur de légendes', desc: 'Bats 3 boss finaux différents.', reward: 300 },
+  { id: 'legends10', name: 'Mythologue', desc: 'Bats 10 boss finaux différents.', reward: 800 },
+  { id: 'biomes', name: 'Globe-trotter', desc: 'Joue dans les 5 décors.', reward: 150 },
+  { id: 'rank1', name: 'Menace accrue', desc: 'Gagne une partie en rang 1 ou plus.', reward: 250 },
+  { id: 'rank3', name: 'Danger extrême', desc: 'Gagne une partie en rang 3 ou plus.', reward: 500 },
+  { id: 'rank5', name: 'Légende vivante', desc: 'Gagne une partie au rang 5.', reward: 1200 },
+  { id: 'ct3', name: 'Studieux', desc: 'Débloque 3 capacités ou objets.', reward: 120 },
+  { id: 'dex100', name: 'Encyclopédiste', desc: 'Pokédex : 100 espèces vaincues.', reward: 400 }
 ];
+
+/* ——— Capacités et objets à débloquer (Poussière) ——— */
+export const UNLOCKABLES = [
+  ...Object.entries(WEAPONS).filter(([, w]) => w.cost).map(([id, w]) => ({ id, kind: 'weapon', name: w.name, type: w.type, color: w.color, cost: w.cost, desc: w.desc(1) })),
+  ...Object.entries(PASSIVES).filter(([, it]) => it.cost).map(([id, it]) => ({ id, kind: 'passive', name: it.name, type: 'Objet', color: it.color, cost: it.cost, desc: it.desc }))
+];
+export const buyUnlock = (m, id) => {
+  const u = UNLOCKABLES.find((x) => x.id === id);
+  if (!u || m.unlocks[id] || m.dust < u.cost) return m;
+  const next = { ...m, dust: m.dust - u.cost, unlocks: { ...m.unlocks, [id]: true } };
+  if (Object.keys(next.unlocks).length >= 3 && !next.achievements.ct3) {
+    next.achievements = { ...next.achievements, ct3: true };
+    next.dust += 120;
+    next.totalDust = (next.totalDust || 0) + 120;
+  }
+  return saveMeta(next);
+};
+
+/* ——— Rangs de menace (difficulté) : gagner au rang N débloque le rang N+1 de la région ——— */
+export const MAX_RANK = 5;
+export const RANK_INFO = (r) => ({
+  foeHp: 1 + r * 0.25,
+  foeDmg: 1 + r * 0.12,
+  spawn: 1 - r * 0.06,
+  bossHp: 1 + r * 0.3,
+  dust: 1 + r * 0.25
+});
+export const rankLabel = (r) => (r ? `Rang ${r} : ennemis +${Math.round(r * 25)} % PV, +${Math.round(r * 12)} % dégâts · Poussière ×${(1 + r * 0.25).toFixed(2)}` : 'Rang 0 : difficulté normale');
 
 /* ——— Défi du jour ——— */
 export const DAILY_MODS = [
@@ -89,7 +127,7 @@ export const dailyChallenge = (key = todayKey()) => {
 /* ——— Sauvegarde ——— */
 const blank = () => ({
   v: 1, dust: 0, totalDust: 0, talents: {}, bought: 0, regions: { 1: true }, achievements: {},
-  dex: {}, runs: 0, kills: 0, starters: {}, daily: {}
+  dex: {}, runs: 0, kills: 0, starters: {}, daily: {}, unlocks: {}, ranks: {}, legends: {}, biomes: {}, met: {}
 });
 export const loadMeta = () => {
   try {
@@ -123,9 +161,13 @@ export const unlockRegion = (m, gen) => {
 };
 
 /** Effets des talents (+ modificateur du défi du jour) transmis au moteur. */
-export const metaEffects = (m, mod = null) => {
+export const metaEffects = (m, mod = null, rank = 0) => {
   const r = (id) => rankOf(m, id);
+  const R = RANK_INFO(rank);
   return {
+    unlocks: m.unlocks || {},
+    foeDmg: R.foeDmg,
+    bossHp: R.bossHp,
     dmg: (1 + r('power') * 0.02) * (mod?.dmg || 1),
     crit: r('crit') * 0.01,
     cd: 1 - r('haste') * 0.02,
@@ -146,8 +188,8 @@ export const metaEffects = (m, mod = null) => {
     evolveEarly: r('evolve') * 2,
     cards: r('cards') ? 4 : 3,
     megaLevels: r('mega') ? 2 : 3,
-    spawn: mod?.spawn || 1,
-    foeHp: mod?.foeHp || 1,
+    spawn: (mod?.spawn || 1) * R.spawn,
+    foeHp: (mod?.foeHp || 1) * R.foeHp,
     foeSpeed: mod?.foeSpeed || 1,
     bossTime: mod?.bossTime || 1,
     noBerry: !!mod?.noBerry
@@ -155,10 +197,13 @@ export const metaEffects = (m, mod = null) => {
 };
 
 /* ——— Fin de partie : Poussière gagnée, défis, Pokédex ——— */
-export const ALL_FOE_IDS = [...new Set([...Object.values(GEN_WAVES).flat().flatMap((w) => w.foes), ...Object.values(GEN_BOSSES).flat().map((b) => b.id)])];
 
 export const recordRun = (m0, run) => {
-  const m = { ...m0, dex: { ...m0.dex }, achievements: { ...m0.achievements }, starters: { ...m0.starters }, daily: { ...m0.daily } };
+  const m = {
+    ...m0, dex: { ...m0.dex }, achievements: { ...m0.achievements }, starters: { ...m0.starters }, daily: { ...m0.daily },
+    ranks: { ...(m0.ranks || {}) }, legends: { ...(m0.legends || {}) }, biomes: { ...(m0.biomes || {}) }, unlocks: { ...(m0.unlocks || {}) }
+  };
+  const rank = run.rank || 0;
   const lines = [];
   const add = (label, v) => { if (v > 0) lines.push({ label, v: Math.round(v) }); };
   add(`Survie (${Math.floor(run.t / 60)} min ${String(Math.floor(run.t % 60)).padStart(2, '0')})`, run.t / 8);
@@ -167,7 +212,7 @@ export const recordRun = (m0, run) => {
   add(`${run.bosses} boss vaincu${run.bosses > 1 ? 's' : ''}`, run.bosses * 30);
   if (run.result === 'win') add('Victoire', 200);
   let base = lines.reduce((a, l) => a + l.v, 0);
-  const mult = (1 + rankOf(m, 'greed') * 0.05) * (run.daily ? run.daily.mod.dust : 1);
+  const mult = (1 + rankOf(m, 'greed') * 0.05) * (run.daily ? run.daily.mod.dust : 1) * RANK_INFO(rank).dust;
   if (mult > 1) lines.push({ label: `Bonus ×${mult.toFixed(2)}`, v: Math.round(base * (mult - 1)) });
   base = Math.round(base * mult);
   // défi du jour
@@ -180,9 +225,18 @@ export const recordRun = (m0, run) => {
   }
   // Pokédex et compteurs
   Object.entries(run.killsBy || {}).forEach(([id, n]) => { m.dex[id] = (m.dex[id] || 0) + n; });
+  m.met = { ...(m0.met || {}) };
+  (run.met || []).forEach((id) => { m.met[id] = true; });
   m.runs = (m.runs || 0) + 1;
   m.kills = (m.kills || 0) + run.kills;
   m.starters[run.partnerId] = true;
+  if (run.biome) m.biomes[run.biome] = true;
+  // victoire : boss final ajouté aux légendes, rang suivant débloqué pour la région
+  let rankUp = false;
+  if (run.result === 'win') {
+    if (run.finalBoss) m.legends[run.finalBoss] = true;
+    if (!run.daily && rank >= (m.ranks[run.gen] || 0) && rank < MAX_RANK) { m.ranks[run.gen] = rank + 1; rankUp = true; }
+  }
   // défis
   const unlocked = [];
   const done = (id, cond) => { if (cond && !m.achievements[id]) { m.achievements[id] = true; unlocked.push(ACHIEVEMENTS.find((a) => a.id === id)); } };
@@ -207,11 +261,18 @@ export const recordRun = (m0, run) => {
   done('dexall', dexCount >= ALL_FOE_IDS.length);
   done('life10k', m.kills >= 10000);
   done('daily', dailyDone);
+  done('legends3', Object.keys(m.legends).length >= 3);
+  done('legends10', Object.keys(m.legends).length >= 10);
+  done('biomes', Object.keys(m.biomes).length >= 5);
+  done('rank1', run.result === 'win' && rank >= 1);
+  done('rank3', run.result === 'win' && rank >= 3);
+  done('rank5', run.result === 'win' && rank >= 5);
+  done('dex100', dexCount >= 100);
   const bonus = unlocked.reduce((a, x) => a + x.reward, 0);
   m.dust = (m.dust || 0) + base + bonus;
   m.totalDust = (m.totalDust || 0) + base + bonus;
   saveMeta(m);
-  return { meta: m, earned: base, bonus, lines, unlocked, dailyDone };
+  return { meta: m, earned: base, bonus, lines, unlocked, dailyDone, rankUp: rankUp ? m.ranks[run.gen] : 0 };
 };
 
 export const foeName = (id) => FOES[id]?.name || id;
