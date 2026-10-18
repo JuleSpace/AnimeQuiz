@@ -24,6 +24,21 @@ const load = (dex, anim) => {
     c.height = img.naturalHeight;
     const x = c.getContext('2d');
     x.drawImage(img, 0, 0);
+    // Où sont vraiment les pieds ? Plus bas pixel opaque de chaque ligne (direction), première image.
+    try {
+      const { w, h, rows } = meta;
+      entry.feet = [];
+      for (let r = 0; r < rows; r += 1) {
+        const d = x.getImageData(0, r * h, w, h).data;
+        let bottom = h / 2;
+        for (let yy = h - 1; yy >= 0; yy -= 1) {
+          let hit = false;
+          for (let xx = 0; xx < w; xx += 1) if (d[(yy * w + xx) * 4 + 3] > 40) { hit = true; break; }
+          if (hit) { bottom = yy + 1; break; }
+        }
+        entry.feet.push(bottom - h / 2);
+      }
+    } catch (e) { entry.feet = null; }
     x.globalCompositeOperation = 'source-in';
     x.fillStyle = '#ffffff';
     x.fillRect(0, 0, c.width, c.height);
@@ -84,7 +99,10 @@ export const drawPokemon = (ctx, dex, anim, t, dir, x, y, scale, opts = {}) => {
   const row = meta.rows > 1 ? dir % meta.rows : 0;
   const w = meta.w * scale;
   const h = meta.h * scale;
-  const lift = bodyHeight(dex) * 0.25 * scale;
+  // pieds posés sur (x, y) : on remonte le sprite de la distance centre → plus bas pixel
+  const walkFeet = load(dex, 'walk')?.feet;
+  const feet = (e.feet && e.feet[row]) ?? (walkFeet && walkFeet[row]) ?? bodyHeight(dex) * 0.25;
+  const lift = (feet - 1) * scale;
   const src = opts.white && e.white ? e.white : e.img;
   ctx.save();
   if (opts.alpha !== undefined) ctx.globalAlpha = opts.alpha;

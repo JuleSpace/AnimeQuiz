@@ -471,6 +471,23 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
       });
       o.material = Array.isArray(o.material) ? cloned : cloned[0];
     });
+    avatar.root.add(model);
+    avatar.model = model;
+    avatar.cfg = cfg;
+    avatar.mixer = new THREE.AnimationMixer(model);
+    const names = cfg.clips || {};
+    Object.entries(names).forEach(([key, part]) => {
+      const clip = gltf.animations.find((a) => a.name === part) || gltf.animations.find((a) => a.name.includes(part));
+      if (clip) avatar.actions[key] = avatar.mixer.clipAction(clip);
+    });
+    ['jump', 'punch', 'death', 'win', 'hurt'].forEach((k) => {
+      const a = avatar.actions[k];
+      if (a) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
+    });
+    // Taille et hauteur mesurées sur la pose de repos jouée (la pose d'export peut être couchée ou en T).
+    if (avatar.actions.idle) { avatar.actions.idle.play(); avatar.mixer.update(0.01); }
+    avatar.root.remove(model); // mesure dans le repère du modèle seul
+    model.position.set(0, 0, 0);
     model.updateMatrixWorld(true);
     // Les maillages « skinnés » ne connaissent leur forme qu'après la mise à jour du squelette.
     model.traverse((o) => { if (o.isSkinnedMesh) { o.skeleton.update(); o.computeBoundingBox?.(); } });
@@ -486,18 +503,7 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
     model.scale.multiplyScalar(sc);
     model.position.y = -box.min.y * sc;
     avatar.root.add(model);
-    avatar.model = model;
-    avatar.cfg = cfg;
-    avatar.mixer = new THREE.AnimationMixer(model);
-    const names = cfg.clips || {};
-    Object.entries(names).forEach(([key, part]) => {
-      const clip = gltf.animations.find((a) => a.name === part) || gltf.animations.find((a) => a.name.includes(part));
-      if (clip) avatar.actions[key] = avatar.mixer.clipAction(clip);
-    });
-    ['jump', 'punch', 'death', 'win', 'hurt'].forEach((k) => {
-      const a = avatar.actions[k];
-      if (a) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
-    });
+
     // Os animés par le code (modèles sans animation de course)
     if (cfg.retarget) {
       const bones = {};
