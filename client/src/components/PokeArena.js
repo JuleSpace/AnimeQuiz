@@ -277,12 +277,14 @@ const withTalent = (u) => (u ? { ...u, ab: talentOf(u.lineId, u.formId) } : u);
 
 /** Dresseur debout au bord du terrain, de son côté : l'adversaire en haut à droite, toi en bas à gauche. */
 const TrainerStand = ({ sprite, side, label }) => {
+  const list = (Array.isArray(sprite) ? sprite : [sprite]).filter(Boolean);
+  const [idx, setIdx] = useState(0);
   const [failed, setFailed] = useState(false);
-  const src = trainerSprite(sprite);
+  const src = trainerSprite(list[idx]);
   if (!src || failed) return null;
   return (
     <div className={`pa-stand is-${side}`} aria-hidden="true" title={label}>
-      <img src={src} alt="" draggable={false} onError={() => setFailed(true)} />
+      <img src={src} alt="" draggable={false} onError={() => (idx + 1 < list.length ? setIdx(idx + 1) : setFailed(true))} />
       {label && <span>{label}</span>}
     </div>
   );
@@ -1657,7 +1659,12 @@ const PokeArena = ({ onClose }) => {
         {mode !== 'versus' && trainer?.sprite && (
           <TrainerStand key={`foe-${node?.id}`} sprite={trainer.sprite} side="foe" label={`${trainer.title || ''} ${trainer.name || ''}`.trim()} />
         )}
-        <TrainerStand key={`me-${myTrainer}`} sprite={myTrainer} side="me" label={PLAYER_TRAINERS.find((t) => t.id === myTrainer)?.name || 'Toi'} />
+        <TrainerStand
+          key={`me-${myTrainer}`}
+          sprite={PLAYER_TRAINERS.find((t) => t.id === myTrainer)?.sprite || myTrainer}
+          side="me"
+          label={PLAYER_TRAINERS.find((t) => t.id === myTrainer)?.name || 'Toi'}
+        />
         <div className="pa-arena-caption" aria-live="polite">
           {isFight ? fightLine : `${onBoard.length} / ${boardCap} Pokémon sur le terrain`}
         </div>

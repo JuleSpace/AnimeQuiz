@@ -275,11 +275,12 @@ const MiniStage = ({ stage }) => (
 
 /** Dresseurs jouables (sprites Showdown), choisis au démarrage et affichés de ton côté du terrain. */
 export const PLAYER_TRAINERS = [
-  { id: 'red', name: 'Red' }, { id: 'leaf', name: 'Leaf' }, { id: 'ethan', name: 'Ethan' }, { id: 'lyra', name: 'Lyra' },
+  { id: 'red', name: 'Red' }, { id: 'leaf', name: 'Leaf', sprite: ['leaf-gen3', 'leaf-masters', 'leaf-gen3rs', 'leaf'] }, { id: 'ethan', name: 'Ethan' }, { id: 'lyra', name: 'Lyra' },
   { id: 'brendan', name: 'Brendan' }, { id: 'may', name: 'Flora' }, { id: 'lucas', name: 'Louka' }, { id: 'dawn', name: 'Aurore' },
   { id: 'hilbert', name: 'Ludvan' }, { id: 'hilda', name: 'Ludvina' }, { id: 'nate', name: 'Matis' }, { id: 'rosa', name: 'Mei' },
   { id: 'calem', name: 'Kalem' }, { id: 'serena', name: 'Serena' }, { id: 'elio', name: 'Elio' }, { id: 'selene', name: 'Selene' },
-  { id: 'victor', name: 'Victor' }, { id: 'gloria', name: 'Gloria' }, { id: 'florian', name: 'Florian' }, { id: 'juliana', name: 'Juliana' },
+  { id: 'victor', name: 'Victor' }, { id: 'gloria', name: 'Gloria' }, { id: 'florian', name: 'Florian', sprite: ['florian-s', 'florian-bb', 'florian-masters', 'florian'] },
+  { id: 'juliana', name: 'Juliana', sprite: ['juliana-s', 'juliana-bb', 'juliana-masters', 'juliana'] },
   { id: 'silver', name: 'Silver' }, { id: 'blue-gen7', name: 'Blue' }, { id: 'n', name: 'N' }, { id: 'steven', name: 'Pierre Rochard' },
   { id: 'cynthia', name: 'Cynthia' }, { id: 'cyrus', name: 'Hélio' }
 ];
@@ -296,7 +297,7 @@ export const TrainerPicker = ({ value, onChange }) => (
         onClick={() => onChange(t.id)}
         title={t.name}
       >
-        <TrainerPortrait trainer={{ sprite: t.id, name: t.name }} size="md" />
+        <TrainerPortrait trainer={{ sprite: t.sprite || t.id, name: t.name }} size="md" />
         <span>{t.name}</span>
       </button>
     ))}
@@ -539,14 +540,17 @@ export const PoolModal = ({ pool = [], owned = [], level = 1, onClose, onTrait }
 
 /** Portrait de dresseur (sprite Showdown), avec repli sur l’initiale. */
 export const TrainerPortrait = ({ trainer, size = 'md', title }) => {
-  const src = trainerSprite(trainer?.sprite);
+  const list = (Array.isArray(trainer?.sprite) ? trainer.sprite : [trainer?.sprite]).filter(Boolean);
+  const listKey = list.join('|');
+  const [idx, setIdx] = useState(0);
   const [failed, setFailed] = useState(false);
-  useEffect(() => { setFailed(false); }, [src]);
+  useEffect(() => { setIdx(0); setFailed(false); }, [listKey]);
+  const src = trainerSprite(list[idx]);
   const show = src && !failed;
   return (
     <span className={`ui-trainer-portrait is-${size}${show ? '' : ' is-fallback'}${trainer?.role ? ` role-${trainer.role}` : ''}`} title={title}>
       {show
-        ? <img src={src} alt="" loading="lazy" draggable={false} onError={() => setFailed(true)} />
+        ? <img src={src} alt="" loading="lazy" draggable={false} onError={() => (idx + 1 < list.length ? setIdx(idx + 1) : setFailed(true))} />
         : <b aria-hidden>{(trainer?.name || '?').slice(0, 1)}</b>}
     </span>
   );
