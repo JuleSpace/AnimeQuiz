@@ -416,17 +416,6 @@ function chaoChirp(ctx, dest, when, from, to, dur, peak) {
   lfo.stop(when + dur + 0.03);
 }
 
-// « Ting » d'anneau : deux notes très aiguës et rapprochées, légèrement placées à gauche ou à droite.
-function ringTing(ctx, dest, when, peak, pan = 0) {
-  const out = ctx.createStereoPanner ? ctx.createStereoPanner() : ctx.createGain();
-  if (out.pan) out.pan.value = pan;
-  out.connect(dest);
-  tone(ctx, out, when, 1976, 0.07, peak, 'triangle');
-  tone(ctx, out, when, 3952, 0.05, peak * 0.25);
-  tone(ctx, out, when + 0.065, 2637, 0.22, peak, 'triangle');
-  tone(ctx, out, when + 0.065, 5274, 0.14, peak * 0.2);
-}
-
 // Chaque coup sur l'œuf : coquille qui craque + petit cri de Chao, un peu plus aigu à chaque fois.
 function playEggKnock(step) {
   const bus = voiceBus();
@@ -462,11 +451,6 @@ function playOpeningScore() {
     glide(ctx, master, when, base, base * 3.2, 0.32, 0.07 + index * 0.012, 'square');
     burst(ctx, master, when, 0.3, 900 + index * 300, 1.4, 0.05 + index * 0.01, 3200 + index * 500);
   });
-  // Scintillement du Chaos qui monte pendant la charge.
-  for (let i = 0; i < 14; i += 1) {
-    const when = now + 0.3 + i * 0.145;
-    tone(ctx, master, when, [2093, 2637, 3136, 2349][i % 4] * (1 + i * 0.02), 0.12, 0.015 + i * 0.002);
-  }
 
   // Éclatement : coquille, souffle et pluie d'anneaux de part et d'autre.
   const boom = now + splitAt;
@@ -475,11 +459,7 @@ function playOpeningScore() {
     burst(ctx, master, boom, 0.12, 4200, 0.9, 0.24, 900);
     burst(ctx, master, boom + 0.02, 0.5, 1200, 0.5, 0.12, 200);
   }
-  if (!sample('rings', ctx, master, boom + 0.04)) {
-    [-0.8, 0.6, -0.3, 0.9, -0.6, 0.2, 0.75, -0.9].forEach((pan, index) => {
-      ringTing(ctx, master, boom + 0.04 + index * 0.075, 0.07 - index * 0.004, pan);
-    });
-  }
+  sample('rings', ctx, master, boom + 0.04);
 
   // Le Chao sort : trois petits cris qui montent, puis un carillon majeur.
   const rise = now + pullAt;
@@ -488,17 +468,14 @@ function playOpeningScore() {
     chaoChirp(ctx, master, rise + 0.16, 900, 1480, 0.14, 0.12);
     chaoChirp(ctx, master, rise + 0.32, 1040, 1860, 0.24, 0.14);
   }
-  [1047, 1319, 1568, 2093].forEach((freq, index) => {
-    metal(ctx, master, rise + 0.5 + index * 0.08, freq, 0.5 - index * 0.06, 0.03);
-  });
 }
 
-// La carte apparaît : un anneau ramassé.
+// La carte apparaît : seulement si un vrai son « ring » est déclaré dans index.json.
 function playHatchReveal() {
   const bus = voiceBus();
   if (!bus) return;
   const { ctx, master, now } = bus;
-  if (!sample('ring', ctx, master, now)) ringTing(ctx, master, now, 0.12, 0);
+  sample('ring', ctx, master, now);
 }
 
 function playCardVoice(cardId) {

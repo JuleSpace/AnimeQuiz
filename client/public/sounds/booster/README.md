@@ -3,7 +3,7 @@
 `index.json` dit quel son joue à quel moment. Une valeur peut être :
 - un nom de fichier déposé dans ce dossier (mp3, ogg ou wav) ;
 - un lien https direct vers un son ;
-- vide : le son synthétisé reste.
+- vide : le son synthétisé reste (pour `rings` et `ring`, vide = pas de son).
 
 Si un fichier listé est absent, le son synthétisé joue à sa place.
 
@@ -13,9 +13,9 @@ Si un fichier listé est absent, le son synthétisé joue à sa place.
 | `chirp` | le dernier coup seulement                     | « Chao! » (101soundboards, en lien direct)   |
 | `rev`   | la charge, 7 fois de plus en plus aigu        | `spindash.wav` (à déposer)                   |
 | `hatch` | l'éclosion                                    | `chao-pop.wav` (à déposer)                   |
-| `rings` | juste après l'éclosion                        | synthétisé (pluie d'anneaux)                 |
+| `rings` | juste après l'éclosion                        | aucun                                        |
 | `happy` | la carte sort de l'œuf                        | « Chao x3 » (101soundboards, en lien direct) |
-| `ring`  | la carte se retourne                          | synthétisé (anneau ramassé)                  |
+| `ring`  | la carte se retourne                          | aucun                                        |
 
 ## Fichiers à déposer ici
 
