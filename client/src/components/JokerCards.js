@@ -655,11 +655,8 @@ const EGG_FRUITS = Array.from({ length: 14 }, (_, i) => ({
   r: `${(i % 2 ? 1 : -1) * (180 + i * 20)}deg`
 }));
 const EGG_PATH = 'M95 4C150 4 186 90 186 150C186 206 146 236 95 236C44 236 4 206 4 150C4 90 40 4 95 4Z';
-const EGG_RANK = {
-  1: { label: 'Œuf commun', tone: 'r1' },
-  2: { label: 'Œuf doré !', tone: 'r2' },
-  3: { label: 'Œuf du Chaos !!', tone: 'r3' }
-};
+// Toutes les cartes ont la même chance de sortir : chaque éclosion a donc le même spectacle arc-en-ciel.
+const EGG_HATCH = { label: 'Œuf du Chaos !!', tone: 'r3' };
 const EGG_TAPS = 3;
 const EGG_CHIPS = Array.from({ length: 6 }, (_, i) => {
   const a = ((-150 + i * 24) * Math.PI) / 180;
@@ -799,7 +796,7 @@ export const BoosterOpening = ({ cardId }) => {
   };
 
   const card = JOKERS[cardId];
-  const rank = EGG_RANK[jokerRarity(cardId)] || EGG_RANK[1];
+  const rank = EGG_HATCH;
   const hatched = stage === 'charge' || stage === 'burst' || stage === 'rise' || stage === 'show';
   let caption = 'Un œuf de Chao…';
   let sub = 'Tape l’œuf pour le faire éclore';
@@ -853,7 +850,7 @@ export const BoosterOpening = ({ cardId }) => {
       {EGG_FRUITS.map((f, i) => (
         <i key={`fruit-${i}`} className={`egg-fruit ${f.k}`} style={{ left: f.x, '--d': f.d, '--r': f.r }} aria-hidden="true" />
       ))}
-      {rank.tone !== 'r1' && EGG_SPARKS.map((p, i) => (
+      {EGG_SPARKS.map((p, i) => (
         <i key={`spark-${i}`} className="egg-spark" style={{ left: p.x, top: p.y, '--d': p.d }} aria-hidden="true" />
       ))}
       <i className="egg-dim" aria-hidden="true" />
