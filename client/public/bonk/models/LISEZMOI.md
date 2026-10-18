@@ -17,7 +17,8 @@ n'est plus lu par Three.js) et binaire réécrit. Aucune géométrie modifiée.
 ## Comment ils sont animés (voir `MODELS` dans `src/components/bonkData.js`)
 
 - Shadow utilise ses propres animations (repos, marche, course, chute, boule, Lance du Chaos, dégâts…).
-- Sonic, Knuckles, Amy et Tails n'ont pas d'animation de course utilisable : le jeu anime directement
-  leurs os (cuisses, genoux, bras, et les queues de Tails en hélice).
-- Pour changer de modèle : remplace le fichier et mets à jour l'entrée `MODELS` (noms des animations
-  ou suffixes des os).
+- Sonic, Knuckles, Amy et Tails reprennent les animations de Shadow : `anims.json` contient, image par image,
+  la direction de chaque membre de Shadow (bassin, buste, cuisses, mollets, pieds, bras, avant-bras).
+  Le jeu oriente les mêmes os de chaque perso dans ces directions (champ `retarget` : suffixe de chaque os).
+- Les queues de Tails tournent en hélice en vol, Knuckles plane les bras en avant.
+- Pour changer de modèle : remplace le fichier et mets à jour l'entrée `MODELS`.

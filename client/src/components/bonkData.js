@@ -170,9 +170,15 @@ export const MODELS = {
   sonic: {
     file: 'sonic.glb',
     credit: 'Sonic : « Sonic the Hedgehog » par Sonic the Hedgehog Fan # 9,945,677 (CC BY 4.0)',
-    // Les animations de ce fichier sont abîmées (jambes écrasées) : on anime ses os nous-mêmes.
+    // Ses propres animations sont abîmées : il reprend celles de Shadow (voir anims.json).
     clips: {},
-    rig: { legs: [['L_Thigh_5', 'L_Calf_4'], ['R_Thigh_9', 'R_Calf_8']], arms: [['L_UpperArm_25', 'L_Forearm_24'], ['R_UpperArm_33', 'R_Forearm_32']], lower: 0 }
+    retarget: {
+      root: 'Bip001_44', spine: 'Spine1_36', neck: 'Neck_35', head: 'Head_18',
+      thighL: 'L_Thigh_5', calfL: 'L_Calf_4', footL: 'L_Foot_3', toeL: 'L_Toe0_2',
+      thighR: 'R_Thigh_9', calfR: 'R_Calf_8', footR: 'R_Foot_7', toeR: 'R_Toe0_6',
+      uarmL: 'L_UpperArm_25', farmL: 'L_Forearm_24', handL: 'L_Hand_23',
+      uarmR: 'R_UpperArm_33', farmR: 'R_Forearm_32', handR: 'R_Hand_31'
+    }
   },
   shadow: {
     file: 'shadow.glb',
@@ -183,18 +189,37 @@ export const MODELS = {
     file: 'knuckles.glb',
     credit: 'Knuckles : « Knuckles (Sonic The Hedgehog) » par Guilherme Navarro (CC BY 4.0)',
     clips: {},
-    rig: { legs: [['_26', '_23'], ['_36', '_33']], arms: [['_101', null], ['_120', null]], lower: 0.75 }
+    retarget: {
+      root: '_124', spine: '_123', neck: '_83', head: '_82',
+      thighL: '_26', calfL: '_23', footL: '_20', toeL: '_17',
+      thighR: '_36', calfR: '_33', footR: '_30', toeR: '_27',
+      uarmL: '_101', farmL: '_99', handL: '_95',
+      uarmR: '_120', farmR: '_118', handR: '_114'
+    }
   },
   amy: {
     file: 'amy.glb',
     credit: 'Amy : « Amy Rose (Sonic The Hedgehog) » par Guilherme Navarro (CC BY 4.0)',
     clips: {},
-    rig: { legs: [['_130', '_128'], ['_137', '_135']], arms: [['_95', '_93'], ['_120', '_118']], lower: 0.35 }
+    retarget: {
+      root: '_144', spine: '_123', neck: '_71', head: '_70',
+      thighL: '_130', calfL: '_128', footL: '_125', toeL: '_124',
+      thighR: '_137', calfR: '_135', footR: '_132', toeR: '_131',
+      uarmL: '_95', farmL: '_93', handL: '_89',
+      uarmR: '_120', farmR: '_118', handR: '_114'
+    }
   },
   tails: {
     file: 'tails.glb',
     credit: 'Tails : « Tails (Sonic The Hedgehog) » par Guilherme Navarro (CC BY 4.0)',
     clips: {},
-    rig: { legs: [['_36', '_34'], ['_46', '_44']], arms: [['_114', '_112'], ['_139', '_137']], lower: 0.35, spinner: '_26' }
+    retarget: {
+      root: '_143', spine: '_142', neck: '_90', head: '_89',
+      thighL: '_36', calfL: '_34', footL: '_30', toeL: '_27',
+      thighR: '_46', calfR: '_44', footR: '_40', toeR: '_37',
+      uarmL: '_114', farmL: '_112', handL: '_108',
+      uarmR: '_139', farmR: '_137', handR: '_133',
+      spinner: '_26'
+    }
   }
 };

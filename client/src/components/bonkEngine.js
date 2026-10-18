@@ -433,7 +433,7 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
   const charColor = new THREE.Color(character.color);
   const avatar = {
     root: new THREE.Group(), model: null, mixer: null, actions: {}, current: null, mats: [], yaw: 0, lean: 0, squash: 0,
-    punchT: 0, wasGrounded: true, rig: null, cfg: null, phase: 0, deadT: 0, spin: 0
+    punchT: 0, wasGrounded: true, rt: null, cfg: null, phase: 0, deadT: 0, spin: 0
   };
   scene.add(avatar.root);
   const MODEL_BASE = `${process.env.PUBLIC_URL || ''}/bonk/models`;
@@ -499,15 +499,20 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
       if (a) { a.setLoop(THREE.LoopOnce, 1); a.clampWhenFinished = true; }
     });
     // Os animés par le code (modèles sans animation de course)
-    if (cfg.rig) {
-      const r = cfg.rig;
-      const bone = (sfx) => { const b = findBone(model, sfx); if (b) b.userData.bind = b.quaternion.clone(); return b; };
-      avatar.rig = {
-        legs: r.legs.map(([t, k]) => [bone(t), bone(k)]),
-        arms: r.arms.map(([t, k]) => [bone(t), bone(k)]),
-        lower: r.lower || 0,
-        spinner: bone(r.spinner)
-      };
+    if (cfg.retarget) {
+      const bones = {};
+      Object.entries(cfg.retarget).forEach(([k, sfx]) => {
+        const b = findBone(model, sfx);
+        if (b) { b.userData.bind = b.quaternion.clone(); bones[k] = b; }
+      });
+      const ok = ['root', 'spine', 'neck', 'thighL', 'calfL', 'footL', 'thighR', 'calfR', 'footR', 'uarmL', 'farmL', 'uarmR', 'farmR'].every((k) => bones[k]);
+      if (ok) {
+        // longueur de jambe (dans l'espace du perso) pour le rebond des hanches
+        avatar.root.updateMatrixWorld(true);
+        const w = (k) => bones[k].getWorldPosition(new THREE.Vector3());
+        const legLen = (w('thighL').distanceTo(w('calfL')) + w('calfL').distanceTo(w('footL'))) / avatar.root.scale.y;
+        avatar.rt = { bones, legLen, baseY: model.position.y, cur: 'idle', t: 0, prev: null, prevT: 0, blend: 1 };
+      }
     }
     play('idle', 0);
   };
@@ -524,6 +529,9 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
     avatar.root.add(m);
     avatar.model = m;
   };
+  // Animations de Shadow « mises à plat » (directions des membres), réutilisées par les autres persos.
+  let ANIMS = null;
+  fetch(`${MODEL_BASE}/anims.json`).then((r) => (r.ok ? r.json() : null)).then((j) => { ANIMS = j; }).catch(() => {});
   const gltfLoader = new GLTFLoader();
   const loadDefault = () => gltfLoader.load(`${MODEL_BASE}/default.glb`, (gl) => setupModel(gl, true, { clips: DEFAULT_CLIPS }), undefined, fallbackModel);
   const modelCfg = CHAR_MODELS[character.id];
@@ -1472,53 +1480,94 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
     bone.quaternion.premultiply(qa);
     bone.updateMatrixWorld(true);
   };
-  const animateRig = (state, spd, dt) => {
-    const r = avatar.rig;
-    const p = g.player;
-    // on repart de la pose de base (les os non animés par le clip garderaient sinon nos rotations)
-    [...r.legs.flat(), ...r.arms.flat(), r.spinner].forEach((b) => { if (b && b.userData.bind) b.quaternion.copy(b.userData.bind); });
+  const ORDER = ['up', 'lat', 'torso', 'thighL', 'calfL', 'footL', 'thighR', 'calfR', 'footR', 'uarmL', 'farmL', 'uarmR', 'farmR', 'head'];
+  const LOOPS = { idle: true, walk: true, run: true, ball: true, boost: true, fall: true };
+  const sample = (key, t) => {
+    const c = ANIMS.clips[key] || ANIMS.clips.idle;
+    const n = c.frames.length;
+    let f = (t / c.d) * n;
+    if (LOOPS[key]) f = ((f % n) + n) % n; else f = Math.min(f, n - 1.001);
+    const i0 = Math.floor(f); const i1 = LOOPS[key] ? (i0 + 1) % n : Math.min(i0 + 1, n - 1); const u = f - i0;
+    const a = c.frames[i0]; const b = c.frames[i1];
+    return a.map((v, i) => v + (b[i] - v) * u);
+  };
+  const vecOf = (arr, name) => { const i = ORDER.indexOf(name) * 3; return new THREE.Vector3(arr[i], arr[i + 1], arr[i + 2]).normalize(); };
+  const rq = new THREE.Quaternion(); const rqi = new THREE.Quaternion(); const pq = new THREE.Quaternion();
+  const v1 = new THREE.Vector3(); const v2 = new THREE.Vector3(); const v3 = new THREE.Vector3(); const qq = new THREE.Quaternion();
+  const worldPos = (b, out) => b.getWorldPosition(out);
+  // Tourne un os (dans l'espace du perso) pour que la direction os→enfant devienne `dir`.
+  const rotateBoneChar = (bone, qChar) => {
+    // qChar : rotation exprimée dans l'espace du perso → monde → espace du parent
+    qq.copy(rq).multiply(qChar).multiply(rqi);
+    bone.parent.getWorldQuaternion(pq);
+    const local = pq.clone().invert().multiply(qq).multiply(pq);
+    bone.quaternion.premultiply(local);
+    bone.updateMatrixWorld(true);
+  };
+  const aim = (bone, child, dir) => {
+    if (!bone || !child) return;
+    worldPos(bone, v1); worldPos(child, v2);
+    v3.subVectors(v2, v1).applyQuaternion(rqi);
+    if (v3.lengthSq() < 1e-10) return;
+    v3.normalize();
+    rotateBoneChar(bone, new THREE.Quaternion().setFromUnitVectors(v3, dir));
+  };
+  const retarget = (pose) => {
+    const b = avatar.rt.bones;
+    Object.values(b).forEach((bone) => bone.quaternion.copy(bone.userData.bind));
     avatar.root.updateMatrixWorld(true);
-    const run = state === 'run' || state === 'walk';
-    avatar.phase += dt * (run ? 4 + spd * 0.75 : 2);
-    const ph = avatar.phase;
-    const amp = state === 'run' ? clamp(0.45 + spd * 0.035, 0.5, 1.1) : state === 'walk' ? 0.45 : 0;
-    // Jambes : balancier + genou qui plie
-    r.legs.forEach(([thigh, knee], i) => {
-      const s2 = i === 0 ? 1 : -1;
-      if (state === 'glide') { turnBone(thigh, AX.x, 0.5); turnBone(knee, AX.x, 0.4); return; }
-      if (state === 'fly') { turnBone(thigh, AX.x, -0.25 + Math.sin(g.t * 6 + i) * 0.15); turnBone(knee, AX.x, 0.5); return; }
-      if (!run) return;
-      const sw = Math.sin(ph) * s2;
-      turnBone(thigh, AX.x, -sw * amp);
-      turnBone(knee, AX.x, (0.35 + Math.max(0, Math.sin(ph * s2 + 1.2 * s2)) * 1.1) * amp);
-    });
-    // Bras : on les baisse (pose en A), puis ils balancent à l'opposé des jambes
-    r.arms.forEach(([arm, elbow], i) => {
-      const side = i === 0 ? 1 : -1;
-      if (state === 'glide') { turnBone(arm, AX.y, side * 1.0); turnBone(arm, AX.z, side * 0.25); return; }
-      turnBone(arm, AX.z, -side * r.lower);
-      if (run) {
-        turnBone(arm, AX.x, Math.sin(ph) * side * amp * 0.9);
-        turnBone(elbow, AX.y, side * 0.9);
-      } else if (state === 'fly') {
-        turnBone(arm, AX.z, -side * 0.3);
-      } else {
-        turnBone(arm, AX.x, Math.sin(g.t * 2 + i) * 0.04);
-      }
-    });
-    // Queues de Tails : hélice en vol, tournoient en courant
-    if (r.spinner) {
-      const rate = state === 'fly' ? 26 : run ? 8 : 0;
-      avatar.spin += dt * rate;
-      if (rate) turnBone(r.spinner, AX.z, avatar.spin);
+    avatar.root.getWorldQuaternion(rq); rqi.copy(rq).invert();
+    // 1) bassin : on aligne « haut » (hanches→cou) puis « côté » (hanche droite→gauche)
+    const mid = () => worldPos(b.thighL, new THREE.Vector3()).add(worldPos(b.thighR, new THREE.Vector3())).multiplyScalar(0.5);
+    const up = vecOf(pose, 'up'); const lat = vecOf(pose, 'lat');
+    let cu = worldPos(b.neck, new THREE.Vector3()).sub(mid()).applyQuaternion(rqi).normalize();
+    rotateBoneChar(b.root, new THREE.Quaternion().setFromUnitVectors(cu, up));
+    let cl = worldPos(b.thighL, new THREE.Vector3()).sub(worldPos(b.thighR, new THREE.Vector3())).applyQuaternion(rqi);
+    const proj = (v) => v.sub(up.clone().multiplyScalar(v.dot(up))).normalize();
+    cl = proj(cl); const tl = proj(lat.clone());
+    if (cl.lengthSq() > 0.5 && tl.lengthSq() > 0.5) rotateBoneChar(b.root, new THREE.Quaternion().setFromUnitVectors(cl, tl));
+    // 2) buste, 3) jambes, 4) bras, 5) tête
+    aim(b.spine, b.neck, vecOf(pose, 'torso'));
+    aim(b.thighL, b.calfL, vecOf(pose, 'thighL')); aim(b.calfL, b.footL, vecOf(pose, 'calfL')); aim(b.footL, b.toeL, vecOf(pose, 'footL'));
+    aim(b.thighR, b.calfR, vecOf(pose, 'thighR')); aim(b.calfR, b.footR, vecOf(pose, 'calfR')); aim(b.footR, b.toeR, vecOf(pose, 'footR'));
+    aim(b.uarmL, b.farmL, vecOf(pose, 'uarmL')); aim(b.farmL, b.handL, vecOf(pose, 'farmL'));
+    aim(b.uarmR, b.farmR, vecOf(pose, 'uarmR')); aim(b.farmR, b.handR, vecOf(pose, 'farmR'));
+    // rebond des hanches
+    const idle0 = ANIMS.clips.idle.frames[0][pose.length - 1];
+    avatar.model.position.y = avatar.rt.baseY + (pose[pose.length - 1] - idle0) * avatar.rt.legLen * 0.9;
+  };
+  const RT_CLIP = { idle: 'idle', walk: 'walk', run: 'run', jump: 'fall', glide: 'fall', fly: 'fall', ball: 'ball', punch: 'attack', hurt: 'hurt', death: 'hurt', win: 'win', boost: 'boost' };
+  const animateRetarget = (state, spd, dt) => {
+    const rt = avatar.rt;
+    const key = RT_CLIP[state] || 'idle';
+    if (key !== rt.cur) { rt.prev = rt.cur; rt.prevT = rt.t; rt.cur = key; rt.t = 0; rt.blend = 0; }
+    const rate = key === 'run' ? clamp(spd / 10, 0.8, 2.2) : key === 'walk' ? clamp(spd / 3.2, 0.6, 1.8) : 1;
+    rt.t += dt * rate;
+    if (rt.prev) rt.prevT += dt;
+    rt.blend = Math.min(1, rt.blend + dt / 0.15);
+    let pose = sample(key, rt.t);
+    if (rt.prev && rt.blend < 1) {
+      const old = sample(rt.prev, rt.prevT);
+      pose = pose.map((v, i) => old[i] + (v - old[i]) * rt.blend);
     }
-    if (p.hp <= 0) return;
+    retarget(pose);
+    const b = rt.bones;
+    // poses spéciales : plané de Knuckles (bras devant), vol de Tails (hélice)
+    if (state === 'glide') {
+      aim(b.uarmL, b.farmL, new THREE.Vector3(0.25, 0.25, 1).normalize()); aim(b.farmL, b.handL, new THREE.Vector3(0.1, 0.2, 1).normalize());
+      aim(b.uarmR, b.farmR, new THREE.Vector3(-0.25, 0.25, 1).normalize()); aim(b.farmR, b.handR, new THREE.Vector3(-0.1, 0.2, 1).normalize());
+    }
+    if (b.spinner) {
+      const r = state === 'fly' ? 26 : state === 'run' ? 9 : 0;
+      avatar.spin += dt * r;
+      if (r) { b.spinner.quaternion.copy(b.spinner.userData.bind); turnBone(b.spinner, AX.z, avatar.spin); }
+    }
   };
 
   const animateAvatar = (dt) => {
     const p = g.player;
     const spd = Math.hypot(p.vx, p.vz);
-    const hasBall = !!avatar.actions.ball;
+    const hasBall = !!avatar.actions.ball || !!(avatar.rt && ANIMS);
     const rollAir = character.air === 'dash' || character.air === 'double';
     const airBall = !p.grounded && !p.gliding && !p.flying && (rollAir || p.vy > 2) && !avatar.actions.jump;
     const balledMesh = (p.spin > 0 || airBall) && !hasBall && !g.over;
@@ -1550,7 +1599,7 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
     // flash rouge quand on est touché
     const hurt = g.hurtFlash > 0 ? g.hurtFlash * 2 : 0;
     avatar.mats.forEach((m) => { if (m.emissive) m.emissive.setRGB(hurt, hurt * 0.1, hurt * 0.1); });
-    if (!avatar.mixer) {
+    if (!avatar.mixer && !avatar.rt) {
       if (avatar.model) avatar.model.position.y = p.grounded && spd > 1 ? Math.abs(Math.sin(p.step * 1.6)) * 0.15 : 0;
       return;
     }
@@ -1559,8 +1608,8 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
     else if (g.over === 'win') state = 'win';
     else if (p.spin > 0 && hasBall) state = 'ball';
     else if (!p.grounded) state = p.gliding ? 'glide' : p.flying ? 'fly' : (hasBall && (rollAir || p.vy > 2)) ? 'ball' : 'jump';
-    else if (avatar.punchT > 0 && avatar.actions.punch) state = 'punch';
-    else if (g.hurtFlash > 0.15 && avatar.actions.hurt) state = 'hurt';
+    else if (avatar.punchT > 0 && (avatar.actions.punch || avatar.rt)) state = 'punch';
+    else if (g.hurtFlash > 0.15 && (avatar.actions.hurt || avatar.rt)) state = 'hurt';
     else if (spd > 6) state = 'run';
     else if (spd > 0.6) state = 'walk';
     else state = 'idle';
@@ -1573,8 +1622,8 @@ export const createBonk = (mount, overlay, character, callbacks = {}) => {
       else if (clipState === 'ball') action.timeScale = 1.6;
       else action.timeScale = 1;
     }
+    if (avatar.rt && ANIMS) { animateRetarget(state, spd, dt); return; }
     avatar.mixer.update(dt);
-    if (avatar.rig) animateRig(state, spd, dt);
   };
 
   const render = (dt = 1 / 60) => {
