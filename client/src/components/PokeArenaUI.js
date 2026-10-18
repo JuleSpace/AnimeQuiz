@@ -304,11 +304,14 @@ export const TrainerPicker = ({ value, onChange }) => (
   </div>
 );
 
+/** Starters dans l'ordre du Pokédex : Bulbizarre, Salamèche, Carapuce, Pikachu, Évoli, puis Johto, Hoenn… */
+const STARTERS_BY_DEX = [...STARTER_LINES].sort((a, b) => (a.stages[0]?.dex || 0) - (b.stages[0]?.dex || 0));
+
 export const StarterScreen = ({ onPick, onBack, onTrait, trainer, onTrainer }) => {
   const [gen, setGen] = useState(0);
   const [type, setType] = useState('');
-  const [pickId, setPickId] = useState(STARTER_LINES[0]?.id);
-  const list = STARTER_LINES.filter((line) => {
+  const [pickId, setPickId] = useState(STARTERS_BY_DEX[0]?.id);
+  const list = STARTERS_BY_DEX.filter((line) => {
     const first = line.stages[0];
     if (gen && genOf(first.dex) !== gen) return false;
     if (type) {
