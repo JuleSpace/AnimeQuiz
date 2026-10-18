@@ -391,31 +391,6 @@ function sample(key, ctx, dest, when, { gain = 1, rate = 1, pan = 0 } = {}) {
   return true;
 }
 
-// Petit cri de Chao : glissando aigu avec un vibrato rapide, comme un « tchiou ! ».
-function chaoChirp(ctx, dest, when, from, to, dur, peak) {
-  const osc = ctx.createOscillator();
-  const lfo = ctx.createOscillator();
-  const depth = ctx.createGain();
-  const gain = ctx.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(from, when);
-  osc.frequency.exponentialRampToValueAtTime(to, when + dur * 0.6);
-  osc.frequency.exponentialRampToValueAtTime(to * 0.92, when + dur);
-  lfo.frequency.value = 26;
-  depth.gain.value = from * 0.05;
-  lfo.connect(depth);
-  depth.connect(osc.frequency);
-  gain.gain.setValueAtTime(0.0001, when);
-  gain.gain.exponentialRampToValueAtTime(peak, when + 0.015);
-  gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
-  osc.connect(gain);
-  gain.connect(dest);
-  osc.start(when);
-  lfo.start(when);
-  osc.stop(when + dur + 0.03);
-  lfo.stop(when + dur + 0.03);
-}
-
 // Chaque coup sur l'œuf : coquille qui craque + petit cri de Chao, un peu plus aigu à chaque fois.
 function playEggKnock(step) {
   const bus = voiceBus();
@@ -427,13 +402,10 @@ function playEggKnock(step) {
   }
   // Un seul cri de Chao, sur le dernier coup.
   if (step < EGG_TAPS) return;
-  if (!sample('chirp', ctx, master, now + 0.05, { gain: 0.6 })) {
-    chaoChirp(ctx, master, now + 0.05, 1180, 1900, 0.16, 0.08);
-  }
+  sample('chirp', ctx, master, now + 0.05, { gain: 0.6 });
 }
 
-// L'éclosion : l'œuf se charge comme un Spin Dash, éclate en pluie d'anneaux,
-// puis le Chao pousse un cri joyeux sur un petit carillon.
+// L'éclosion : l'œuf se charge comme un Spin Dash puis éclate.
 function playOpeningScore() {
   const bus = voiceBus();
   if (!bus) return;
@@ -461,13 +433,8 @@ function playOpeningScore() {
   }
   sample('rings', ctx, master, boom + 0.04);
 
-  // Le Chao sort : trois petits cris qui montent, puis un carillon majeur.
-  const rise = now + pullAt;
-  if (!sample('happy', ctx, master, rise, { gain: 0.55 })) {
-    chaoChirp(ctx, master, rise, 820, 1320, 0.14, 0.12);
-    chaoChirp(ctx, master, rise + 0.16, 900, 1480, 0.14, 0.12);
-    chaoChirp(ctx, master, rise + 0.32, 1040, 1860, 0.24, 0.14);
-  }
+  // La carte sort de l'œuf : aucun son synthétisé ici, seulement un vrai son « happy » s'il est déclaré.
+  sample('happy', ctx, master, now + pullAt, { gain: 0.55 });
 }
 
 // La carte apparaît : seulement si un vrai son « ring » est déclaré dans index.json.

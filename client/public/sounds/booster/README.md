@@ -14,7 +14,7 @@ Si un fichier listé est absent, le son synthétisé joue à sa place.
 | `rev`   | la charge, 7 fois de plus en plus aigu        | `spindash.wav` (à déposer)                   |
 | `hatch` | l'éclosion                                    | `chao-pop.wav` (à déposer)                   |
 | `rings` | juste après l'éclosion                        | aucun                                        |
-| `happy` | la carte sort de l'œuf                        | « Chao x3 » (101soundboards, en lien direct) |
+| `happy` | la carte sort de l'œuf                        | aucun                                        |
 | `ring`  | la carte se retourne                          | aucun                                        |
 
 ## Fichiers à déposer ici
@@ -28,5 +28,5 @@ Ils viennent de l'archive « Sound Effects » de Sonic Adventure 2: Battle sur T
 | `Sound Effects/Character Sound Effects/se_ch_sn_SONIC SHADOW AMY METAL/016.Synth_MLT_se_ch_sn_Spindash Charge without Ancient Light Begin.wav` | `spindash.wav` |
 | `Sound Effects/Chao Sounds/chao_sound_std_CHAO SOUNDS/Chao sound effects/039.Synth_MLT_chao_sound_std_pop.wav` | `chao-pop.wav` |
 
-Les cris de Chao (« Chao! » et « Chao x3 ») sont lus directement depuis 101soundboards. Pour ne plus dépendre de ce site,
-télécharge les mp3, dépose-les ici et remplace les liens par leurs noms de fichier.
+Le cri « Chao! » sont lus directement depuis 101soundboards. Pour ne plus dépendre de ce site,
+télécharge le mp3, dépose-le ici et remplace le lien par leurs noms de fichier.
