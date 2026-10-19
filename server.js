@@ -475,6 +475,52 @@ attachAdmins(app);
 attachQuiz(app, io);
 attachArena(io);
 
+// Pages secrètes avec leur propre aperçu (Discord, WhatsApp…).
+// Le « #academy » d'un lien n'est jamais envoyé au serveur : pour un aperçu adapté,
+// on partage /academy, /swarm… qui renvoient l'appli avec le bon titre et la bonne description.
+const PAGE_PREVIEWS = {
+  academy: {
+    title: 'Guide Cobblemon Academy 2.0 · Bully’s Lair',
+    description: 'Le guide du joueur du serveur Minecraft : premiers jours, arènes, cartes à collectionner, économie, boutique et chasse aux légendaires.'
+  },
+  swarm: {
+    title: 'Poké Swarm · Bully’s Lair',
+    description: 'Survis aux hordes de Pokémon sauvages pendant 9 minutes, pioche tes attaques en cartes et affronte un légendaire. 4 régions, Méga-Évolutions et talents à débloquer.'
+  },
+  arena: {
+    title: 'Poké Bully Tactics · Bully’s Lair',
+    description: 'Recrute, fusionne trois exemplaires pour faire évoluer, place ton équipe et traverse trois régions jusqu’à la Ligue et son Maître.'
+  },
+  bonk: {
+    title: 'Sonic Bonk · Bully’s Lair',
+    description: 'Une île en 3D, des hordes de robots et quelques minutes pour tenir : cours, saute, enchaîne les spin dash et bats le Colosse.'
+  },
+  reliques: {
+    title: 'Atelier des cartes · Bully’s Lair',
+    description: 'Les cartes jokers du quiz en grand : animations, sons et ouverture de boosters.'
+  }
+};
+const escapeHtml = (str) => String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+let indexHtmlCache = null;
+Object.entries(PAGE_PREVIEWS).forEach(([page, meta]) => {
+  app.get(`/${page}`, (req, res) => {
+    try {
+      if (!indexHtmlCache) indexHtmlCache = require('fs').readFileSync(path.join(__dirname, 'client/build', 'index.html'), 'utf8');
+    } catch (e) {
+      return res.redirect(`/#${page}`);
+    }
+    const title = escapeHtml(meta.title);
+    const desc = escapeHtml(meta.description);
+    const html = indexHtmlCache
+      .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
+      .replace(/(<meta name="description" content=")[^"]*(")/, `$1${desc}$2`)
+      .replace(/(<meta property="og:title" content=")[^"]*(")/, `$1${title}$2`)
+      .replace(/(<meta property="og:description" content=")[^"]*(")/, `$1${desc}$2`);
+    res.set('Cache-Control', 'no-cache');
+    res.send(html);
+  });
+});
+
 // Route de test pour vérifier que l'app fonctionne
 app.get('/', (req, res) => {
   if (process.env.NODE_ENV === 'production') {

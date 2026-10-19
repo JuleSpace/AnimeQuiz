@@ -18,6 +18,13 @@ import './index.css';
 const socket = io(process.env.REACT_APP_SERVER_URL || window.location.origin);
 const SEAT_KEY = 'animeQuizSeat';
 
+// Lien partagé en /academy, /swarm… (pour un aperçu Discord adapté) : on repasse en #academy, #swarm…
+const SECRET_PATHS = ['academy', 'swarm', 'arena', 'bonk', 'reliques'];
+(() => {
+  const page = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  if (SECRET_PATHS.includes(page) && !window.location.hash) window.history.replaceState(null, '', `/${window.location.search}#${page}`);
+})();
+
 const secretViewFromHash = () => {
   if (window.location.hash === RELIC_HASH) return 'reliques';
   if (window.location.hash === ACADEMY_HASH) return 'academy';
