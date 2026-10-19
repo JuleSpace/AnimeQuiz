@@ -124,7 +124,7 @@ const MenuBackdrop = ({ world }) => {
 const TYPE_COLORS = {
   Électrik: '#f7d02c', Feu: '#ee8130', Eau: '#6390f0', Plante: '#7ac74c', Sol: '#d9b25a', Normal: '#b8b48a',
   Spectre: '#8a6bc4', Ténèbres: '#6b5a4c', Combat: '#d2513f', Objet: '#9fb3d6', Baie: '#4f8fe0', Méga: '#ff6ad5',
-  Glace: '#7fd8e8', Poison: '#a35cc4', Psy: '#f95587', Vol: '#a98ff3', Dragon: '#6f35fc'
+  Glace: '#7fd8e8', Acier: '#b7b7ce', Poison: '#a35cc4', Psy: '#f95587', Vol: '#a98ff3', Dragon: '#6f35fc'
 };
 const ITEM_SLUG = {
   protein: 'protein', carbos: 'carbos', hpup: 'hp-up', magnet: 'magnet', quickclaw: 'quick-claw', leftovers: 'leftovers', scope: 'scope-lens',
@@ -165,7 +165,7 @@ const TcgCard = ({ opt, partner, formDex, index, onPick, gen, megaLevels = MEGA_
     el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg');
   };
   let art;
-  if (opt.kind === 'weapon') art = <PmdSprite dex={formDex} cycle={['quake', 'bite', 'leafblade', 'doublekick', 'machpunch'].includes(opt.id) ? 'attack' : 'shoot'} size={150} scale={2.1} dir={1} foot={0.78} />;
+  if (opt.kind === 'weapon') art = <PmdSprite dex={formDex} cycle={['quake', 'bite', 'leafblade', 'doublekick', 'machpunch', 'irontail', 'surf'].includes(opt.id) ? 'attack' : 'shoot'} size={150} scale={2.1} dir={1} foot={0.78} />;
   else if (opt.kind === 'evo') art = <PmdSprite dex={l.evoDex} anim="idle" size={118} scale={2.6} />;
   else if (opt.kind === 'mega') {
     const m = megaOf(partner, opt.id) || partner.mega;

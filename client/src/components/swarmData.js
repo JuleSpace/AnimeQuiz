@@ -47,7 +47,7 @@ export const PARTNERS = [
     mega: { name: 'Méga-Tortank', stone: 'Tortankite', sprite: '9-mega', scale: 1.3 }
   },
   {
-    id: 'pikachu', gen: 1, name: 'Pikachu', dex: 25, type: 'Électrik', color: '#f7d02c', hp: 90, speed: 3.2, weapon: 'thunder', learn: ['Électrik'],
+    id: 'pikachu', gen: 1, name: 'Pikachu', dex: 25, type: 'Électrik', color: '#f7d02c', hp: 90, speed: 3.2, weapon: 'thunder', learn: ['Électrik', 'Acier'],
     blurb: 'Le plus rapide. Son Tonnerre rebondit d’un ennemi à l’autre.',
     evolutions: [{ level: 12, name: 'Raichu', dex: 26, hp: 40 }],
     mega: {
@@ -231,6 +231,84 @@ export const WEAPONS = {
     color: '#8a6aff',
     desc: (lv) => `${2 + lv} météores s’écrasent sur les ennemis autour de toi après un court sifflement.`,
     at: (lv) => ({ cd: 4 - lv * 0.25, dmg: 34 + lv * 11, count: 2 + lv, blast: 56 + lv * 5, range: 420 })
+  },
+  /* — Attaques de type (apprises par les starters de ce type, gratuites) — */
+  spark: {
+    name: 'Étincelle',
+    type: 'Électrik',
+    color: '#ffe14a',
+    desc: (lv) => `Une décharge part de toi à intervalles courts : les ennemis proches sont touchés et ralentis${lv >= 4 ? ' fortement' : ''}.`,
+    at: (lv) => ({ cd: 1.3 - lv * 0.08, dmg: 9 + lv * 3, radius: 72 + lv * 8, slow: 0.65 - lv * 0.05, slowT: 0.8 })
+  },
+  thunderwave: {
+    name: 'Cage-Éclair',
+    type: 'Électrik',
+    color: '#f7d02c',
+    desc: (lv) => `Paralyse les ${lv + 1} ennemis les plus proches pendant ${(1.2 + lv * 0.2).toFixed(1)} s : ils ne bougent presque plus.`,
+    at: (lv) => ({ cd: 3 - lv * 0.2, dmg: 6 + lv * 2, count: lv + 1, stun: 1.2 + lv * 0.2, range: 300 })
+  },
+  electroball: {
+    name: 'Boule Élek',
+    type: 'Électrik',
+    color: '#fff27a',
+    desc: (lv) => `${lv >= 3 ? 'Deux boules électriques qui explosent' : 'Une boule électrique qui explose'} au contact.`,
+    at: (lv) => ({ cd: 1.3 - lv * 0.07, dmg: 14 + lv * 5, count: lv >= 3 ? 2 : 1, blast: 34 + lv * 6, speed: 6 })
+  },
+  irontail: {
+    name: 'Queue de Fer',
+    type: 'Acier',
+    color: '#b8c0cc',
+    desc: () => 'Un grand coup de queue en arc devant toi, qui repousse fort.',
+    at: (lv) => ({ cd: 1.4 - lv * 0.08, dmg: 20 + lv * 7, range: 72 + lv * 8, arc: 1.1, knock: 9 })
+  },
+  flamethrower: {
+    name: 'Lance-Flammes',
+    type: 'Feu',
+    color: '#ff6a1f',
+    desc: () => 'Un jet de flammes en cône devant toi, qui touche tout sur sa route.',
+    at: (lv) => ({ cd: 1.15 - lv * 0.07, dmg: 12 + lv * 5, range: 130 + lv * 12, arc: 0.45, knock: 2.5 })
+  },
+  firespin: {
+    name: 'Danse Flammes',
+    type: 'Feu',
+    color: '#ff8a3a',
+    desc: (lv) => `Un cercle de flammes s’allume autour de toi (${12 + lv * 5} dégâts/s).`,
+    at: (lv) => ({ cd: 4.4 - lv * 0.3, radius: 90 + lv * 10, dps: 12 + lv * 5, life: 2.6 + lv * 0.3, n: 10 + lv })
+  },
+  willowisp: {
+    name: 'Feu Follet',
+    type: 'Feu',
+    color: '#8a9aff',
+    desc: (lv) => `${lv + 1} feux follets qui poursuivent les ennemis et laissent une petite flamme en les touchant.`,
+    at: (lv) => ({ cd: 1.8 - lv * 0.1, dmg: 10 + lv * 3, count: lv + 1, speed: 4.6, burn: 8 + lv * 3 })
+  },
+  surf: {
+    name: 'Surf',
+    type: 'Eau',
+    color: '#4fa8ff',
+    desc: () => 'Une vague part de toi et repousse très loin toute la horde.',
+    at: (lv) => ({ cd: 3.6 - lv * 0.25, dmg: 14 + lv * 5, radius: 120 + lv * 16, knock: 12 })
+  },
+  hydropump: {
+    name: 'Hydrocanon',
+    type: 'Eau',
+    color: '#3a7bff',
+    desc: () => 'Un puissant jet d’eau qui transperce toute une ligne d’ennemis.',
+    at: (lv) => ({ cd: 2.4 - lv * 0.16, dmg: 22 + lv * 8, len: 340 + lv * 30, w: 18 + lv * 2 })
+  },
+  whirlpool: {
+    name: 'Siphon',
+    type: 'Eau',
+    color: '#4fc8ff',
+    desc: () => 'Un tourbillon d’eau erre vers la horde, l’aspire et la noie.',
+    at: (lv) => ({ cd: 4.6 - lv * 0.3, dps: 12 + lv * 5, radius: 50 + lv * 6, pull: 1.6 + lv * 0.2, count: 1, life: 3 + lv * 0.3 })
+  },
+  gigadrain: {
+    name: 'Méga-Sangsue',
+    type: 'Plante',
+    color: '#9be06a',
+    desc: (lv) => `Draine ${lv >= 3 ? 'deux ennemis' : 'un ennemi'} : ${2 + lv} PV rendus par cible touchée.`,
+    at: (lv) => ({ cd: 1.6 - lv * 0.1, dmg: 14 + lv * 5, count: lv >= 3 ? 2 : 1, heal: 2 + lv, range: 300 })
   },
   /* — Johto — */
   bloom: {
@@ -587,7 +665,9 @@ export const CAST_ANIM = {
   thunder: 'shoot', ember: 'shoot', watergun: 'shoot', quake: 'attack', swift: 'shoot', shadow: 'shoot',
   bloom: 'shoot', bite: 'attack', leafblade: 'attack', doublekick: 'attack', mudbomb: 'shoot',
   seedbomb: 'shoot', machpunch: 'attack', bubble: 'shoot',
-  icebeam: 'shoot', sludge: 'shoot', psychic: 'shoot', hurricane: 'shoot', dracometeor: 'shoot'
+  icebeam: 'shoot', sludge: 'shoot', psychic: 'shoot', hurricane: 'shoot', dracometeor: 'shoot',
+  spark: 'shoot', thunderwave: 'shoot', electroball: 'shoot', irontail: 'attack', flamethrower: 'shoot', firespin: 'shoot',
+  willowisp: 'shoot', surf: 'attack', hydropump: 'shoot', whirlpool: 'shoot', gigadrain: 'shoot'
 };
 
 /** Le partenaire peut-il apprendre cette attaque ? (`unlocked` : capacités achetées) */
