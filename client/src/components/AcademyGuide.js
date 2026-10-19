@@ -58,7 +58,6 @@ const COMMANDS = [
   ['/tpa <joueur>', 'Demander à te téléporter vers un ami.'],
   ['/rtp', 'Téléportation aléatoire pour explorer une zone vierge (une fois toutes les 10 min).'],
   ['/enderchest', 'Ouvrir ton coffre de l’Ender n’importe où.'],
-  ['/anvil', 'Enclume portable (aussi /smithing pour la table de forge et /stonecutter pour le tailleur de pierre).'],
   ['/trashcan', 'Poubelle pour vider ton inventaire.'],
   ['/hat', 'Porter l’objet en main sur la tête (parfait avec les casquettes des lootbags).'],
   ['/near', 'Voir les joueurs proches.'],
