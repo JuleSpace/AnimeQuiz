@@ -1,0 +1,362 @@
+/*
+ * Guide Cobblemon Academy 2.0 dans la DA « City Escape » du site :
+ * bleu franc à bandes qui défilent (fond du body), panneaux cerclés marine + blanc,
+ * or « anneau » pour ce qui est actif, rouge Shadow pour les alertes.
+ */
+
+.acad {
+  --ink: var(--ce-ink, #08164d);
+  --navy: var(--ce-navy, #0a1f6b);
+  --gold: var(--ce-gold, #ffd23a);
+  --red: var(--ce-red, #ff2347);
+  --mist: var(--ce-mist, #dbe6ff);
+  --panel: var(--ce-panel, linear-gradient(180deg, rgba(20, 58, 186, 0.94), rgba(8, 26, 104, 0.96)));
+  --ring: 0 0 0 4px var(--navy), 0 0 0 7px #fff, 0 18px 32px rgba(2, 8, 40, 0.4);
+  --title: var(--ce-title, 'Saira', 'Arial Black', sans-serif);
+  position: relative;
+  min-height: 100vh;
+  color: #f4f7ff;
+  font-family: var(--ce-text, 'Saira Semi Condensed', 'Segoe UI', sans-serif);
+  font-size: 17px;
+  line-height: 1.55;
+  padding-bottom: 60px;
+  overflow-x: clip;
+}
+.acad h1, .acad h2, .acad h3 { margin: 0; text-transform: none; }
+.acad :focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+
+/* Barre de lecture */
+.acad-progress { position: fixed; left: 0; right: 0; top: 0; height: 5px; z-index: 50; background: rgba(8, 22, 77, 0.6); }
+.acad-progress b { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), #fff7c2); transform-origin: left; }
+
+/* ——— Couverture ——— */
+.acad-hero { position: relative; padding: 22px clamp(16px, 4vw, 48px) 0; overflow: hidden; }
+.acad-hero-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; max-width: 1200px; margin: 0 auto; }
+.acad-kicker { font: italic 800 14px/1 var(--title); letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+.acad-back {
+  border: 0; cursor: pointer; padding: 10px 22px; border-radius: 999px;
+  font: italic 800 15px/1 var(--title); text-transform: uppercase; color: #fff;
+  background: linear-gradient(180deg, #ff6a82, var(--red) 60%, #c4122f);
+  box-shadow: 0 4px 0 #8a0a20, 0 8px 16px rgba(2, 8, 40, 0.3);
+}
+.acad-back:active { transform: translateY(3px); box-shadow: 0 1px 0 #8a0a20; }
+.acad-back.is-big { padding: 14px 32px; font-size: 18px; }
+
+.acad-hero-main { max-width: 1200px; margin: 0 auto; padding: clamp(28px, 6vw, 70px) 0 30px; }
+.acad-hero-pre { margin: 0 0 6px; font: italic 800 clamp(16px, 2vw, 20px)/1 var(--title); color: var(--mist); text-transform: uppercase; letter-spacing: 0.08em; }
+.acad-title { text-shadow: none !important; display: grid; font: italic 900 clamp(48px, 10vw, 128px)/0.88 var(--title); text-transform: uppercase; }
+.acad-title span {
+  padding: 0 0.12em 0.1em 0;
+  background: linear-gradient(180deg, #fffbe0 0 35%, var(--gold) 55%, #ff8a00);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  -webkit-text-stroke: 2px var(--ink);
+  filter: drop-shadow(5px 5px 0 var(--ink));
+  animation: acad-title-in 0.7s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.acad-title span:nth-child(2) { animation-delay: 0.12s; margin-left: clamp(18px, 6vw, 90px); }
+.acad-title em {
+  font-style: inherit;
+  background: linear-gradient(180deg, #fff, #ff6a82 45%, var(--red));
+  -webkit-background-clip: text; background-clip: text;
+}
+@keyframes acad-title-in { from { opacity: 0; transform: translateX(-60px) skewX(-12deg); } to { opacity: 1; transform: none; } }
+.acad-hero-text { max-width: 60ch; margin: 22px 0 18px; font-size: clamp(17px, 1.6vw, 20px); color: var(--mist); font-weight: 600; }
+.acad-tags { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 26px; padding: 0; list-style: none; }
+.acad-tags li { padding: 6px 14px; border-radius: 999px; font: italic 800 14px/1.2 var(--title); color: var(--ink); background: #fff; box-shadow: 0 3px 0 var(--navy); }
+.acad-tags li:last-child { color: #3a1d00; background: linear-gradient(180deg, #fff7c2, var(--gold) 60%, #ff9a00); }
+.acad-start {
+  border: 0; cursor: pointer; padding: 16px 34px; border-radius: 999px;
+  font: italic 900 19px/1 var(--title); text-transform: uppercase; color: #3a1d00;
+  background: linear-gradient(180deg, #fff7c2, var(--gold) 55%, #ff9a00);
+  box-shadow: 0 5px 0 #b35c00, 0 10px 24px rgba(2, 8, 40, 0.35);
+}
+.acad-start:hover { filter: brightness(1.05); }
+.acad-start:active { transform: translateY(4px); box-shadow: 0 1px 0 #b35c00; }
+
+/* Défilé de Pokémon en bas de la couverture */
+.acad-parade { position: relative; height: 104px; margin: 0 calc(-1 * clamp(16px, 4vw, 48px)); overflow: hidden; border-top: 4px solid #fff; background: linear-gradient(180deg, rgba(8, 22, 77, 0.55), rgba(8, 22, 77, 0.85)); }
+.acad-parade::before { content: ''; position: absolute; left: 0; right: 0; bottom: 14px; height: 3px; background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.35) 0 26px, transparent 26px 52px); }
+.acad-parade-track { position: absolute; left: 0; bottom: 4px; display: flex; align-items: flex-end; gap: 26px; width: max-content; animation: acad-parade 60s linear infinite; }
+@keyframes acad-parade { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.acad-mon { display: block; image-rendering: pixelated; }
+
+/* ——— Corps : sommaire collant + contenu ——— */
+.acad-body { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 36px; max-width: 1240px; margin: 34px auto 0; padding: 0 clamp(16px, 3vw, 32px); align-items: start; }
+.acad-nav { position: sticky; top: 22px; padding: 16px 12px 14px; border-radius: 22px; background: var(--panel); box-shadow: var(--ring); }
+.acad-nav-title { display: block; margin: 0 8px 10px; font: italic 900 16px/1 var(--title); text-transform: uppercase; color: var(--gold); }
+.acad-nav ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.acad-nav button { display: flex; gap: 10px; align-items: baseline; width: 100%; padding: 7px 10px; border: 0; border-radius: 12px; cursor: pointer; text-align: left; color: var(--mist); background: transparent; font: 700 15px/1.2 var(--ce-text, sans-serif); }
+.acad-nav button b { font: italic 900 14px/1 var(--title); color: rgba(219, 230, 255, 0.55); }
+.acad-nav button span { display: grid; gap: 1px; }
+.acad-nav button small { font-size: 12px; font-weight: 600; color: rgba(219, 230, 255, 0.6); }
+.acad-nav button:hover { background: rgba(255, 255, 255, 0.08); }
+.acad-nav button.is-read b { color: var(--gold); }
+.acad-nav button.is-on { color: #3a1d00; background: linear-gradient(180deg, #fff7c2, var(--gold) 60%, #ff9a00); box-shadow: 0 3px 0 #b35c00; }
+.acad-nav button.is-on b, .acad-nav button.is-on small { color: #5a3000; }
+
+.acad-main { min-width: 0; }
+.acad-section { padding: 18px 0 46px; scroll-margin-top: 24px; }
+.acad-section-head { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 22px; }
+.acad-num {
+  flex: none; font: italic 900 clamp(54px, 7vw, 86px)/0.8 var(--title);
+  color: transparent; -webkit-text-stroke: 2px rgba(255, 255, 255, 0.85);
+  text-shadow: 5px 5px 0 rgba(255, 35, 71, 0.6);
+}
+.acad-section h2 { font: italic 900 clamp(30px, 4.4vw, 50px)/1 var(--title); text-transform: uppercase; text-shadow: 3px 3px 0 var(--ink), 5px 5px 0 rgba(255, 35, 71, 0.85); }
+.acad-lead { max-width: 64ch; margin: 10px 0 0; font-size: 18px; font-weight: 600; color: var(--mist); }
+.acad-h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin: 30px 0 14px !important; font: italic 900 24px/1.1 var(--title) !important; text-transform: uppercase; color: var(--gold); text-shadow: 2px 2px 0 var(--ink); }
+.acad-h3 small { font: 600 14px/1.3 var(--ce-text, sans-serif); text-transform: none; color: var(--mist); text-shadow: none; }
+
+/* Panneaux */
+.acad-panel { position: relative; padding: 20px 22px; border-radius: 22px; background: var(--panel); box-shadow: var(--ring); }
+.acad-panel h3 { margin-bottom: 8px; font: italic 900 21px/1.15 var(--title); text-transform: uppercase; text-shadow: 2px 2px 0 var(--ink); }
+.acad-panel p { margin: 0 0 8px; color: var(--mist); font-weight: 600; }
+.acad-panel.is-gold { background: linear-gradient(180deg, #fff7c2, var(--gold) 60%, #ffb12e); color: #3a1d00; }
+.acad-panel.is-gold h3 { text-shadow: none; color: #3a1d00; }
+.acad-panel.is-gold p, .acad-panel.is-gold li { color: #4a2a00; }
+.acad-panel.is-red { box-shadow: 0 0 0 4px var(--navy), 0 0 0 7px var(--red), 0 18px 32px rgba(2, 8, 40, 0.4); margin-top: 26px; }
+.acad-panel.is-wide { margin-bottom: 26px; }
+.acad-panel.is-meteor { margin-top: 26px; background: radial-gradient(60% 120% at 100% 0, rgba(255, 154, 0, 0.35), transparent 60%), var(--panel); }
+.acad-ico { display: inline-block; font-size: 28px; line-height: 1; margin-bottom: 8px; filter: drop-shadow(2px 2px 0 var(--ink)); }
+.acad-muted { margin-top: 12px !important; font-size: 15px; color: rgba(219, 230, 255, 0.78) !important; }
+.acad-duo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; margin-top: 26px; }
+.acad-trio { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 26px; }
+.acad-bullets { margin: 6px 0 0; padding-left: 0; list-style: none; display: grid; gap: 7px; }
+.acad-bullets li { position: relative; padding-left: 22px; color: var(--mist); font-weight: 600; }
+.acad-bullets li::before { content: ''; position: absolute; left: 2px; top: 0.55em; border-left: 9px solid var(--gold); border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+.acad-panel.is-gold .acad-bullets li::before { border-left-color: var(--red); }
+.acad-dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; margin: 6px 0 0; }
+.acad-dl dt { font: italic 800 15px/1.4 var(--title); color: var(--gold); }
+.acad-dl dd { margin: 0; color: var(--mist); font-weight: 600; }
+
+.acad-tip { display: flex; gap: 12px; align-items: flex-start; margin-top: 26px; padding: 14px 18px; border-radius: 16px; background: rgba(8, 22, 77, 0.72); border-left: 6px solid var(--gold); }
+.acad-tip b { flex: none; padding: 2px 10px; border-radius: 999px; font: italic 900 13px/1.5 var(--title); text-transform: uppercase; color: #3a1d00; background: var(--gold); }
+.acad-tip span { font-weight: 600; color: #fff; }
+
+/* Apparition au défilement (une seule, discrète) */
+.acad-reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.5s ease, transform 0.5s ease; }
+.acad-reveal.is-in { opacity: 1; transform: none; }
+
+/* ——— 01 : chiffres + boucle ——— */
+.acad-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 22px; }
+.acad-stats > div { display: grid; gap: 4px; padding: 16px 18px; border-radius: 20px; background: #fff; box-shadow: 0 0 0 4px var(--navy), 0 10px 20px rgba(2, 8, 40, 0.3); }
+.acad-stats strong { font: italic 900 clamp(30px, 3.4vw, 40px)/1 var(--title); color: var(--ink); }
+.acad-stats > div > span { font-size: 14px; font-weight: 700; color: #33427a; }
+.acad-loop { display: grid; grid-template-columns: minmax(240px, 340px) 1fr; gap: 30px; align-items: center; }
+.acad-loop-ring { position: relative; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(8, 22, 77, 0.85) 0 52%, transparent 53%), conic-gradient(var(--gold) 0 var(--a), rgba(255, 255, 255, 0.18) var(--a) 360deg); box-shadow: 0 0 0 4px var(--navy), 0 0 0 7px #fff; transition: --a 0.6s; }
+.acad-loop-node { position: absolute; transform: translate(-50%, -50%); width: 46px; height: 46px; border: 0; border-radius: 50%; cursor: pointer; font: italic 900 20px/1 var(--title); color: var(--ink); background: #fff; box-shadow: 0 0 0 4px var(--navy); transition: transform 0.2s; }
+.acad-loop-node.is-on { color: #3a1d00; background: linear-gradient(180deg, #fff7c2, var(--gold) 60%, #ff9a00); transform: translate(-50%, -50%) scale(1.22); box-shadow: 0 0 0 4px var(--navy), 0 0 22px rgba(255, 210, 58, 0.8); }
+.acad-loop-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.acad-loop-step { font: italic 800 13px/1 var(--title); text-transform: uppercase; color: var(--mist); letter-spacing: 0.1em; }
+.acad-loop-center strong { font: italic 900 clamp(26px, 3vw, 34px)/1.1 var(--title); text-transform: uppercase; color: var(--gold); text-shadow: 2px 2px 0 var(--ink); animation: acad-pop 0.35s cubic-bezier(0.2, 1.5, 0.4, 1) both; }
+@keyframes acad-pop { from { opacity: 0; transform: scale(0.7); } to { opacity: 1; transform: none; } }
+.acad-loop-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.acad-loop-list button { display: grid; gap: 2px; width: 100%; padding: 10px 16px; border: 0; border-radius: 16px; cursor: pointer; text-align: left; color: var(--mist); background: rgba(8, 22, 77, 0.55); font: 600 15px/1.4 var(--ce-text, sans-serif); transition: background 0.2s; }
+.acad-loop-list b { font: italic 900 17px/1.2 var(--title); text-transform: uppercase; color: #fff; }
+.acad-loop-list li.is-on button { background: #fff; color: #33427a; box-shadow: 0 0 0 3px var(--gold); }
+.acad-loop-list li.is-on b { color: var(--ink); }
+
+/* ——— 02 : liste à cocher ——— */
+.acad-check { padding: 20px 22px; border-radius: 22px; background: var(--panel); box-shadow: var(--ring); }
+.acad-check-bar { position: relative; height: 26px; margin-bottom: 16px; border-radius: 999px; background: rgba(8, 22, 77, 0.8); overflow: hidden; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25); }
+.acad-check-bar b { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, var(--ce-green, #3ddc84), #8fffb8); transition: width 0.4s cubic-bezier(0.2, 1.2, 0.4, 1); }
+.acad-check-bar span { position: relative; display: block; text-align: center; font: italic 900 14px/26px var(--title); text-transform: uppercase; text-shadow: 1px 1px 0 var(--ink); }
+.acad-check ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.acad-check button { display: flex; gap: 12px; align-items: flex-start; width: 100%; height: 100%; padding: 12px 14px; border: 0; border-radius: 16px; cursor: pointer; text-align: left; color: var(--mist); background: rgba(8, 22, 77, 0.55); font: 600 14px/1.4 var(--ce-text, sans-serif); transition: background 0.2s, transform 0.15s; }
+.acad-check button:hover { transform: translateY(-2px); }
+.acad-check i { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; font: italic 900 16px/1 var(--title); font-style: normal; color: var(--ink); background: #fff; box-shadow: 0 0 0 3px var(--navy); }
+.acad-check span { display: grid; gap: 3px; }
+.acad-check b { font: italic 900 16px/1.2 var(--title); text-transform: uppercase; color: #fff; }
+.acad-check small { font-size: 14px; }
+.acad-check li.is-done button { background: rgba(61, 220, 132, 0.18); }
+.acad-check li.is-done i { color: #fff; background: var(--ce-green, #3ddc84); animation: acad-pop 0.3s both; }
+.acad-check li.is-done b { text-decoration: line-through; text-decoration-color: var(--gold); text-decoration-thickness: 3px; }
+.acad-check-done { margin: 14px 0 0; font: italic 900 18px/1.2 var(--title); text-transform: uppercase; color: var(--gold); text-align: center; animation: acad-pop 0.4s both; }
+
+/* ——— 03 : commandes ——— */
+.acad-cmds { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.acad-cmd { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: baseline; padding: 12px 14px; border: 0; border-radius: 16px; cursor: pointer; text-align: left; background: rgba(8, 22, 77, 0.72); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2); color: var(--mist); font: 600 14px/1.4 var(--ce-text, sans-serif); transition: box-shadow 0.15s, transform 0.15s; }
+.acad-cmd:hover { box-shadow: inset 0 0 0 2px var(--gold); transform: translateY(-2px); }
+.acad-cmd code { grid-row: span 2; padding: 4px 10px; border-radius: 8px; font: 800 15px/1.3 ui-monospace, 'Cascadia Code', Menlo, monospace; color: var(--ink); background: #fff; white-space: nowrap; }
+.acad-cmd em { font: italic 800 12px/1 var(--title); text-transform: uppercase; color: var(--gold); opacity: 0.7; }
+.acad-cmd.is-copied { box-shadow: inset 0 0 0 2px var(--ce-green, #3ddc84); }
+.acad-cmd.is-copied em { color: var(--ce-green, #3ddc84); opacity: 1; }
+
+/* ——— 04 : arènes, mécaniques ——— */
+.acad-arena { display: grid; grid-template-columns: 1fr 220px; gap: 24px; align-items: center; }
+.acad-key { display: grid; gap: 8px; justify-items: center; text-align: center; }
+.acad-key-plus { width: 100%; padding: 10px 12px; border-radius: 14px; font: italic 900 16px/1.2 var(--title); text-transform: uppercase; color: var(--ink); background: #fff; box-shadow: 0 0 0 3px var(--navy); }
+.acad-key-plus.is-gem { background: linear-gradient(135deg, #ff9ad6, #7fe0ff); }
+.acad-key-plus.is-gold { color: #3a1d00; background: linear-gradient(180deg, #fff7c2, var(--gold) 60%, #ff9a00); animation: acad-glow 2.4s ease-in-out infinite; }
+.acad-key-op { font: italic 900 26px/1 var(--title); color: var(--gold); }
+@keyframes acad-glow { 50% { box-shadow: 0 0 0 3px var(--navy), 0 0 24px rgba(255, 210, 58, 0.9); } }
+.acad-mechs { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 22px; }
+.acad-mech { height: 170px; perspective: 900px; cursor: pointer; outline: none; }
+.acad-mech-in { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.55s cubic-bezier(0.2, 1, 0.3, 1); }
+.acad-mech:hover .acad-mech-in, .acad-mech:focus .acad-mech-in { transform: rotateY(180deg); }
+.acad-mech-front, .acad-mech-back { position: absolute; inset: 0; display: grid; place-content: center; gap: 6px; padding: 16px; border-radius: 20px; text-align: center; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.acad-mech-front { background: radial-gradient(70% 70% at 50% 40%, color-mix(in srgb, var(--c) 60%, transparent), transparent 75%), var(--panel); box-shadow: var(--ring); }
+.acad-mech-front strong { font: italic 900 24px/1.05 var(--title); text-transform: uppercase; text-shadow: 2px 2px 0 var(--ink); }
+.acad-mech-front small { font: italic 800 12px/1 var(--title); text-transform: uppercase; color: var(--mist); opacity: 0.75; }
+.acad-mech-back { transform: rotateY(180deg); background: #fff; box-shadow: 0 0 0 4px var(--navy), 0 0 0 7px var(--c); }
+.acad-mech-back strong { font: italic 900 17px/1 var(--title); text-transform: uppercase; color: var(--ink); }
+.acad-mech-back p { margin: 0; font-size: 14px; font-weight: 700; color: #33427a; }
+
+/* ——— 05 : l'œuf qui tremble ——— */
+.acad-egg-row { display: grid; grid-template-columns: 130px 1fr; gap: 24px; align-items: center; }
+.acad-egg { position: relative; width: 96px; height: 120px; margin: 0 auto; border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%; background: radial-gradient(40% 30% at 35% 28%, #fff, transparent 70%), linear-gradient(180deg, #fffbe9, #f2e6c4); box-shadow: 0 0 0 4px var(--navy), 0 10px 0 rgba(2, 8, 40, 0.35); animation: acad-wobble 3.2s ease-in-out infinite; transform-origin: 50% 100%; }
+.acad-egg i { position: absolute; left: 22%; top: 30%; width: 22px; height: 22px; border-radius: 50%; background: #7ac74c; box-shadow: 34px 18px 0 -4px #7ac74c, 8px 44px 0 -6px #7ac74c; }
+.acad-egg span { position: absolute; left: 20%; right: 20%; top: 46%; height: 3px; background: repeating-linear-gradient(60deg, var(--ink) 0 6px, transparent 6px 10px); opacity: 0; animation: acad-crack 3.2s ease-in-out infinite; }
+@keyframes acad-wobble { 0%, 60%, 100% { transform: rotate(0); } 66% { transform: rotate(-9deg); } 72% { transform: rotate(8deg); } 78% { transform: rotate(-5deg); } 84% { transform: rotate(3deg); } }
+@keyframes acad-crack { 0%, 64% { opacity: 0; } 70%, 92% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ——— 06 : cartes ——— */
+.acad-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px; }
+.acad-step { position: relative; padding: 46px 20px 18px; border-radius: 22px; background: var(--panel); box-shadow: var(--ring); }
+.acad-step > b { position: absolute; top: -18px; left: 20px; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; font: italic 900 26px/1 var(--title); color: #3a1d00; background: linear-gradient(180deg, #fff7c2, var(--gold) 60%, #ff9a00); box-shadow: 0 0 0 4px var(--navy), 0 0 0 7px #fff; }
+.acad-step h3 { margin-bottom: 6px; font: italic 900 22px/1 var(--title); text-transform: uppercase; text-shadow: 2px 2px 0 var(--ink); }
+.acad-step p { margin: 0; color: var(--mist); font-weight: 600; }
+.acad-bars { display: grid; gap: 10px; }
+.acad-bar { display: grid; grid-template-columns: 110px 1fr 40px; gap: 10px; align-items: center; }
+.acad-bar span { font: italic 800 15px/1 var(--title); }
+.acad-bar i { height: 16px; border-radius: 999px; background: rgba(8, 22, 77, 0.8); overflow: hidden; }
+.acad-bar b { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--c); transition: width 1s cubic-bezier(0.2, 1, 0.3, 1); }
+.acad-reveal.is-in .acad-bar b { width: var(--w); }
+.acad-bar em { font: italic 900 16px/1 var(--title); font-style: normal; text-align: right; color: var(--c); }
+.acad-grader { display: grid; grid-template-columns: 200px 1fr; gap: 30px; align-items: center; padding: 22px; border-radius: 22px; background: var(--panel); box-shadow: var(--ring); }
+.acad-grader-card { position: relative; display: grid; place-content: center; justify-items: center; aspect-ratio: 63 / 88; border-radius: 14px; background: linear-gradient(160deg, #fff7c2, var(--gold) 50%, #ff9a00); box-shadow: inset 0 0 0 6px #fff, inset 0 0 0 9px #c9a74a, 0 12px 0 rgba(2, 8, 40, 0.35); transform: rotate(-4deg); }
+.acad-grader-card[data-note='10'] { animation: acad-holo 1.6s linear infinite; }
+@keyframes acad-holo { 0% { filter: hue-rotate(0); } 100% { filter: hue-rotate(360deg); } }
+.acad-grader-note { font: italic 900 92px/0.9 var(--title); color: var(--ink); }
+.acad-grader-card small { font: italic 900 20px/1 var(--title); color: #5a3000; }
+.acad-grader-side label { font: italic 900 18px/1 var(--title); text-transform: uppercase; }
+.acad-grader-side p { margin: 10px 0 0; color: var(--mist); font-weight: 600; }
+.acad input[type='range'] { width: 100%; height: 12px; margin: 14px 0; -webkit-appearance: none; appearance: none; border-radius: 999px; cursor: pointer; background: linear-gradient(90deg, var(--gold) var(--p), rgba(8, 22, 77, 0.85) var(--p)); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4); }
+.acad input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px var(--navy), 0 3px 6px rgba(0, 0, 0, 0.4); }
+.acad input[type='range']::-moz-range-thumb { width: 26px; height: 26px; border: 0; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px var(--navy); }
+.acad-grader-out { display: flex; align-items: baseline; gap: 14px; }
+.acad-grader-out span { font: italic 800 16px/1 var(--title); text-transform: uppercase; color: var(--mist); }
+.acad-grader-out strong { font: italic 900 64px/1 var(--title); color: var(--gold); text-shadow: 3px 3px 0 var(--ink); animation: acad-pop 0.3s both; }
+
+/* ——— 07 : objets ——— */
+.acad-incense { display: grid; gap: 10px; margin-top: 10px; }
+.acad-incense-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; }
+.acad-incense-row span { font: italic 800 15px/1.2 var(--title); }
+.acad-incense-row strong { font: italic 900 16px/1 var(--title); color: var(--gold); }
+.acad-incense-row i { grid-column: 1; height: 10px; border-radius: 999px; background: rgba(8, 22, 77, 0.8); overflow: hidden; }
+.acad-incense-row i b { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #ff9ad6, #fff7c2); transition: width 1.2s ease; }
+.acad-reveal.is-in .acad-incense-row i b { width: var(--w); }
+.acad-incense-row em { font-style: normal; font-weight: 800; font-size: 13px; color: var(--mist); }
+.acad-bags { display: grid; gap: 12px; }
+.acad-bag { border-radius: 18px; background: var(--panel); box-shadow: 0 0 0 3px var(--navy), 0 0 0 5px rgba(255, 255, 255, 0.7); overflow: hidden; }
+.acad-bag summary { display: flex; align-items: center; gap: 12px; padding: 12px 18px; cursor: pointer; list-style: none; font: italic 900 18px/1.2 var(--title); text-transform: uppercase; }
+.acad-bag summary::-webkit-details-marker { display: none; }
+.acad-bag summary::after { content: '+'; margin-left: auto; font: italic 900 24px/1 var(--title); color: var(--gold); transition: transform 0.2s; }
+.acad-bag[open] summary::after { transform: rotate(45deg); }
+.acad-bag-ico { font-size: 22px; transition: transform 0.3s; }
+.acad-bag[open] .acad-bag-ico { transform: rotate(-12deg) scale(1.15); }
+.acad-bag p { margin: 0; padding: 0 18px 16px 52px; color: var(--mist); font-weight: 600; }
+
+/* ——— 08 : économie, arcade, gacha ——— */
+.acad-panel.is-coin { padding-left: 92px; }
+.acad-coin { position: absolute; left: 22px; top: 22px; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; font: italic 900 26px/1 var(--title); color: #5a3000; background: radial-gradient(circle at 35% 30%, #fff7c2, var(--gold) 55%, #c98a00); box-shadow: 0 0 0 4px var(--navy), 0 5px 0 rgba(2, 8, 40, 0.35); animation: acad-spin 3.6s ease-in-out infinite; }
+.acad-coin.is-token { color: #fff; background: radial-gradient(circle at 35% 30%, #ffc6d0, var(--red) 55%, #9a0a24); animation-delay: 1.8s; }
+@keyframes acad-spin { 0%, 70%, 100% { transform: rotateY(0); } 85% { transform: rotateY(180deg); } }
+.acad-arcade { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; }
+.acad-cab { padding: 10px 10px 14px; border-radius: 18px 18px 10px 10px; background: linear-gradient(180deg, #2a3fb8, #0c1f7a); box-shadow: 0 0 0 3px var(--navy), 0 0 0 5px rgba(255, 255, 255, 0.75), 0 10px 0 rgba(2, 8, 40, 0.3); }
+.acad-cab-screen { display: grid; place-items: center; height: 58px; margin-bottom: 8px; border-radius: 10px; background: radial-gradient(80% 90% at 50% 40%, #1c2a6a, #05091f); box-shadow: inset 0 0 0 3px #000; overflow: hidden; }
+.acad-cab-screen strong { font: italic 900 18px/1 var(--title); text-transform: uppercase; color: var(--gold); text-shadow: 0 0 10px rgba(255, 210, 58, 0.8); animation: acad-blink 2.8s steps(2, end) infinite; }
+.acad-cab:nth-child(3n + 2) .acad-cab-screen strong { color: #7fe0ff; text-shadow: 0 0 10px rgba(127, 224, 255, 0.8); animation-delay: 0.9s; }
+.acad-cab:nth-child(3n) .acad-cab-screen strong { color: #ff9ad6; text-shadow: 0 0 10px rgba(255, 154, 214, 0.8); animation-delay: 1.7s; }
+@keyframes acad-blink { 0%, 90% { opacity: 1; } 95% { opacity: 0.4; } }
+.acad-cab p { margin: 0 4px; font-size: 14px; font-weight: 600; color: var(--mist); }
+.acad-gacha { display: grid; gap: 14px; }
+.acad-gacha-row { display: grid; grid-template-columns: 130px 1fr; gap: 14px; align-items: center; }
+.acad-gacha-name { display: grid; }
+.acad-gacha-name strong { font: italic 900 20px/1 var(--title); text-transform: uppercase; }
+.acad-gacha-name small { font-size: 12px; font-weight: 700; color: var(--mist); }
+.acad-gacha-bar { display: flex; height: 30px; border-radius: 999px; overflow: hidden; background: rgba(8, 22, 77, 0.8); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
+.acad-gacha-bar b { display: grid; place-items: center; width: 0; background: var(--c); transition: width 1s cubic-bezier(0.2, 1, 0.3, 1); overflow: hidden; }
+.acad-reveal.is-in .acad-gacha-bar b { width: var(--w); }
+.acad-gacha-bar b span { font: italic 900 13px/1 var(--title); color: var(--ink); white-space: nowrap; }
+.acad-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.acad-legend span { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--mist); }
+.acad-legend span::before { content: ''; width: 12px; height: 12px; border-radius: 3px; background: var(--c); }
+
+/* ——— 09 : boutique ——— */
+.acad-table { width: 100%; border-collapse: collapse; }
+.acad-table td { padding: 7px 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.14); color: var(--mist); font-weight: 600; font-size: 15px; }
+.acad-table td:last-child { text-align: right; white-space: nowrap; font: italic 900 16px/1.2 var(--title); color: var(--gold); }
+.acad-table tr:last-child td { border-bottom: 0; }
+.acad-table tr.is-mew td { color: #fff; }
+.acad-table tr.is-mew td:last-child { color: #ff9ad6; }
+.acad-calc { display: grid; gap: 10px; margin-bottom: 26px; padding: 20px 22px; border-radius: 22px; background: linear-gradient(180deg, #fff7c2, var(--gold) 60%, #ffb12e); box-shadow: var(--ring); color: #3a1d00; }
+.acad-calc label { font: italic 900 18px/1 var(--title); text-transform: uppercase; }
+.acad-calc select { max-width: 460px; padding: 10px 12px; border: 0; border-radius: 12px; font: 700 16px/1.2 var(--ce-text, sans-serif); color: var(--ink); background: #fff; box-shadow: 0 0 0 3px var(--navy); }
+.acad-calc-out { display: flex; align-items: center; gap: 18px; }
+.acad-calc-out p { margin: 0; font-weight: 700; font-size: 16px; }
+.acad-calc-out strong { font: italic 900 34px/1 var(--title); color: var(--red); }
+.acad-calc-stack { position: relative; flex: none; width: 66px; height: 66px; }
+.acad-calc-stack i { position: absolute; left: 4px; right: 4px; bottom: calc(var(--k) * 18px); height: 16px; border-radius: 3px; background: linear-gradient(180deg, #7fe0ff, #1f6dff); box-shadow: 0 0 0 2px var(--navy); animation: acad-drop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both; animation-delay: calc(var(--k) * 0.12s); }
+@keyframes acad-drop { from { transform: translateY(-50px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ——— 10 : chasse ——— */
+.acad-odds { padding: 22px; border-radius: 22px; background: var(--panel); box-shadow: var(--ring); }
+.acad-odds-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.acad-odds-head label { font: italic 900 18px/1 var(--title); text-transform: uppercase; }
+.acad-odds-head strong { font: italic 900 34px/1 var(--title); color: var(--gold); text-shadow: 2px 2px 0 var(--ink); }
+.acad-odds-rows { display: grid; gap: 14px; }
+.acad-odds-row { display: grid; grid-template-columns: 130px 1fr; gap: 4px 14px; align-items: center; }
+.acad-odds-rate { font: italic 900 18px/1 var(--title); }
+.acad-odds-bar { position: relative; height: 26px; border-radius: 999px; background: rgba(8, 22, 77, 0.8); overflow: hidden; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3); }
+.acad-odds-bar b { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, var(--red), #ff9a00, var(--gold)); transition: width 0.25s; }
+.acad-odds-bar em { position: relative; display: block; padding-right: 10px; text-align: right; font: italic 900 15px/26px var(--title); font-style: normal; text-shadow: 1px 1px 0 var(--ink); }
+.acad-odds-row small { grid-column: 2; font-size: 13px; font-weight: 600; color: var(--mist); }
+.acad-odds-note { margin: 16px 0 0; font-weight: 600; color: var(--mist); }
+.acad-where { display: grid; gap: 10px; }
+.acad-where-row { display: grid; grid-template-columns: 44px minmax(150px, 230px) 1fr; gap: 14px; align-items: center; padding: 10px 16px; border-radius: 16px; background: rgba(8, 22, 77, 0.65); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.16); transition: transform 0.15s, box-shadow 0.15s; }
+.acad-where-row:hover { transform: translateX(6px); box-shadow: inset 0 0 0 2px var(--gold); }
+.acad-where-ico { font-size: 26px; text-align: center; }
+.acad-where-row strong { font: italic 900 16px/1.2 var(--title); text-transform: uppercase; color: var(--gold); }
+.acad-where-row > span:last-child { color: var(--mist); font-weight: 600; }
+
+/* ——— Fin ——— */
+.acad-outro { margin-top: 20px; padding: 30px 24px 34px; border-radius: 28px; text-align: center; background: radial-gradient(70% 90% at 50% 0, rgba(255, 210, 58, 0.35), transparent 70%), var(--panel); box-shadow: var(--ring); }
+.acad-outro-mons { display: flex; justify-content: center; align-items: flex-end; gap: 10px; }
+.acad-outro-title { margin: 10px 0 6px !important; font: italic 900 clamp(34px, 5vw, 58px)/1 var(--title) !important; text-transform: uppercase; background: linear-gradient(180deg, #fffbe0 0 35%, var(--gold) 55%, #ff8a00); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-stroke: 1.5px var(--ink); filter: drop-shadow(4px 4px 0 var(--ink)); text-shadow: none !important; }
+.acad-outro p { margin: 0 auto 18px; max-width: 52ch; color: var(--mist); font-weight: 600; }
+.acad-motto { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin: 0 0 22px; padding: 0; list-style: none; }
+.acad-motto li { padding: 6px 16px; border-radius: 999px; font: italic 900 15px/1.2 var(--title); text-transform: uppercase; color: var(--ink); background: #fff; box-shadow: 0 3px 0 var(--navy); }
+.acad-motto li:last-child { color: #3a1d00; background: linear-gradient(180deg, #fff7c2, var(--gold) 60%, #ff9a00); }
+
+/* ——— Responsive ——— */
+@media (max-width: 960px) {
+  .acad-body { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .acad-nav { min-width: 0; }
+  .acad-nav { position: sticky; top: 5px; z-index: 20; padding: 8px; border-radius: 18px; }
+  .acad-nav-title { display: none; }
+  .acad-nav ol { position: relative; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .acad-nav ol::-webkit-scrollbar { display: none; }
+  .acad-nav button { white-space: nowrap; padding: 7px 12px; }
+  .acad-nav button small { display: none; }
+  .acad-loop { grid-template-columns: 1fr; }
+  .acad-loop-ring { width: min(320px, 100%); margin: 0 auto; }
+}
+@media (max-width: 700px) {
+  .acad { font-size: 16px; }
+  .acad-duo, .acad-steps, .acad-check ol, .acad-grader, .acad-arena, .acad-egg-row { grid-template-columns: 1fr; }
+  .acad-grader-card { width: 150px; margin: 0 auto; }
+  .acad-steps { gap: 34px; }
+  .acad-gacha-row, .acad-odds-row { grid-template-columns: 1fr; }
+  .acad-odds-row small { grid-column: 1; }
+  .acad-where-row { grid-template-columns: 36px 1fr; }
+  .acad-where-row > span:last-child { grid-column: 2; }
+  .acad-bar { grid-template-columns: 90px 1fr 34px; }
+  .acad-panel.is-coin { padding-left: 22px; padding-top: 88px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acad-parade-track, .acad-egg, .acad-egg span, .acad-coin, .acad-cab-screen strong, .acad-key-plus.is-gold, .acad-grader-card { animation: none !important; }
+  .acad-reveal { opacity: 1; transform: none; transition: none; }
+  .acad-title span { animation: none; }
+}
