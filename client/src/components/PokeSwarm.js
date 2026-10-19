@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createGame } from './swarmEngine';
 import { BIOMES, buildWorld } from './swarmWorld';
 import { animLength, drawPokemon, preloadSprites } from './swarmSprites';
+import { drawDemo } from './swarmDemo';
 import {
   AI_INFO, FOES, FOE_INFO, GENS, GEN_POOLS, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PARTNERS, PASSIVES, TRAIT_INFO, WEAPONS,
   buildRoster, megaOf, seededRng
@@ -90,6 +91,32 @@ const PmdSprite = ({ dex, anim = 'idle', size = 96, scale = 3, dir = 0, still = 
   return <canvas ref={ref} className="sw-pmd" style={{ width: size, height: size }} />;
 };
 
+/** Démo d'attaque sur les cartes : le partenaire utilise l'attaque sur un Pokémon sauvage. */
+const MoveDemo = ({ id, dex, foe, color }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const c = ref.current;
+    if (!c) return undefined;
+    preloadSprites([dex, foe]);
+    const dpr = window.devicePixelRatio || 1;
+    const x = c.getContext('2d');
+    let raf = 0;
+    const t0 = performance.now();
+    const loop = (now) => {
+      const w = c.clientWidth || 180; const h = c.clientHeight || 110;
+      if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+      x.setTransform(dpr, 0, 0, dpr, 0, 0);
+      x.clearRect(0, 0, w, h);
+      x.imageSmoothingEnabled = false;
+      drawDemo(x, w, h, (now - t0) / 1000, { id, dex, foe, color });
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [id, dex, foe, color]);
+  return <canvas ref={ref} className="tcg-demo" />;
+};
+
 /** Fond du menu : la vraie carte, qui défile lentement. */
 const MenuBackdrop = ({ world }) => {
   const ref = useRef(null);
@@ -165,7 +192,7 @@ const TcgCard = ({ opt, partner, formDex, index, onPick, gen, megaLevels = MEGA_
     el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg');
   };
   let art;
-  if (opt.kind === 'weapon') art = <PmdSprite dex={formDex} cycle={['quake', 'bite', 'leafblade', 'doublekick', 'machpunch', 'irontail', 'surf'].includes(opt.id) ? 'attack' : 'shoot'} size={150} scale={2.1} dir={1} foot={0.78} />;
+  if (opt.kind === 'weapon') art = <MoveDemo id={opt.id} dex={formDex} foe={FOES[(GEN_POOLS[gen] || GEN_POOLS[1]).t1[0]].dex} color={WEAPONS[opt.id].color} />;
   else if (opt.kind === 'evo') art = <PmdSprite dex={l.evoDex} anim="idle" size={118} scale={2.6} />;
   else if (opt.kind === 'mega') {
     const m = megaOf(partner, opt.id) || partner.mega;

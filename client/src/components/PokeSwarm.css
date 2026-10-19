@@ -676,3 +676,5 @@ button.sw-dex-cell:not(:disabled):hover { --fc: var(--star); }
   .sw-foe { grid-template-columns: 1fr; }
   .sw-rank { margin-left: 0; }
 }
+/* démo d'attaque dans l'illustration de la carte */
+.tcg-demo { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; image-rendering: pixelated; }
