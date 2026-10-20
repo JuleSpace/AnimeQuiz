@@ -244,7 +244,7 @@
 .sw-hp span { position: relative; display: block; text-align: center; font: 600 11px/14px var(--f-px); color: var(--moon); text-shadow: 1px 1px 0 var(--ink); }
 .sw-clock { margin-left: auto; font: 700 34px/1 var(--f-px); color: var(--moon); text-shadow: 3px 3px 0 var(--ink); }
 .sw-kills { margin-right: auto; font: 600 18px/1 var(--f-px); color: var(--star); text-shadow: 2px 2px 0 var(--ink); }
-.sw-loadout { position: absolute; left: 14px; bottom: 14px; display: flex; flex-wrap: wrap; gap: 10px; max-width: calc(100% - 330px); }
+.sw-loadout { position: absolute; left: 14px; bottom: 14px; display: flex; flex-wrap: wrap; gap: 10px; max-width: calc(100% - 410px); }
 .sw-slot {
   --fc: var(--panel-3);
   display: inline-flex;
@@ -678,3 +678,105 @@ button.sw-dex-cell:not(:disabled):hover { --fc: var(--star); }
 }
 /* démo d'attaque dans l'illustration de la carte */
 .tcg-demo { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; image-rendering: pixelated; }
+
+/* ——— Ultime ——— */
+.sw-ult {
+  --fc: var(--panel-3);
+  position: absolute;
+  right: 300px;
+  bottom: 16px;
+  width: 74px;
+  height: 74px;
+  display: grid;
+  place-content: center;
+  gap: 3px;
+  border: 0;
+  cursor: pointer;
+  color: var(--moon);
+  background: linear-gradient(0deg, color-mix(in srgb, var(--c) 60%, transparent) calc(var(--k) * 100%), rgba(12, 8, 24, 0.9) 0);
+  box-shadow: 0 -3px 0 var(--fc), 0 3px 0 var(--fc), -3px 0 0 var(--fc), 3px 0 0 var(--fc), 0 8px 0 var(--ink);
+  touch-action: none;
+}
+.sw-ult b { font: 700 15px/1 var(--f-px); text-shadow: 2px 2px 0 var(--ink); }
+.sw-ult small { font-size: 10px; font-weight: 800; color: var(--moon); text-shadow: 1px 1px 0 var(--ink), -1px -1px 0 var(--ink); }
+.sw-ult.is-ready { --fc: var(--c); background: color-mix(in srgb, var(--c) 35%, var(--panel)); animation: sw-ult 0.8s steps(2, end) infinite; }
+.sw-ult.is-ready b, .sw-ult.is-ready small { color: var(--moon); text-shadow: 2px 2px 0 var(--ink); }
+@keyframes sw-ult { 50% { --fc: var(--moon); transform: translateY(-3px); } }
+
+/* ——— Missions ——— */
+.sw-missions {
+  position: absolute; left: 14px; top: 84px; display: grid; gap: 6px; max-width: 300px;
+  padding: 8px 10px; background: rgba(12, 8, 24, 0.78);
+  box-shadow: 0 -3px 0 var(--panel-3), 0 3px 0 var(--panel-3), -3px 0 0 var(--panel-3), 3px 0 0 var(--panel-3);
+  pointer-events: none;
+}
+.sw-missions-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.sw-missions-list li { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; font-size: 13px; color: var(--moon); }
+.sw-missions-list:not(.is-compact) li { padding: 8px 10px 12px; background: var(--panel-2); box-shadow: 0 -3px 0 var(--panel-3), 0 3px 0 var(--panel-3), -3px 0 0 var(--panel-3), 3px 0 0 var(--panel-3); }
+.sw-missions-list i { font-style: normal; color: var(--star); font-size: 12px; }
+.sw-missions-list b { font: 600 13px/1 var(--f-px); color: var(--star); white-space: nowrap; }
+.sw-missions-list em { position: absolute; left: 10px; bottom: 5px; height: 3px; max-width: calc(100% - 20px); background: var(--star); }
+.sw-missions-list li.is-done { color: var(--moss); }
+.sw-missions-list li.is-done i, .sw-missions-list li.is-done b { color: var(--moss); }
+.sw-missions-list li.is-failed { color: var(--dim); text-decoration: line-through; }
+.sw-missions-list li.is-failed i, .sw-missions-list li.is-failed b { color: var(--ember); }
+.sw-end-missions { max-width: 440px; margin: 0 auto 12px; padding: 10px 14px; text-align: left; background: var(--ink); }
+
+/* ——— Mode de jeu ——— */
+.sw-mode { display: grid; gap: 6px; }
+.sw-mode-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.sw-mode-btn {
+  --fc: var(--line);
+  display: grid; gap: 2px; padding: 6px 12px; border: 0; cursor: pointer; text-align: left;
+  color: var(--moon); background: var(--panel);
+  box-shadow: 0 -3px 0 var(--fc), 0 3px 0 var(--fc), -3px 0 0 var(--fc), 3px 0 0 var(--fc), 0 6px 0 var(--ink);
+}
+.sw-mode-btn b { font: 700 15px/1.1 var(--f-px); }
+.sw-mode-btn small { font-size: 11px; font-weight: 800; color: var(--mist); }
+.sw-mode-btn.is-on { --fc: var(--star); background: var(--panel-3); }
+.sw-mode-btn.is-on b { color: var(--star); }
+.sw-mode-btn:disabled { opacity: 0.45; cursor: default; }
+
+/* ——— Autel ——— */
+.sw-card.is-altar { max-width: 860px; text-align: center; }
+.sw-blessings { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-top: 16px; }
+.sw-blessing {
+  --fc: color-mix(in srgb, var(--c) 70%, var(--panel));
+  display: grid; justify-items: center; gap: 8px; padding: 18px 14px; border: 0; cursor: pointer;
+  color: var(--moon);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 26%, var(--panel-2)), var(--panel-2) 75%);
+  box-shadow: 0 -3px 0 var(--fc), 0 3px 0 var(--fc), -3px 0 0 var(--fc), 3px 0 0 var(--fc), 0 8px 0 var(--ink);
+  animation: sw-bless-in 0.35s steps(4, end) both;
+  animation-delay: calc(var(--i) * 0.08s);
+}
+.sw-blessing:hover, .sw-blessing:focus-visible { transform: translateY(-4px); --fc: var(--c); }
+.sw-blessing i { width: 34px; height: 34px; background: var(--c); box-shadow: 0 -4px 0 var(--ink), 0 4px 0 var(--ink), -4px 0 0 var(--ink), 4px 0 0 var(--ink), inset 6px 6px 0 rgba(255, 255, 255, 0.45); }
+.sw-blessing b { font: 700 18px/1.1 var(--f-px); }
+.sw-blessing small { font-size: 13px; font-weight: 700; color: var(--mist); }
+@keyframes sw-bless-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+/* ——— Historique ——— */
+.sw-history { display: grid; gap: 12px; padding: 4px; }
+.sw-hist {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 6px 12px;
+  background: var(--panel-2);
+  box-shadow: 0 -3px 0 var(--panel-3), 0 3px 0 var(--panel-3), -3px 0 0 var(--panel-3), 3px 0 0 var(--panel-3);
+}
+.sw-hist.is-win { box-shadow: 0 -3px 0 var(--star-deep), 0 3px 0 var(--star-deep), -3px 0 0 var(--star-deep), 3px 0 0 var(--star-deep); }
+.sw-hist div { display: grid; gap: 2px; min-width: 0; }
+.sw-hist b { font: 600 15px/1.2 var(--f-px); }
+.sw-hist.is-win b { color: var(--star); }
+.sw-hist small { font-size: 12px; font-weight: 700; color: var(--mist); }
+.sw-hist .sw-hist-moves { color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sw-hist time { font: 500 13px/1 var(--f-px); color: var(--dim); }
+
+@media (max-width: 700px) {
+  .sw-ult { right: 140px; bottom: 98px; width: 64px; height: 64px; }
+  .sw-missions { top: 74px; max-width: 58vw; padding: 6px 8px; }
+  .sw-missions.is-low { top: 140px; }
+  .sw-missions-list.is-compact li { font-size: 11px; gap: 6px; }
+  .sw-missions-list.is-compact span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (min-width: 701px) and (max-width: 1180px) {
+  .sw-missions.is-low { top: 140px; }
+}

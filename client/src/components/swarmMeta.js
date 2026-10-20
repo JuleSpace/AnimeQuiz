@@ -2,7 +2,7 @@
  * Progression entre les parties du Swarm (sauvegardée dans le navigateur) :
  * Poussière Étoile, arbre de talents, régions à débloquer, défis, défi du jour et Pokédex.
  */
-import { ALL_FOE_IDS, FOES, PARTNERS, PASSIVES, WEAPONS } from './swarmData';
+import { ALL_FOE_IDS, FOES, MAX_PASSIVES, MAX_WEAPONS, PARTNERS, PASSIVES, WEAPONS } from './swarmData';
 
 export { ALL_FOE_IDS };
 
@@ -14,9 +14,11 @@ export const BRANCHES = [
   { id: 'resolve', name: 'Endurance', color: '#5fd06a' },
   { id: 'agility', name: 'Agilité', color: '#4fa8ff' },
   { id: 'fortune', name: 'Fortune', color: '#ffd23a' },
-  { id: 'mastery', name: 'Maîtrise', color: '#c77dff' }
+  { id: 'mastery', name: 'Maîtrise', color: '#c77dff', needs: [0, 2, 4] }
 ];
 export const TIER_NEEDS = [0, 5, 12];
+/** Points à investir dans la branche pour atteindre un palier (la Maîtrise a moins de rangs, donc des paliers plus bas). */
+export const tierNeed = (branch, tier) => (BRANCHES.find((b) => b.id === branch)?.needs || TIER_NEEDS)[tier];
 
 export const TALENTS = [
   { id: 'power', branch: 'force', tier: 0, name: 'Puissance', max: 10, base: 30, desc: (r) => `+${r * 2} % de dégâts` },
@@ -38,7 +40,10 @@ export const TALENTS = [
   { id: 'headstart', branch: 'mastery', tier: 0, name: 'Entraînement', max: 1, base: 300, desc: () => 'L’attaque de départ commence au niveau 2' },
   { id: 'evolve', branch: 'mastery', tier: 0, name: 'Croissance', max: 2, base: 180, desc: (r) => `Évolutions ${r * 2} niveaux plus tôt` },
   { id: 'cards', branch: 'mastery', tier: 1, name: 'Main pleine', max: 1, base: 500, desc: () => '4 cartes au choix au lieu de 3' },
-  { id: 'mega', branch: 'mastery', tier: 2, name: 'Lien Méga', max: 1, base: 450, desc: () => 'La Méga-Gemme ne demande que 2 niveaux' }
+  { id: 'mega', branch: 'mastery', tier: 2, name: 'Lien Méga', max: 1, base: 450, desc: () => 'La Méga-Gemme ne demande que 2 niveaux' },
+  { id: 'ultcharge', branch: 'force', tier: 1, name: 'Ferveur', max: 3, base: 110, desc: (r) => `Jauge d’ultime +${r * 15} % plus rapide` },
+  { id: 'slotp', branch: 'mastery', tier: 1, name: 'Sacoche', max: 1, base: 600, desc: () => '+1 emplacement d’objet (5 au lieu de 4)' },
+  { id: 'slotw', branch: 'mastery', tier: 2, name: 'Cinquième capacité', max: 1, base: 900, desc: () => '+1 emplacement d’attaque (5 au lieu de 4)' }
 ];
 
 export const REGION_COST = { 1: 0, 2: 600, 3: 1200, 4: 2000 };
@@ -75,7 +80,15 @@ export const ACHIEVEMENTS = [
   { id: 'rank3', name: 'Danger extrême', desc: 'Gagne une partie en rang 3 ou plus.', reward: 500 },
   { id: 'rank5', name: 'Légende vivante', desc: 'Gagne une partie au rang 5.', reward: 1200 },
   { id: 'ct3', name: 'Studieux', desc: 'Débloque 3 capacités ou objets.', reward: 120 },
-  { id: 'dex100', name: 'Encyclopédiste', desc: 'Pokédex : 100 espèces vaincues.', reward: 400 }
+  { id: 'dex100', name: 'Encyclopédiste', desc: 'Pokédex : 100 espèces vaincues.', reward: 400 },
+  { id: 'mission3', name: 'Carnet rempli', desc: 'Réussis les 3 missions d’une même partie.', reward: 200 },
+  { id: 'missions25', name: 'Agent de terrain', desc: 'Réussis 25 missions au total.', reward: 300 },
+  { id: 'alpha1', name: 'Chasseur d’Alpha', desc: 'Bats un Pokémon Alpha.', reward: 100 },
+  { id: 'alpha10', name: 'Dompteur d’Alpha', desc: 'Bats 10 Pokémon Alpha au total.', reward: 300 },
+  { id: 'altar3', name: 'Pèlerin', desc: 'Active les 3 autels d’une même partie.', reward: 150 },
+  { id: 'ult10', name: 'Coup de grâce ultime', desc: 'Lance 10 ultimes au total.', reward: 120 },
+  { id: 'endless12', name: 'Increvable', desc: 'Survie infinie : tiens 12 minutes.', reward: 300 },
+  { id: 'endless20', name: 'Éternel', desc: 'Survie infinie : tiens 20 minutes.', reward: 800 }
 ];
 
 /* ——— Capacités et objets à débloquer (Poussière) ——— */
@@ -145,7 +158,7 @@ export const saveMeta = (m) => {
 export const rankOf = (m, id) => m.talents[id] || 0;
 export const branchPoints = (m, branch) => TALENTS.filter((t) => t.branch === branch).reduce((a, t) => a + rankOf(m, t.id), 0);
 export const talentCost = (m, t) => Math.round(t.base * (1 + rankOf(m, t.id) * 0.35) * (1 + (m.bought || 0) * 0.006));
-export const talentLocked = (m, t) => branchPoints(m, t.branch) < TIER_NEEDS[t.tier];
+export const talentLocked = (m, t) => branchPoints(m, t.branch) < tierNeed(t.branch, t.tier);
 export const buyTalent = (m, id) => {
   const t = TALENTS.find((x) => x.id === id);
   if (!t || rankOf(m, id) >= t.max || talentLocked(m, t)) return m;
@@ -192,7 +205,10 @@ export const metaEffects = (m, mod = null, rank = 0) => {
     foeHp: (mod?.foeHp || 1) * R.foeHp,
     foeSpeed: mod?.foeSpeed || 1,
     bossTime: mod?.bossTime || 1,
-    noBerry: !!mod?.noBerry
+    noBerry: !!mod?.noBerry,
+    ultRate: 1 + r('ultcharge') * 0.15,
+    maxWeapons: MAX_WEAPONS + (r('slotw') ? 1 : 0),
+    maxPassives: MAX_PASSIVES + (r('slotp') ? 1 : 0)
   };
 };
 
@@ -201,7 +217,8 @@ export const metaEffects = (m, mod = null, rank = 0) => {
 export const recordRun = (m0, run) => {
   const m = {
     ...m0, dex: { ...m0.dex }, achievements: { ...m0.achievements }, starters: { ...m0.starters }, daily: { ...m0.daily },
-    ranks: { ...(m0.ranks || {}) }, legends: { ...(m0.legends || {}) }, biomes: { ...(m0.biomes || {}) }, unlocks: { ...(m0.unlocks || {}) }
+    ranks: { ...(m0.ranks || {}) }, legends: { ...(m0.legends || {}) }, biomes: { ...(m0.biomes || {}) }, unlocks: { ...(m0.unlocks || {}) },
+    endless: { ...(m0.endless || {}) }, alphas: { ...(m0.alphas || {}) }
   };
   const rank = run.rank || 0;
   const lines = [];
@@ -211,6 +228,11 @@ export const recordRun = (m0, run) => {
   add(`Niveau ${run.level}`, run.level * 2);
   add(`${run.bosses} boss vaincu${run.bosses > 1 ? 's' : ''}`, run.bosses * 30);
   if (run.result === 'win') add('Victoire', 200);
+  const missionsDone = (run.missions || []).filter((x) => x.done).length;
+  add(`${missionsDone} mission${missionsDone > 1 ? 's' : ''} réussie${missionsDone > 1 ? 's' : ''}`, missionsDone * 60);
+  add(`${run.alphaKills || 0} Alpha vaincu${(run.alphaKills || 0) > 1 ? 's' : ''}`, (run.alphaKills || 0) * 50);
+  if (run.endless && run.t > 540) add('Survie infinie', (run.t - 540) / 3 + (run.endlessWave || 0) * 40);
+  add('Autel de la Fortune', run.blessDust || 0);
   let base = lines.reduce((a, l) => a + l.v, 0);
   const mult = (1 + rankOf(m, 'greed') * 0.05) * (run.daily ? run.daily.mod.dust : 1) * RANK_INFO(rank).dust;
   if (mult > 1) lines.push({ label: `Bonus ×${mult.toFixed(2)}`, v: Math.round(base * (mult - 1)) });
@@ -230,6 +252,18 @@ export const recordRun = (m0, run) => {
   m.runs = (m.runs || 0) + 1;
   m.kills = (m.kills || 0) + run.kills;
   m.starters[run.partnerId] = true;
+  m.missionsDone = (m.missionsDone || 0) + missionsDone;
+  m.ults = (m.ults || 0) + (run.ults || 0);
+  Object.entries(run.alphaBy || {}).forEach(([id, n]) => { m.alphas[id] = (m.alphas[id] || 0) + n; });
+  const alphaTotal = Object.values(m.alphas).reduce((a, b) => a + b, 0);
+  let endlessRecord = false;
+  if (run.endless && run.t > (m.endless[run.gen] || 0)) { m.endless[run.gen] = run.t; endlessRecord = true; }
+  if (run.endless && run.finalDown && run.finalBoss) m.legends[run.finalBoss] = true;
+  // Historique : les 15 dernières parties
+  m.history = [{
+    at: Date.now(), partnerId: run.partnerId, gen: run.gen, result: run.result, t: Math.round(run.t), kills: run.kills, level: run.level,
+    rank, biome: run.biome, endless: !!run.endless, missions: missionsDone, finalBoss: run.finalBoss, weapons: run.weaponIds || []
+  }, ...(m0.history || [])].slice(0, 15);
   if (run.biome) m.biomes[run.biome] = true;
   // victoire : boss final ajouté aux légendes, rang suivant débloqué pour la région
   let rankUp = false;
@@ -268,11 +302,19 @@ export const recordRun = (m0, run) => {
   done('rank3', run.result === 'win' && rank >= 3);
   done('rank5', run.result === 'win' && rank >= 5);
   done('dex100', dexCount >= 100);
+  done('mission3', missionsDone >= 3);
+  done('missions25', m.missionsDone >= 25);
+  done('alpha1', alphaTotal >= 1);
+  done('alpha10', alphaTotal >= 10);
+  done('altar3', (run.altarsUsed || 0) >= 3);
+  done('ult10', m.ults >= 10);
+  done('endless12', run.endless && run.t >= 720);
+  done('endless20', run.endless && run.t >= 1200);
   const bonus = unlocked.reduce((a, x) => a + x.reward, 0);
   m.dust = (m.dust || 0) + base + bonus;
   m.totalDust = (m.totalDust || 0) + base + bonus;
   saveMeta(m);
-  return { meta: m, earned: base, bonus, lines, unlocked, dailyDone, rankUp: rankUp ? m.ranks[run.gen] : 0 };
+  return { meta: m, earned: base, bonus, lines, unlocked, dailyDone, rankUp: rankUp ? m.ranks[run.gen] : 0, endlessRecord };
 };
 
 export const foeName = (id) => FOES[id]?.name || id;

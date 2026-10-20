@@ -7,7 +7,7 @@
  * Le composant React ne fait qu'afficher l'interface.
  */
 import {
-  CAST_ANIM, FOES, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PASSIVES, RUN_SECONDS, WEAPONS, buildRoster, canHold, canLearn, megaOf, xpToNext
+  CAST_ANIM, FOES, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PASSIVES, RUN_SECONDS, WEAPONS, BLESSINGS, buildRoster, canHold, canLearn, megaOf, ultimateOf, xpToNext
 } from './swarmData';
 import { animLength, bodyHeight, dirOf, drawPokemon, hitTime, preloadSprites } from './swarmSprites';
 import { TILE, buildWorld } from './swarmWorld';
@@ -30,7 +30,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   const E = {
     dmg: 1, crit: 0, cd: 1, execute: 0, hp: 0, hpMul: 1, armor: 1, regen: 0, revive: false, speed: 1, magnet: 1, dashCd: 1, phase: 0,
     xp: 1, rerolls: 0, luck: 1, headstart: false, evolveEarly: 0, cards: 3, megaLevels: MEGA_LEVELS, spawn: 1, foeHp: 1, foeSpeed: 1,
-    bossTime: 1, noBerry: false, foeDmg: 1, bossHp: 1, unlocks: {}, roster: null, ...(effects || {})
+    bossTime: 1, noBerry: false, foeDmg: 1, bossHp: 1, unlocks: {}, roster: null,
+    maxWeapons: MAX_WEAPONS, maxPassives: MAX_PASSIVES, ultRate: 1, endless: false, ...(effects || {})
   };
   const ctx = canvas.getContext('2d');
   const keys = new Set();
@@ -58,6 +59,18 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     rerolls: 2 + E.rerolls,
     killsBy: {},
     met: {},
+    ult: 0,
+    ults: 0,
+    bless: { dmg: 1, speed: 1, dust: 0 },
+    altars: [],
+    altarsUsed: 0,
+    altarOpen: false,
+    alphaKills: 0,
+    alphaBy: {},
+    alphaAt: [150, 330],
+    missions: [],
+    endlessAt: 0,
+    endlessWave: 0,
     bossKills: 0,
     rocks: 0,
     dashes: 0,
@@ -122,6 +135,34 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   };
   if (world.biomeName) g.banner = { text: world.biomeName, life: 2.6 };
 
+  // Autels : 3 points de la carte où l'on choisit une bénédiction
+  for (let tries = 0; tries < 400 && g.altars.length < 3; tries += 1) {
+    const x = world.B + 120 + Math.random() * (world.W - 2 * world.B - 240);
+    const y = world.B + 120 + Math.random() * (world.H - 2 * world.B - 240);
+    if (!world.walkable(x, y, false) || !world.walkable(x + 30, y, false) || !world.walkable(x - 30, y, false)) continue;
+    if (Math.hypot(x - world.start.x, y - world.start.y) < 650) continue;
+    if (g.altars.some((a) => Math.hypot(a.x - x, a.y - y) < 750)) continue;
+    g.altars.push({ x, y, charge: 0, used: false, seed: Math.random() * 10 });
+  }
+
+  // Missions de la partie : 3 objectifs tirés au sort
+  {
+    const target = roster.foes[Math.floor(Math.random() * Math.min(4, roster.foes.length))];
+    const MISSIONS = [
+      { id: 'kills', label: 'Mets K.O. 500 Pokémon', goal: 500, prog: () => g.kills },
+      { id: 'foe', label: `Mets K.O. 60 ${FOES[target].name}`, goal: 60, prog: () => g.killsBy[target] || 0 },
+      { id: 'rocks', label: 'Brise 12 rochers fissurés', goal: 12, prog: () => g.rocks },
+      { id: 'lvl15', label: 'Atteins le niveau 15 avant 5:00', goal: 15, prog: () => g.player.level, fail: () => g.t > 300 },
+      { id: 'nohit', label: 'Tiens 90 s sans être touché', goal: 90, prog: () => Math.floor(Math.max(g.maxNoHit, g.t - g.lastHitT)) },
+      { id: 'altars', label: 'Active 2 autels', goal: 2, prog: () => g.altarsUsed },
+      { id: 'alpha', label: 'Bats un Pokémon Alpha', goal: 1, prog: () => g.alphaKills },
+      { id: 'ult', label: 'Lance 3 fois ton ultime', goal: 3, prog: () => g.ults },
+      { id: 'mini', label: 'Bats un boss', goal: 1, prog: () => g.bossKills }
+    ].filter((m) => m.id !== 'altars' || g.altars.length >= 2);
+    for (let i = MISSIONS.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); [MISSIONS[i], MISSIONS[j]] = [MISSIONS[j], MISSIONS[i]]; }
+    g.missions = MISSIONS.slice(0, 3).map((m) => ({ ...m, done: false, failed: false, value: 0 }));
+  }
+
   // Rochers fissurés : des cibles fixes qui lâchent des objets.
   world.breakables.forEach((b) => g.foes.push({
     id: 'rock', def: ROCK, x: b.x, y: b.y, hp: ROCK.hp, maxHp: ROCK.hp, size: ROCK.size, inert: true, flash: 0, kx: 0, ky: 0, leafCd: 0
@@ -132,8 +173,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     const mega = p.mega ? 1 : 0;
     const mk = p.megaKind;
     return {
-      dmg: (1 + 0.12 * (g.passives.protein || 0) + 0.04 * g.megaLv) * (mega ? (mk === 'x' ? 1.45 : 1.3) : 1) * E.dmg,
-      speed: (1 + 0.08 * (g.passives.carbos || 0) + mega * (mk === 'x' ? 0.22 : 0.12)) * (p.slowT > 0 ? 0.55 : 1) * E.speed,
+      dmg: (1 + 0.12 * (g.passives.protein || 0) + 0.04 * g.megaLv) * (mega ? (mk === 'x' ? 1.45 : 1.3) : 1) * E.dmg * g.bless.dmg,
+      speed: (1 + 0.08 * (g.passives.carbos || 0) + mega * (mk === 'x' ? 0.22 : 0.12)) * (p.slowT > 0 ? 0.55 : 1) * E.speed * g.bless.speed,
       magnet: 80 * (1 + 0.35 * (g.passives.magnet || 0)) * E.magnet,
       // Turbo (Poussifeu) : jusqu'à −40 % de recharge tant qu'on n'est pas touché
       cd: (1 - 0.07 * (g.passives.quickclaw || 0)) * (1 - p.turbo * 0.4) * (mega ? (mk === 'y' ? 0.75 : 0.85) : 1) * E.cd,
@@ -293,14 +334,14 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   const hurt = (f, amount, src = null, opts = {}) => {
     if (f.dead) return;
     const s = stats();
-    const crit = !f.inert && Math.random() < s.crit;
+    const crit = !f.inert && Math.random() < s.crit + (opts.critBonus || 0);
     const exec = E.execute && f.hp < f.maxHp * 0.3 ? 1 + E.execute : 1;
     const dmg = Math.max(1, Math.round(amount * s.dmg * (crit ? 1.8 : 1) * (f.trapT > 0 ? 1.25 : 1) * (f.curseT > 0 ? 1.25 : 1) * exec));
     f.hp -= dmg;
     f.flash = 0.1;
     // Recul (les boss et les lourds bougent à peine)
     if (src && !f.inert && !(f.trapT > 0)) {
-      const k = (opts.knock ?? 3) * (f.boss ? 0.06 : f.def.heavy ? 0.4 : 1) * (f.elite ? 0.5 : 1);
+      const k = (opts.knock ?? 3) * (f.boss ? 0.06 : f.def.heavy ? 0.4 : 1) * (f.elite ? 0.5 : 1) * (f.alpha ? 0.2 : 1);
       const dx = f.x - src.x; const dy = f.y - src.y;
       const d = Math.hypot(dx, dy) || 1;
       f.kx += (dx / d) * k;
@@ -340,10 +381,33 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     }
     g.kills += 1;
     g.killsBy[f.id] = (g.killsBy[f.id] || 0) + 1;
+    g.ult = Math.min(1, g.ult + (f.boss ? 0.2 : f.alpha ? 0.3 : f.elite ? 0.04 : 0.008) * E.ultRate);
     if (f.boss) g.bossKills += 1;
     g.dying.push({ dex: f.def.dex, x: f.x, y: f.y, z: f.z, dir: f.dir, t: 0, vx: f.kx * 0.6 + rand(-0.5, 0.5), vy: f.ky * 0.6, scale: f.scale, elite: f.elite });
     smoke(f.x, f.y - 8, f.boss ? 20 : 4, 'rgba(240,240,240,.85)', f.boss ? 26 : 9);
     burst(f.x, f.y - 12, f.def.color || '#ffffff', f.boss ? 30 : 5, f.boss ? 8 : 4);
+    if (f.alpha) {
+      // Pokémon Alpha vaincu : coffre et entrée « Alpha » au Pokédex
+      g.alphaKills += 1;
+      g.alphaBy[f.id] = (g.alphaBy[f.id] || 0) + 1;
+      g.pickups.push({ x: f.x, y: f.y, kind: 'chest', z: 6, vz: 6 });
+      for (let i = 0; i < 10; i += 1) dropOrb(f.x, f.y, 3);
+      g.banner = { text: `${f.def.name} Alpha est K.O. ! Un coffre est tombé`, life: 2.6 };
+      g.fx.push({ kind: 'ring', x: f.x, y: f.y, r: 10, max: 180, life: 0.6, color: '#ff4a4a' });
+      shake(0.5);
+      return;
+    }
+    if (f.boss === 'final' && E.endless) {
+      // Survie infinie : le légendaire tombe, la horde continue
+      g.slow = 0.8;
+      g.flash = { color: '#ffffff', life: 0.4, max: 0.4 };
+      shake(0.8);
+      for (let i = 0; i < 20; i += 1) dropOrb(f.x, f.y, 3);
+      g.pickups.push({ x: f.x, y: f.y, kind: 'chest', z: 6, vz: 6 });
+      g.banner = { text: `${f.def.name} est K.O. ! La horde continue…`, life: 3 };
+      g.finalDown = true;
+      return;
+    }
     if (f.boss === 'final') {
       g.slow = 1.2;
       g.flash = { color: '#ffffff', life: 0.5, max: 0.5 };
@@ -782,6 +846,103 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       if (healed) { p.hp = Math.min(p.maxHp, p.hp + healed); text(p.x + 14, p.y - 50, `+${healed}`, '#6bd17a'); }
       return v.cd;
     }
+    /* — Attaques communes (achetables ou gratuites) — */
+    if (id === 'rockslide') {
+      // Éboulement : des rochers tombent sur des ennemis au hasard
+      const pool = near(p.x, p.y, v.range).filter((f) => !f.inert && !f.dead && dist2(f, p) < v.range ** 2);
+      if (!pool.length) return 0.3;
+      cast(id, pool[0]);
+      for (let i = 0; i < v.count; i += 1) {
+        const t = pool[Math.floor(Math.random() * pool.length)];
+        const delay = 0.3 + i * 0.1;
+        g.fx.push({ kind: 'meteor', rock: true, x: t.x + rand(-16, 16), y: t.y + rand(-16, 16), life: 0.3 + delay, max: 0.3, fall: delay, done: false, dmg: v.dmg, blast: v.blast });
+      }
+      return v.cd;
+    }
+    if (id === 'aerialace') {
+      // Aéropique : une lame d'air qui rebondit d'ennemi en ennemi, jamais ratée
+      let target = nearest(p.x, p.y, v.range);
+      if (!target) return 0.2;
+      cast(id, target);
+      const hit = new Set();
+      let prev = { x: p.x, y: p.y - 18 };
+      for (let i = 0; i < v.chains && target; i += 1) {
+        hurt(target, v.dmg, prev, { knock: 2, color: '#e8f4ff' });
+        hit.add(target);
+        g.fx.push({ kind: 'airslash', x: prev.x, y: prev.y, tx: target.x, ty: target.y - 14 - target.z, life: 0.22, max: 0.22, delay: i * 0.05 });
+        prev = { x: target.x, y: target.y - 14 - target.z };
+        target = nearest(target.x, target.y, 200, hit);
+      }
+      return v.cd;
+    }
+    if (id === 'bodyslam') return 1; // Plaquage agit pendant l'esquive
+    if (id === 'blizzard') {
+      // Blizzard : des éclats de glace partent dans toutes les directions et ralentissent
+      if (!nearest(p.x, p.y, 520)) return 0.25;
+      cast(id, null);
+      for (let i = 0; i < v.count; i += 1) {
+        const a = (i / v.count) * TAU + rand(-0.12, 0.12) + g.t;
+        g.shots.push({ kind: 'shard', x: from.x, y: from.y, vx: Math.cos(a) * v.speed, vy: Math.sin(a) * v.speed, r: 7, dmg: v.dmg, life: 1.1, pierce: true, hit: new Set(), ang: a, slow: true });
+      }
+      for (let i = 0; i < 10; i += 1) particle({ kind: 'dot', x: p.x + rand(-30, 30), y: p.y - 20 + rand(-20, 20), vx: rand(-1, 1), vy: rand(-1, 0.5), life: 0.5, color: pick(['#ffffff', '#c8f2ff', '#8ad8ff']), size: 3 });
+      return v.cd;
+    }
+    if (id === 'dazzlinggleam') {
+      // Éclat Magique : un flash de lumière rose qui frappe tout autour
+      if (!nearest(p.x, p.y, v.radius)) return 0.25;
+      cast(id, null);
+      near(p.x, p.y, v.radius + 30).forEach((f) => {
+        if (f.dead || dist2(f, p) > (v.radius + f.size * 0.4) ** 2) return;
+        hurt(f, v.dmg, p, { knock: 4, color: '#ffd6f2' });
+      });
+      g.fx.push({ kind: 'ring', x: p.x, y: p.y - 10, r: 20, max: v.radius, life: 0.35, color: '#ff9ad8' });
+      g.fx.push({ kind: 'ring', x: p.x, y: p.y - 10, r: 10, max: v.radius * 0.7, life: 0.28, color: '#ffffff' });
+      for (let i = 0; i < 16; i += 1) {
+        const a = rand(0, TAU); const d = rand(20, v.radius);
+        particle({ kind: 'star', x: p.x + Math.cos(a) * d, y: p.y - 10 + Math.sin(a) * d * 0.7, vx: 0, vy: -0.6, life: rand(0.3, 0.6), color: pick(['#ffffff', '#ffc6ea', '#ff7ac8']), size: rand(3, 5) });
+      }
+      g.flash = g.flash || { color: '#ffd6f2', life: 0.05, max: 0.05 };
+      return v.cd;
+    }
+    if (id === 'nightslash') {
+      // Tranche-Nuit : griffes sombres sur les ennemis proches, critiques fréquents
+      const hit = new Set();
+      for (let i = 0; i < v.count; i += 1) { const t = nearest(p.x, p.y, v.range, hit); if (t) hit.add(t); }
+      if (!hit.size) return 0.15;
+      cast(id, [...hit][0]);
+      hit.forEach((f) => {
+        hurt(f, v.dmg, p, { knock: 3, color: '#c8a8ff', critBonus: 0.25 });
+        g.fx.push({ kind: 'claw', x: f.x, y: f.y - 16 - f.z, a: rand(-0.4, 0.4), life: 0.2, max: 0.2 });
+      });
+      return v.cd;
+    }
+    if (id === 'flashcannon') {
+      // Luminocanon : une boule d'acier qui traverse la ligne
+      const target = nearest(p.x, p.y, 700);
+      if (!target) return 0.2;
+      cast(id, target);
+      const a = Math.atan2(target.y - p.y, target.x - p.x);
+      g.shots.push({ kind: 'shadow', steel: true, x: from.x, y: from.y, vx: Math.cos(a) * v.speed, vy: Math.sin(a) * v.speed, r: v.size, dmg: v.dmg, life: 3, pierce: true, hit: new Set(), spin: 0 });
+      return v.cd;
+    }
+    if (id === 'hyperbeam') {
+      // Ultralaser : un rayon gigantesque, très lent à recharger
+      const target = nearest(p.x, p.y, v.len);
+      if (!target) return 0.3;
+      cast(id, target);
+      const a = Math.atan2(target.y - p.y, target.x - p.x);
+      const ux = Math.cos(a); const uy = Math.sin(a);
+      near(p.x + ux * v.len / 2, p.y + uy * v.len / 2, v.len / 2 + 60).forEach((f) => {
+        if (f.dead) return;
+        const rx = f.x - p.x; const ry = f.y - p.y;
+        const along = rx * ux + ry * uy; const across = Math.abs(-rx * uy + ry * ux);
+        if (along < 0 || along > v.len || across > v.w + f.size * 0.4) return;
+        hurt(f, v.dmg, p, { knock: 8, color: '#fff2c8' });
+      });
+      g.fx.push({ kind: 'icebeam', hyper: true, x: from.x, y: from.y, ang: a, len: v.len, w: v.w, life: 0.5, max: 0.5 });
+      shake(0.35);
+      return v.cd;
+    }
     if (id === 'bubble') {
       const target = nearest(p.x, p.y, 380);
       if (!target) return 0.2;
@@ -794,6 +955,157 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       return v.cd;
     }
     return 1;
+  };
+
+  /* ——— Ultime (touche R) ——— */
+  const ULT = ultimateOf(partner);
+  const onScreen = () => {
+    const { vw, vh } = view();
+    const p = g.player;
+    return g.foes.filter((f) => !f.dead && !f.inert && Math.abs(f.x - p.x) < vw / 2 + 60 && Math.abs(f.y - p.y) < vh / 2 + 60);
+  };
+  const ultimate = () => {
+    if (g.ult < 1 || g.over || g.paused) return false;
+    const p = g.player;
+    g.ult = 0;
+    g.ults += 1;
+    const power = 70 + p.level * 9;
+    const type = partner.type;
+    g.banner = { text: `${ULT.name} !`, life: 2 };
+    g.flash = { color: ULT.color, life: 0.35, max: 0.35 };
+    g.slow = 0.35;
+    shake(0.9);
+    p.inv = Math.max(p.inv, 1);
+    if (type === 'Plante') {
+      onScreen().forEach((f) => {
+        hurt(f, power, p, { knock: 1, color: '#c8f2a8' });
+        if (!f.boss) { f.slowT = 3.5; f.slowK = 0.12; }
+        g.fx.push({ kind: 'slash', x: f.x, y: f.y - 8, a: rand(0, TAU), life: 0.3, max: 0.3 });
+        for (let i = 0; i < 4; i += 1) particle({ kind: 'dot', x: f.x + rand(-10, 10), y: f.y, vx: rand(-0.5, 0.5), vy: -rand(2, 4), grav: 0.15, life: 0.6, color: pick(['#7ac74c', '#b8f070', '#ffd1ec']), size: 4 });
+      });
+      const heal = Math.round(p.maxHp * 0.25);
+      p.hp = Math.min(p.maxHp, p.hp + heal);
+      text(p.x, p.y - 60, `+${heal}`, '#6bd17a', true);
+      g.zones.push({ kind: 'bloom', x: p.x, y: p.y, r: 260, life: 6, max: 6, dps: power * 0.15, heal: 1, slow: 0.4, tick: 0, seed: Math.random() * 1000 });
+    } else if (type === 'Feu') {
+      near(p.x, p.y, 420).forEach((f) => { if (!f.dead && !f.inert && dist2(f, p) < (380 + f.size * 0.4) ** 2) hurt(f, power * 1.6, p, { knock: 16, color: '#ffcf8a' }); });
+      g.fx.push({ kind: 'blast', x: p.x, y: p.y, r: 380, life: 0.5, max: 0.5 });
+      g.fx.push({ kind: 'ring', x: p.x, y: p.y, r: 30, max: 400, life: 0.55, color: '#ff6a1f' });
+      g.fx.push({ kind: 'ring', x: p.x, y: p.y, r: 10, max: 300, life: 0.45, color: '#ffe08a' });
+      decal({ kind: 'scorch', x: p.x, y: p.y, r: 300, life: 4 });
+      for (let i = 0; i < 40; i += 1) {
+        const a = rand(0, TAU); const v = rand(3, 9);
+        particle({ kind: 'dot', x: p.x, y: p.y - 10, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.7 - 1, life: rand(0.4, 0.8), color: pick(['#fff1a8', '#ffb347', '#ff6a1f', '#d23a1a']), size: rand(3, 6) });
+      }
+    } else if (type === 'Eau') {
+      onScreen().forEach((f) => hurt(f, power * 0.9, p, { knock: 34, color: '#bfe3ff' }));
+      g.fx.push({ kind: 'wave', x: p.x, y: p.y, r: 30, max: 700, life: 0.8 });
+      g.fx.push({ kind: 'wave', x: p.x, y: p.y, r: 10, max: 480, life: 0.6 });
+      p.inv = Math.max(p.inv, 2.5);
+      for (let i = 0; i < 30; i += 1) { const a = rand(0, TAU); particle({ kind: 'dot', x: p.x, y: p.y - 10, vx: Math.cos(a) * rand(3, 8), vy: Math.sin(a) * rand(3, 8) * 0.7, life: 0.6, color: pick(['#e8f6ff', '#6390f0', '#3a7bff']), size: rand(3, 5) }); }
+    } else {
+      const { vh } = view();
+      onScreen().sort(() => Math.random() - 0.5).slice(0, 30).forEach((f) => {
+        hurt(f, power * 1.2, null, { knock: 0, color: '#fff27a' });
+        if (!f.boss) { f.slowT = 2.6; f.slowK = 0.04; }
+        const top = f.y - vh / 2 - 40;
+        g.fx.push({ kind: 'bolt', points: [{ x: f.x + rand(-30, 30), y: top }, { x: f.x + rand(-20, 20), y: (top + f.y) / 2 }, { x: f.x, y: f.y - 14 - f.z }], life: 0.3, max: 0.3, color: '#ffe14a' });
+        g.fx.push({ kind: 'spark', x: f.x, y: f.y - 14, life: 0.3, max: 0.3, r: 22 });
+      });
+    }
+    if (callbacks.onUltimate) callbacks.onUltimate(ULT.name);
+    return true;
+  };
+
+  /* ——— Autels ——— */
+  const chooseBlessing = (id) => {
+    if (!g.altarOpen) return;
+    const p = g.player;
+    const b = BLESSINGS.find((x) => x.id === id) || BLESSINGS[0];
+    g.altarOpen = false;
+    g.paused = false;
+    g.altarsUsed += 1;
+    last = performance.now();
+    if (b.id === 'might') g.bless.dmg *= 1.15;
+    if (b.id === 'wind') g.bless.speed *= 1.12;
+    if (b.id === 'life') { p.maxHp += 30; p.hp = p.maxHp; }
+    if (b.id === 'magnet') g.orbs.forEach((o) => { o.pulled = true; });
+    if (b.id === 'storm') g.ult = 1;
+    if (b.id === 'fortune') g.bless.dust += 80;
+    g.blessings = [...(g.blessings || []), b.id];
+    g.banner = { text: `${b.name} : ${b.desc}`, life: 2.6 };
+    burst(p.x, p.y - 20, b.color, 20, 5, { up: 2 });
+    g.fx.push({ kind: 'ring', x: p.x, y: p.y, r: 10, max: 140, life: 0.5, color: b.color });
+    if (b.id === 'wisdom') gainXp(p.need - p.xp + 1);
+  };
+  const altarTick = (dt) => {
+    const p = g.player;
+    g.altars.forEach((a) => {
+      if (a.used) return;
+      const inside = Math.hypot(p.x - a.x, p.y - a.y) < 62;
+      a.charge = inside ? a.charge + dt : Math.max(0, a.charge - dt * 2);
+      if (inside && Math.random() < 0.4) particle({ kind: 'star', x: a.x + rand(-40, 40), y: a.y - rand(0, 50), vx: 0, vy: -0.8, life: 0.5, color: '#d8b8ff', size: 3 });
+      if (a.charge >= 2.2) {
+        a.used = true;
+        const opts = [...BLESSINGS].sort(() => Math.random() - 0.5).slice(0, 3);
+        g.altarOpen = true;
+        g.paused = true;
+        keys.clear();
+        burst(a.x, a.y - 40, '#c08aff', 24, 5, { up: 2 });
+        if (callbacks.onAltar) callbacks.onAltar(opts);
+        else chooseBlessing(opts[0].id);
+      }
+    });
+  };
+
+  /* ——— Missions, Alphas et vagues infinies ——— */
+  let missionAcc = 0;
+  const missionTick = (dt) => {
+    missionAcc += dt;
+    if (missionAcc < 0.25) return;
+    missionAcc = 0;
+    const p = g.player;
+    g.missions.forEach((m) => {
+      if (m.done || m.failed) return;
+      m.value = Math.min(m.goal, m.prog());
+      if (m.value >= m.goal) {
+        m.done = true;
+        g.banner = { text: `Mission accomplie : ${m.label} !`, life: 2.8 };
+        p.hp = Math.min(p.maxHp, p.hp + 30);
+        g.ult = Math.min(1, g.ult + 0.25);
+        text(p.x, p.y - 64, 'Mission !', '#ffd23a', true);
+        burst(p.x, p.y - 20, '#ffd23a', 16, 4, { up: 2 });
+        gainXp(Math.round(p.need * 0.5));
+      } else if (m.fail && m.fail()) m.failed = true;
+    });
+  };
+  const alphaTick = () => {
+    if (!g.alphaAt.length || g.t < g.alphaAt[0]) return;
+    const wave = [...WAVES].reverse().find((w) => g.t >= w.from) || WAVES[0];
+    const id = pick(wave.foes);
+    const f = spawnFoe(id, { alpha: true, elite: false });
+    if (!f) return;
+    g.alphaAt.shift();
+    f.hp = Math.round(f.hp * 14); f.maxHp = f.hp;
+    f.size *= 1.5; f.scale *= 1.6;
+    f.dmg = Math.round(f.dmg * 1.8);
+    f.speed *= 0.85;
+    g.banner = { text: `Un ${f.def.name} Alpha rôde ! Bats-le pour un coffre`, life: 3 };
+    shake(0.3);
+  };
+  const endlessTick = () => {
+    if (!E.endless) return;
+    const at = 540 * E.bossTime + 150 * (g.endlessWave + 1);
+    if (g.t < at) return;
+    const ids = [...roster.minis, roster.final];
+    const id = ids[g.endlessWave % ids.length];
+    const b = spawnFoe(id);
+    if (!b) return;
+    g.endlessWave += 1;
+    b.hp = Math.round(b.hp * (1.5 + 0.8 * g.endlessWave) * E.bossHp); b.maxHp = b.hp;
+    if (b.boss === 'final') b.boss = 'mini';
+    g.banner = { text: `Vague infinie ${g.endlessWave} : ${b.def.name} revient, plus fort !`, life: 3 };
+    shake(0.6);
   };
 
   const leaves = () => {
@@ -812,7 +1124,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     if (p.dash.cd > 0 || g.paused || g.over) return;
     let dx = p.face.x; let dy = p.face.y;
     if (!p.moving) { const t = nearest(p.x, p.y, 300); if (t) { dx = p.x - t.x; dy = p.y - t.y; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d; } }
-    p.dash = { cd: DASH_CD * stats().cd * E.dashCd, t: 0.17, vx: dx * 15, vy: dy * 15 };
+    const slam = g.weapons.bodyslam ? WEAPONS.bodyslam.at(g.weapons.bodyslam.lv) : null;
+    p.dash = { cd: DASH_CD * stats().cd * E.dashCd * (slam ? 1 - slam.cdr : 1), t: 0.17, vx: dx * 15, vy: dy * 15, slam, hit: new Set() };
     p.inv = Math.max(p.inv, 0.3 + E.phase);
     g.dashes += 1;
     smoke(p.x, p.y, 6, 'rgba(255,255,255,.7)', 10);
@@ -842,9 +1155,9 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     const ownedP = Object.keys(g.passives);
     ownedW.forEach((id) => { if (g.weapons[id].lv < MAX_LEVEL) opts.push({ kind: 'weapon', id, lv: g.weapons[id].lv + 1 }); });
     // Attaques proposées : celles du même type que le starter + les capacités communes débloquées
-    if (ownedW.length < MAX_WEAPONS) Object.keys(WEAPONS).filter((id) => !g.weapons[id] && canLearn(partner, id, E.unlocks)).forEach((id) => opts.push({ kind: 'weapon', id, lv: 1 }));
+    if (ownedW.length < E.maxWeapons) Object.keys(WEAPONS).filter((id) => !g.weapons[id] && canLearn(partner, id, E.unlocks)).forEach((id) => opts.push({ kind: 'weapon', id, lv: 1 }));
     ownedP.forEach((id) => { if (g.passives[id] < MAX_LEVEL) opts.push({ kind: 'passive', id, lv: g.passives[id] + 1 }); });
-    if (ownedP.length < MAX_PASSIVES) Object.keys(PASSIVES).filter((id) => !g.passives[id] && canHold(id, E.unlocks)).forEach((id) => opts.push({ kind: 'passive', id, lv: 1 }));
+    if (ownedP.length < E.maxPassives) Object.keys(PASSIVES).filter((id) => !g.passives[id] && canHold(id, E.unlocks)).forEach((id) => opts.push({ kind: 'passive', id, lv: 1 }));
     const shuffled = opts.sort(() => Math.random() - 0.5).slice(0, E.cards);
     // Méga-Gemme : toujours proposée une fois la dernière forme atteinte
     const last = partner.evolutions[partner.evolutions.length - 1];
@@ -1266,6 +1579,11 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     if (g.slow > 0) g.slow -= rawDt;
     const dt = g.slow > 0 ? rawDt * 0.3 : rawDt;
     g.t += dt;
+    altarTick(dt);
+    if (g.paused) return;
+    missionTick(dt);
+    alphaTick();
+    endlessTick();
     const s = stats();
 
     // Déplacement
@@ -1284,6 +1602,15 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     let dx = 0; let dy = 0;
     if (p.dash.t > 0) {
       p.dash.t -= dt;
+      if (p.dash.slam) {
+        // Plaquage : la charge blesse et repousse
+        near(p.x, p.y, 70).forEach((f) => {
+          if (f.dead || p.dash.hit.has(f) || dist2(f, p) > (34 + f.size * 0.4) ** 2) return;
+          p.dash.hit.add(f);
+          hurt(f, p.dash.slam.dmg, p, { knock: 10, color: '#fff2c8' });
+          g.fx.push({ kind: 'punch', x: f.x, y: f.y - 16, life: 0.16, max: 0.16 });
+        });
+      }
       dx = p.dash.vx * 60 * dt; dy = p.dash.vy * 60 * dt;
       p.ghosts.push({ x: p.x, y: p.y, dir: p.dir, life: 0.25 });
     } else if (len > 0) {
@@ -1388,8 +1715,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       if (fx.kind !== 'meteor' || fx.done || fx.life > fx.max) return;
       fx.done = true;
       near(fx.x, fx.y, fx.blast + 30).forEach((f) => { if ((f.x - fx.x) ** 2 + (f.y - fx.y) ** 2 < (fx.blast + f.size * 0.4) ** 2) hurt(f, fx.dmg, fx, { knock: 6, color: '#d8c8ff' }); });
-      burst(fx.x, fx.y - 6, '#b49cff', 12, 5, { grav: 0.3, up: 1.5 });
-      burst(fx.x, fx.y - 6, '#ffb347', 6, 4, { grav: 0.3, up: 1.5 });
+      burst(fx.x, fx.y - 6, fx.rock ? '#8a6a44' : '#b49cff', 12, 5, { grav: 0.3, up: 1.5 });
+      burst(fx.x, fx.y - 6, fx.rock ? '#c8a878' : '#ffb347', 6, 4, { grav: 0.3, up: 1.5 });
       decal({ kind: 'crack', x: fx.x, y: fx.y, r: fx.blast * 0.7, life: 2, seed: Math.random() * 1000 });
       shake(0.08);
     });
@@ -1513,14 +1840,15 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       if (sh.kind === 'ember' && Math.random() < 0.8) particle({ kind: 'dot', x: sh.x + rand(-3, 3), y: sh.y + rand(-3, 3), vx: -sh.vx * 0.1, vy: -rand(0.3, 1), life: rand(0.2, 0.4), color: pick(sh.elec ? ['#ffffff', '#fff27a', '#ffd21a'] : sh.blue ? ['#d8f4ff', '#6ac8ff', '#2a6bff'] : ['#ffdd57', '#ff9a3c', '#ff5a1f']), size: rand(2, 4) });
       if (sh.kind === 'wisp' && Math.random() < 0.7) particle({ kind: 'dot', x: sh.x + rand(-3, 3), y: sh.y + rand(-3, 3), vx: 0, vy: -rand(0.4, 1), life: 0.35, color: pick(['#c8d0ff', '#8a9aff', '#5a6aff']), size: rand(2, 4) });
       if (sh.kind === 'water' && Math.random() < 0.6) particle({ kind: 'dot', x: sh.x, y: sh.y, vx: rand(-0.5, 0.5), vy: rand(-0.5, 0.5), life: 0.25, color: pick(['#bfe3ff', '#6390f0']), size: 2 });
-      if (sh.kind === 'shadow' && Math.random() < 0.7) particle({ kind: 'smoke', x: sh.x + rand(-sh.r, sh.r) * 0.6, y: sh.y + rand(-sh.r, sh.r) * 0.6, vx: 0, vy: -0.4, life: 0.4, color: 'rgba(90,50,140,.55)', size: sh.r * 0.6 });
+      if (sh.kind === 'shadow' && !sh.steel && Math.random() < 0.7) particle({ kind: 'smoke', x: sh.x + rand(-sh.r, sh.r) * 0.6, y: sh.y + rand(-sh.r, sh.r) * 0.6, vx: 0, vy: -0.4, life: 0.4, color: 'rgba(90,50,140,.55)', size: sh.r * 0.6 });
       const sy = sh.y + 14; // les projectiles volent à hauteur de corps
       near(sh.x, sy, sh.r + 50).some((f) => {
         if (f.dead || (f.x - sh.x) ** 2 + (f.y - sy) ** 2 > (f.size * 0.45 + sh.r) ** 2) return false;
         if (sh.pierce) {
           if (sh.hit.has(f)) return false;
           sh.hit.add(f);
-          hurt(f, sh.dmg, { x: sh.x - sh.vx, y: sy - sh.vy }, { knock: sh.kind === 'shadow' ? 5 : 3, color: sh.kind === 'water' ? '#bfe3ff' : '#b48cff' });
+          hurt(f, sh.dmg, { x: sh.x - sh.vx, y: sy - sh.vy }, { knock: sh.kind === 'shadow' ? 5 : 3, color: sh.kind === 'water' || sh.kind === 'shard' ? '#bfe3ff' : sh.steel ? '#e6ecf5' : '#b48cff' });
+          if (sh.slow && !f.inert && !f.boss) { f.slowT = 1.6; f.slowK = 0.5; }
           if (sh.kind === 'water') burst(f.x, f.y - 14, '#9fd0ff', 4, 3);
           return false;
         }
@@ -1603,6 +1931,12 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
           p.hp = Math.min(p.maxHp, p.hp + 30);
           text(p.x, p.y - 56, '+30 PV', '#6bd17a', true);
           burst(p.x, p.y - 20, '#6bd17a', 10, 3, { up: 1.5 });
+        } else if (b.kind === 'chest') {
+          p.hp = Math.min(p.maxHp, p.hp + 40);
+          g.ult = Math.min(1, g.ult + 0.35);
+          text(p.x, p.y - 60, 'Coffre Alpha !', '#ffd23a', true);
+          burst(p.x, p.y - 20, '#ffd23a', 18, 5, { up: 2 });
+          gainXp(p.need - p.xp + 1);
         } else if (b.kind === 'magnet') {
           g.orbs.forEach((o) => { o.pulled = true; });
           text(p.x, p.y - 56, 'Aimant !', '#c0c6d6', true);
@@ -1672,11 +2006,19 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     if (def.ai === 'ghost') alpha = 0.72 + Math.sin(g.t * 6 + f.phase) * 0.12;
     if (f.fade) alpha *= 1 - f.fade / 0.4;
     const jitter = f.state === 'windup' ? rand(-2, 2) : 0;
+    if (f.alpha) {
+      ctx.fillStyle = `rgba(255,40,40,${0.22 + Math.sin(g.t * 5) * 0.08})`;
+      ctx.beginPath(); ctx.ellipse(f.x, f.y, f.size * 0.9, f.size * 0.45, 0, 0, TAU); ctx.fill();
+      ctx.save();
+      ctx.filter = 'drop-shadow(0 0 4px rgba(255,40,40,.95)) saturate(1.2)';
+      if (Math.random() < 0.3) particle({ kind: 'dot', x: f.x + rand(-f.size * 0.4, f.size * 0.4), y: f.y - rand(0, f.size), vx: 0, vy: -1, life: 0.5, color: pick(['#ff4a4a', '#ff9a6a']), size: 3 });
+    }
     if (f.elite) {
       ctx.save();
       ctx.filter = 'hue-rotate(150deg) saturate(1.6) brightness(1.1)';
     }
     const ok = drawPokemon(ctx, def.dex, anim, at, f.dir, f.x + jitter, f.y, f.scale, { loop, white: f.flash > 0, alpha, z: f.z });
+    if (f.alpha) ctx.restore();
     if (f.elite) {
       ctx.restore();
       if (Math.random() < 0.15) particle({ kind: 'star', x: f.x + rand(-14, 14), y: f.y - 30 - f.z + rand(-14, 14), vx: 0, vy: -0.5, life: 0.5, color: '#fff6a0', size: 4 });
@@ -1821,6 +2163,34 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       ctx.fillRect(Math.round(gl.x + Math.sin(g.t + gl.p) * 6), Math.round(gl.y), 10, 2);
     });
 
+    // Autels
+    g.altars.forEach((a) => {
+      if (a.x < vx0 - 100 || a.x > vx0 + vw + 100 || a.y < vy0 - 120 || a.y > vy0 + vh + 100) return;
+      const pulse = 0.5 + Math.sin(g.t * 3 + a.seed) * 0.5;
+      ctx.fillStyle = a.used ? 'rgba(60,50,80,.25)' : `rgba(176,120,255,${0.14 + pulse * 0.1})`;
+      ctx.beginPath(); ctx.ellipse(a.x, a.y, 62, 38, 0, 0, TAU); ctx.fill();
+      if (!a.used) {
+        ctx.strokeStyle = 'rgba(216,184,255,.55)'; ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
+        ctx.beginPath(); ctx.ellipse(a.x, a.y, 62, 38, 0, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+        if (a.charge > 0) {
+          ctx.strokeStyle = '#ffe14a'; ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.ellipse(a.x, a.y, 66, 41, 0, -Math.PI / 2, -Math.PI / 2 + TAU * Math.min(1, a.charge / 2.2)); ctx.stroke();
+        }
+      }
+      ctx.fillStyle = '#4a4258'; ctx.fillRect(a.x - 22, a.y - 10, 44, 14);
+      ctx.fillStyle = '#6e6684'; ctx.fillRect(a.x - 18, a.y - 14, 36, 6);
+      ctx.fillStyle = '#5a5270'; ctx.fillRect(a.x - 9, a.y - 44, 18, 32);
+      ctx.fillStyle = '#7e769a'; ctx.fillRect(a.x - 9, a.y - 44, 6, 32);
+      const oy = a.y - 58 - (a.used ? 0 : pulse * 4);
+      if (!a.used) {
+        const gl = ctx.createRadialGradient(a.x, oy, 2, a.x, oy, 30);
+        gl.addColorStop(0, 'rgba(255,255,255,.9)'); gl.addColorStop(0.3, 'rgba(192,138,255,.7)'); gl.addColorStop(1, 'rgba(192,138,255,0)');
+        ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(a.x, oy, 30, 0, TAU); ctx.fill();
+      }
+      ctx.fillStyle = a.used ? '#6a6478' : '#c08aff'; ctx.fillRect(a.x - 7, oy - 7, 14, 14);
+      ctx.fillStyle = a.used ? '#8a8498' : '#f0e0ff'; ctx.fillRect(a.x - 5, oy - 5, 5, 5);
+    });
+
     // Marques au sol
     g.decals.forEach((d) => {
       const a = Math.min(1, d.life / (d.max * 0.4));
@@ -1938,6 +2308,11 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
         ctx.fillStyle = '#3d7bdb'; ctx.fillRect(b.x - 8, y - 6, 16, 14);
         ctx.fillStyle = '#9cc4ff'; ctx.fillRect(b.x - 5, y - 4, 4, 3);
         ctx.fillStyle = '#4caf50'; ctx.fillRect(b.x, y - 12, 8, 5);
+      } else if (b.kind === 'chest') {
+        ctx.fillStyle = '#5a2a10'; ctx.fillRect(b.x - 13, y - 10, 26, 20);
+        ctx.fillStyle = '#a8642a'; ctx.fillRect(b.x - 12, y - 9, 24, 18);
+        ctx.fillStyle = '#c8843a'; ctx.fillRect(b.x - 12, y - 9, 24, 6);
+        ctx.fillStyle = '#ffd23a'; ctx.fillRect(b.x - 13, y - 3, 26, 3); ctx.fillRect(b.x - 3, y - 5, 6, 7);
       } else if (b.kind === 'magnet') {
         ctx.fillStyle = '#d23a3a'; ctx.fillRect(b.x - 9, y - 8, 6, 14); ctx.fillRect(b.x - 9, y - 8, 18, 6);
         ctx.fillStyle = '#3a6ad2'; ctx.fillRect(b.x + 3, y - 8, 6, 14);
@@ -2073,11 +2448,19 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
         ctx.restore();
         return;
       }
+      if (sh.kind === 'shard') {
+        ctx.save();
+        ctx.translate(sh.x, sh.y); ctx.rotate(sh.ang);
+        ctx.fillStyle = '#8ad8ff'; ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-6, -5); ctx.lineTo(-3, 0); ctx.lineTo(-6, 5); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(-2, -1, 8, 2);
+        ctx.restore();
+        return;
+      }
       if (sh.kind === 'shadow') {
         ctx.save();
         ctx.translate(sh.x, sh.y);
         const grad = ctx.createRadialGradient(0, 0, 1, 0, 0, sh.r * 1.7);
-        grad.addColorStop(0, '#1a0d2b'); grad.addColorStop(0.55, '#4b2a7a'); grad.addColorStop(0.8, 'rgba(139,107,214,.6)'); grad.addColorStop(1, 'rgba(139,107,214,0)');
+        if (sh.steel) { grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.5, '#c8d4e6'); grad.addColorStop(0.8, 'rgba(140,160,190,.6)'); grad.addColorStop(1, 'rgba(140,160,190,0)'); } else { grad.addColorStop(0, '#1a0d2b'); grad.addColorStop(0.55, '#4b2a7a'); grad.addColorStop(0.8, 'rgba(139,107,214,.6)'); grad.addColorStop(1, 'rgba(139,107,214,0)'); }
         ctx.fillStyle = grad;
         ctx.beginPath(); ctx.arc(0, 0, sh.r * 1.7, 0, TAU); ctx.fill();
         ctx.strokeStyle = 'rgba(200,170,255,.7)'; ctx.lineWidth = 2;
@@ -2141,8 +2524,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
         ctx.save();
         ctx.translate(f.x, f.y); ctx.rotate(f.ang);
         ctx.globalAlpha = 1 - k;
-        ctx.fillStyle = f.water ? 'rgba(60,130,255,.5)' : 'rgba(140,220,255,.45)'; ctx.fillRect(0, -f.w, f.len, f.w * 2);
-        ctx.fillStyle = f.water ? '#7fc0ff' : '#c8f2ff'; ctx.fillRect(0, -f.w * 0.5, f.len, f.w);
+        ctx.fillStyle = f.hyper ? 'rgba(255,170,60,.5)' : f.water ? 'rgba(60,130,255,.5)' : 'rgba(140,220,255,.45)'; ctx.fillRect(0, -f.w, f.len, f.w * 2);
+        ctx.fillStyle = f.hyper ? '#ffe08a' : f.water ? '#7fc0ff' : '#c8f2ff'; ctx.fillRect(0, -f.w * 0.5, f.len, f.w);
         ctx.fillStyle = '#ffffff'; ctx.fillRect(0, -f.w * 0.18, f.len, f.w * 0.36);
         for (let i = 0; i < 8; i += 1) { ctx.fillStyle = '#ffffff'; ctx.fillRect((i / 8) * f.len + rand(0, 20), rand(-f.w, f.w), 4, 4); }
         ctx.restore();
@@ -2180,13 +2563,18 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
           const sx = f.x - 220 * (1 - fall); const sy = f.y - 420 * (1 - fall);
           ctx.strokeStyle = 'rgba(255,200,120,.5)'; ctx.lineWidth = 8;
           ctx.beginPath(); ctx.moveTo(sx - 40, sy - 76); ctx.lineTo(sx, sy); ctx.stroke();
-          ctx.fillStyle = '#8a6aff'; ctx.beginPath(); ctx.arc(sx, sy, 9, 0, TAU); ctx.fill();
-          ctx.fillStyle = '#fff1c8'; ctx.beginPath(); ctx.arc(sx - 2, sy - 2, 4, 0, TAU); ctx.fill();
+          if (f.rock) {
+            ctx.fillStyle = '#6e5236'; ctx.fillRect(sx - 10, sy - 9, 20, 18);
+            ctx.fillStyle = '#a07a52'; ctx.fillRect(sx - 8, sy - 9, 14, 8);
+          } else {
+            ctx.fillStyle = '#8a6aff'; ctx.beginPath(); ctx.arc(sx, sy, 9, 0, TAU); ctx.fill();
+            ctx.fillStyle = '#fff1c8'; ctx.beginPath(); ctx.arc(sx - 2, sy - 2, 4, 0, TAU); ctx.fill();
+          }
         } else {
           const kk = 1 - f.life / f.max;
           const r = f.blast * (0.4 + kk * 0.9);
           const grad = ctx.createRadialGradient(f.x, f.y, 1, f.x, f.y, r);
-          grad.addColorStop(0, `rgba(255,250,235,${1 - kk})`); grad.addColorStop(0.45, `rgba(160,120,255,${0.9 - kk})`); grad.addColorStop(1, 'rgba(90,40,200,0)');
+          grad.addColorStop(0, `rgba(255,250,235,${1 - kk})`); grad.addColorStop(0.45, f.rock ? `rgba(170,130,80,${0.9 - kk})` : `rgba(160,120,255,${0.9 - kk})`); grad.addColorStop(1, f.rock ? 'rgba(90,60,30,0)' : 'rgba(90,40,200,0)');
           ctx.fillStyle = grad;
           ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, TAU); ctx.fill();
         }
@@ -2211,6 +2599,23 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
         grad.addColorStop(0, `rgba(255,250,220,${1 - k})`); grad.addColorStop(0.4, `rgba(255,170,60,${0.9 - k})`); grad.addColorStop(1, 'rgba(255,80,0,0)');
         ctx.fillStyle = grad;
         ctx.beginPath(); ctx.arc(f.x, f.y, r, 0, TAU); ctx.fill();
+      } else if (f.kind === 'airslash') {
+        const kk = clamp((k * f.max - (f.delay || 0)) / (f.max * 0.6), 0, 1);
+        ctx.save();
+        ctx.globalAlpha = 1 - k;
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.x + (f.tx - f.x) * kk, f.y + (f.ty - f.y) * kk); ctx.stroke();
+        ctx.strokeStyle = '#9ad8ff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(f.tx, f.ty, 10 + k * 10, -0.8, 0.8); ctx.stroke();
+        ctx.restore();
+      } else if (f.kind === 'claw') {
+        ctx.save();
+        ctx.translate(f.x, f.y); ctx.rotate(f.a);
+        ctx.strokeStyle = `rgba(200,168,255,${1 - k})`; ctx.lineWidth = 3;
+        for (let i = -1; i <= 1; i += 1) { ctx.beginPath(); ctx.moveTo(-14 + i * 7, -14); ctx.lineTo(10 + i * 7, 14); ctx.stroke(); }
+        ctx.strokeStyle = `rgba(30,10,50,${1 - k})`; ctx.lineWidth = 1;
+        for (let i = -1; i <= 1; i += 1) { ctx.beginPath(); ctx.moveTo(-13 + i * 7, -12); ctx.lineTo(9 + i * 7, 12); ctx.stroke(); }
+        ctx.restore();
       } else if (f.kind === 'slash') {
         ctx.save();
         ctx.translate(f.x, f.y); ctx.rotate(f.a);
@@ -2341,6 +2746,18 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
       }
     }
 
+    g.foes.forEach((f) => {
+      if (!f.alpha || f.dead) return;
+      const bx = (f.x - vx0) * zoom; const by = (f.y - vy0) * zoom;
+      if (bx >= 0 && by >= 0 && bx <= w && by <= h) return;
+      const a = Math.atan2(by - h / 2, bx - w / 2);
+      ctx.save();
+      ctx.translate(clamp(bx, 40, w - 40), clamp(by, 90, h - 40)); ctx.rotate(a);
+      ctx.fillStyle = `rgba(255,60,60,${0.6 + Math.sin(g.t * 10) * 0.3})`;
+      ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-8, -8); ctx.lineTo(-8, 8); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    });
+
     // Mini-carte
     const mw = w < 640 ? 112 : 176;
     const mh = (mw * world.H) / world.W;
@@ -2356,6 +2773,15 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     g.foes.forEach((f, i) => { if (!f.inert && i % 2 === 0) ctx.fillRect(mx0 + f.x * ms, my0 + f.y * ms, 1.5, 1.5); });
     ctx.fillStyle = '#b98c62';
     g.foes.forEach((f) => { if (f.inert) ctx.fillRect(mx0 + f.x * ms - 1, my0 + f.y * ms - 1, 3, 3); });
+    g.altars.forEach((a) => {
+      ctx.fillStyle = a.used ? '#6a6478' : '#c08aff';
+      ctx.fillRect(mx0 + a.x * ms - 3, my0 + a.y * ms - 3, 6, 6);
+    });
+    g.foes.forEach((f) => {
+      if (!f.alpha || f.dead) return;
+      ctx.fillStyle = '#ff3a3a';
+      ctx.beginPath(); ctx.arc(mx0 + f.x * ms, my0 + f.y * ms, 3.5, 0, TAU); ctx.fill();
+    });
     if (g.boss) {
       ctx.fillStyle = '#ffd23a';
       ctx.beginPath(); ctx.arc(mx0 + g.boss.x * ms, my0 + g.boss.y * ms, 4 + Math.sin(g.t * 6), 0, TAU); ctx.fill();
@@ -2395,6 +2821,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     }
     if (down && (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight')) { e.preventDefault(); dash(); }
     if (down && (e.code === 'Escape' || e.code === 'KeyP') && callbacks.onPauseKey) callbacks.onPauseKey();
+    if (down && e.code === 'KeyR' && !e.repeat) ultimate();
   };
   const kd = onKey(true);
   const ku = onKey(false);
@@ -2424,7 +2851,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
   canvas.addEventListener('pointercancel', pu);
 
   // Accès de test (console) : window.__swarm
-  if (typeof window !== 'undefined' && window.__SWARM_DEBUG) window.__swarm = { g, world, dash, keys, choose, gainXp };
+  if (typeof window !== 'undefined' && window.__SWARM_DEBUG) window.__swarm = { g, world, dash, keys, choose, gainXp, ultimate, chooseBlessing };
 
   let raf = 0;
   let last = performance.now();
@@ -2471,7 +2898,21 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     banner: g.banner?.text || null,
     dash: 1 - g.player.dash.cd / DASH_CD,
     rerolls: g.rerolls,
-    remaining: Math.max(0, RUN_SECONDS - g.t)
+    remaining: Math.max(0, RUN_SECONDS - g.t),
+    ult: g.ult,
+    ultName: ULT.name,
+    ultColor: ULT.color,
+    ults: g.ults,
+    missions: g.missions.map((m) => ({ id: m.id, label: m.label, goal: m.goal, value: m.value, done: m.done, failed: m.failed })),
+    altarsUsed: g.altarsUsed,
+    blessings: g.blessings || [],
+    blessDust: g.bless.dust,
+    alphaKills: g.alphaKills,
+    alphaBy: g.alphaBy,
+    endless: E.endless,
+    endlessWave: g.endlessWave,
+    finalDown: !!g.finalDown,
+    slots: { weapons: E.maxWeapons, passives: E.maxPassives }
   });
 
   return {
@@ -2479,8 +2920,10 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     choose,
     reroll,
     dash,
+    ultimate,
+    chooseBlessing,
     setPaused(v) {
-      if (g.pendingLevels && !v) return;
+      if ((g.pendingLevels || g.altarOpen) && !v) return;
       g.paused = v;
       if (!v) last = performance.now();
     },

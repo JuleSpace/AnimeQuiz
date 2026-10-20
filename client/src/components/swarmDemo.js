@@ -26,14 +26,16 @@ const KIND = {
   flametrail: 'trail',
   hurricane: 'tornado', whirlpool: 'tornado',
   gigadrain: 'drain',
-  leafblade: 'boomerang'
+  leafblade: 'boomerang',
+  rockslide: 'meteor', aerialace: 'bolt', bodyslam: 'melee', blizzard: 'ring', dazzlinggleam: 'ring',
+  nightslash: 'melee', flashcannon: 'proj', hyperbeam: 'beam'
 };
-export const demoAnim = (id) => (['quake', 'bite', 'irontail', 'machpunch', 'doublekick', 'leafblade', 'surf', 'spark'].includes(id) ? 'attack' : 'shoot');
+export const demoAnim = (id) => (['quake', 'bite', 'irontail', 'machpunch', 'doublekick', 'leafblade', 'surf', 'spark', 'bodyslam', 'nightslash', 'blizzard', 'dazzlinggleam'].includes(id) ? 'attack' : 'shoot');
 
 const PAL = {
   ember: ['#fffbe0', '#ffd34a', '#ff6a1f'], electroball: ['#ffffff', '#fff27a', '#f7c61c'], shadow: ['#1a0d2b', '#4b2a7a', '#8b6bd6'],
   watergun: ['#e8f4ff', '#7fb4ff', '#3a7bff'], bubble: ['#ffffff', '#bfe3ff', '#7fd0ff'], willowisp: ['#ffffff', '#b8c4ff', '#5a6aff'],
-  swift: ['#ffffff', '#fff3a0', '#c9a400']
+  swift: ['#ffffff', '#fff3a0', '#c9a400'], flashcannon: ['#ffffff', '#d8e2f0', '#8a95a8']
 };
 
 const ball = (ctx, x, y, r, pal) => {
