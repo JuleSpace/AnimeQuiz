@@ -9,9 +9,10 @@ import {
 } from './swarmData';
 import {
   ACHIEVEMENTS, ALL_FOE_IDS, BRANCHES, MAX_RANK, REGION_COST, TALENTS, TIER_NEEDS, UNLOCKABLES, branchPoints, buyTalent, buyUnlock,
-  dailyChallenge, loadMeta, metaEffects, rankLabel, rankOf, recordRun, refundAll, talentCost, talentLocked, tierNeed, unlockRegion
+  dailyChallenge, loadMeta, metaEffects, saveMeta, rankLabel, rankOf, recordRun, refundAll, talentCost, talentLocked, tierNeed, unlockRegion
 } from './swarmMeta';
 import { musicPlayer } from './pokeArenaMusic';
+import { AccountChip, Leaderboard, postRun, useCloudSync } from './account';
 import './PokeSwarm.css';
 
 export const SWARM_HASH = '#swarm';
@@ -442,7 +443,7 @@ const MetaPanel = ({ panel, meta, setMeta, onClose }) => {
       <div className="sw-card is-panel">
         <div className="sw-panel-head">
           <div className="sw-tabs" role="tablist">
-            {[['talents', 'Talents'], ['moves', `Capacités ${UNLOCKABLES.filter((u) => meta.unlocks?.[u.id]).length}/${UNLOCKABLES.length}`], ['achievements', `Défis ${Object.keys(meta.achievements).length}/${ACHIEVEMENTS.length}`], ['dex', `Pokédex ${seen}/${ALL_FOE_IDS.length}`], ['history', 'Historique']].map(([id, label]) => (
+            {[['talents', 'Talents'], ['moves', `Capacités ${UNLOCKABLES.filter((u) => meta.unlocks?.[u.id]).length}/${UNLOCKABLES.length}`], ['achievements', `Défis ${Object.keys(meta.achievements).length}/${ACHIEVEMENTS.length}`], ['dex', `Pokédex ${seen}/${ALL_FOE_IDS.length}`], ['history', 'Historique'], ['board', 'Classement']].map(([id, label]) => (
               <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>{label}</button>
             ))}
           </div>
@@ -529,6 +530,7 @@ const MetaPanel = ({ panel, meta, setMeta, onClose }) => {
         )}
 
         {tab === 'history' && <History meta={meta} />}
+        {tab === 'board' && <Leaderboard game="swarm" gens={GENS.map((g) => ({ id: g.id, name: g.name }))} partnerName={(id) => PARTNERS.find((p) => p.id === id)?.name || id} />}
         {tab === 'dex' && foe && <FoeSheet id={foe} meta={meta} onClose={() => setFoe(null)} />}
         {tab === 'dex' && !foe && (
           <div className="sw-dex">
@@ -591,6 +593,8 @@ const PokeSwarm = ({ onClose }) => {
   const [meta, setMetaState] = useState(loadMeta);
   const metaRef = useRef(meta);
   const setMeta = (m) => { metaRef.current = m; setMetaState(m); };
+  // Compte Discord : la progression suit le joueur d'un appareil à l'autre
+  useCloudSync('swarm', meta, (remote) => { saveMeta({ ...remote }); setMeta(loadMeta()); }, (m) => m?.totalDust || 0);
   const [panel, setPanel] = useState(null);
   const dailyRef = useRef(null);
   const daily = dailyChallenge();
@@ -653,6 +657,10 @@ const PokeSwarm = ({ onClose }) => {
         });
         setMeta(rec.meta);
         setEnd({ result, ...snap, reward: rec });
+        postRun('swarm', {
+          gen, mode: dailyRef.current ? 'daily' : snap.endless ? 'endless' : 'classic', partnerId: partner.id, form: snap.form.name, formDex: String(snap.form.dex),
+          result, t: snap.t, kills: snap.kills, level: snap.level, rank: runRef.current.rank, missions: (snap.missions || []).filter((m) => m.done).length
+        });
         setBest((prev) => {
           const mine = prev[partner.id] || {};
           const better = result === 'win'
@@ -733,6 +741,7 @@ const PokeSwarm = ({ onClose }) => {
             <p>Survis aux hordes sauvages pendant 9 minutes, puis bats le Pokémon légendaire de la région. Ennemis, boss et décor changent à chaque partie. Tes attaques partent toutes seules : à toi de bouger, de remplir tes 3 missions, de trouver les autels et de déchaîner ton ultime au bon moment.</p>
           </div>
           <div className="sw-head-side">
+            <AccountChip returnHash="#swarm" compact />
             <span className="sw-dust" title="Poussière Étoile : gagnée à chaque partie">✦ {meta.dust.toLocaleString('fr-FR')}</span>
             <button type="button" className="sw-btn is-ghost" onClick={onClose}>Quitter</button>
           </div>
@@ -749,6 +758,9 @@ const PokeSwarm = ({ onClose }) => {
           </button>
           <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('dex')}>
             Pokédex <small>{ALL_FOE_IDS.filter((id) => meta.dex[id] > 0).length}/{ALL_FOE_IDS.length}</small>
+          </button>
+          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('board')}>
+            Classement <small>en ligne</small>
           </button>
           <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('history')}>
             Historique <small>{(meta.history || []).length}</small>

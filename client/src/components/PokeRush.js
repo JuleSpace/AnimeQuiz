@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRush } from './rushEngine';
 import {
   FINAL_AT, FOE_TYPES, MAX_ALLIES, RUSH_ITEMS, RUSH_MOVES, RUSH_STARTERS, TYPE_COLORS, UPGRADES, buyRushThing, buyUpgrade,
-  loadRush, recordRush, rushEffects, rushPool, starterOpen, upCost, upRank, weaknessesOf
+  loadRush, recordRush, saveRush, rushEffects, rushPool, starterOpen, upCost, upRank, weaknessesOf
 } from './rushData';
 import { FOES, WEAPONS, ultimateOf } from './swarmData';
 import { Missions, MusicControls, PmdSprite, RunRecap, TcgCard } from './PokeSwarm';
 import { musicPlayer } from './pokeArenaMusic';
+import { AccountChip, Leaderboard, postRun, useCloudSync } from './account';
 import './PokeSwarm.css';
 import './PokeRush.css';
 
@@ -31,7 +32,7 @@ const RushPanel = ({ tab, setTab, meta, setMeta, onClose }) => {
       <div className="sw-card is-panel">
         <div className="sw-panel-head">
           <div className="sw-tabs" role="tablist">
-            {[['shop', 'Centre Pokémon'], ['dex', `Pokédex ${caughtN}/${dexIds.length}`], ['history', 'Historique']].map(([id, label]) => (
+            {[['shop', 'Centre Pokémon'], ['dex', `Pokédex ${caughtN}/${dexIds.length}`], ['history', 'Historique'], ['board', 'Classement']].map(([id, label]) => (
               <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>{label}</button>
             ))}
           </div>
@@ -99,6 +100,7 @@ const RushPanel = ({ tab, setTab, meta, setMeta, onClose }) => {
               </div>
             </>
           )}
+          {tab === 'board' && <Leaderboard game="rush" partnerName={(id) => RUSH_STARTERS.find((p) => p.id === id)?.name || id} />}
           {tab === 'history' && (
             (meta.history || []).length ? (
               <div className="sw-history">
@@ -129,6 +131,7 @@ const PokeRush = ({ onClose }) => {
   const [meta, setMetaState] = useState(loadRush);
   const metaRef = useRef(meta);
   const setMeta = (m) => { metaRef.current = m; setMetaState(m); };
+  useCloudSync('rush', meta, (remote) => { saveRush({ ...remote }); setMeta(loadRush()); }, (m) => m?.total || 0);
   const [partnerId, setPartnerId] = useState(RUSH_STARTERS[0].id);
   const [hud, setHud] = useState(null);
   const [levelUp, setLevelUp] = useState(null);
@@ -165,6 +168,10 @@ const PokeRush = ({ onClose }) => {
         });
         setMeta(rec.meta);
         setEnd({ result, ...snap, reward: rec });
+        postRun('rush', {
+          gen: 1, mode: 'classic', partnerId: partner.id, form: snap.form.name, formDex: String(snap.form.dex), result, t: snap.t, kills: snap.kills,
+          level: snap.level, caught: snap.caught.length, missions: snap.missions.filter((m) => m.done).length
+        });
       },
       onPauseKey: () => setPaused((v) => !v)
     }, rushEffects(metaRef.current));
@@ -201,6 +208,7 @@ const PokeRush = ({ onClose }) => {
             <p>Une île de Kanto en 3D, envahie de Pokémon sauvages. Ton partenaire attaque tout seul : cours, saute, esquive, capture des sauvages qui se battront à tes côtés, et rejoins l’arène à 8:00 pour affronter le légendaire.</p>
           </div>
           <div className="sw-head-side">
+            <AccountChip returnHash="#pokerush" compact />
             <span className="sw-dust pr-pl" title="Points de Ligue : propres au Poké Rush">{meta.pl.toLocaleString('fr-FR')} PL</span>
             <button type="button" className="sw-btn is-ghost" onClick={onClose}>Quitter</button>
           </div>
@@ -208,6 +216,7 @@ const PokeRush = ({ onClose }) => {
         <div className="sw-metabar">
           <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('shop')}>Centre Pokémon <small>améliorations</small></button>
           <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('dex')}>Pokédex <small>{Object.keys(meta.caught).length} capturés</small></button>
+          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('board')}>Classement <small>en ligne</small></button>
           <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('history')}>Historique <small>{(meta.history || []).length}</small></button>
         </div>
         <div className="sw-pool">

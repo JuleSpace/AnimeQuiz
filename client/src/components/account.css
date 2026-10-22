@@ -1,0 +1,41 @@
+/* Compte Discord : pastille, menu et classements (s'adapte aux variables de chaque jeu quand elles existent). */
+.acc-chip-wrap { position: relative; display: inline-flex; }
+.acc-chip {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 4px 14px 4px 4px;
+  border: 0; border-radius: 999px; cursor: pointer;
+  font: 700 15px/1 'Saira Semi Condensed', 'Nunito', sans-serif; color: #fff; background: rgba(8, 16, 50, 0.8);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+.acc-chip img { width: 30px; height: 30px; border-radius: 50%; }
+.acc-chip.is-login { padding: 8px 16px; color: #fff; background: #5865f2; box-shadow: 0 4px 0 #3c45a5; }
+.acc-chip.is-login:hover { background: #6b77ff; }
+.acc-chip span { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; display: grid; gap: 8px; width: 220px; padding: 12px;
+  border-radius: 12px; color: #fff; background: #0e1530; box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 16px 30px rgba(0, 0, 0, 0.45);
+  font: 600 13px/1.35 'Saira Semi Condensed', 'Nunito', sans-serif; text-align: left;
+}
+.acc-menu button { border: 0; border-radius: 8px; padding: 8px 10px; cursor: pointer; font: 700 14px/1 inherit; color: #fff; background: #ff2347; }
+
+.acc-board { display: grid; gap: 12px; }
+.acc-note { margin: 0; color: var(--mist, #b8c6ee); font-weight: 700; }
+.acc-link { border: 0; padding: 0; background: none; cursor: pointer; font: inherit; color: var(--star, #ffd23a); text-decoration: underline; }
+.acc-board-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.acc-board-tools select { padding: 6px 10px; font: 600 15px/1 inherit; color: var(--moon, #fff); background: var(--panel-2, #1f2a55); border: 2px solid var(--line, #4a5a9a); }
+.acc-board-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.acc-board-tabs button { border: 0; padding: 6px 12px; cursor: pointer; font: 600 14px/1.2 var(--f-px, inherit); color: var(--moon, #fff); background: var(--panel-2, #1f2a55); box-shadow: 0 0 0 2px var(--line, #4a5a9a); }
+.acc-board-tabs button.is-on { color: var(--ink, #0c0818); background: var(--star, #ffd23a); box-shadow: 0 0 0 2px var(--star-deep, #b9780f); }
+.acc-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.acc-rows li {
+  display: grid; grid-template-columns: 34px 40px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 12px;
+  background: var(--panel-2, #1f2a55); box-shadow: 0 0 0 2px var(--panel-3, #2f3d75);
+}
+.acc-rows li.is-top { box-shadow: 0 0 0 2px var(--star-deep, #b9780f); }
+.acc-rows img, .acc-rows i { width: 40px; height: 40px; border-radius: 50%; background: var(--panel-3, #2f3d75); }
+.acc-pos { font: 700 20px/1 var(--f-px, inherit); text-align: center; color: var(--mist, #b8c6ee); }
+.acc-rows .is-1 .acc-pos { color: #ffd447; } .acc-rows .is-2 .acc-pos { color: #d8dfee; } .acc-rows .is-3 .acc-pos { color: #e09a5a; }
+.acc-who { display: grid; min-width: 0; }
+.acc-who strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 16px/1.2 var(--f-px, inherit); }
+.acc-who small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--mist, #b8c6ee); font-weight: 700; }
+.acc-score { font: 700 18px/1 var(--f-px, inherit); color: var(--star, #ffd23a); white-space: nowrap; }
+.acc-chip.is-login span { max-width: none; }

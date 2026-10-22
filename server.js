@@ -9,6 +9,7 @@ const multer = require('multer');
 const { attachQuiz } = require('./quiz');
 const { attachArena } = require('./arena');
 const { attachAdmins, ensureSuperadmin, requireAdmin, requireSuper, canEditQuiz } = require('./admins');
+const { attachAccounts } = require('./accounts');
 require('dotenv').config();
 
 const app = express();
@@ -472,6 +473,7 @@ app.get('/api/clips/:id', async (req, res) => {
 });
 
 attachAdmins(app);
+attachAccounts(app);
 attachQuiz(app, io);
 attachArena(io);
 

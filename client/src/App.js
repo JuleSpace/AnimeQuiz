@@ -15,6 +15,7 @@ import SonicBonk, { BONK_HASH } from './components/SonicBonk';
 import PokeRush, { RUSH_HASH } from './components/PokeRush';
 import Portfolio, { PORTFOLIO_HASH } from './components/Portfolio';
 import GameShelf, { GAMES_HASH } from './components/GameShelf';
+import { AccountChip, useAccount } from './components/account';
 import { readAdminSession, storeAdminSession, clearAdminSession } from './utils/adminSession';
 import './index.css';
 
@@ -61,6 +62,11 @@ function clearSeat() {
 function App() {
   const [currentView, setCurrentView] = useState(() => secretViewFromHash() || 'login');
   const [username, setUsername] = useState('');
+  const account = useAccount();
+  // Connecté avec Discord : le pseudo est pré-rempli
+  useEffect(() => {
+    if (account.user && !username) setUsername(account.user.name);
+  }, [account.user]); // eslint-disable-line react-hooks/exhaustive-deps
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [lobby, setLobby] = useState(null);
@@ -717,6 +723,8 @@ function App() {
               <p style={{ textAlign: 'center', marginBottom: '15px', fontSize: '1.2rem', opacity: 0.9 }}>
                 Fais toi bully par tes potes avec un maximum de plaisir toujours :)
               </p>
+
+              <div className="login-account"><AccountChip returnHash="" /></div>
 
               <div className="login-games">
                 <button
