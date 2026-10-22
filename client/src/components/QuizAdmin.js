@@ -21,9 +21,10 @@ const TYPE_OPTIONS = [
   { id: 'layout', label: 'Frise / schéma' }
 ];
 
-const emptyDraft = () => ({
+const emptyDraft = (category = '') => ({
   type: 'qcm',
   prompt: '',
+  category,
   imageUrl: '',
   imageSize: 100,
   videoUrl: '',
@@ -54,6 +55,7 @@ const emptyDraft = () => ({
 const questionToApi = (draft) => ({
   type: draft.type,
   prompt: draft.prompt,
+  category: draft.category || '',
   imageUrl: draft.imageUrl,
   imageSize: draft.imageSize,
   videoUrl: draft.type === 'music' || draft.type === 'lyrics' || draft.type === 'whos' || draft.type === 'gaps'
@@ -107,6 +109,7 @@ const questionToApi = (draft) => ({
 const questionFromApi = (question) => ({
   type: question.type,
   prompt: question.prompt || '',
+  category: question.category || '',
   imageUrl: question.imageUrl || '',
   imageSize: question.imageSize || 100,
   videoUrl: question.videoUrl || '',
@@ -167,7 +170,61 @@ const stampQuestions = (quiz) => {
 
 const errorMessage = (error, fallback) => error.response?.data?.error || fallback;
 
-const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }) => {
+const CATEGORY_COLORS = ['#1f6dff', '#ff2347', '#3ddc84', '#ffb020', '#a855f7', '#14b8c4', '#ff6ad5', '#8a6a44'];
+const newCategoryId = () => `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+const SHUFFLE_MODES = [
+  { id: 'none', label: 'Dans l’ordre', hint: 'Les questions passent dans l’ordre de la liste.' },
+  { id: 'all', label: 'Tout mélanger', hint: 'Toutes les questions sont tirées au hasard.' },
+  { id: 'categories', label: 'Par catégorie', hint: 'Une catégorie entière, puis une autre : l’ordre des catégories est tiré au hasard.' }
+];
+const quizShuffleMode = (quiz) => quiz.shuffleMode || (quiz.shuffle ? 'all' : 'none');
+
+/** Gestion des catégories du quiz : nom, couleur, nombre de questions. */
+const CategoryManager = ({ quiz, setQuiz }) => {
+  const categories = quiz.categories || [];
+  const count = (id) => (quiz.questions || []).filter((question) => question.category === id).length;
+  const update = (id, patch) => setQuiz({ ...quiz, categories: categories.map((cat) => (cat.id === id ? { ...cat, ...patch } : cat)) });
+  const remove = (id) => setQuiz({
+    ...quiz,
+    categories: categories.filter((cat) => cat.id !== id),
+    questions: (quiz.questions || []).map((question) => (question.category === id ? { ...question, category: '' } : question))
+  });
+  const add = () => setQuiz({
+    ...quiz,
+    categories: [...categories, { id: newCategoryId(), name: `Catégorie ${categories.length + 1}`, color: CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length] }]
+  });
+  // Range la liste des questions catégorie par catégorie (dans l'ordre des catégories)
+  const group = () => {
+    const order = new Map(categories.map((cat, i) => [cat.id, i]));
+    const rank = (question) => (order.has(question.category) ? order.get(question.category) : categories.length);
+    const questions = (quiz.questions || []).map((question, i) => ({ question, i }))
+      .sort((a, b) => rank(a.question) - rank(b.question) || a.i - b.i)
+      .map(({ question }) => question);
+    setQuiz({ ...quiz, questions });
+  };
+  return (
+    <div className="adm-cats">
+      <div className="adm-cats-head">
+        <span>Catégories</span>
+        <small>Range tes questions par thème, puis choisis « Par catégorie » pour jouer un thème entier avant de passer au suivant.</small>
+      </div>
+      {categories.map((cat) => (
+        <div key={cat.id} className="adm-cat" style={{ '--c': cat.color }}>
+          <input type="color" value={cat.color} aria-label={`Couleur de ${cat.name}`} onChange={(event) => update(cat.id, { color: event.target.value })} />
+          <input className="input" value={cat.name} maxLength={40} aria-label="Nom de la catégorie" onChange={(event) => update(cat.id, { name: event.target.value })} />
+          <small>{count(cat.id)} question{count(cat.id) > 1 ? 's' : ''}</small>
+          <button type="button" className="btn btn-danger adm-mini adm-icon-only" aria-label={`Supprimer ${cat.name}`} onClick={() => remove(cat.id)}><Icon name="trash" bare /></button>
+        </div>
+      ))}
+      <div className="adm-cats-actions">
+        <button type="button" className="btn btn-quiet adm-mini" onClick={add}><Icon name="plus" />Ajouter une catégorie</button>
+        {categories.length > 0 && <button type="button" className="btn btn-quiet adm-mini" onClick={group}>Regrouper la liste par catégorie</button>}
+      </div>
+    </div>
+  );
+};
+
+const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy, categories = [] }) => {
   const toggleCorrect = (index) => {
     setDraft((current) => {
       if (!current.multiple) return { ...current, correctIndexes: [index] };
@@ -182,6 +239,24 @@ const QuestionForm = ({ draft, setDraft, onSubmit, onCancel, submitLabel, busy }
   return (
     <div className="adm-block adm-form">
       <h4 className="adm-block-title"><Icon name="pencil" bare />{submitLabel}</h4>
+      {categories.length > 0 && (
+        <div className="adm-cat-pick" role="radiogroup" aria-label="Catégorie">
+          <span>Catégorie</span>
+          {[{ id: '', name: 'Aucune', color: '#6b84c9' }, ...categories].map((cat) => (
+            <button
+              key={cat.id || 'none'}
+              type="button"
+              role="radio"
+              aria-checked={(draft.category || '') === cat.id}
+              className={`adm-cat-chip${(draft.category || '') === cat.id ? ' is-on' : ''}`}
+              style={{ '--c': cat.color }}
+              onClick={() => setDraft({ ...draft, category: cat.id })}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="adm-types" role="radiogroup" aria-label="Type de question">
         {TYPE_OPTIONS.map((option) => (
           <button
@@ -782,7 +857,10 @@ const QuizAdmin = ({ admin }) => {
       const response = await axios.put(`/api/quizzes/${next._id}`, {
         name: next.name,
         description: next.description,
-        shuffle: Boolean(next.shuffle),
+        shuffle: quizShuffleMode(next) === 'all',
+        shuffleMode: quizShuffleMode(next),
+        shuffleInside: Boolean(next.shuffleInside),
+        categories: next.categories || [],
         isPrivate: Boolean(next.isPrivate),
         questions: (next.questions || []).map(({ clientKey, ...question }) => question)
       });
@@ -1062,14 +1140,37 @@ const QuizAdmin = ({ admin }) => {
             />
           </label>
         </div>
-      <label className="adm-check">
-        <input
-          type="checkbox"
-          checked={Boolean(quiz.shuffle)}
-          onChange={(event) => setQuiz({ ...quiz, shuffle: event.target.checked })}
-        />
-        Mélanger les questions à chaque partie
-      </label>
+      <div className="adm-order">
+        <span className="adm-order-label">Ordre des questions à chaque partie</span>
+        <div className="adm-order-modes" role="radiogroup" aria-label="Ordre des questions">
+          {SHUFFLE_MODES.map((mode) => (
+            <button
+              key={mode.id}
+              type="button"
+              role="radio"
+              aria-checked={quizShuffleMode(quiz) === mode.id}
+              className={`adm-type${quizShuffleMode(quiz) === mode.id ? ' is-on' : ''}`}
+              disabled={mode.id === 'categories' && !(quiz.categories || []).length}
+              title={mode.id === 'categories' && !(quiz.categories || []).length ? 'Crée d’abord une catégorie' : mode.hint}
+              onClick={() => setQuiz({ ...quiz, shuffleMode: mode.id, shuffle: mode.id === 'all' })}
+            >
+              {mode.label}
+            </button>
+          ))}
+        </div>
+        <small className="adm-note">{SHUFFLE_MODES.find((mode) => mode.id === quizShuffleMode(quiz))?.hint}</small>
+        {quizShuffleMode(quiz) === 'categories' && (
+          <label className="adm-check">
+            <input
+              type="checkbox"
+              checked={Boolean(quiz.shuffleInside)}
+              onChange={(event) => setQuiz({ ...quiz, shuffleInside: event.target.checked })}
+            />
+            Mélanger aussi les questions à l’intérieur de chaque catégorie
+          </label>
+        )}
+      </div>
+      <CategoryManager quiz={quiz} setQuiz={setQuiz} />
       <label className="adm-check">
         <input
           type="checkbox"
@@ -1106,7 +1207,13 @@ const QuizAdmin = ({ admin }) => {
             <span className="drag-handle" aria-hidden="true">⋮⋮</span>
             <span className="adm-qnum">{index + 1}</span>
             <div className="adm-qtext">
-              <span className="adm-qtype">{typeLabel(question.type)}</span>
+              <span className="adm-qtags">
+                <span className="adm-qtype">{typeLabel(question.type)}</span>
+                {(() => {
+                  const cat = (quiz.categories || []).find((c) => c.id === question.category);
+                  return cat ? <span className="adm-qcat" style={{ '--c': cat.color }}>{cat.name}</span> : null;
+                })()}
+              </span>
               <div className="adm-qprompt">{question.prompt || question.musicUrl || 'Sans énoncé'}</div>
               <div className="adm-qmeta">
                 {question.points || 1} pt · {question.timeLimit ? `${question.timeLimit}s` : 'temps libre'}
@@ -1142,12 +1249,13 @@ const QuizAdmin = ({ admin }) => {
           setDraft={setDraft}
           submitLabel={draftIndex == null ? 'Ajouter la question' : 'Mettre à jour'}
           busy={loading}
+          categories={quiz.categories || []}
           onCancel={() => { setDraft(null); setDraftIndex(null); }}
           onSubmit={commitDraft}
         />
       ) : (
         <div className="adm-actions">
-          <button type="button" className="btn btn-success" onClick={() => { setDraft(emptyDraft()); setDraftIndex(null); }}>
+          <button type="button" className="btn btn-success" onClick={() => { setDraft(emptyDraft((quiz.questions || []).slice(-1)[0]?.category || '')); setDraftIndex(null); }}>
             <Icon name="plus" />Ajouter une question
           </button>
         </div>

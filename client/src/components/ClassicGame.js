@@ -201,6 +201,21 @@ const ClassicGame = ({
   const [fx, setFx] = useState(null);
   const prevPhase = useRef(null);
   const seatOrder = useRef([]);
+  // Nouvelle catégorie : un bandeau l'annonce au début de la première question de la catégorie
+  const prevCategory = useRef(null);
+  const [catSplash, setCatSplash] = useState(null);
+  useEffect(() => {
+    const cat = gameData?.question?.category || null;
+    const key = cat ? cat.name : '';
+    if (gameData?.phase === 'answering' && key && key !== prevCategory.current) {
+      setCatSplash({ ...cat, at: gameData.questionIndex });
+      const timer = setTimeout(() => setCatSplash(null), 2600);
+      prevCategory.current = key;
+      return () => clearTimeout(timer);
+    }
+    if (gameData?.phase === 'answering') prevCategory.current = key;
+    return undefined;
+  }, [gameData?.questionIndex, gameData?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const question = gameData?.question;
   const phase = gameData?.phase || 'answering';
@@ -866,12 +881,19 @@ const ClassicGame = ({
         <TableDrop cardId={gameData.tableShow.card} username={gameData.tableShow.username} />
       )}
       <Countdown runId={countId} />
+      {catSplash && (
+        <div className="quiz-cat-splash" key={catSplash.at} style={{ '--c': catSplash.color }} aria-live="polite">
+          <small>Catégorie</small>
+          <b>{catSplash.name}</b>
+        </div>
+      )}
       <div className="card quiz-card">
         <div className="quiz-stage">
         <div className="quiz-head">
           <div className="question-number">
             {gameData.quizName ? `${gameData.quizName} · ` : ''}
             Question {gameData.questionIndex + 1} / {gameData.totalQuestions}
+            {question.category && <span className="quiz-category" style={{ '--c': question.category.color }}>{question.category.name}</span>}
           </div>
           <div className="quiz-head-meta">
             <span className="quiz-points">{question.points} pt{question.points > 1 ? 's' : ''}</span>

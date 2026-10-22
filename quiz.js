@@ -21,6 +21,7 @@ const QuizQuestionSchema = new mongoose.Schema({
     required: true
   },
   prompt: { type: String, default: '' },
+  category: { type: String, default: '' },
   imageUrl: { type: String, default: '' },
   imageSize: { type: Number, default: 100 },
   videoUrl: { type: String, default: '' },
@@ -71,6 +72,13 @@ const QuizSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String, default: '' },
   shuffle: { type: Boolean, default: false },
+  // Ordre des questions : dans l'ordre, tout mélangé, ou catégorie par catégorie (catégories dans un ordre aléatoire)
+  shuffleMode: { type: String, enum: ['none', 'all', 'categories'], default: 'none' },
+  shuffleInside: { type: Boolean, default: false },
+  categories: {
+    type: [{ _id: false, id: String, name: String, color: String }],
+    default: []
+  },
   isPrivate: { type: Boolean, default: false },
   questions: { type: [QuizQuestionSchema], default: [] },
   owner: { type: String, default: '' },
@@ -391,6 +399,7 @@ function publicQuestion(question, index, total) {
     total,
     type: question.type,
     prompt: question.prompt || '',
+    category: question.categoryName ? { name: question.categoryName, color: question.categoryColor || '#1f6dff' } : null,
     imageUrl: question.imageUrl || '',
     imageSize: imageSizeValue(question.imageSize),
     videoUrl: question.type === 'music' || question.type === 'lyrics' || question.type === 'whos' ? '' : (question.videoUrl || ''),
@@ -533,6 +542,7 @@ function sanitizeQuestion(raw) {
   return {
     type,
     prompt: String(raw.prompt || '').trim(),
+    category: String(raw.category || '').trim().slice(0, 40),
     imageUrl: String(raw.imageUrl || '').trim(),
     imageSize: imageSizeValue(raw.imageSize),
     videoUrl: type === 'music' || type === 'lyrics' || type === 'whos' || type === 'gaps'
@@ -561,6 +571,53 @@ function sanitizeQuestion(raw) {
     items: cleanItems(raw.items),
     clip
   };
+}
+
+/* ——— Catégories de questions ——— */
+function cleanCategories(raw) {
+  const seen = new Set();
+  return (Array.isArray(raw) ? raw : []).slice(0, 40).map((cat) => ({
+    id: String(cat?.id || '').trim().slice(0, 40),
+    name: String(cat?.name || '').trim().slice(0, 40),
+    color: /^#[0-9a-f]{6}$/i.test(String(cat?.color || '')) ? String(cat.color) : '#1f6dff'
+  })).filter((cat) => {
+    if (!cat.id || !cat.name || seen.has(cat.id)) return false;
+    seen.add(cat.id);
+    return true;
+  });
+}
+
+function shuffleMode(body) {
+  if (['none', 'all', 'categories'].includes(body?.shuffleMode)) return body.shuffleMode;
+  return body?.shuffle ? 'all' : 'none';
+}
+
+function randomized(list) {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Ordre de la partie : catégorie par catégorie (ordre des catégories tiré au sort), ou tout mélangé. */
+function orderQuestions(quiz, questions) {
+  const mode = quiz.shuffleMode && quiz.shuffleMode !== 'none' ? quiz.shuffleMode : (quiz.shuffle ? 'all' : 'none');
+  const cats = new Map((quiz.categories || []).map((cat) => [cat.id, cat]));
+  const tagged = questions.map((question) => {
+    const cat = cats.get(question.category);
+    return cat ? { ...question, categoryName: cat.name, categoryColor: cat.color } : { ...question, category: '' };
+  });
+  if (mode === 'all') return randomized(tagged);
+  if (mode !== 'categories') return tagged;
+  const groups = new Map();
+  tagged.forEach((question) => {
+    const key = question.category || '';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(question);
+  });
+  return randomized([...groups.values()]).flatMap((group) => (quiz.shuffleInside ? randomized(group) : group));
 }
 
 function validateQuestion(question, position) {
@@ -1541,7 +1598,10 @@ function attachQuiz(app, io) {
       const quiz = new Quiz({
         name,
         description: String(req.body.description || '').trim(),
-        shuffle: Boolean(req.body.shuffle),
+        shuffle: shuffleMode(req.body) === 'all',
+        shuffleMode: shuffleMode(req.body),
+        shuffleInside: Boolean(req.body.shuffleInside),
+        categories: cleanCategories(req.body.categories),
         isPrivate: Boolean(req.body.isPrivate),
         owner: req.admin.username,
         questions: []
@@ -1607,12 +1667,19 @@ function attachQuiz(app, io) {
         }
       }
 
+      const categories = cleanCategories(req.body.categories);
+      const catIds = new Set(categories.map((cat) => cat.id));
+      questions.forEach((question) => { if (!catIds.has(question.category)) question.category = ''; });
+
       const quiz = await Quiz.findByIdAndUpdate(
         req.params.id,
         {
           name,
           description: String(req.body.description || '').trim(),
-          shuffle: Boolean(req.body.shuffle),
+          shuffle: shuffleMode(req.body) === 'all',
+          shuffleMode: shuffleMode(req.body),
+          shuffleInside: Boolean(req.body.shuffleInside),
+          categories,
           isPrivate: Boolean(req.body.isPrivate),
           questions
         },
@@ -2024,10 +2091,7 @@ function attachQuiz(app, io) {
           return;
         }
 
-        let questions = playable.map((question) => question.toObject());
-        if (quiz.shuffle) {
-          questions = questions.sort(() => Math.random() - 0.5);
-        }
+        let questions = orderQuestions(quiz, playable.map((question) => question.toObject()));
 
         const requested = Number(data.numberOfQuestions);
         if (requested > 0 && requested < questions.length) {

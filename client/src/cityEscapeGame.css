@@ -1346,3 +1346,25 @@ h2.quiz-prompt {
   width: 1.5em;
   height: 1.5em;
 }
+
+/* ——— Catégories de questions ——— */
+.quiz-category {
+  display: inline-block; margin-left: 10px; padding: 2px 10px; border-radius: 999px; vertical-align: middle;
+  font-family: var(--ce-title); font-style: italic; font-weight: 800; font-size: 0.8em; letter-spacing: 0.03em;
+  color: #fff; background: var(--c, var(--ce-blue)); box-shadow: 0 0 0 2px #fff, 0 3px 0 var(--ce-ink);
+}
+.quiz-cat-splash {
+  position: fixed; left: 50%; top: 38%; z-index: 9000; transform: translate(-50%, -50%);
+  display: grid; justify-items: center; gap: 2px; padding: 16px 40px 18px; border-radius: 18px; pointer-events: none;
+  background: var(--c, var(--ce-blue)); box-shadow: 0 0 0 4px #fff, 0 0 0 8px var(--ce-ink), 0 24px 50px rgba(2, 8, 40, 0.5);
+  animation: quiz-cat-in 2.6s cubic-bezier(.2, .9, .3, 1.2) both;
+}
+.quiz-cat-splash small { font-family: var(--ce-title); font-style: italic; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255, 255, 255, 0.85); }
+.quiz-cat-splash b { font-family: var(--ce-title); font-style: italic; font-weight: 900; font-size: clamp(28px, 6vw, 56px); line-height: 1; color: #fff; text-shadow: 3px 3px 0 var(--ce-ink); }
+@keyframes quiz-cat-in {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.6) rotate(-4deg); }
+  12% { opacity: 1; transform: translate(-50%, -50%) scale(1.06) rotate(1deg); }
+  20% { transform: translate(-50%, -50%) scale(1) rotate(0); }
+  85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -60%) scale(0.96); }
+}
