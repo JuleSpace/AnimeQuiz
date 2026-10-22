@@ -85,7 +85,7 @@ export const MOVE_KIND = {
   watergun: 'pierce', shadow: 'pierce', flashcannon: 'pierce', leafblade: 'boomerang',
   leaf: 'orbit',
   quake: 'nova', spark: 'nova', surf: 'nova', dazzlinggleam: 'nova',
-  swift: 'homing', willowisp: 'homing', bubble: 'bubble',
+  swift: 'homing', willowisp: 'homing', bubble: 'bubble', pinmissile: 'homing', bonemerang: 'boomerang',
   icebeam: 'beam', hydropump: 'beam', hyperbeam: 'beam',
   psychic: 'psychic',
   hurricane: 'tornado', whirlpool: 'tornado',

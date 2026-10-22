@@ -454,6 +454,23 @@ export const WEAPONS = {
     color: '#7fd0ff',
     desc: (lv) => `${1 + Math.ceil(lv / 2)} bulles qui emprisonnent les ennemis (${(1 + lv * 0.15).toFixed(1)} s) : ils y prennent +25 % de dégâts.`,
     at: (lv) => ({ cd: 1.4 - lv * 0.08, dmg: 10 + lv * 4, count: 1 + Math.ceil(lv / 2), trap: 1 + lv * 0.15, speed: 2.6 })
+  },
+  // Attaques ajoutées pour la Ligue du Poké Rush (Insecte, Osselet)
+  pinmissile: {
+    gen: 1,
+    name: 'Dard-Nuée',
+    type: 'Insecte',
+    color: '#a6b91a',
+    desc: (lv) => `${lv + 2} dards à tête chercheuse, tirés en rafale.`,
+    at: (lv) => ({ cd: 1.25 - lv * 0.07, dmg: 6 + lv * 2.2, count: lv + 2, speed: 7 })
+  },
+  bonemerang: {
+    gen: 1,
+    name: 'Osmerang',
+    type: 'Sol',
+    color: '#e8dcc0',
+    desc: (lv) => `Un os lancé en boomerang qui frappe à l’aller et au retour${lv >= 3 ? ', en double' : ''}.`,
+    at: (lv) => ({ cd: 1.35 - lv * 0.08, dmg: 14 + lv * 5, range: 200 + lv * 20, speed: 7, back: lv >= 3 })
   }
 };
 
@@ -739,7 +756,7 @@ export const CAST_ANIM = {
   spark: 'shoot', thunderwave: 'shoot', electroball: 'shoot', irontail: 'attack', flamethrower: 'shoot', firespin: 'shoot',
   willowisp: 'shoot', surf: 'attack', hydropump: 'shoot', whirlpool: 'shoot', gigadrain: 'shoot',
   rockslide: 'shoot', aerialace: 'attack', bodyslam: 'attack', blizzard: 'shoot', dazzlinggleam: 'shoot',
-  nightslash: 'attack', flashcannon: 'shoot', hyperbeam: 'shoot'
+  nightslash: 'attack', flashcannon: 'shoot', hyperbeam: 'shoot', pinmissile: 'shoot', bonemerang: 'attack'
 };
 
 /* ——— Ultime : une attaque surpuissante par type de starter (touche R) ——— */

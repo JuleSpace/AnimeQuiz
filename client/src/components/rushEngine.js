@@ -5,11 +5,14 @@
  */
 import * as THREE from 'three';
 import {
-  BLESSINGS, FOES, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PASSIVES, WEAPONS, CAST_ANIM, buildRoster, canHold, canLearn, megaOf, ultimateOf, xpToNext
+  BLESSINGS, FOES, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PASSIVES, WEAPONS, CAST_ANIM, canHold, canLearn, megaOf, xpToNext
 } from './swarmData';
+import { GEN1_TYPES, buildRushRoster, familyOfDex, ultOf } from './rushLeague';
 import { FINAL_AT, MOVE_KIND, PX, TYPE_COLORS, catchChance, foeTypes, typeMult } from './rushData';
 import { B, C, M, R, S, TAU, WATER, buildRushWorld, clamp, merge, part, rand } from './rushWorld';
 import { createSpriteBank, rowFor, spriteHeight } from './rushSprites';
+import { createFx } from './rushFx';
+import { FX, fxFrameOfType } from './rushArt';
 
 const GRAV = 34;
 const MAX_FOES = 260;
@@ -34,10 +37,10 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
   mount.appendChild(renderer.domElement);
   renderer.domElement.className = 'pr-gl';
   const scene = new THREE.Scene();
-  const SKY = new THREE.Color('#9fdcff');
+  const SKY = new THREE.Color('#bfe4ff');
   scene.background = SKY;
-  scene.fog = new THREE.Fog(SKY, 55, 150);
-  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 400);
+  scene.fog = new THREE.Fog(SKY, 70, 190);
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 1200);
   scene.add(new THREE.HemisphereLight('#ffffff', '#5f8f45', 1.25));
   const sun = new THREE.DirectionalLight('#fff3dc', 1.5);
   sun.position.set(40, 80, 30);
@@ -49,7 +52,8 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
   const world = buildRushWorld(scene, track, { seed: effects.seed });
   const { terrainAt, isWater, inGrass, arena } = world;
   const bank = createSpriteBank(scene);
-  const roster = buildRoster(1);
+  const roster = buildRushRoster();
+  const leagueReady = new Set(effects.leagueReady || []);
 
   /* ——— Objets 3D réutilisables ——— */
   // Ombres rondes sous chaque Pokémon
@@ -58,32 +62,12 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
   const blobs = new THREE.InstancedMesh(blobGeo, track(new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.28, depthWrite: false })), 700);
   blobs.frustumCulled = false; blobs.renderOrder = 1;
   scene.add(blobs);
-  // Projectiles : sphères lumineuses colorées
-  const shotMesh = new THREE.InstancedMesh(track(new THREE.IcosahedronGeometry(1, 1)), track(new THREE.MeshBasicMaterial({ color: '#ffffff' })), 500);
-  shotMesh.frustumCulled = false;
-  scene.add(shotMesh);
-  const shotHalo = new THREE.InstancedMesh(track(new THREE.IcosahedronGeometry(1, 1)), track(new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.35, depthWrite: false })), 500);
-  shotHalo.frustumCulled = false;
-  scene.add(shotHalo);
-  // Bonbons d'XP, pièces, objets au sol
-  const candyGeo = track(merge([part(new THREE.OctahedronGeometry(0.28, 0), '#ffffff')]));
-  const candyMesh = new THREE.InstancedMesh(candyGeo, track(new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#222244' })), 1000);
+  // Effets en sprites pixel art (projectiles, particules, pièces, Balls…)
+  const fx = createFx(scene);
+  // Cristaux d'XP : petits prismes lumineux
+  const candyGeo = track(new THREE.OctahedronGeometry(0.26, 0)); candyGeo.scale(0.85, 1.45, 0.85);
+  const candyMesh = new THREE.InstancedMesh(candyGeo, track(new THREE.MeshLambertMaterial({ color: '#ffffff', emissive: '#1f6a3a', flatShading: true })), 1000);
   candyMesh.frustumCulled = false; scene.add(candyMesh);
-  const coinMesh = new THREE.InstancedMesh(track(merge([part(C(0.3, 0.3, 0.08, 12), '#ffd23a', M(0, 0, 0, Math.PI / 2))])), track(new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#6a4a00' })), 400);
-  coinMesh.frustumCulled = false; scene.add(coinMesh);
-  const ballGeo = () => merge([
-    part(new THREE.SphereGeometry(0.32, 12, 6, 0, TAU, 0, Math.PI / 2), '#e3342f'),
-    part(new THREE.SphereGeometry(0.32, 12, 6, 0, TAU, Math.PI / 2, Math.PI / 2), '#f5f5f5'),
-    part(C(0.33, 0.33, 0.05, 14), '#222222'),
-    part(C(0.09, 0.09, 0.06, 10), '#ffffff', M(0, 0, 0.31, Math.PI / 2))
-  ]);
-  const ballMesh = new THREE.InstancedMesh(track(ballGeo()), track(new THREE.MeshLambertMaterial({ vertexColors: true })), 60);
-  ballMesh.frustumCulled = false; scene.add(ballMesh);
-  const berryMesh = new THREE.InstancedMesh(track(merge([part(S(0.3, 8, 6), '#3a6bdb'), part(B(0.06, 0.2, 0.06), '#2f8a3a', M(0, 0.32, 0))])), track(new THREE.MeshLambertMaterial({ vertexColors: true })), 60);
-  berryMesh.frustumCulled = false; scene.add(berryMesh);
-  // Feuilles qui tournent (Tranch'Herbe)
-  const leafMesh = new THREE.InstancedMesh(track(merge([part(new THREE.OctahedronGeometry(0.55, 0), '#8ee05a', M(0, 0, 0, 0, 0, 0, 1.5, 0.3, 0.7))])), track(new THREE.MeshLambertMaterial({ vertexColors: true, emissive: '#1a4a10' })), 24);
-  leafMesh.frustumCulled = false; scene.add(leafMesh);
 
   // Disques au sol (zones, ondes, attaques annoncées) en mode « immédiat »
   const makePool = (geo, n, order = 1) => {
@@ -120,31 +104,25 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
   const beams = makePool(beamGeo, 16, 3);
   const pillarGeo = track(new THREE.CylinderGeometry(1, 1, 1, 18, 1, true)); pillarGeo.translate(0, 0.5, 0);
   const pillars = makePool(pillarGeo, 12, 3);
-  // Éclairs
-  const boltPos = new Float32Array(900 * 3);
-  const boltGeo = track(new THREE.BufferGeometry());
-  boltGeo.setAttribute('position', new THREE.BufferAttribute(boltPos, 3));
-  const boltCol = new Float32Array(900 * 3);
-  boltGeo.setAttribute('color', new THREE.BufferAttribute(boltCol, 3));
-  const bolts = new THREE.LineSegments(boltGeo, track(new THREE.LineBasicMaterial({ vertexColors: true })));
-  bolts.frustumCulled = false; scene.add(bolts);
-  // Particules
-  const MAXP = 1600;
-  const pPos = new Float32Array(MAXP * 3); const pCol = new Float32Array(MAXP * 3);
-  const pGeo = track(new THREE.BufferGeometry());
-  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-  pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
-  const points = new THREE.Points(pGeo, track(new THREE.PointsMaterial({ size: 0.32, vertexColors: true, transparent: true, depthWrite: false })));
-  points.frustumCulled = false; scene.add(points);
   const parts = [];
-  const tmpC = new THREE.Color();
+  const MAXP = 2400;
   const particle = (x, y, z, color, n = 6, speed = 5, o = {}) => {
-    tmpC.set(color);
     for (let i = 0; i < n && parts.length < MAXP; i += 1) {
       const a = rand(0, TAU); const v = rand(0.3, 1) * speed;
-      parts.push({ x, y, z, vx: Math.cos(a) * v, vy: rand(0.2, 1) * speed * 0.8 + (o.up || 0), vz: Math.sin(a) * v, life: rand(0.35, 0.8) * (o.life || 1), r: tmpC.r, g: tmpC.g, b: tmpC.b, grav: o.grav ?? 14 });
+      const life = rand(0.35, 0.8) * (o.life || 1);
+      parts.push({
+        x, y, z, vx: Math.cos(a) * v, vy: rand(0.2, 1) * speed * 0.8 + (o.up || 0), vz: Math.sin(a) * v, life, max: life,
+        col: color, f: o.f ?? (Math.random() < 0.35 ? FX.spark : FX.dot), size: (o.size || 0.26) * rand(0.7, 1.3), rot: rand(0, TAU), spin: o.spin ?? rand(-6, 6), grav: o.grav ?? 14
+      });
     }
   };
+  // Éclats d'une attaque : des petits sprites du type (flammèches, gouttes, feuilles…) et des étincelles
+  const fxBurst = (x, y, z, type, n = 8, speed = 5) => {
+    const f = fxFrameOfType(type);
+    particle(x, y, z, null, Math.ceil(n * 0.5), speed, { f, size: 0.42, grav: type === 'Feu' || type === 'Dragon' ? -2 : 10 });
+    particle(x, y, z, TYPE_COLORS[type] || '#ffffff', Math.ceil(n * 0.5), speed * 1.1, { size: 0.3 });
+  };
+  const puff = (x, y, z, n = 4, color = '#ffffff') => particle(x, y, z, color, n, 2, { f: FX.smoke, size: 0.55, grav: -1.5, life: 1.1, spin: 0 });
   const tmpM = new THREE.Matrix4(); const tmpQ = new THREE.Quaternion(); const tmpE = new THREE.Euler(); const tmpV = new THREE.Vector3(); const tmpS = new THREE.Vector3();
   const setInst = (mesh, i, x, y, z, ry = 0, sc = 1, rx = 0, rz = 0) => {
     tmpE.set(rx, ry, rz, 'YXZ'); tmpQ.setFromEuler(tmpE);
@@ -154,17 +132,17 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
   };
 
   /* ——— État ——— */
-  const formTypes = (dex) => FORM_TYPES[dex] || [partner.type];
+  const formTypes = (dex) => FORM_TYPES[dex] || GEN1_TYPES[dex] || partner.types || [partner.type];
   const g = {
     t: 0, paused: false, over: null, trauma: 0, banner: null,
-    kills: 0, killsBy: {}, met: {}, coins: 0, balls: E.balls, caught: [], bossKills: 0, superHits: 0, chestsOpened: 0,
+    kills: 0, killsBy: {}, typeKills: {}, caughtTypes: [], leagueCaught: [], leagueSpawns: [...(effects.leagueSpawns || [])], dashes: 0, berries: 0, evolutions: 0, coinsTotal: 0, met: {}, coins: 0, balls: E.balls, caught: [], bossKills: 0, superHits: 0, chestsOpened: 0,
     pendingLevels: 0, pendingEvo: null, evoQueue: [], evo: null, rerolls: E.rerolls,
     weapons: { [partner.weapon]: { lv: 1, timer: 0.4 } }, passives: {}, megaLv: 0, megaChoice: null,
     foes: [], shots: [], zones: [], fx: [], orbs: [], drops: [], texts: [], teles: [], allies: [], throws: [], zaps: [],
     bossIdx: 0, boss: null, finalSpawned: false, finalAwake: false,
     ult: 0, ults: 0, bless: { dmg: 1, speed: 1 }, altarOpen: false, altarsUsed: 0,
     alphaAt: [120, 300], alphaKills: 0, hurtFlash: 0, lastHitT: 0, maxNoHit: 0, spawnAcc: 0,
-    cam: { yaw: Math.atan2(world.start.x - arena.x, world.start.z - arena.z), pitch: 0.62, dist: 12, x: 0, y: 20, z: 0 },
+    cam: { yaw: Math.atan2(world.start.x - arena.x, world.start.z - arena.z), pitch: 0.5, dist: 11.5, x: 0, y: 20, z: 0 },
     player: {
       x: world.start.x, y: terrainAt(world.start.x, world.start.z), z: world.start.z, vx: 0, vy: 0, vz: 0,
       fx: 0, fz: -1, hp: partner.hp + E.hp, maxHp: partner.hp + E.hp, inv: 0, grounded: true,
@@ -179,7 +157,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     const P = g.passives; const p = g.player;
     const mk = g.megaChoice;
     return {
-      dmg: (1 + 0.12 * (P.protein || 0) + 0.04 * g.megaLv) * (p.mega ? (mk === 'x' ? 1.45 : 1.3) : 1) * E.dmg * g.bless.dmg,
+      dmg: (1 + 0.12 * (P.protein || 0) + 0.04 * g.megaLv) * (p.mega ? (mk === 'x' ? 1.45 : 1.3) : 1) * E.dmg * g.bless.dmg * (partner.power || 1),
       speed: (1 + 0.08 * (P.carbos || 0) + (p.mega ? 0.12 : 0)) * E.speed * g.bless.speed * (p.slowT > 0 ? 0.6 : 1),
       cd: (1 - 0.07 * (P.quickclaw || 0)) * (p.mega && mk === 'y' ? 0.75 : 1),
       crit: 0.05 + 0.06 * (P.scope || 0),
@@ -287,6 +265,15 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       const b = spawnFoe(roster.final, { x: arena.x, z: arena.z }, { dormant: true });
       if (b) { b.y = arena.y; banner(`${b.def.name} s'est réveillé dans l'arène ! Va l'affronter`, 4); shake(0.6); }
     }
+    // Futurs membres de la Ligue : ils rôdent, il faut les capturer
+    while (g.leagueSpawns.length && g.t >= g.leagueSpawns[0].at) {
+      const L = g.leagueSpawns.shift();
+      const f = spawnFoe(L.key, null, { league: L.fam, legendLeague: !!L.legendary, elite: false });
+      if (f) {
+        f.hp = Math.round(f.hp * (L.legendary ? 10 : 3.5)) + 40; f.maxHp = f.hp; f.scale = L.legendary ? 1.5 : 1.15;
+        banner(`Un ${f.def.name} sauvage rôde ! Capture-le pour l'ajouter à ta Ligue`, 3.6);
+      } else g.leagueSpawns.push({ ...L, at: g.t + 5 });
+    }
     // Pokémon Alpha cachés dans les hautes herbes
     if (g.alphaAt.length && g.t >= g.alphaAt[0] && world.grass.length) {
       g.alphaAt.shift();
@@ -314,6 +301,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     const dmg = Math.max(1, Math.round(amount * s.dmg * mult * stab * (crit ? 1.8 : 1) * (f.stunT > 0 && o.trapBonus ? 1.25 : 1) * (o.ally ? 1 : 1)));
     f.hp -= dmg;
     f.flash = 0.12;
+    f.lastType = type;
     if (f.dormant && !f.boss) f.dormant = false;
     if (f.boss === 'final' && f.dormant) { f.dormant = false; g.finalAwake = true; }
     if (src && !f.boss) {
@@ -335,9 +323,11 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     f.dead = true;
     g.kills += 1;
     g.killsBy[f.id] = (g.killsBy[f.id] || 0) + 1;
+    if (f.lastType) g.typeKills[f.lastType] = (g.typeKills[f.lastType] || 0) + 1;
     g.ult = Math.min(1, g.ult + (f.boss ? 0.2 : f.alpha ? 0.3 : f.elite ? 0.04 : 0.008));
-    particle(f.x, f.y + 1, f.z, f.def.color || '#ffffff', f.boss ? 40 : 8, f.boss ? 9 : 5);
-    particle(f.x, f.y + 0.6, f.z, '#ffffff', f.boss ? 20 : 4, 3);
+    particle(f.x, f.y + 0.8, f.z, '#ffffff', f.boss ? 30 : 6, f.boss ? 9 : 5, { f: FX.star4, size: 0.4 });
+    puff(f.x, f.y + 0.5, f.z, f.boss ? 14 : 3, '#ffffff');
+    if (f.boss) fxBurst(f.x, f.y + 1, f.z, f.types[0], 40, 10);
     if (Math.random() < (g.passives.shellbell || 0) * 0.06) { g.player.hp = Math.min(g.player.maxHp, g.player.hp + 3); }
     if (f.boss === 'final') {
       g.over = 'win';
@@ -414,7 +404,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
         for (let i = 0; i <= v.chains && t; i += 1) {
           hurt(t, v.dmg, type, prev, { knock: 2 });
           hit.add(t); pts.push([t.x, chest(t), t.z]);
-          particle(t.x, chest(t), t.z, color, 5, 4);
+          fxBurst(t.x, chest(t), t.z, type, 5, 4);
           prev = t; t = nearest(t.x, t.z, 8, hit);
         }
         zap(pts, id === 'aerialace' ? '#e8f4ff' : '#fff27a');
@@ -450,7 +440,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
         if (v.side) dirs.push(a + Math.PI / 2, a - Math.PI / 2);
         const sp = (v.speed || 7) * 3;
         dirs.forEach((d) => shoot({
-          kind, vx: Math.cos(d) * sp, vy: 0, vz: Math.sin(d) * sp, dmg: v.dmg, type, color, pierce: true,
+          kind, vx: Math.cos(d) * sp, vy: 0, vz: Math.sin(d) * sp, dmg: v.dmg, type, color, pierce: true, bone: id === 'bonemerang',
           size: Math.max(0.25, (v.size || 10) * PX * 0.9), life: kind === 'boomerang' ? 1.4 : 1.3, out: range, sx: p.x, sz: p.z
         }));
         return v.cd;
@@ -466,10 +456,10 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
           if (v.slow && !f.boss) { f.slowT = v.slowT || 1; }
         });
         g.fx.push({ kind: 'ring', x: p.x, z: p.z, y: p.y + 0.15, r: 0.5, max: r, life: 0.4, dur: 0.4, color });
-        if (id === 'quake') { shake(0.2); particle(p.x, p.y + 0.2, p.z, '#b08a5a', 20, 7); }
-        if (id === 'surf') particle(p.x, p.y + 0.5, p.z, '#bfe3ff', 30, 8);
-        if (id === 'dazzlinggleam') particle(p.x, p.y + 1, p.z, '#ffc6ea', 24, 7);
-        if (id === 'spark') particle(p.x, p.y + 1, p.z, '#fff27a', 16, 6);
+        if (id === 'quake') { shake(0.2); fxBurst(p.x, p.y + 0.2, p.z, 'Roche', 16, 7); puff(p.x, p.y + 0.3, p.z, 8, '#d8c0a0'); }
+        if (id === 'surf') fxBurst(p.x, p.y + 0.5, p.z, 'Eau', 30, 8);
+        if (id === 'dazzlinggleam') fxBurst(p.x, p.y + 1, p.z, 'Fée', 24, 7);
+        if (id === 'spark') fxBurst(p.x, p.y + 1, p.z, 'Électrik', 16, 6);
         return v.cd;
       }
       case 'homing': case 'bubble': {
@@ -550,8 +540,8 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
           hurt(f, dmg, type, p, { knock: 3, critBonus: id === 'nightslash' ? 0.25 : 0 });
           if (id === 'doublekick') setTimeout(() => { if (!f.dead) hurt(f, v.dmg, type, p, { knock: 3 }); }, 120);
           if (id === 'bite' && v.heal) p.hp = Math.min(p.maxHp, p.hp + v.heal);
-          g.fx.push({ kind: 'slash', x: f.x, y: chest(f), z: f.z, life: 0.2, dur: 0.2, color });
-          particle(f.x, chest(f), f.z, color, 6, 4);
+          g.fx.push({ kind: 'slash', x: f.x, y: chest(f), z: f.z, life: 0.22, dur: 0.22, color, rot: rand(-1.2, 1.2) });
+          fxBurst(f.x, chest(f), f.z, type, 6, 4);
         });
         return v.cd;
       }
@@ -571,7 +561,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
         });
         for (let i = 0; i < 14; i += 1) {
           const aa = a + rand(-(v.arc || 0.5), v.arc || 0.5); const sp = rand(6, 12);
-          parts.push({ x: p.x, y: p.y + 1, z: p.z, vx: Math.cos(aa) * sp, vy: rand(0, 1.5), vz: Math.sin(aa) * sp, life: reach / sp, r: 1, g: id === 'flamethrower' ? 0.55 : 0.9, b: id === 'flamethrower' ? 0.15 : 0.95, grav: 0 });
+          parts.push({ x: p.x, y: p.y + 1, z: p.z, vx: Math.cos(aa) * sp, vy: rand(0, 1.5), vz: Math.sin(aa) * sp, life: reach / sp, max: reach / sp, col: null, f: id === 'flamethrower' ? FX.Feu : FX.Acier, size: 0.6, rot: 0, spin: 0, grow: 1.2, grav: 0 });
         }
         return v.cd;
       }
@@ -637,38 +627,42 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     }
   };
 
-  /* ——— Ultime ——— */
-  const ULT = ultimateOf(partner);
+  /* ——— Ultime : un comportement par famille de types ——— */
+  const ULT = ultOf(partner);
   const ultimate = () => {
     if (g.ult < 1 || g.over || g.paused || g.evo) return false;
     const p = g.player;
     g.ult = 0; g.ults += 1;
-    const power = 70 + p.level * 9;
+    const power = (70 + p.level * 9) * (partner.power || 1);
+    const type = partner.type;
     banner(`${ULT.name} !`, 2);
     shake(0.9); p.inv = Math.max(p.inv, 1.2);
     g.flashScreen = { color: ULT.color, life: 0.4 };
+    castAt(partner.weapon, null);
     const close = near(p.x, p.z, 26).filter((f) => !f.dormant || f.alpha);
-    if (partner.type === 'Plante') {
-      close.forEach((f) => { hurt(f, power, 'Plante', p, { knock: 1 }); if (!f.boss) { f.slowT = 4; f.rooted = 3; } particle(f.x, f.y + 0.4, f.z, '#7ac74c', 6, 4, { up: 3 }); });
-      const heal = Math.round(p.maxHp * 0.25); p.hp = Math.min(p.maxHp, p.hp + heal); text(p.x, p.y + 3, p.z, `+${heal}`, '#6bd17a', true);
-      g.zones.push({ kind: 'bloom', x: p.x, z: p.z, r: 10, dps: power * 0.15, heal: 2, life: 6, max: 6, tick: 0, type: 'Plante', color: '#ff9ad8', slow: true });
-    } else if (partner.type === 'Feu') {
-      near(p.x, p.z, 16).forEach((f) => hurt(f, power * 1.6, 'Feu', p, { knock: 14 }));
-      g.fx.push({ kind: 'ring', x: p.x, z: p.z, y: p.y + 0.2, r: 1, max: 16, life: 0.6, dur: 0.6, color: '#ff6a1f' });
-      g.fx.push({ kind: 'dome', x: p.x, z: p.z, y: p.y, r: 15, life: 0.6, dur: 0.6, color: '#ffb347' });
-      particle(p.x, p.y + 1, p.z, '#ff6a1f', 80, 14);
-      particle(p.x, p.y + 1, p.z, '#ffe08a', 40, 10);
-    } else if (partner.type === 'Eau') {
-      close.forEach((f) => hurt(f, power * 0.9, 'Eau', p, { knock: 30 }));
-      g.fx.push({ kind: 'ring', x: p.x, z: p.z, y: p.y + 0.3, r: 1, max: 26, life: 0.9, dur: 0.9, color: '#3a7bff', thick: true });
+    if (ULT.kind === 'bloom') {
+      close.forEach((f) => { hurt(f, power, type, p, { knock: 1 }); if (!f.boss) { f.slowT = 4; f.rooted = type === 'Fée' ? 2 : 3; if (type === 'Fée') f.stunT = 1.5; } fxBurst(f.x, f.y + 0.4, f.z, type, 5); });
+      const heal = Math.round(p.maxHp * (type === 'Insecte' ? 0.12 : 0.25)); p.hp = Math.min(p.maxHp, p.hp + heal); text(p.x, p.y + 3, p.z, `+${heal}`, '#6bd17a', true);
+      g.zones.push({ kind: 'bloom', x: p.x, z: p.z, r: 10, dps: power * (type === 'Insecte' ? 0.35 : 0.15), heal: type === 'Insecte' ? 0 : 2, life: 6, max: 6, tick: 0, type, color: ULT.color, slow: true });
+    } else if (ULT.kind === 'nova') {
+      near(p.x, p.z, 16).forEach((f) => hurt(f, power * 1.6, type, p, { knock: type === 'Combat' ? 22 : 14 }));
+      g.fx.push({ kind: 'ring', x: p.x, z: p.z, y: p.y + 0.2, r: 1, max: 16, life: 0.6, dur: 0.6, color: ULT.color });
+      g.fx.push({ kind: 'dome', x: p.x, z: p.z, y: p.y, r: 15, life: 0.6, dur: 0.6, color: ULT.color });
+      fxBurst(p.x, p.y + 1, p.z, type, 60, 14);
+      if (type === 'Feu') g.zones.push({ kind: 'firering', follow: true, x: p.x, z: p.z, r: 6, dps: power * 0.2, life: 4, max: 4, tick: 0, type, color: '#ff7a2a' });
+    } else if (ULT.kind === 'wave') {
+      close.forEach((f) => { hurt(f, power * 0.9, type, p, { knock: type === 'Glace' ? 4 : 30 }); if (type === 'Glace' && !f.boss) { f.stunT = 3; f.frozen = 3; } });
+      g.fx.push({ kind: 'ring', x: p.x, z: p.z, y: p.y + 0.3, r: 1, max: 26, life: 0.9, dur: 0.9, color: ULT.color, thick: true });
       p.inv = Math.max(p.inv, 2.5);
-      particle(p.x, p.y + 1, p.z, '#bfe3ff', 80, 14);
+      fxBurst(p.x, p.y + 1, p.z, type, 60, 14);
     } else {
-      close.sort(() => Math.random() - 0.5).slice(0, 30).forEach((f) => {
-        hurt(f, power * 1.2, 'Électrik', null, { knock: 0 });
+      close.sort(() => Math.random() - 0.5).slice(0, 30).forEach((f, k) => {
+        hurt(f, power * 1.2, type, null, { knock: 0 });
         if (!f.boss) f.stunT = 2.6;
-        zap([[f.x + rand(-2, 2), f.y + 18, f.z + rand(-2, 2)], [f.x + rand(-1, 1), f.y + 9, f.z], [f.x, chest(f), f.z]], '#ffe14a');
-        particle(f.x, chest(f), f.z, '#fff27a', 6, 5);
+        if (type === 'Électrik') zap([[f.x + rand(-2, 2), f.y + 18, f.z + rand(-2, 2)], [f.x + rand(-1, 1), f.y + 9, f.z], [f.x, chest(f), f.z]], '#ffe14a');
+        else g.fx.push({ kind: 'meteor', x: f.x, z: f.z, y: f.y, delay: 0.15 + k * 0.03, life: 0.15 + k * 0.03 + 0.3, dur: 0.3, dmg: 0, blast: 1.6, type, color: ULT.color, rock: type === 'Roche' || type === 'Sol', ult: true });
+        if (type === 'Poison') { f.burnT = 4; f.burnDmg = power * 0.06; }
+        fxBurst(f.x, chest(f), f.z, type, 4, 5);
       });
     }
     return true;
@@ -708,13 +702,14 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
   const finishEvo = () => {
     const p = g.player; const e = g.evo;
     p.form = { name: e.to.name, dex: e.to.dex, mega: e.mega, scale: e.to.scale };
+    g.evolutions += 1;
     p.maxHp += e.hp; p.hp = Math.min(p.maxHp, p.hp + e.hp + 20);
     if (e.mega) { p.mega = true; p.hp = p.maxHp; }
     banner(e.mega ? `${e.name} !` : `${e.before} évolue en ${e.name} !`, 3);
     shake(0.8);
     near(p.x, p.z, 10).forEach((f) => hurt(f, e.mega ? 40 : 10, partner.type, p, { knock: 14 }));
     g.fx.push({ kind: 'ring', x: p.x, z: p.z, y: p.y + 0.2, r: 1, max: 12, life: 0.6, dur: 0.6, color: e.color });
-    particle(p.x, p.y + 1.4, p.z, '#ffffff', 50, 10);
+    particle(p.x, p.y + 1.4, p.z, '#ffffff', 40, 10, { f: FX.star4, size: 0.5 });
     particle(p.x, p.y + 1.4, p.z, e.color, 30, 8);
     g.evo = null;
     if (g.evoQueue.length) { const n = g.evoQueue.shift(); startEvo(n.to, n.opts); return; }
@@ -818,12 +813,18 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       if (th.phase === 'shake') {
         th.wob = Math.sin(th.t * 14) * (Math.floor(th.t / 0.5) % 2 === 0 ? 0.5 : 0);
         if (th.t > 1.6) {
-          const chance = catchChance(f, Math.max(0, f.hp) / f.maxHp, E.catchBonus);
+          const chance = f.league ? Math.min(0.95, catchChance(f, Math.max(0, f.hp) / f.maxHp, E.catchBonus) * (f.legendLeague ? 0.6 : 1.15)) : catchChance(f, Math.max(0, f.hp) / f.maxHp, E.catchBonus);
           if (Math.random() < chance) {
             f.dead = true;
             f.captureT = 0;
             g.caught.push(f.id);
             g.met[f.id] = 1;
+            (f.types || []).forEach((t) => g.caughtTypes.push(t));
+            const fam = f.league || familyOfDex(f.def.dex);
+            if (fam && leagueReady.has(fam) && !g.leagueCaught.includes(fam)) {
+              g.leagueCaught.push(fam);
+              setTimeout(() => banner(`${f.def.name} rejoint ta Ligue !`, 3.2), 2700);
+            }
             if (f.alpha) g.alphaKills += 1;
             gainXp(f.def.xp * 3);
             addAlly(f);
@@ -943,7 +944,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       if (dl > maxDv && dl > 0) { p.vx += (dvx / dl) * maxDv; p.vz += (dvz / dl) * maxDv; } else { p.vx = tx; p.vz = tz; }
     }
     // Saut
-    if (input.jumpPressed && p.grounded) { p.vy = 12.5; p.grounded = false; particle(p.x, p.y + 0.1, p.z, '#ffffff', 6, 3); }
+    if (input.jumpPressed && p.grounded) { p.vy = 12.5; p.grounded = false; puff(p.x, p.y + 0.2, p.z, 3); }
     input.jumpPressed = false;
     // Esquive
     p.dashCd = Math.max(0, p.dashCd - dt);
@@ -951,11 +952,11 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       const d = il > 0 ? { x: wx, z: wz } : { x: p.fx, z: p.fz };
       const dl = Math.hypot(d.x, d.z) || 1;
       p.vx = (d.x / dl) * 24; p.vz = (d.z / dl) * 24;
-      p.dashT = 0.2;
+      p.dashT = 0.2; g.dashes += 1;
       const slam = g.weapons.bodyslam ? WEAPONS.bodyslam.at(g.weapons.bodyslam.lv).cdr : 0;
       p.dashCd = 1.6 * (1 - slam);
       p.inv = Math.max(p.inv, 0.35);
-      particle(p.x, p.y + 0.5, p.z, '#ffffff', 12, 5);
+      puff(p.x, p.y + 0.4, p.z, 5);
     }
     input.dash = false;
     // Gravité, murs, eau
@@ -968,7 +969,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     if (rr > R * 0.9) { p.x *= (R * 0.9) / rr; p.z *= (R * 0.9) / rr; }
     p.y += p.vy * dt;
     const ground = Math.max(terrainAt(p.x, p.z), canSwim() ? WATER : -99);
-    if (p.y <= ground && p.vy <= 0) { if (!p.grounded && p.vy < -14) particle(p.x, ground + 0.1, p.z, '#e9f7d0', 8, 4); p.y = ground; p.vy = 0; p.grounded = true; }
+    if (p.y <= ground && p.vy <= 0) { if (!p.grounded && p.vy < -14) puff(p.x, ground + 0.2, p.z, 5); p.y = ground; p.vy = 0; p.grounded = true; }
     else if (p.y > ground + 0.08) p.grounded = false;
     else p.y = ground;
     p.swimming = canSwim() && terrainAt(p.x, p.z) < WATER - 0.05;
@@ -1107,7 +1108,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     // on recycle les sauvages trop loin (pas les boss ni les Alphas)
     g.foes.forEach((f) => {
       if (f.boss || f.alpha || f.dormant) return;
-      if ((f.x - p.x) ** 2 + (f.z - p.z) ** 2 > 60 * 60) {
+      if ((f.x - p.x) ** 2 + (f.z - p.z) ** 2 > (f.league ? 34 : 60) ** 2) {
         const a = rand(0, TAU); const x = p.x + Math.cos(a) * 32; const z = p.z + Math.sin(a) * 32;
         if (Math.hypot(x, z) < R * 0.9 && (f.fly || !isWater(x, z))) { f.x = x; f.z = z; f.y = terrainAt(x, z); }
       }
@@ -1146,7 +1147,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       if (tg.t < tg.dur) return true;
       if (tg.onDone) tg.onDone();
       if (tg.dmg && (p.x - tg.x) ** 2 + (p.z - tg.z) ** 2 < tg.r * tg.r) hurtPlayer(tg.dmg, tg);
-      if (tg.dmg) { particle(tg.x, terrainAt(tg.x, tg.z) + 0.3, tg.z, tg.color, 16, 7); shake(0.1); }
+      if (tg.dmg) { particle(tg.x, terrainAt(tg.x, tg.z) + 0.3, tg.z, tg.color, 16, 7); puff(tg.x, terrainAt(tg.x, tg.z) + 0.4, tg.z, 4); shake(0.1); }
       return false;
     });
   };
@@ -1192,7 +1193,9 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
   const explode = (x, y, z, r, dmg, type, color) => {
     near(x, z, r + 1.5).forEach((f) => { if ((f.x - x) ** 2 + (f.z - z) ** 2 < (r + f.radius) ** 2) hurt(f, dmg, type, { x, z }, { knock: 4 }); });
     g.fx.push({ kind: 'ring', x, z, y: y - 0.6, r: 0.3, max: r, life: 0.3, dur: 0.3, color });
-    particle(x, y, z, color, 12, 6);
+    g.fx.push({ kind: 'flash', x, y, z, life: 0.18, dur: 0.18, color, r });
+    fxBurst(x, y, z, type, 12, 6);
+    puff(x, y, z, 3);
   };
   const updateShots = (dt) => {
     const p = g.player;
@@ -1231,6 +1234,11 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
         }
       }
       sh.x += sh.vx * dt; sh.y += sh.vy * dt; sh.z += sh.vz * dt;
+      sh.trail = (sh.trail || 0) + dt;
+      if (sh.trail > 0.035 && parts.length < MAXP) {
+        sh.trail = 0;
+        parts.push({ x: sh.x + rand(-0.1, 0.1), y: sh.y + rand(-0.1, 0.1), z: sh.z + rand(-0.1, 0.1), vx: 0, vy: sh.type === 'Feu' ? 1 : 0, vz: 0, life: 0.28, max: 0.28, col: sh.kind === 'foe' ? '#ff6a5a' : (sh.color || '#ffffff'), f: FX.dot, size: 0.22, rot: 0, spin: 0, grav: 0 });
+      }
       if (sh.kind === 'foe') {
         if ((sh.x - p.x) ** 2 + (sh.z - p.z) ** 2 < (sh.size + 0.5) ** 2 && Math.abs(sh.y - (p.y + 1)) < 1.3) { hurtPlayer(sh.dmg, sh); return false; }
         return terrainAt(sh.x, sh.z) < sh.y + 0.5;
@@ -1256,7 +1264,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
         hurt(f, sh.dmg, sh.type, sh, { knock: 2 });
         if (sh.burn) { f.burnT = 3; f.burnDmg = sh.burn * 0.5; }
         if (sh.trap && !f.boss) { f.stunT = sh.trap; f.trapped = sh.trap; }
-        particle(sh.x, sh.y, sh.z, sh.color, 6, 4);
+        fxBurst(sh.x, sh.y, sh.z, sh.type, 6, 4);
         return false;
       }
       return true;
@@ -1269,7 +1277,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       if (z.kind === 'tornado') {
         z.x += z.vx * dt; z.z += z.vz * dt;
         near(z.x, z.z, z.r + 3).forEach((f) => { if (f.boss) return; const dx = z.x - f.x; const dz = z.z - f.z; const l = Math.hypot(dx, dz) || 1; if (l < z.r + 3) { f.x += (dx / l) * z.pull * 2 * dt; f.z += (dz / l) * z.pull * 2 * dt; } });
-        if (Math.random() < 0.6) parts.push({ x: z.x + rand(-z.r, z.r) * 0.5, y: terrainAt(z.x, z.z) + rand(0, 3), z: z.z + rand(-z.r, z.r) * 0.5, vx: rand(-3, 3), vy: 3, vz: rand(-3, 3), life: 0.5, r: 0.9, g: 0.95, b: 1, grav: 0 });
+        if (Math.random() < 0.6) parts.push({ x: z.x + rand(-z.r, z.r) * 0.5, y: terrainAt(z.x, z.z) + rand(0, 3), z: z.z + rand(-z.r, z.r) * 0.5, vx: rand(-3, 3), vy: 3, vz: rand(-3, 3), life: 0.5, max: 0.5, col: null, f: z.type === 'Eau' ? FX.Eau : FX.Vol, size: 0.5, rot: 0, spin: 8, grav: 0 });
       }
       z.tick += dt;
       if (z.tick >= 0.3) {
@@ -1281,15 +1289,16 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
         });
         if (z.heal && (p.x - z.x) ** 2 + (p.z - z.z) ** 2 < z.r * z.r) p.hp = Math.min(p.maxHp, p.hp + z.heal * 0.3);
       }
-      if (z.kind === 'firering' || z.kind === 'flame') { if (Math.random() < 0.5) particle(z.x + rand(-z.r, z.r) * (z.kind === 'flame' ? 0.5 : 1), terrainAt(z.x, z.z) + 0.2, z.z + rand(-z.r, z.r) * (z.kind === 'flame' ? 0.5 : 1), pick(['#ff6a1f', '#ffb347', '#ffe08a']), 1, 1, { up: 3, grav: 0, life: 0.6 }); }
+      if (z.kind === 'firering' || z.kind === 'flame') { if (Math.random() < 0.5) particle(z.x + rand(-z.r, z.r) * (z.kind === 'flame' ? 0.5 : 1), terrainAt(z.x, z.z) + 0.2, z.z + rand(-z.r, z.r) * (z.kind === 'flame' ? 0.5 : 1), null, 1, 1, { up: 3, grav: 0, life: 0.6, f: FX.Feu, size: 0.55, spin: 0 }); }
       return true;
     });
     // météores
     g.fx.forEach((fx) => {
       if (fx.kind !== 'meteor' || fx.done || fx.life > fx.dur) return;
       fx.done = true;
-      explode(fx.x, fx.y + 0.5, fx.z, fx.blast, fx.dmg, fx.type, fx.color);
-      particle(fx.x, fx.y + 0.5, fx.z, fx.rock ? '#8a6a44' : '#b49cff', 20, 8);
+      if (!fx.ult) explode(fx.x, fx.y + 0.5, fx.z, fx.blast, fx.dmg, fx.type, fx.color);
+      else fxBurst(fx.x, fx.y + 0.5, fx.z, fx.type, 10, 6);
+      fxBurst(fx.x, fx.y + 0.5, fx.z, fx.rock ? 'Roche' : fx.type, 16, 8); puff(fx.x, fx.y + 0.5, fx.z, 4, '#e0d0b8');
       shake(0.08);
     });
   };
@@ -1320,9 +1329,9 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       const dd = (d.x - p.x) ** 2 + (d.z - p.z) ** 2;
       if (d.kind === 'coin' && dd < (mag * 1.2) ** 2) { const l = Math.sqrt(dd) || 1; d.x += ((p.x - d.x) / l) * 18 * dt; d.z += ((p.z - d.z) / l) * 18 * dt; }
       if (dd < 1.4 * 1.4 && Math.abs(p.y - d.y) < 2) {
-        if (d.kind === 'coin') g.coins += Math.round(d.v * E.coins * 10) / 10;
+        if (d.kind === 'coin') { const gain = Math.round(d.v * E.coins * 10) / 10; g.coins += gain; g.coinsTotal += gain; }
         if (d.kind === 'ball') { g.balls += 1; text(p.x, p.y + 2.4, p.z, '+1 Poké Ball', '#ffffff'); }
-        if (d.kind === 'berry') { p.hp = Math.min(p.maxHp, p.hp + 30); text(p.x, p.y + 2.4, p.z, '+30', '#6bd17a', true); }
+        if (d.kind === 'berry') { g.berries += 1; p.hp = Math.min(p.maxHp, p.hp + 30); text(p.x, p.y + 2.4, p.z, '+30', '#6bd17a', true); }
         return false;
       }
       return d.age < 60;
@@ -1370,7 +1379,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     // Évolution : tout ralentit
     if (g.evo) {
       g.evo.t += raw;
-      if (Math.random() < 0.6) particle(p.x + rand(-1.5, 1.5), p.y + rand(0, 0.5), p.z + rand(-1.5, 1.5), pick(['#ffffff', g.evo.color]), 1, 1, { up: 5, grav: 0, life: 1.4 });
+      if (Math.random() < 0.6) particle(p.x + rand(-1.5, 1.5), p.y + rand(0, 0.5), p.z + rand(-1.5, 1.5), pick(['#ffffff', g.evo.color]), 1, 1, { up: 5, grav: 0, life: 1.4, f: FX.star4, size: 0.35 });
       if (g.evo.t >= g.evo.dur) finishEvo();
       tickFx(raw * 0.3);
       return;
@@ -1404,7 +1413,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       const q = parts[i];
       q.life -= dt;
       if (q.life <= 0) { parts.splice(i, 1); continue; }
-      q.vy -= q.grav * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt;
+      q.vy -= q.grav * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.z += q.vz * dt; q.rot += (q.spin || 0) * dt;
     }
     g.trauma = Math.max(0, g.trauma - dt * 1.6);
     g.hurtFlash = Math.max(0, g.hurtFlash - dt);
@@ -1437,7 +1446,6 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
   [...new Set(roster.waves.flatMap((w) => w.foes))].forEach((id) => bank.preload(FOES[id].dex, ['walk'], MAX_FOES));
   [...roster.minis, roster.final].forEach((id) => bank.preload(FOES[id].dex, ['walk', 'idle'], 2));
   const candyCol = new THREE.Color();
-  const shotCol = new THREE.Color();
 
   const render = () => {
     const p = g.player;
@@ -1475,7 +1483,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       const blink = p.inv > 0 && p.dashT <= 0 && Math.floor(g.t * 20) % 2 === 0;
       bank.draw(p.form.dex, anim, p.x, p.y + (p.swimming ? -0.3 : 0), p.z, pScale, at, rowFor(p.fx, p.fz, yaw), p.dashT > 0 ? 0.5 : 0, blink ? 0.45 : 1, 4, anim === 'walk' || anim === 'idle');
     }
-    blob(p.x, p.z, Math.max(terrainAt(p.x, p.z), WATER), 0.7 * pScale);
+    blob(p.x, p.z, Math.max(terrainAt(p.x, p.z), WATER), 0.55 * pScale);
     // Alliés
     g.allies.forEach((al) => {
       if (al.ko > 0) return;
@@ -1492,55 +1500,50 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       const hidden = f.dormant && f.alpha && inGrass(f.x, f.z);
       const anim = f.dormant || f.stunT > 0 ? 'idle' : 'walk';
       bank.draw(f.def.dex, anim, f.x + (f.state === 'wind' ? rand(-0.08, 0.08) : 0), f.y + (hidden ? -0.6 : 0), f.z, f.scale, g.t * (f.state === 'dash' ? 2 : 1) + f.phase, rowFor(f.fx, f.fz, yaw), flash, 1, f.boss || f.alpha ? 2 : MAX_FOES);
-      blob(f.x, f.z, Math.max(terrainAt(f.x, f.z), WATER), f.radius * 1.1);
+      blob(f.x, f.z, Math.max(terrainAt(f.x, f.z), WATER), f.radius * 0.85);
     });
     bank.flush();
     blobs.count = bi; blobs.instanceMatrix.needsUpdate = true;
 
-    // Projectiles
-    let si = 0;
-    g.shots.forEach((sh) => {
-      if (si >= 500) return;
-      const s = sh.size * (sh.kind === 'bubble' ? 1 : 1) * (1 + Math.sin(g.t * 30 + si) * 0.12);
-      setInst(shotMesh, si, sh.x, sh.y, sh.z, 0, s * 0.6);
-      setInst(shotHalo, si, sh.x, sh.y, sh.z, 0, s * 1.25);
-      shotCol.set(sh.color || '#ffffff');
-      shotHalo.setColorAt(si, shotCol);
-      shotMesh.setColorAt(si, shotCol.lerp(new THREE.Color('#ffffff'), 0.6));
-      si += 1;
+    // Projectiles : sprite du type + halo lumineux
+    const SPIN = { Normal: 1, Plante: 1, Fée: 1, Insecte: 0, Vol: 1, Roche: 1, Sol: 1, Ténèbres: 1, Acier: 0 };
+    g.shots.forEach((sh, si) => {
+      const ty = sh.type || 'Normal';
+      let frame = fxFrameOfType(ty);
+      if (sh.kind === 'bubble') frame = FX.bubble;
+      if (sh.bone) frame = FX.bone;
+      const base = sh.kind === 'foe' ? 0.9 : sh.ally ? 0.75 : 1;
+      const size = Math.max(0.55, sh.size * 2.6) * base * (1 + Math.sin(g.t * 30 + si) * 0.06);
+      const rot = SPIN[ty] || sh.bone ? g.t * 12 + si : sh.kind === 'foe' ? 0 : 0;
+      fx.glow(sh.x, sh.y, sh.z, size * 2.1, sh.kind === 'foe' ? '#ff4a3a' : (sh.color || '#ffffff'), 0.55);
+      fx.sprite(frame, sh.x, sh.y, sh.z, size, rot, 1, sh.kind === 'foe' ? '#ffd0d0' : null);
     });
-    shotMesh.count = si; shotHalo.count = si;
-    shotMesh.instanceMatrix.needsUpdate = true; shotHalo.instanceMatrix.needsUpdate = true;
-    if (shotMesh.instanceColor) shotMesh.instanceColor.needsUpdate = true;
-    if (shotHalo.instanceColor) shotHalo.instanceColor.needsUpdate = true;
-    // Feuilles
-    leafList.forEach((L, i) => setInst(leafMesh, i, L.x, L.y, L.z, -L.a + g.t * 8, 1, 0.5, Math.sin(g.t * 6 + i) * 0.4));
-    leafMesh.count = leafList.length; leafMesh.instanceMatrix.needsUpdate = true;
-    // Bonbons, pièces, Balls, baies
+    // Feuilles en orbite
+    leafList.forEach((L, i) => fx.sprite(FX.leafbig, L.x, L.y, L.z, 0.9, -L.a + g.t * 10 + i, 1));
+    // Cristaux d'XP, pièces, Balls, baies
     let oi = 0;
     g.orbs.forEach((o) => {
       if (oi >= 1000) return;
-      setInst(candyMesh, oi, o.x, o.y + Math.sin(g.t * 4 + o.x) * 0.08, o.z, g.t * 2 + o.x, o.v >= 10 ? 1.7 : o.v >= 3 ? 1.3 : 1);
-      candyMesh.setColorAt(oi, candyCol.set(o.v >= 10 ? '#ff6ad5' : o.v >= 3 ? '#5fd98a' : '#5fb8ff'));
+      const big = o.v >= 10 ? 1.6 : o.v >= 3 ? 1.25 : 1;
+      const yy = o.y + Math.sin(g.t * 4 + o.x) * 0.1;
+      setInst(candyMesh, oi, o.x, yy, o.z, g.t * 2 + o.x, big);
+      candyMesh.setColorAt(oi, candyCol.set(o.v >= 10 ? '#ff6ad5' : o.v >= 3 ? '#4fe08a' : '#5fd0ff'));
+      if (oi < 220) fx.glow(o.x, yy, o.z, 1.3 * big, o.v >= 10 ? '#ff6ad5' : o.v >= 3 ? '#3ccf6e' : '#5fc8ff', 0.35);
       oi += 1;
     });
     candyMesh.count = oi; candyMesh.instanceMatrix.needsUpdate = true; if (candyMesh.instanceColor) candyMesh.instanceColor.needsUpdate = true;
-    const cnt = { coin: 0, ball: 0, berry: 0 };
     g.drops.forEach((d) => {
-      const m = d.kind === 'coin' ? coinMesh : d.kind === 'ball' ? ballMesh : berryMesh;
-      const i = cnt[d.kind];
-      if (i >= m.instanceMatrix.count) return;
-      cnt[d.kind] += 1;
-      setInst(m, i, d.x, d.y + 0.1 + Math.sin(g.t * 3 + d.x) * 0.08, d.z, g.t * 2.5 + d.x, d.kind === 'coin' ? 1 : 1.1);
+      const yy = d.y + 0.25 + Math.sin(g.t * 3 + d.x) * 0.08;
+      if (d.kind === 'coin') { fx.sprite(FX.coin0 + (Math.floor(g.t * 8 + d.x) % 4), d.x, yy, d.z, 0.6); fx.glow(d.x, yy, d.z, 0.9, '#ffd23a', 0.25); }
+      else if (d.kind === 'ball') { fx.sprite(FX.ball, d.x, yy + 0.1, d.z, 0.8, Math.sin(g.t * 3 + d.x) * 0.2); fx.glow(d.x, yy, d.z, 1.4, '#ffffff', 0.3); }
+      else { fx.sprite(FX.berry, d.x, yy, d.z, 0.7); fx.glow(d.x, yy, d.z, 1.1, '#5f8bff', 0.3); }
     });
     // Balls lancées
     g.throws.forEach((th) => {
-      if (cnt.ball >= ballMesh.instanceMatrix.count || th.x === undefined) return;
-      setInst(ballMesh, cnt.ball, th.x, th.y, th.z, g.t * (th.phase === 'fly' ? 12 : 0), 1.1, 0, th.wob || 0);
-      cnt.ball += 1;
+      if (th.x === undefined) return;
+      fx.sprite(FX.ball, th.x, th.y + 0.15, th.z, 0.85, th.phase === 'fly' ? g.t * 14 : (th.wob || 0) * 0.8);
+      if (th.phase === 'shake') fx.glow(th.x, th.y + 0.15, th.z, 1.6, '#ffffff', 0.25 + Math.abs(th.wob || 0) * 0.6);
     });
-    coinMesh.count = cnt.coin; ballMesh.count = cnt.ball; berryMesh.count = cnt.berry;
-    coinMesh.instanceMatrix.needsUpdate = true; ballMesh.instanceMatrix.needsUpdate = true; berryMesh.instanceMatrix.needsUpdate = true;
     // Coffres ouverts : on les cache
     let ci = 0;
     world.chests.forEach((c) => { if (!c.open) { world.setInst(world.chestMesh, ci, c.x, c.y + Math.abs(Math.sin(g.t * 2 + c.x)) * 0.05, c.z, c.ang); ci += 1; } });
@@ -1576,19 +1579,19 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
           rings.add(f.x, f.y + 0.1, f.z, f.blast * fall, f.color, 0.6);
           const my = f.y + 0.5 + (1 - fall) * 18;
           const mx = f.x - (1 - fall) * 6;
-          if (shotMesh.count < 500) {
-            setInst(shotMesh, shotMesh.count, mx, my, f.z, 0, 0.5);
-            shotMesh.setColorAt(shotMesh.count, shotCol.set(f.rock ? '#8a6a44' : '#b49cff'));
-            shotMesh.count += 1;
-          }
+          fx.sprite(f.rock ? FX.Roche : fxFrameOfType(f.type), mx, my, f.z, f.rock ? 1.6 : 1.3, g.t * 6);
+          fx.glow(mx, my, f.z, 2.4, f.color, 0.5);
         } else discs.add(f.x, f.y + 0.1, f.z, f.blast * (0.5 + k), f.color, 0.4 * (1 - k));
       } else if (f.kind === 'slash') {
-        rings.add(f.x, f.y, f.z, 0.6 + k * 0.6, f.color, 0.9 * (1 - k), yaw + 0.6, 0.6 + k * 0.6, 0.6 + k * 0.6, Math.PI / 2);
+        fx.sprite(FX.slash, f.x, f.y, f.z, 1.4 + k * 0.8, f.rot ?? 0.6, 1 - k, f.color);
+        fx.glow(f.x, f.y, f.z, 1.8, f.color, 0.4 * (1 - k));
+      } else if (f.kind === 'flash') {
+        fx.glow(f.x, f.y, f.z, (f.r || 1) * 3 * (0.6 + k), f.color, 0.8 * (1 - k));
+        fx.sprite(FX.star4, f.x, f.y, f.z, (f.r || 1) * 1.2 * (0.5 + k), k * 2, 1 - k);
       } else if (f.kind === 'dome') {
         pillars.add(f.x, f.y, f.z, f.r * (0.3 + k), f.color, 0.4 * (1 - k), 0, 6 * (1 - k * 0.5), f.r * (0.3 + k));
       }
     });
-    shotMesh.instanceMatrix.needsUpdate = true; if (shotMesh.instanceColor) shotMesh.instanceColor.needsUpdate = true;
     g.teles.forEach((tg) => {
       const y = Math.max(terrainAt(tg.x, tg.z), WATER) + 0.1;
       const k = tg.t / tg.dur;
@@ -1617,37 +1620,39 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       rings.add(p.x, p.y + 0.1, p.z, 2 + Math.sin(g.evo.t * 6) * 0.5, g.evo.color, 0.8);
     }
     // Hautes herbes avec Alpha : elles frémissent
+    // Anneau sous le joueur (cyan), comme un repère de visée
+    {
+      const py = Math.max(terrainAt(p.x, p.z), WATER) + 0.07;
+      rings.add(p.x, py, p.z, 1.05 * pScale, '#5fe6ff', 0.95);
+      discs.add(p.x, py - 0.01, p.z, 1.05 * pScale, '#5fe6ff', 0.14);
+    }
+    // Futurs membres de la Ligue : halo doré au sol
+    g.foes.forEach((f) => { if (f.league && !f.dead) { const y = Math.max(terrainAt(f.x, f.z), WATER) + 0.08; rings.add(f.x, y, f.z, 1.4 * f.scale + Math.sin(g.t * 5) * 0.12, '#ffd23a', 0.9); } });
     rings.end(); discs.end(); beams.end(); pillars.end();
 
-    // Éclairs
-    let bp = 0;
+    // Éclairs : une chaîne d'étincelles
     g.zaps.forEach((z) => {
-      tmpC.set(z.color);
-      for (let s = 0; s < z.pts.length - 1; s += 1) {
-        const [ax, ay, az] = z.pts[s]; const [bx, by, bz] = z.pts[s + 1];
-        let lx = ax; let ly = ay; let lz = az;
-        for (let q = 1; q <= 5 && bp < 896; q += 1) {
-          const k = q / 5;
-          const nx = ax + (bx - ax) * k + (q < 5 ? rand(-0.4, 0.4) : 0);
-          const ny = ay + (by - ay) * k + (q < 5 ? rand(-0.4, 0.4) : 0);
-          const nz = az + (bz - az) * k + (q < 5 ? rand(-0.4, 0.4) : 0);
-          boltPos.set([lx, ly, lz, nx, ny, nz], bp * 3);
-          boltCol.set([tmpC.r, tmpC.g, tmpC.b, tmpC.r, tmpC.g, tmpC.b], bp * 3);
-          bp += 2; lx = nx; ly = ny; lz = nz;
+      if (!z.jit) z.jit = z.pts.map(() => [rand(-0.5, 0.5), rand(-0.5, 0.5), rand(-0.5, 0.5)]);
+      for (let sgi = 0; sgi < z.pts.length - 1; sgi += 1) {
+        const [ax, ay, az] = z.pts[sgi]; const [bx, by, bz] = z.pts[sgi + 1];
+        const L = Math.hypot(bx - ax, by - ay, bz - az); const n = Math.max(2, Math.ceil(L / 0.45));
+        for (let q = 0; q <= n; q += 1) {
+          const k = q / n; const w = Math.sin(k * Math.PI);
+          const jx = Math.sin(q * 2.3 + sgi * 7.1 + g.t * 40) * 0.35 * w; const jy = Math.cos(q * 1.7 + sgi * 3.3 + g.t * 37) * 0.35 * w;
+          const x = ax + (bx - ax) * k + jx; const y = ay + (by - ay) * k + jy; const zz = az + (bz - az) * k - jx;
+          fx.sprite(q % 3 === 0 ? FX.spark : FX.dot, x, y, zz, q % 3 === 0 ? 0.7 : 0.32, g.t * 9 + q, Math.min(1, z.life * 8), z.color);
+          if (q % 2 === 0) fx.glow(x, y, zz, 1.1, z.color, 0.35);
         }
       }
     });
-    boltGeo.setDrawRange(0, bp);
-    boltGeo.attributes.position.needsUpdate = true; boltGeo.attributes.color.needsUpdate = true;
     // Particules
     for (let i = 0; i < parts.length; i += 1) {
       const q = parts[i];
-      pPos[i * 3] = q.x; pPos[i * 3 + 1] = q.y; pPos[i * 3 + 2] = q.z;
-      const a = Math.min(1, q.life * 3);
-      pCol[i * 3] = q.r * a; pCol[i * 3 + 1] = q.g * a; pCol[i * 3 + 2] = q.b * a;
+      const k = q.life / (q.max || 1);
+      const sz = q.size * (q.grow ? 1 + (1 - k) * q.grow : 0.4 + k * 0.6);
+      fx.sprite(q.f ?? FX.dot, q.x, q.y, q.z, sz, q.rot || 0, Math.min(1, k * 2.5), q.col);
     }
-    pGeo.setDrawRange(0, parts.length);
-    pGeo.attributes.position.needsUpdate = true; pGeo.attributes.color.needsUpdate = true;
+    fx.flush();
 
     renderer.render(scene, camera);
     drawOverlay();
@@ -1677,10 +1682,17 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     octx.beginPath(); octx.moveTo(18, 0); octx.lineTo(-10, -12); octx.lineTo(-10, 12); octx.closePath(); octx.fill();
     octx.restore();
     if (label) {
-      octx.font = '600 13px "Pixelify Sans", monospace'; octx.textAlign = 'center';
+      octx.font = '600 13px Fredoka, Nunito, sans-serif'; octx.textAlign = 'center';
       octx.lineWidth = 4; octx.strokeStyle = 'rgba(0,0,0,.75)'; octx.strokeText(label, ex - Math.cos(a) * 26, ey - Math.sin(a) * 26);
       octx.fillStyle = color; octx.fillText(label, ex - Math.cos(a) * 26, ey - Math.sin(a) * 26);
     }
+  };
+  const roundRect = (x, y, w, h, r) => {
+    octx.beginPath();
+    octx.moveTo(x + r, y); octx.lineTo(x + w - r, y); octx.quadraticCurveTo(x + w, y, x + w, y + r);
+    octx.lineTo(x + w, y + h - r); octx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    octx.lineTo(x + r, y + h); octx.quadraticCurveTo(x, y + h, x, y + h - r);
+    octx.lineTo(x, y + r); octx.quadraticCurveTo(x, y, x + r, y); octx.closePath();
   };
   const drawOverlay = () => {
     const { w, h, dpr } = size;
@@ -1705,16 +1717,42 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       octx.fillStyle = 'rgba(12,8,24,.85)'; octx.fillRect(sp.x - bw / 2 - 2, sp.y - 4, bw + 4, 8);
       octx.fillStyle = f.hp / f.maxHp <= 0.3 ? '#ff4a4a' : f.alpha ? '#ff6a3a' : '#ffd23a';
       octx.fillRect(sp.x - bw / 2, sp.y - 2, bw * Math.max(0, f.hp / f.maxHp), 4);
-      if (f.alpha) { octx.font = '600 12px "Pixelify Sans", monospace'; octx.fillStyle = '#ff6a3a'; octx.fillText('ALPHA', sp.x, sp.y - 8); }
+      if (f.alpha) { octx.font = '600 12px Fredoka, Nunito, sans-serif'; octx.fillStyle = '#ff6a3a'; octx.fillText('ALPHA', sp.x, sp.y - 8); }
     });
     // Charges annoncées
     g.foes.forEach((f) => {
       if (f.state !== 'wind' || f.dead) return;
       const sp = toScreen(f.x, f.y + spriteHeight(f.def.dex) * f.scale + 0.6, f.z);
       if (!sp) return;
-      octx.font = '900 24px "Pixelify Sans", monospace';
+      octx.font = '900 24px Fredoka, Nunito, sans-serif';
       octx.lineWidth = 4; octx.strokeStyle = '#000'; octx.strokeText('!', sp.x, sp.y);
       octx.fillStyle = '#ff3b2a'; octx.fillText('!', sp.x, sp.y);
+    });
+    // Barre de vie sous le joueur
+    {
+      const sp = toScreen(p.x, Math.max(terrainAt(p.x, p.z), WATER), p.z);
+      if (sp && !g.evo) {
+        const bw = 76; const bh = 11; const x0 = sp.x - bw / 2; const y0 = sp.y + 14;
+        const k = Math.max(0, p.hp / p.maxHp);
+        octx.fillStyle = 'rgba(20,16,40,.85)'; roundRect(x0 - 2, y0 - 2, bw + 4, bh + 4, 7); octx.fill();
+        octx.fillStyle = '#ffffff'; roundRect(x0, y0, bw, bh, 5); octx.fill();
+        octx.fillStyle = k > 0.5 ? '#3ccf6e' : k > 0.25 ? '#f5b82e' : '#ff4a4a'; if (k > 0) { roundRect(x0, y0, Math.max(6, bw * k), bh, 5); octx.fill(); }
+        octx.font = '700 10px Fredoka, Nunito, sans-serif'; octx.textAlign = 'center';
+        octx.fillStyle = '#14102a'; octx.fillText(`${Math.ceil(p.hp)}`, sp.x, y0 + 9);
+      }
+    }
+    // Futurs membres de la Ligue : étiquette dorée
+    g.foes.forEach((f) => {
+      if (!f.league || f.dead || f.captureT > 0) return;
+      const sp = toScreen(f.x, f.y + spriteHeight(f.def.dex) * f.scale + 0.8, f.z);
+      if (!sp || sp.off) return;
+      octx.font = '700 12px Fredoka, Nunito, sans-serif'; octx.textAlign = 'center';
+      const label = `★ LIGUE · ${f.def.name}`; const tw = octx.measureText(label).width + 16;
+      octx.fillStyle = '#ffd23a'; roundRect(sp.x - tw / 2, sp.y - 12, tw, 20, 10); octx.fill();
+      octx.fillStyle = '#3a2400'; octx.fillText(label, sp.x, sp.y + 2);
+      const bw = 64; const k = Math.max(0, f.hp / f.maxHp);
+      octx.fillStyle = 'rgba(20,16,40,.85)'; octx.fillRect(sp.x - bw / 2 - 2, sp.y + 12, bw + 4, 7);
+      octx.fillStyle = k <= 0.3 ? '#ff4a4a' : '#ffd23a'; octx.fillRect(sp.x - bw / 2, sp.y + 14, bw * k, 3);
     });
     // Chiffres
     g.texts.forEach((t) => {
@@ -1722,9 +1760,9 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       if (!sp) return;
       const k = 1 - t.life / t.max;
       const pop = k < 0.15 ? 1 + (0.15 - k) * 4 : 1;
-      octx.font = `700 ${(t.big ? 22 : 16) * pop}px "Pixelify Sans", monospace`;
+      octx.font = `700 ${(t.big ? 24 : 17) * pop}px Fredoka, Nunito, sans-serif`;
       octx.globalAlpha = Math.min(1, (t.life / t.max) * 2.5);
-      octx.lineWidth = 4; octx.strokeStyle = 'rgba(12,8,24,.85)';
+      octx.lineJoin = 'round'; octx.lineWidth = 5; octx.strokeStyle = 'rgba(20,16,40,.9)';
       octx.strokeText(t.txt, sp.x, sp.y);
       octx.fillStyle = t.color; octx.fillText(t.txt, sp.x, sp.y);
     });
@@ -1735,7 +1773,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       const sp = toScreen(c.x, c.y + 2, c.z);
       if (!sp) return;
       const cost = chestCost(); const ok = g.coins >= cost;
-      octx.font = '600 14px "Pixelify Sans", monospace';
+      octx.font = '600 14px Fredoka, Nunito, sans-serif';
       const label = `${cost} ₽`;
       const tw = octx.measureText(label).width + 14;
       octx.fillStyle = ok ? '#ffd447' : 'rgba(12,8,24,.85)'; octx.fillRect(sp.x - tw / 2, sp.y - 11, tw, 20);
@@ -1755,38 +1793,47 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     }
     if (g.flashScreen) { octx.fillStyle = g.flashScreen.color; octx.globalAlpha = g.flashScreen.life * 0.8; octx.fillRect(0, 0, w, h); octx.globalAlpha = 1; }
     if (g.evo) { const k = g.evo.t / g.evo.dur; octx.fillStyle = `rgba(255,255,255,${k > 0.9 ? (k - 0.9) * 8 : 0})`; octx.fillRect(0, 0, w, h); }
-    // Mini-carte
-    const ms = w < 640 ? 100 : 150;
-    const mx0 = w - ms - 14; const my0 = h - ms - 14;
+    // Mini-carte ronde, en haut à droite, orientée vers le haut de l'écran
+    const ms = w < 640 ? 104 : 150;
+    const mcx = w - ms / 2 - 16; const mcy = ms / 2 + 16;
     octx.save();
-    octx.fillStyle = 'rgba(12,8,24,.75)'; octx.fillRect(mx0 - 4, my0 - 4, ms + 8, ms + 8);
-    octx.beginPath(); octx.rect(mx0, my0, ms, ms); octx.clip();
+    octx.beginPath(); octx.arc(mcx, mcy, ms / 2 + 5, 0, TAU); octx.fillStyle = '#ffffff'; octx.fill();
+    octx.beginPath(); octx.arc(mcx, mcy, ms / 2 + 2, 0, TAU); octx.fillStyle = '#ff4a5e'; octx.fill();
+    octx.beginPath(); octx.arc(mcx, mcy, ms / 2, 0, TAU); octx.clip();
+    const zoom = 2.2; const k = (ms / 240) * zoom;
+    octx.translate(mcx, mcy); octx.rotate(g.cam.yaw); octx.translate(-(p.x + 120) * k, -(p.z + 120) * k);
     octx.imageSmoothingEnabled = false;
-    octx.drawImage(world.mini, mx0, my0, ms, ms);
-    const k = ms / 240;
-    const mp = (x, z) => [mx0 + (x + 120) * k, my0 + (z + 120) * k];
-    octx.fillStyle = '#ffd23a';
-    world.chests.forEach((c) => { if (!c.open) { const [x, y] = mp(c.x, c.z); octx.fillRect(x - 2, y - 2, 4, 4); } });
-    octx.fillStyle = '#c08aff';
-    world.altars.forEach((a) => { if (!a.used) { const [x, y] = mp(a.x, a.z); octx.fillRect(x - 3, y - 3, 6, 6); } });
-    octx.fillStyle = 'rgba(255,70,60,.8)';
-    g.foes.forEach((f, i) => { if (i % 2 === 0 && !f.dormant) { const [x, y] = mp(f.x, f.z); octx.fillRect(x, y, 1.5, 1.5); } });
+    octx.fillStyle = '#3f9be8'; octx.fillRect(-200, -200, 240 * k + 400, 240 * k + 400);
+    octx.drawImage(world.mini, 0, 0, 240 * k, 240 * k);
+    const mp = (x, z) => [(x + 120) * k, (z + 120) * k];
+    const dot = (x, z, r, col, ring) => { const [mx, my] = mp(x, z); octx.beginPath(); octx.arc(mx, my, r, 0, TAU); if (ring) { octx.strokeStyle = col; octx.lineWidth = 2; octx.stroke(); } else { octx.fillStyle = col; octx.fill(); } };
+    world.chests.forEach((c) => { if (!c.open) dot(c.x, c.z, 3.2, '#2f6fe0'); });
+    world.altars.forEach((a) => { if (!a.used) dot(a.x, a.z, 4, '#9a5aff'); });
+    g.foes.forEach((f, i) => { if (i % 2 === 0 && !f.dormant && !f.boss && !f.alpha && !f.league) dot(f.x, f.z, 1.3, 'rgba(230,40,40,.85)'); });
     g.foes.forEach((f) => {
-      if (!f.alpha || f.dead) return;
-      const [x, y] = f.dormant ? mp(f.grass.x, f.grass.z) : mp(f.x, f.z);
-      octx.strokeStyle = '#ff3a3a'; octx.lineWidth = 2; octx.beginPath(); octx.arc(x, y, f.dormant ? 6 + Math.sin(g.t * 4) * 2 : 4, 0, TAU); octx.stroke();
+      if (f.dead) return;
+      if (f.alpha) { const pt = f.dormant ? f.grass : f; dot(pt.x, pt.z, f.dormant ? 6 + Math.sin(g.t * 4) * 2 : 4, '#ff3a3a', true); }
+      if (f.league) dot(f.x, f.z, 4.5 + Math.sin(g.t * 6), '#ffd23a');
+      if (f.boss && f.boss !== 'final') dot(f.x, f.z, 4, '#ff2347');
     });
-    { const [x, y] = mp(arena.x, arena.z); octx.strokeStyle = g.finalSpawned ? '#ffd23a' : 'rgba(255,255,255,.6)'; octx.lineWidth = 2; octx.beginPath(); octx.arc(x, y, arena.r * k, 0, TAU); octx.stroke(); }
+    dot(arena.x, arena.z, arena.r * k, g.finalSpawned ? '#ffd23a' : 'rgba(255,255,255,.8)', true);
     const fin = g.foes.find((x) => x.boss === 'final' && !x.dead);
-    if (fin) { const [x, y] = mp(fin.x, fin.z); octx.fillStyle = '#ffd23a'; octx.beginPath(); octx.arc(x, y, 4 + Math.sin(g.t * 6), 0, TAU); octx.fill(); }
-    g.foes.forEach((f) => { if (f.boss && f.boss !== 'final' && !f.dead) { const [x, y] = mp(f.x, f.z); octx.fillStyle = '#ff2347'; octx.beginPath(); octx.arc(x, y, 4, 0, TAU); octx.fill(); } });
-    octx.fillStyle = '#7fe0ff';
-    g.allies.forEach((al) => { if (al.ko <= 0) { const [x, y] = mp(al.x, al.z); octx.fillRect(x - 1.5, y - 1.5, 3, 3); } });
-    const [px, py] = mp(p.x, p.z);
-    octx.translate(px, py); octx.rotate(-g.cam.yaw);
-    octx.fillStyle = '#ffffff';
-    octx.beginPath(); octx.moveTo(0, -6); octx.lineTo(4, 4); octx.lineTo(-4, 4); octx.closePath(); octx.fill();
+    if (fin) dot(fin.x, fin.z, 4 + Math.sin(g.t * 6), '#ffd23a');
+    g.allies.forEach((al) => { if (al.ko <= 0) dot(al.x, al.z, 2.2, '#5fe6ff'); });
     octx.restore();
+    // le joueur au centre : flèche
+    octx.save(); octx.translate(mcx, mcy);
+    octx.fillStyle = '#ffffff'; octx.strokeStyle = '#14102a'; octx.lineWidth = 2;
+    octx.beginPath(); octx.moveTo(0, -7); octx.lineTo(5, 5); octx.lineTo(0, 2); octx.lineTo(-5, 5); octx.closePath(); octx.fill(); octx.stroke();
+    octx.restore();
+    // points cardinaux
+    octx.font = '700 10px Fredoka, Nunito, sans-serif'; octx.fillStyle = '#14102a';
+    [['N', 0], ['E', Math.PI / 2], ['S', Math.PI], ['O', -Math.PI / 2]].forEach(([l, a]) => {
+      const aa = a + g.cam.yaw; const rr2 = ms / 2 + 0.5;
+      const lx = mcx + Math.sin(aa) * rr2; const ly = mcy - Math.cos(aa) * rr2;
+      octx.beginPath(); octx.arc(lx, ly, 7, 0, TAU); octx.fillStyle = '#ffffff'; octx.fill();
+      octx.fillStyle = l === 'N' ? '#ff2347' : '#14102a'; octx.textAlign = 'center'; octx.fillText(l, lx, ly + 3.5);
+    });
     // Joystick tactile
     if (input.stick) {
       const r = mount.getBoundingClientRect();
@@ -1830,12 +1877,14 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       ult: g.ult, ultName: ULT.name, ultColor: ULT.color, ults: g.ults,
       missions: g.missions.map((m) => ({ id: m.id, label: m.label, goal: m.goal, value: m.value, done: m.done, failed: m.failed })),
       caught: g.caught, met: Object.keys(g.met), bosses: g.bossKills, alphaKills: g.alphaKills,
+      typeKills: g.typeKills, caughtTypes: g.caughtTypes, leagueCaught: g.leagueCaught, dashes: g.dashes, berries: g.berries, evolutions: g.evolutions, coinsTotal: g.coinsTotal,
+      chests: g.chestsOpened, altars: g.altarsUsed, superHits: g.superHits, noHit: g.maxNoHit,
       finalSpawned: g.finalSpawned, finalAt: FINAL_AT, evolving: !!g.evo, swim: canSwim(),
       slots: { weapons: MAX_WEAPONS, passives: MAX_PASSIVES }
     };
   };
 
-  if (typeof window !== 'undefined' && window.__RUSH_DEBUG) window.__rush = { g, input, keys, world, camera, gainXp, choose, throwBall, ultimate, chooseBlessing, spawnFoe, step: (n, dt = 1 / 30) => { for (let i = 0; i < n; i += 1) update(dt); } };
+  if (typeof window !== 'undefined' && window.__RUSH_DEBUG) window.__rush = { g, input, keys, world, camera, renderer, render, stop: () => cancelAnimationFrame(raf), shot: () => { render(); return renderer.domElement.toDataURL('image/jpeg', 0.85); }, gainXp, choose, throwBall, ultimate, chooseBlessing, spawnFoe, step: (n, dt = 1 / 30) => { for (let i = 0; i < n; i += 1) update(dt); } };
 
   return {
     snapshot, choose, reroll, ultimate, chooseBlessing, throwBall,

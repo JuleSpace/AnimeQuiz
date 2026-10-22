@@ -1,14 +1,16 @@
 /**
- * Poké Rush : l'île de Kanto en 3D low-poly.
- * Collines en terrasses, rivière et lac (seuls les types Eau et Vol s'y aventurent),
- * hautes herbes (les Alphas s'y cachent), arbres, autels et l'arène du légendaire.
+ * Poké Rush : l'île de Kanto, en 3D façon pixel art.
+ * Terrain en terrasses (falaises de briques ocre), sol texturé pixel par pixel (herbe, hautes herbes,
+ * sable, chemin, dalles de l'arène), décor en sprites dessinés à la main par le code (arbres, fleurs, rochers),
+ * rivière et lac, ciel, nuages et montagnes au loin.
  */
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { PROPS, PROP_PIX, makeGroundTextures, makePropAtlas } from './rushArt';
 
 export const TAU = Math.PI * 2;
 export const SIZE = 240;
-export const SEG = 180;
+export const SEG = 220;
 export const R = 104;
 export const WATER = -0.6;
 
@@ -30,7 +32,7 @@ const noise = (x, y, s) => {
   return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
 };
 
-/* ——— Géométries low-poly colorées ——— */
+/* ——— Géométries simples colorées (objets 3D : Poké Balls, piliers…) ——— */
 export const M = (x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = sx, sz = sx) => new THREE.Matrix4().compose(
   new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(rx, ry, rz)), new THREE.Vector3(sx, sy, sz)
 );
@@ -51,62 +53,189 @@ export const B = (w, h, d) => new THREE.BoxGeometry(w, h, d);
 export const K = (r, h, s = 6) => new THREE.ConeGeometry(r, h, s);
 export const I = (r, d = 0) => new THREE.IcosahedronGeometry(r, d);
 
-const treeGeo = () => merge([
-  part(C(0.32, 0.42, 2.2, 6), '#7a4a26', M(0, 1.1, 0)),
-  part(I(1.9, 0), '#2f9a3e', M(0, 3.0, 0, 0, 0, 0, 1, 0.85, 1)),
-  part(I(1.45, 0), '#3fb54c', M(0.3, 4.1, 0.2, 0.3, 0.2, 0)),
-  part(I(0.9, 0), '#58c95c', M(-0.2, 4.9, -0.1, 0.5, 0.4, 0))
-]);
-const pineGeo = () => merge([
-  part(C(0.25, 0.35, 1.6, 6), '#6b3f20', M(0, 0.8, 0)),
-  part(K(1.8, 2.4, 7), '#2a7a3c', M(0, 2.4, 0)),
-  part(K(1.4, 2.0, 7), '#33914a', M(0, 3.6, 0)),
-  part(K(0.95, 1.6, 7), '#3aa456', M(0, 4.7, 0))
-]);
-const bushGeo = () => merge([
-  part(I(0.8, 0), '#3f9e45', M(0, 0.55, 0, 0, 0, 0, 1.2, 0.8, 1)),
-  part(I(0.55, 0), '#4fb855', M(0.5, 0.65, 0.2)),
-  part(S(0.13, 5, 4), '#3a6bdb', M(0.3, 0.95, 0.5)),
-  part(S(0.13, 5, 4), '#3a6bdb', M(-0.4, 0.85, 0.45)),
-  part(S(0.13, 5, 4), '#3a6bdb', M(0.1, 1.05, -0.4))
-]);
-const flowerGeo = () => merge([
-  part(C(0.03, 0.03, 0.5, 4), '#2f8a3a', M(0, 0.25, 0)),
-  ...[0, 1, 2, 3, 4].map((i) => part(B(0.16, 0.04, 0.09), '#ffffff', M(Math.cos(i * 1.26) * 0.12, 0.52, Math.sin(i * 1.26) * 0.12, 0, -i * 1.26, 0))),
-  part(C(0.06, 0.06, 0.05, 6), '#ffd23a', M(0, 0.54, 0))
-]);
-const rockGeo = () => merge([part(new THREE.DodecahedronGeometry(1, 0), '#8f8a99', M(0, 0.35, 0, 0, 0, 0, 1, 0.7, 1))]);
-const grassGeo = () => {
-  // une touffe : 5 brins croisés
-  const parts = [];
-  for (let i = 0; i < 5; i += 1) {
-    const a = (i / 5) * Math.PI;
-    const g = new THREE.BufferGeometry();
-    const h = 1.1 + (i % 2) * 0.35;
-    g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-0.18, 0, 0, 0.18, 0, 0, 0.02, h, 0]), 3));
-    g.computeVertexNormals();
-    parts.push(part(g, i % 2 ? '#2f8f3a' : '#3fae47', M(Math.cos(a * 2) * 0.2, 0, Math.sin(a * 2) * 0.2, 0, a, 0)));
-  }
-  return merge(parts);
-};
+/** Grosse Poké Ball d'objets (Super Ball), posée au sol. */
 export const chestGeo = () => merge([
-  part(B(1.5, 0.85, 1.0), '#c0392b', M(0, 0.42, 0)),
-  part(B(1.55, 0.12, 1.05), '#2a2a2a', M(0, 0.85, 0)),
-  part(C(0.5, 0.5, 1.5, 10, 1), '#e74c3c', M(0, 0.95, 0, 0, 0, Math.PI / 2)),
-  part(C(0.16, 0.16, 0.1, 10), '#ffffff', M(0, 0.8, 0.53, Math.PI / 2)),
-  part(C(0.09, 0.09, 0.12, 10), '#2a2a2a', M(0, 0.8, 0.56, Math.PI / 2))
+  part(new THREE.SphereGeometry(0.75, 18, 9, 0, TAU, 0, Math.PI / 2), '#2f6fe0', M(0, 0.78, 0)),
+  part(new THREE.SphereGeometry(0.76, 18, 9, 0, TAU, Math.PI / 2, Math.PI / 2), '#f2f2f6', M(0, 0.78, 0)),
+  part(C(0.77, 0.77, 0.1, 22), '#1a1a22', M(0, 0.78, 0)),
+  part(B(0.22, 0.12, 0.5), '#e2342f', M(0.42, 1.28, 0, 0, 0, -0.55)),
+  part(B(0.22, 0.12, 0.5), '#e2342f', M(-0.42, 1.28, 0, 0, 0, 0.55)),
+  part(C(0.2, 0.2, 0.08, 14), '#1a1a22', M(0, 0.78, 0.74, Math.PI / 2)),
+  part(C(0.13, 0.13, 0.1, 14), '#ffffff', M(0, 0.78, 0.77, Math.PI / 2))
 ]);
-const altarGeo = () => merge([
-  part(C(1.8, 2.1, 0.5, 8), '#8a8399', M(0, 0.25, 0)),
-  part(C(1.2, 1.5, 0.4, 8), '#a39bb5', M(0, 0.7, 0)),
-  part(B(0.55, 2.0, 0.55), '#6e6684', M(0, 1.9, 0)),
-  part(B(0.75, 0.25, 0.75), '#a39bb5', M(0, 2.95, 0))
-]);
-const pillarGeo = () => merge([
-  part(B(1.4, 0.4, 1.4), '#c9c2d6', M(0, 0.2, 0)),
-  part(C(0.5, 0.55, 5, 8), '#e6e0f0', M(0, 2.9, 0)),
-  part(B(1.4, 0.4, 1.4), '#c9c2d6', M(0, 5.6, 0))
-]);
+
+/* ——— Matériaux ——— */
+const LIGHT_DIR = new THREE.Vector3(-0.45, 0.85, 0.35).normalize();
+const terrainVert = `
+varying vec3 vW;
+varying vec3 vN;
+#include <fog_pars_vertex>
+void main() {
+  vec4 wp = modelMatrix * vec4(position, 1.0);
+  vW = wp.xyz;
+  vN = normalize(mat3(modelMatrix) * normal);
+  vec4 mvPosition = viewMatrix * wp;
+  gl_Position = projectionMatrix * mvPosition;
+  #include <fog_vertex>
+}`;
+const terrainFrag = `
+uniform sampler2D tGrass; uniform sampler2D tTall; uniform sampler2D tSand; uniform sampler2D tPath; uniform sampler2D tStone; uniform sampler2D tCliff;
+uniform sampler2D tKind;
+uniform vec3 uLight;
+uniform float uSize;
+uniform float uWater;
+varying vec3 vW;
+varying vec3 vN;
+#include <fog_pars_fragment>
+float h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+void main() {
+  vec3 n = normalize(vN);
+  vec2 kuv = (vW.xz + uSize * 0.5) / uSize;
+  vec4 km = texture2D(tKind, kuv);
+  float kind = floor(km.r * 255.0 + 0.5);
+  vec2 uvT = vW.xz / 2.0;
+  vec3 top;
+  if (kind < 0.5) top = texture2D(tGrass, uvT).rgb;
+  else if (kind < 1.5) top = texture2D(tTall, uvT).rgb;
+  else if (kind < 2.5) top = texture2D(tSand, uvT).rgb;
+  else if (kind < 3.5) top = texture2D(tStone, uvT).rgb;
+  else top = texture2D(tPath, uvT).rgb;
+  // sable des berges
+  if (vW.y < uWater + 0.35 && kind < 1.5) top = texture2D(tSand, uvT).rgb;
+  // légère variation de teinte à grande échelle
+  top *= 0.94 + km.g * 0.12;
+  vec2 uvS = abs(n.x) > abs(n.z) ? vec2(vW.z, vW.y) : vec2(vW.x, vW.y);
+  vec3 side = texture2D(tCliff, uvS / vec2(4.0, 2.0)).rgb;
+  // lèvre d'herbe en haut des falaises (bord dentelé)
+  float lip = fract(vW.y / 2.0);
+  float jag = h21(floor(uvS * 16.0) + vec2(0.0, floor(vW.y / 2.0)));
+  if (lip > 0.88 + jag * 0.07 && kind < 1.5) side = texture2D(tGrass, uvS / 2.0).rgb * 0.92;
+  float isTop = step(0.62, n.y);
+  vec3 col = mix(side, top, isTop);
+  float diff = max(dot(n, uLight), 0.0);
+  float shade = 0.62 + diff * 0.48;
+  if (isTop < 0.5) shade = 0.7 + diff * 0.35;
+  col *= shade;
+  gl_FragColor = vec4(col, 1.0);
+  #include <colorspace_fragment>
+  #include <fog_fragment>
+}`;
+const waterFrag = `
+uniform sampler2D tWater; uniform sampler2D tKind; uniform float uT; uniform float uSize;
+varying vec3 vW;
+varying vec3 vN;
+#include <fog_pars_fragment>
+void main() {
+  vec2 uv = vW.xz / 3.0 + vec2(uT * 0.05, uT * 0.02);
+  vec3 col = texture2D(tWater, uv).rgb;
+  vec3 col2 = texture2D(tWater, vW.xz / 5.0 - vec2(uT * 0.03, -uT * 0.04)).rgb;
+  col = mix(col, col2, 0.4);
+  vec2 kuv = (vW.xz + uSize * 0.5) / uSize;
+  float shore = texture2D(tKind, kuv).b;
+  float foam = step(0.55, shore) * step(0.5, fract(sin(dot(floor(vW.xz * 8.0), vec2(12.9898, 78.233)) + floor(uT * 3.0)) * 43758.5453));
+  col = mix(col, vec3(0.85, 0.95, 1.0), foam * 0.85 + shore * 0.25);
+  gl_FragColor = vec4(col, 0.9);
+  #include <colorspace_fragment>
+  #include <fog_fragment>
+}`;
+// Décor : billboards cylindriques (ils restent droits), qui ondulent un peu au vent
+const propVert = `
+attribute vec3 iPos;
+attribute vec4 iRect; // x, y, w, h dans l'atlas (pixels)
+attribute vec2 iSize; // largeur, hauteur (m)
+attribute float iSway;
+uniform vec2 uAtlas;
+uniform float uT;
+varying vec2 vUv;
+varying float vShade;
+varying float vNear;
+#include <fog_pars_vertex>
+void main() {
+  vec3 camRight = normalize(vec3(viewMatrix[0][0], 0.0, viewMatrix[2][0]));
+  float sway = sin(uT * 1.6 + iPos.x * 0.37 + iPos.z * 0.21) * iSway * uv.y;
+  vec3 world = iPos + camRight * (position.x * iSize.x + sway) + vec3(0.0, position.y * iSize.y, 0.0);
+  vec4 mvPosition = viewMatrix * vec4(world, 1.0);
+  gl_Position = projectionMatrix * mvPosition;
+  vUv = vec2((iRect.x + uv.x * iRect.z) / uAtlas.x, 1.0 - (iRect.y + (1.0 - uv.y) * iRect.w) / uAtlas.y);
+  vShade = 0.86 + uv.y * 0.18;
+  vNear = -mvPosition.z;
+  #include <fog_vertex>
+}`;
+const propFrag = `
+uniform sampler2D uMap;
+uniform float uFade;
+varying vec2 vUv;
+varying float vShade;
+varying float vNear;
+#include <fog_pars_fragment>
+void main() {
+  vec4 c = texture2D(uMap, vUv);
+  if (c.a < 0.5) discard;
+  // décor tout près de la caméra : tramé pour ne pas cacher l'action
+  if (uFade > 0.5 && vNear < 9.0) {
+    vec2 q = mod(floor(gl_FragCoord.xy / 2.0), 2.0);
+    float th = (q.x * 2.0 + q.y) / 4.0 + 0.125;
+    if (clamp((vNear - 3.5) / 5.0, 0.0, 1.0) < th) discard;
+  }
+  gl_FragColor = vec4(c.rgb * vShade, 1.0);
+  #include <colorspace_fragment>
+  #include <fog_fragment>
+}`;
+
+/** Un lot de sprites de décor (un seul appel de dessin). */
+const makePropBatch = (scene, track, atlas, list) => {
+  const n = Math.max(1, list.length);
+  const plane = new THREE.PlaneGeometry(1, 1); plane.translate(0, 0.5, 0);
+  const geo = new THREE.InstancedBufferGeometry();
+  geo.index = plane.index;
+  geo.setAttribute('position', plane.attributes.position);
+  geo.setAttribute('uv', plane.attributes.uv);
+  const pos = new Float32Array(n * 3); const rect = new Float32Array(n * 4); const size = new Float32Array(n * 2); const sway = new Float32Array(n);
+  list.forEach((p, i) => {
+    const r = PROPS[p.kind];
+    pos.set([p.x, p.y, p.z], i * 3);
+    rect.set([r.x, r.y, r.w, r.h], i * 4);
+    size.set([r.w * PROP_PIX * p.s * (p.flip ? -1 : 1), r.h * PROP_PIX * p.s], i * 2);
+    sway[i] = p.sway || 0;
+  });
+  geo.setAttribute('iPos', new THREE.InstancedBufferAttribute(pos, 3));
+  geo.setAttribute('iRect', new THREE.InstancedBufferAttribute(rect, 4));
+  geo.setAttribute('iSize', new THREE.InstancedBufferAttribute(size, 2));
+  geo.setAttribute('iSway', new THREE.InstancedBufferAttribute(sway, 1));
+  geo.instanceCount = list.length;
+  const uniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uMap: { value: null }, uAtlas: { value: new THREE.Vector2(atlas.w, atlas.h) }, uT: { value: 0 }, uFade: { value: 1 } }]);
+  uniforms.uMap.value = atlas.tex;
+  const mat = track(new THREE.ShaderMaterial({ vertexShader: propVert, fragmentShader: propFrag, uniforms, fog: true }));
+  const mesh = new THREE.Mesh(track(geo), mat);
+  mesh.frustumCulled = false;
+  scene.add(mesh);
+  plane.dispose();
+  return { mesh, uniforms };
+};
+
+/** Panorama de montagnes au loin (une bande peinte, posée sur un cylindre ouvert). */
+const mountainBand = () => {
+  const W = 1024; const H = 128;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const layer = (base, amp, col, seed, snow) => {
+    for (let i = 0; i < W; i += 1) {
+      const t = i / W;
+      const f = (u) => noise(u * 9, 0, seed) * 0.7 + noise(u * 23, 1, seed) * 0.3;
+      const h = base + ((1 - t) * f(t) + t * f(t - 1)) * amp; // raccord sans couture autour du cylindre
+      const top = Math.floor(H - h);
+      x.fillStyle = col; x.fillRect(i, top, 1, H - top);
+      if (snow && h > base + amp * 0.62) { x.fillStyle = '#eef6ff'; x.fillRect(i, top, 1, Math.max(2, Math.floor((h - base - amp * 0.62) * 0.9))); }
+    }
+  };
+  layer(40, 70, '#9ec2e6', 1, true);
+  layer(26, 48, '#86b2dc', 2, false);
+  layer(12, 30, '#6fa0d2', 3, false);
+  const t = new THREE.CanvasTexture(c);
+  t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+  t.wrapS = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+};
 
 /** Construit le monde dans la scène. */
 export const buildRushWorld = (scene, track, opts = {}) => {
@@ -116,40 +245,46 @@ export const buildRushWorld = (scene, track, opts = {}) => {
 
   // Arène du légendaire et point de départ, de part et d'autre de l'île
   const aAng = rr(0, TAU);
-  const arena = { x: Math.cos(aAng) * 60, z: Math.sin(aAng) * 60, r: 15, y: 3.4 };
+  const arena = { x: Math.cos(aAng) * 60, z: Math.sin(aAng) * 60, r: 15, y: 4.4 };
   const start = { x: -Math.cos(aAng) * 34, z: -Math.sin(aAng) * 34 };
-  // Lac et rivière
   const lake = { x: Math.cos(aAng + 1.9) * 45, z: Math.sin(aAng + 1.9) * 45, r: 14 };
   const riverSeed = seed + 11;
   const riverDist = (x, z) => {
-    // une rivière sinueuse qui coupe l'île en diagonale (perpendiculaire à l'axe départ → arène)
     const ux = -Math.sin(aAng); const uz = Math.cos(aAng);
     const along = x * ux + z * uz;
     const across = x * Math.cos(aAng) + z * Math.sin(aAng);
     const center = 8 + Math.sin(along / 17 + seed) * 9 + (noise(along / 30, 0, riverSeed) - 0.5) * 12;
     return Math.abs(across - center);
   };
+  // Chemin de terre : du départ à l'arène, en serpentant
+  const pathDist = (x, z) => {
+    const ax = arena.x - start.x; const az = arena.z - start.z; const L = Math.hypot(ax, az);
+    const ux = ax / L; const uz = az / L;
+    const rx = x - start.x; const rz = z - start.z;
+    const along = clamp(rx * ux + rz * uz, 0, L);
+    const wob = Math.sin(along / 11 + seed * 0.1) * 7;
+    const px = start.x + ux * along - uz * wob; const pz = start.z + uz * along + ux * wob;
+    return Math.hypot(x - px, z - pz);
+  };
 
   const rawHeight = (x, z) => {
     const r = Math.hypot(x, z);
-    const f = noise(x / 48, z / 48, seed) * 0.6 + noise(x / 20, z / 20, seed + 1) * 0.3 + noise(x / 8, z / 8, seed + 2) * 0.1;
-    let h = Math.max(0, (f - 0.42) * 22) + 0.4;
-    // terrasses (falaises de 2 m qu'on franchit en sautant)
+    const f = noise(x / 46, z / 46, seed) * 0.6 + noise(x / 20, z / 20, seed + 1) * 0.3 + noise(x / 8, z / 8, seed + 2) * 0.1;
+    let h = Math.max(0, (f - 0.4) * 26) + 0.4;
+    // terrasses : falaises nettes de 2 m qu'on franchit en sautant
     const step = 2;
     const t = h / step; const fr = t - Math.floor(t);
-    h = (Math.floor(t) + smooth(0.78, 1, fr)) * step;
-    // départ plat
+    h = (Math.floor(t) + smooth(0.86, 1, fr)) * step;
     h *= smooth(10, 22, Math.hypot(x - start.x, z - start.z));
-    // rivière et lac
+    // le chemin reste praticable
+    h *= 0.35 + 0.65 * smooth(2.5, 6, pathDist(x, z));
     const rd = riverDist(x, z);
     const ld = Math.hypot(x - lake.x, z - lake.z);
     const carve = Math.max(1 - smooth(3.2, 6.5, rd), 1 - smooth(lake.r * 0.6, lake.r, ld));
     h = h * (1 - carve) + (WATER - 1.4) * carve;
-    // arène : plateau rond avec une rampe douce
     const ad = Math.hypot(x - arena.x, z - arena.z);
     const k = 1 - smooth(arena.r, arena.r + 12, ad);
     h = h * (1 - k) + arena.y * k;
-    // bord de l'île
     const edge = smooth(0.8, 0.98, r / R);
     return h * (1 - edge) + -3.2 * edge;
   };
@@ -175,13 +310,41 @@ export const buildRushWorld = (scene, track, opts = {}) => {
     const a = rr(0, TAU); const r = rr(18, R * 0.82);
     const x = Math.cos(a) * r; const z = Math.sin(a) * r;
     const gr = rr(4.5, 8.5);
-    if (isWater(x, z) || slopeAt(x, z) > 0.6 || Math.hypot(x - arena.x, z - arena.z) < arena.r + 14 || Math.hypot(x - start.x, z - start.z) < 14) continue;
+    if (isWater(x, z) || slopeAt(x, z) > 0.6 || Math.hypot(x - arena.x, z - arena.z) < arena.r + 14 || Math.hypot(x - start.x, z - start.z) < 14 || pathDist(x, z) < gr + 3) continue;
     if (grass.some((g) => Math.hypot(g.x - x, g.z - z) < g.r + gr + 6)) continue;
     grass.push({ x, z, r: gr });
   }
   const inGrass = (x, z) => grass.some((g) => (g.x - x) ** 2 + (g.z - z) ** 2 < g.r * g.r);
 
-  /* ——— Maillage du terrain ——— */
+  /* ——— Carte des sols (1 texel ≈ 0,47 m) : R = sol, G = teinte, B = écume ——— */
+  const KM = 512;
+  const kindData = new Uint8Array(KM * KM * 4);
+  for (let j = 0; j < KM; j += 1) {
+    for (let i = 0; i < KM; i += 1) {
+      const x = -SIZE / 2 + ((i + 0.5) / KM) * SIZE; const z = -SIZE / 2 + ((j + 0.5) / KM) * SIZE;
+      let kind = 0;
+      const ad = Math.hypot(x - arena.x, z - arena.z);
+      if (ad < arena.r + 0.6) kind = 3;
+      else if (pathDist(x, z) < 1.6 + noise(x / 3, z / 3, seed + 5) * 0.9) kind = 4;
+      else if (inGrass(x, z)) kind = 1;
+      const h = terrainAt(x, z);
+      if (h < WATER + 0.2 && kind !== 3) kind = 2;
+      const o = (j * KM + i) * 4;
+      kindData[o] = kind;
+      kindData[o + 1] = Math.floor(noise(x / 14, z / 14, seed + 9) * 255);
+      // écume : près des berges, sur l'eau
+      let shore = 0;
+      if (h < WATER) { const d = WATER - h; shore = clamp(1 - d / 0.9, 0, 1); }
+      kindData[o + 2] = Math.floor(shore * 255);
+      kindData[o + 3] = 255;
+    }
+  }
+  const kindTex = track(new THREE.DataTexture(kindData, KM, KM, THREE.RGBAFormat));
+  kindTex.magFilter = THREE.NearestFilter; kindTex.minFilter = THREE.NearestFilter; kindTex.needsUpdate = true;
+  const tex = makeGroundTextures();
+  Object.values(tex).forEach((t) => track(t));
+
+  /* ——— Terrain ——— */
   {
     const geo = new THREE.PlaneGeometry(SIZE, SIZE, SEG, SEG);
     geo.rotateX(-Math.PI / 2);
@@ -189,50 +352,44 @@ export const buildRushWorld = (scene, track, opts = {}) => {
     for (let k = 0; k < pos.count; k += 1) pos.setY(k, terrainAt(pos.getX(k), pos.getZ(k)));
     const flat = geo.toNonIndexed();
     flat.computeVertexNormals();
-    const p = flat.attributes.position; const nrm = flat.attributes.normal;
-    const col = new Float32Array(p.count * 3);
-    const c = new THREE.Color();
-    for (let k = 0; k < p.count; k += 3) {
-      const cx = (p.getX(k) + p.getX(k + 1) + p.getX(k + 2)) / 3;
-      const cy = (p.getY(k) + p.getY(k + 1) + p.getY(k + 2)) / 3;
-      const cz = (p.getZ(k) + p.getZ(k + 1) + p.getZ(k + 2)) / 3;
-      const ny = nrm.getY(k);
-      const ad = Math.hypot(cx - arena.x, cz - arena.z);
-      if (cy < WATER + 0.25) c.set(cy < WATER - 0.6 ? '#c2ad7a' : '#e8d6a0');
-      else if (ad < arena.r + 0.5 && ny > 0.9) {
-        // dalles de l'arène
-        const ring = Math.floor(ad / 2.5) & 1;
-        c.set(ring ? '#d9d2e6' : '#c4bcd4');
-        if (ad < 3) c.set('#ffd23a');
-      } else if (ny < 0.72) {
-        const band = Math.floor(cy / 0.7) & 1;
-        c.set(band ? '#9a8a72' : '#857560');
-      } else {
-        const chk = (Math.floor(cx / 7) + Math.floor(cz / 7)) & 1;
-        c.set(chk ? '#6cc44a' : '#62b842');
-        if (grass.some((g) => (g.x - cx) ** 2 + (g.z - cz) ** 2 < (g.r + 0.5) ** 2)) c.set('#3f9a35');
-        c.offsetHSL(0, 0, (hash2(Math.floor(cx * 2), Math.floor(cz * 2), 7) - 0.5) * 0.05 + cy * 0.006);
-      }
-      for (let q = 0; q < 3; q += 1) { col[(k + q) * 3] = c.r; col[(k + q) * 3 + 1] = c.g; col[(k + q) * 3 + 2] = c.b; }
-    }
-    flat.setAttribute('color', new THREE.BufferAttribute(col, 3));
-    const mesh = new THREE.Mesh(track(flat), track(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true })));
+    const uniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
+      tGrass: { value: null }, tTall: { value: null }, tSand: { value: null }, tPath: { value: null }, tStone: { value: null }, tCliff: { value: null }, tKind: { value: null },
+      uLight: { value: LIGHT_DIR }, uSize: { value: SIZE }, uWater: { value: WATER }
+    }]);
+    uniforms.tGrass.value = tex.grass; uniforms.tTall.value = tex.tall; uniforms.tSand.value = tex.sand; uniforms.tPath.value = tex.path;
+    uniforms.tStone.value = tex.stone; uniforms.tCliff.value = tex.cliff; uniforms.tKind.value = kindTex;
+    const mat = track(new THREE.ShaderMaterial({ vertexShader: terrainVert, fragmentShader: terrainFrag, uniforms, fog: true }));
+    const mesh = new THREE.Mesh(track(flat), mat);
     scene.add(mesh);
     geo.dispose();
   }
   // Eau (mer, rivière, lac)
-  const waterMat = track(new THREE.MeshLambertMaterial({ color: '#3a9ae8', transparent: true, opacity: 0.82 }));
-  const water = new THREE.Mesh(track(new THREE.PlaneGeometry(900, 900)), waterMat);
+  const waterUniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { tWater: { value: null }, tKind: { value: null }, uT: { value: 0 }, uSize: { value: SIZE } }]);
+  waterUniforms.tWater.value = tex.water; waterUniforms.tKind.value = kindTex;
+  const water = new THREE.Mesh(track(new THREE.PlaneGeometry(900, 900)), track(new THREE.ShaderMaterial({ vertexShader: terrainVert, fragmentShader: waterFrag, uniforms: waterUniforms, fog: true, transparent: true })));
   water.rotation.x = -Math.PI / 2;
   water.position.y = WATER;
   water.renderOrder = 1;
   scene.add(water);
-  // reflets : petites vaguelettes blanches
-  const foamGeo = track(new THREE.PlaneGeometry(0.9, 0.12));
-  const foam = new THREE.InstancedMesh(foamGeo, track(new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.55 })), 260);
-  const foamList = [];
 
-  const vertexMat = track(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true }));
+  // Ciel : dégradé, montagnes au loin, nuages
+  {
+    const sky = new THREE.Mesh(track(new THREE.SphereGeometry(560, 24, 12)), track(new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite: false, fog: false,
+      uniforms: { top: { value: new THREE.Color('#3f8cf0') }, mid: { value: new THREE.Color('#8fcaff') }, bot: { value: new THREE.Color('#d8efff') } },
+      vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+      fragmentShader: 'uniform vec3 top; uniform vec3 mid; uniform vec3 bot; varying vec3 vP; void main(){ float h = vP.y; vec3 c = h > 0.12 ? mix(mid, top, smoothstep(0.12, 0.6, h)) : mix(bot, mid, smoothstep(-0.05, 0.12, h)); gl_FragColor = vec4(c, 1.0);\n#include <colorspace_fragment>\n}'
+    })));
+    sky.renderOrder = -10;
+    scene.add(sky);
+    const mt = track(mountainBand()); mt.repeat.set(3, 1);
+    const band = new THREE.Mesh(track(new THREE.CylinderGeometry(420, 420, 110, 64, 1, true)), track(new THREE.MeshBasicMaterial({ map: mt, transparent: true, side: THREE.BackSide, fog: false, depthWrite: false })));
+    band.position.y = 38;
+    band.renderOrder = -9;
+    scene.add(band);
+  }
+
+  const vertexMat = track(new THREE.MeshLambertMaterial({ vertexColors: true }));
   const tmpM = new THREE.Matrix4(); const tmpQ = new THREE.Quaternion(); const tmpE = new THREE.Euler(); const tmpV = new THREE.Vector3(); const tmpS = new THREE.Vector3();
   const setInst = (mesh, i, x, y, z, ry = 0, sc = 1, rx = 0, rz = 0, sy = sc) => {
     tmpE.set(rx, ry, rz, 'YXZ');
@@ -254,61 +411,71 @@ export const buildRushWorld = (scene, track, opts = {}) => {
       const x = Math.cos(a) * r; const z = Math.sin(a) * r;
       if (terrainAt(x, z) < WATER + 0.5 || slopeAt(x, z) > maxSlope) continue;
       if (Math.hypot(x - arena.x, z - arena.z) < arena.r + 4) continue;
+      if (pathDist(x, z) < 2.6) continue;
       if (avoid && (Math.hypot(x - start.x, z - start.z) < avoid || inGrass(x, z))) continue;
       return { x, z };
     }
     return null;
   };
 
-  // Décor
+  // Décor en sprites
   const colliders = [];
+  const atlas = makePropAtlas(); track(atlas.tex);
+  const props = [];
   {
-    const trees = []; const pines = []; const bushes = []; const flowers = []; const rocks = [];
-    for (let k = 0; k < 1500 && trees.length < 70; k += 1) { const s = freeSpot(12, R * 0.92, 0.5, 9); if (s && !inGrass(s.x, s.z)) trees.push(s); }
-    for (let k = 0; k < 900 && pines.length < 40; k += 1) { const s = freeSpot(40, R * 0.92, 0.9, 9); if (s && !inGrass(s.x, s.z)) pines.push(s); }
-    for (let k = 0; k < 900 && bushes.length < 40; k += 1) { const s = freeSpot(8, R * 0.9, 0.5, 6); if (s) bushes.push(s); }
-    for (let k = 0; k < 900 && flowers.length < 220; k += 1) { const s = freeSpot(4, R * 0.9, 0.4); if (s && !inGrass(s.x, s.z)) flowers.push(s); }
-    for (let k = 0; k < 600 && rocks.length < 34; k += 1) { const s = freeSpot(14, R * 0.92, 1.4, 8); if (s) rocks.push(s); }
-    const tm = instanced(treeGeo(), trees.length);
-    trees.forEach((s, i) => { const sc = rr(0.85, 1.25); setInst(tm, i, s.x, terrainAt(s.x, s.z) - 0.1, s.z, rr(0, TAU), sc); colliders.push({ x: s.x, z: s.z, r: 0.6 * sc }); });
-    const pm = instanced(pineGeo(), pines.length);
-    pines.forEach((s, i) => { const sc = rr(0.9, 1.4); setInst(pm, i, s.x, terrainAt(s.x, s.z) - 0.1, s.z, rr(0, TAU), sc); colliders.push({ x: s.x, z: s.z, r: 0.5 * sc }); });
-    const bm = instanced(bushGeo(), bushes.length);
-    bushes.forEach((s, i) => setInst(bm, i, s.x, terrainAt(s.x, s.z), s.z, rr(0, TAU), rr(0.8, 1.2)));
-    const fm = instanced(flowerGeo(), flowers.length);
-    const fcol = new THREE.Color();
-    flowers.forEach((s, i) => {
-      setInst(fm, i, s.x, terrainAt(s.x, s.z), s.z, rr(0, TAU), rr(0.8, 1.3));
-      fm.setColorAt(i, fcol.set(['#ffffff', '#ff8ac0', '#ffe14a', '#ff6a5a', '#b8a0ff'][Math.floor(rng() * 5)]));
-    });
-    const rm = instanced(rockGeo(), rocks.length);
-    rocks.forEach((s, i) => { const sc = rr(0.7, 1.9); setInst(rm, i, s.x, terrainAt(s.x, s.z) - 0.15, s.z, rr(0, TAU), sc); colliders.push({ x: s.x, z: s.z, r: sc * 0.85 }); });
-    // Touffes des hautes herbes
-    const tufts = [];
+    const put = (kind, n, minR, maxR, slope, avoid, o = {}) => {
+      let made = 0;
+      for (let k = 0; k < n * 12 && made < n; k += 1) {
+        const s = freeSpot(minR, maxR, slope, avoid);
+        if (!s || (o.noGrass && inGrass(s.x, s.z))) continue;
+        const kk = Array.isArray(kind) ? kind[Math.floor(rng() * kind.length)] : kind;
+        const sc = rr(o.s?.[0] ?? 0.9, o.s?.[1] ?? 1.2);
+        props.push({ kind: kk, x: s.x, y: terrainAt(s.x, s.z) - 0.05, z: s.z, s: sc, flip: rng() < 0.5, sway: o.sway || 0 });
+        if (o.col) colliders.push({ x: s.x, z: s.z, r: o.col * sc });
+        made += 1;
+      }
+    };
+    put(['oak', 'oak2', 'oak', 'apple', 'cherry'], 85, 12, R * 0.93, 0.5, 9, { noGrass: true, s: [0.8, 1.15], col: 0.5, sway: 0.1 });
+    put('pine', 40, 40, R * 0.93, 0.9, 9, { noGrass: true, s: [0.9, 1.3], col: 0.4, sway: 0.06 });
+    put(['bush', 'bushB'], 55, 8, R * 0.9, 0.5, 6, { s: [0.9, 1.25], sway: 0.05 });
+    put('fern', 90, 6, R * 0.9, 0.6, 4, { s: [0.9, 1.3], sway: 0.1 });
+    put('sunflower', 45, 8, R * 0.9, 0.5, 6, { noGrass: true, s: [0.9, 1.2], sway: 0.12 });
+    put(['flowersA', 'flowersB', 'flowersC'], 260, 4, R * 0.9, 0.5, 0, { noGrass: true, s: [0.9, 1.3], sway: 0.06 });
+    put(['rock', 'rockM'], 40, 14, R * 0.92, 1.4, 8, { s: [1, 2], col: 0.7 });
+    put('stump', 20, 10, R * 0.9, 0.5, 8, { col: 0.4 });
+    put('mush', 50, 8, R * 0.9, 0.5, 4, {});
+    // hautes herbes : touffes serrées
     grass.forEach((gp) => {
-      const n = Math.round(gp.r * gp.r * 2.2);
+      const n = Math.round(gp.r * gp.r * 1.6);
       for (let i = 0; i < n; i += 1) {
         const a = rr(0, TAU); const r = Math.sqrt(rng()) * gp.r;
         const x = gp.x + Math.cos(a) * r; const z = gp.z + Math.sin(a) * r;
-        if (!isWater(x, z)) tufts.push({ x, z });
+        if (!isWater(x, z)) props.push({ kind: rng() < 0.5 ? 'tall' : 'tall2', x, y: terrainAt(x, z) - 0.05, z, s: rr(1.1, 1.6), flip: rng() < 0.5, sway: 0.18 });
       }
     });
-    const gm = instanced(grassGeo(), tufts.length, track(new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
-    tufts.forEach((s, i) => setInst(gm, i, s.x, terrainAt(s.x, s.z) - 0.05, s.z, rr(0, TAU), rr(0.85, 1.25)));
-    // Écume sur l'eau
-    for (let k = 0; k < 3000 && foamList.length < 260; k += 1) {
-      const x = rr(-R, R); const z = rr(-R, R);
-      if (Math.hypot(x, z) < R * 0.98 && terrainAt(x, z) < WATER - 0.3) foamList.push({ x, z, a: rr(0, TAU), p: rr(0, TAU) });
-    }
-    foam.count = foamList.length;
-    scene.add(foam);
   }
+  const propBatch = makePropBatch(scene, track, atlas, props);
+  // Nuages qui dérivent, très haut et loin
+  const clouds = [];
+  for (let k = 0; k < 26; k += 1) {
+    const a = rr(0, TAU); const r = rr(140, 330);
+    clouds.push({ kind: k % 2 ? 'cloud' : 'cloud2', x: Math.cos(a) * r, y: rr(55, 120), z: Math.sin(a) * r, s: rr(4, 8), flip: rng() < 0.5, a, r, sp: rr(0.004, 0.01) });
+  }
+  const cloudBatch = makePropBatch(scene, track, atlas, clouds);
+  cloudBatch.mesh.material.fog = false;
+  cloudBatch.uniforms.uFade.value = 0;
 
-  // Arène : piliers en cercle
+  // Arène : piliers de pierre en cercle
   {
-    const pm = instanced(pillarGeo(), 8);
-    for (let i = 0; i < 8; i += 1) {
-      const a = (i / 8) * TAU;
+    const stoneMat = track(new THREE.MeshLambertMaterial({ map: tex.stone }));
+    const pil = new THREE.CylinderGeometry(0.55, 0.62, 5, 10);
+    const cap = new THREE.BoxGeometry(1.5, 0.45, 1.5); cap.translate(0, 2.7, 0);
+    const foot = new THREE.BoxGeometry(1.5, 0.45, 1.5); foot.translate(0, -2.3, 0);
+    const pillar = mergeGeometries([pil, cap, foot], false); pillar.translate(0, 2.5, 0);
+    pil.dispose(); cap.dispose(); foot.dispose();
+    const pm = instanced(pillar, 10, stoneMat);
+    for (let i = 0; i < 10; i += 1) {
+      const a = (i / 10) * TAU;
       const x = arena.x + Math.cos(a) * (arena.r - 1.2); const z = arena.z + Math.sin(a) * (arena.r - 1.2);
       setInst(pm, i, x, arena.y - 0.05, z, -a);
       colliders.push({ x, z, r: 0.9 });
@@ -321,8 +488,17 @@ export const buildRushWorld = (scene, track, opts = {}) => {
     const s = freeSpot(25, R * 0.8, 0.3, 20);
     if (s && !altars.some((a) => Math.hypot(a.x - s.x, a.z - s.z) < 40)) altars.push({ ...s, y: terrainAt(s.x, s.z), charge: 0, used: false });
   }
-  const altarMesh = instanced(altarGeo(), altars.length);
-  altars.forEach((a, i) => { setInst(altarMesh, i, a.x, a.y - 0.1, a.z, 0); colliders.push({ x: a.x, z: a.z, r: 0.5 }); });
+  {
+    const stoneMat = track(new THREE.MeshLambertMaterial({ map: tex.stone, color: '#cfc4ea' }));
+    const base = new THREE.CylinderGeometry(1.8, 2.1, 0.5, 10); base.translate(0, 0.25, 0);
+    const mid = new THREE.CylinderGeometry(1.2, 1.5, 0.4, 10); mid.translate(0, 0.7, 0);
+    const col = new THREE.BoxGeometry(0.6, 2, 0.6); col.translate(0, 1.9, 0);
+    const top = new THREE.BoxGeometry(0.8, 0.28, 0.8); top.translate(0, 3, 0);
+    const altarGeo = mergeGeometries([base, mid, col, top], false);
+    [base, mid, col, top].forEach((g) => g.dispose());
+    const altarMesh = instanced(altarGeo, altars.length, stoneMat);
+    altars.forEach((a, i) => { setInst(altarMesh, i, a.x, a.y - 0.1, a.z, 0); colliders.push({ x: a.x, z: a.z, r: 0.5 }); });
+  }
   const chests = [];
   for (let k = 0; k < 12; k += 1) { const s = freeSpot(14, R * 0.86, 0.3, 10); if (s) chests.push({ ...s, y: terrainAt(s.x, s.z), open: false, ang: rr(0, TAU) }); }
   const chestMesh = instanced(chestGeo(), chests.length);
@@ -362,11 +538,12 @@ export const buildRushWorld = (scene, track, opts = {}) => {
         const x = -SIZE / 2 + (i / 128) * SIZE; const z = -SIZE / 2 + (j / 128) * SIZE;
         const h = terrainAt(x, z);
         let c;
-        if (h < WATER) c = [58, 154, 232];
-        else if (h < WATER + 0.3) c = [232, 214, 160];
-        else if (Math.hypot(x - arena.x, z - arena.z) < arena.r) c = [210, 200, 230];
-        else if (inGrass(x, z)) c = [50, 140, 50];
-        else c = [90 + h * 10, 180 - h * 6, 70];
+        if (h < WATER) c = [63, 155, 232];
+        else if (h < WATER + 0.3) c = [234, 215, 162];
+        else if (Math.hypot(x - arena.x, z - arena.z) < arena.r) c = [217, 211, 232];
+        else if (pathDist(x, z) < 1.8) c = [201, 160, 106];
+        else if (inGrass(x, z)) c = [44, 122, 42];
+        else c = [85 + h * 6, 184 - h * 5, 58];
         const o = (j * 128 + i) * 4;
         img.data[o] = c[0]; img.data[o + 1] = c[1]; img.data[o + 2] = c[2]; img.data[o + 3] = 255;
       }
@@ -375,11 +552,13 @@ export const buildRushWorld = (scene, track, opts = {}) => {
   }
 
   const tick = (t) => {
-    foamList.forEach((f, i) => {
-      const k = 0.6 + Math.sin(t * 1.5 + f.p) * 0.4;
-      setInst(foam, i, f.x + Math.sin(t * 0.4 + f.p) * 0.4, WATER + 0.03, f.z, f.a, k, -Math.PI / 2);
-    });
-    foam.instanceMatrix.needsUpdate = true;
+    waterUniforms.uT.value = t;
+    propBatch.uniforms.uT.value = t;
+    cloudBatch.uniforms.uT.value = 0;
+    // les nuages tournent lentement autour de l'île
+    const pos = cloudBatch.mesh.geometry.attributes.iPos;
+    clouds.forEach((c, i) => { const a = c.a + t * c.sp; pos.setXYZ(i, Math.cos(a) * c.r, c.y, Math.sin(a) * c.r); });
+    pos.needsUpdate = true;
   };
 
   return {

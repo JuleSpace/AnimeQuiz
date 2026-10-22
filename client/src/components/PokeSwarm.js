@@ -866,4 +866,4 @@ const PokeSwarm = ({ onClose }) => {
 
 export default PokeSwarm;
 
-export { PmdSprite, TcgCard, MusicControls, RunRecap, Missions, Pips };
+export { PmdSprite, TcgCard, MusicControls, RunRecap, Missions, Pips, optionLabel, ITEM_SLUG, MoveDemo };

@@ -25,10 +25,10 @@ varying float vAlpha;
 #include <fog_pars_vertex>
 void main() {
   float s = iData.x;
-  vec3 right = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
-  vec3 up = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
-  // on garde le sprite bien droit (un peu de « sphérique » pour suivre la caméra en plongée)
-  up = normalize(mix(vec3(0.0, 1.0, 0.0), up, 0.55));
+  // billboard cylindrique : le sprite reste bien droit, il pivote seulement autour de l'axe vertical
+  vec3 right = normalize(vec3(viewMatrix[0][0], 0.0, viewMatrix[2][0]));
+  vec3 camUp = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+  vec3 up = normalize(mix(vec3(0.0, 1.0, 0.0), camUp, 0.22));
   vec2 size = uCell * ${PIX.toFixed(4)} * s;
   vec3 center = iPos + up * ((uLift - 1.0) * ${PIX.toFixed(4)} * s);
   vec3 world = center + right * position.x * size.x + up * position.y * size.y;
@@ -42,18 +42,27 @@ void main() {
 const FRAG = `
 uniform sampler2D uMap;
 uniform vec3 uTint;
+uniform vec2 uTexel;
 varying vec2 vUv;
 varying float vFlash;
 varying float vAlpha;
 #include <fog_pars_fragment>
 void main() {
   vec4 c = texture2D(uMap, vUv);
-  if (c.a < 0.5) discard;
+  if (c.a < 0.5) {
+    // contour sombre d'un pixel autour du sprite, pour le détacher du décor
+    float n = texture2D(uMap, vUv + vec2(uTexel.x, 0.0)).a + texture2D(uMap, vUv - vec2(uTexel.x, 0.0)).a
+      + texture2D(uMap, vUv + vec2(0.0, uTexel.y)).a + texture2D(uMap, vUv - vec2(0.0, uTexel.y)).a;
+    if (n < 0.5) discard;
+    gl_FragColor = vec4(0.08, 0.07, 0.12, vAlpha * 0.85);
+    #include <colorspace_fragment>
+    #include <fog_fragment>
+    return;
+  }
   vec3 col = c.rgb * uTint;
   if (vFlash > 0.0) col = mix(col, vec3(1.0), vFlash);
   if (vFlash < 0.0) col = mix(col, vec3(1.0, 0.25, 0.2), -vFlash);
   gl_FragColor = vec4(col, vAlpha);
-  #include <tonemapping_fragment>
   #include <colorspace_fragment>
   #include <fog_fragment>
 }`;
@@ -115,7 +124,8 @@ class SpriteBatch {
       uCell: { value: new THREE.Vector2(meta.w, meta.h) },
       uGrid: { value: new THREE.Vector2(meta.d.length, meta.rows || 1) },
       uLift: { value: meta.h * 0.25 },
-      uTint: { value: new THREE.Color(1, 1, 1) }
+      uTint: { value: new THREE.Color(1, 1, 1) },
+      uTexel: { value: new THREE.Vector2(0.001, 0.001) }
     }]);
     this.material = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms: this.uniforms, fog: true, transparent: true, depthWrite: true });
     this.mesh = new THREE.Mesh(geo, this.material);
@@ -131,6 +141,7 @@ class SpriteBatch {
         tex.generateMipmaps = false;
         tex.colorSpace = THREE.SRGBColorSpace;
         this.uniforms.uMap.value = tex;
+        this.uniforms.uTexel.value.set(1 / tex.image.width, 1 / tex.image.height);
         this.tex = tex;
         // Où sont les pieds ? Plus bas pixel opaque de la première case (face caméra).
         try {
