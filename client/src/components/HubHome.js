@@ -25,7 +25,7 @@ const hello = () => {
 
 const HubHome = ({ name, onQuiz, onMusic, onGame, onAdmin, onPortfolio, onShelf }) => {
   const games = GAME_IDS.map((id) => PROJECTS.find((p) => p.id === id)).filter(Boolean);
-  const extra = PROJECTS.filter((p) => !['quiz', ...GAME_IDS].includes(p.id));
+  const extra = PROJECTS.filter((p) => !['quiz', 'cards', ...GAME_IDS].includes(p.id));
   const quiz = PROJECTS.find((p) => p.id === 'quiz');
   const [boards, setBoards] = useState({});
   useEffect(() => {
