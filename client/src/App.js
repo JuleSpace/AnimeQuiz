@@ -17,6 +17,7 @@ import Portfolio, { PORTFOLIO_HASH } from './components/Portfolio';
 import GameShelf, { GAMES_HASH } from './components/GameShelf';
 import { useAccount, logout as accountLogout } from './components/account';
 import AuthPanel from './components/AuthPanel';
+import HubHome from './components/HubHome';
 import LegalPage, { PRIVACY_HASH, TERMS_HASH } from './components/LegalPage';
 import { readAdminSession, storeAdminSession, clearAdminSession } from './utils/adminSession';
 import './index.css';
@@ -63,7 +64,7 @@ function clearSeat() {
   sessionStorage.removeItem(SEAT_KEY);
 }
 
-const FULLSCREEN_VIEWS = ['reliques', 'academy', 'bonk', 'pokerush', 'swarm', 'arena', 'terms', 'privacy', 'portfolio', 'jeux'];
+const FULLSCREEN_VIEWS = ['home', 'modes', 'login', 'reliques', 'academy', 'bonk', 'pokerush', 'swarm', 'arena', 'terms', 'privacy', 'portfolio', 'jeux'];
 
 function App() {
   const [currentView, setCurrentView] = useState(() => secretViewFromHash() || 'login');
@@ -125,15 +126,16 @@ function App() {
 
   }, []);
 
-  // Compte obligatoire : connecté → on passe au choix des modes avec le pseudo du compte
+  // Compte obligatoire : connecté → page d'accueil avec le pseudo du compte
   useEffect(() => {
     if (!account.ready) return;
     if (account.user) {
       setUsername(account.user.name);
       setIsLoggedIn(true);
-      setCurrentView((view) => (view === 'login' ? 'modes' : view));
+      setCurrentView((view) => (view === 'login' || view === 'modes' ? 'home' : view));
     } else {
       setIsLoggedIn(false);
+      setCurrentView((view) => (view === 'home' || view === 'modes' ? 'login' : view));
     }
   }, [account.ready, account.user]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -506,7 +508,7 @@ function App() {
     socket.on('join-error', (data) => {
       clearSeat();
       setError(data.message);
-      setCurrentView((view) => (view === 'rejoin' ? 'modes' : view));
+      setCurrentView((view) => (view === 'rejoin' ? 'home' : view));
     });
 
     socket.on('start-error', (data) => {
@@ -692,6 +694,22 @@ function App() {
     fetchQuizzes();
   };
 
+  const renderHome = () => (
+    <HubHome
+      name={account.user?.name || username}
+      onQuiz={() => chooseMode('quiz')}
+      onMusic={() => chooseMode('music')}
+      onAdmin={() => setCurrentView(adminSession?.token ? 'admin' : 'admin-login')}
+      onShelf={() => { window.location.hash = GAMES_HASH; setCurrentView('jeux'); }}
+      onPortfolio={() => { window.location.hash = PORTFOLIO_HASH; setCurrentView('portfolio'); }}
+      onGame={(game) => {
+        if (!game.hash) { chooseMode('quiz'); return; }
+        window.location.hash = game.hash;
+        setCurrentView(secretViewFromHash() || 'home');
+      }}
+    />
+  );
+
   const renderCurrentView = () => {
     // Pages ouvertes à tous ; le reste demande un compte
     const PUBLIC_VIEWS = ['login', 'portfolio', 'jeux', 'terms', 'privacy', 'academy', 'admin-login', 'admin', 'rejoin'];
@@ -722,7 +740,12 @@ function App() {
           </div>
         );
 
+      case 'home':
+      case 'modes':
+        return renderHome();
+
       case 'login':
+        if (account.user) return renderHome();
         return (
           <div className="container">
             <div className="card">
@@ -773,37 +796,6 @@ function App() {
           </div>
         );
 
-      case 'modes':
-        return (
-          <div className="container">
-            <div className="card">
-              <h1 style={{ textAlign: 'center', marginBottom: '10px' }}>Que veux-tu jouer ?</h1>
-              <p style={{ textAlign: 'center', marginBottom: '24px', opacity: 0.85 }}>
-                Connecté en tant que {username}
-              </p>
-              <div className="mode-grid">
-                <button type="button" className="mode-card" onClick={() => chooseMode('quiz')}>
-                  <span className="mode-card-title"><Icon name="quiz" tone="mark" />Quiz</span>
-                  <span>Questions à choix, vrai/faux, texte libre, images, vidéos, et quelques blind tests.</span>
-                </button>
-                <button type="button" className="mode-card" onClick={() => chooseMode('music')}>
-                  <span className="mode-card-title"><Icon name="music" tone="cyan" />Music Quiz</span>
-                  <span>Extraits masqués. Tout le monde écrit, le chef corrige.</span>
-                </button>
-              </div>
-              <div style={{ textAlign: 'center', marginTop: 20 }}>
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  onClick={() => setCurrentView(adminSession?.token ? 'admin' : 'admin-login')}
-                >
-                  <Icon name="lock" />Connexion Admin
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-
       case 'quiz-menu':
         return (
           <div className="container">
@@ -813,8 +805,8 @@ function App() {
                 Choisis un quiz. Une partie déjà lancée se rejoint en cours.
               </p>
               <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                <button type="button" className="btn" onClick={() => setCurrentView('modes')}>
-                  <Icon name="back" />Changer de mode
+                <button type="button" className="btn" onClick={() => setCurrentView('home')}>
+                  <Icon name="back" />Accueil
                 </button>
               </div>
               {quizzes.length === 0 ? (
@@ -891,7 +883,7 @@ function App() {
                 <h3 style={{ textAlign: 'center', marginBottom: '20px' }}><Icon name="list" tone="mark" />Quiz musicaux</h3>
                 
                 <div style={{ textAlign: 'center', marginBottom: '16px' }}>
-                  <button type="button" className="btn" onClick={() => setCurrentView('modes')}>
+                  <button type="button" className="btn" onClick={() => setCurrentView('home')}>
                     <Icon name="back" />Changer de mode
                   </button>
                 </div>
