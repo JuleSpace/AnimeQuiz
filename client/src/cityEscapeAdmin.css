@@ -914,3 +914,8 @@ select.input {
   .adm-cat { grid-template-columns: auto minmax(0, 1fr) auto; }
   .adm-cat small { display: none; }
 }
+
+/* ——— Comptes joueurs (superadmin) ——— */
+.adm-players { display: grid; gap: 10px; margin-top: 12px; }
+.adm-reset-code { text-align: center; }
+.adm-code { margin: 6px 0; font: italic 900 2.4rem/1.1 var(--ce-title); letter-spacing: 0.12em; color: var(--ce-navy); user-select: all; }

@@ -6,6 +6,90 @@ import { BoosterPlayground } from './JokerCards';
 import Icon from './ArcadeIcon';
 import ConfirmPopup from './ConfirmPopup';
 
+/** Superadmin : comptes joueurs et codes de réinitialisation de mot de passe. */
+const PlayerAccounts = () => {
+  const [q, setQ] = useState('');
+  const [list, setList] = useState([]);
+  const [error, setError] = useState('');
+  const [issued, setIssued] = useState(null);
+  const [confirm, setConfirm] = useState(null);
+  const load = async (query = q) => {
+    try {
+      const response = await axios.get(`/api/admin/accounts?q=${encodeURIComponent(query)}`);
+      setList(response.data);
+      setError('');
+    } catch (requestError) {
+      setError(requestError.response?.data?.error || 'Impossible de charger les comptes joueurs');
+    }
+  };
+  useEffect(() => { load(''); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const reset = async (account) => {
+    setConfirm(null);
+    try {
+      const response = await axios.post(`/api/admin/accounts/${account.id}/reset`);
+      setIssued(response.data);
+      await load();
+    } catch (requestError) {
+      setError(requestError.response?.data?.error || 'Réinitialisation impossible');
+    }
+  };
+  const date = (d) => (d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+  return (
+    <div>
+      <p className="adm-note">
+        Un joueur a oublié son mot de passe ? Génère-lui un code ici et envoie-le-lui (Discord, message…). Il le saisit sur la page de connexion, dans « J’ai un code », et choisit un nouveau mot de passe. Le code marche une seule fois, pendant 48 h.
+      </p>
+      {issued && (
+        <section className="adm-block adm-reset-code">
+          <h3 className="adm-block-title"><Icon name="lock" bare />Code pour {issued.name}</h3>
+          <p className="adm-code">{issued.code}</p>
+          <p className="adm-note">Valable jusqu’au {new Date(issued.expires).toLocaleString('fr-FR')}. Il ne sera plus affiché ensuite : copie-le maintenant.</p>
+          <div className="adm-actions">
+            <button type="button" className="btn btn-quiet adm-mini" onClick={() => navigator.clipboard?.writeText(issued.code)}>Copier</button>
+            <button type="button" className="btn btn-quiet adm-mini" onClick={() => setIssued(null)}>Fermer</button>
+          </div>
+        </section>
+      )}
+      <div className="adm-fields">
+        <label className="adm-field">
+          <span>Rechercher un joueur</span>
+          <input className="input" placeholder="Pseudo" value={q} onChange={(event) => { setQ(event.target.value); load(event.target.value); }} />
+        </label>
+      </div>
+      {error && <div className="error">{error}</div>}
+      <div className="adm-players">
+        {list.map((account) => (
+          <div key={account.id} className="adm-qrow">
+            <div className="adm-qtext">
+              <div className="adm-qprompt">{account.name}</div>
+              <div className="adm-qmeta">
+                {account.password ? 'Pseudo + mot de passe' : 'Discord uniquement'}{account.discord ? ` · Discord : ${account.discord}` : ''}
+                {' · '}inscrit le {date(account.createdAt)} · vu le {date(account.lastLogin)}
+                {account.resetPending ? ' · code en attente' : ''}
+              </div>
+            </div>
+            <div className="adm-qactions">
+              {account.password && (
+                <button type="button" className="btn adm-mini" onClick={() => setConfirm(account)}>Réinitialiser le mot de passe</button>
+              )}
+            </div>
+          </div>
+        ))}
+        {!list.length && !error && <p className="adm-note">Aucun compte trouvé.</p>}
+      </div>
+      {confirm && (
+        <ConfirmPopup
+          title={`Réinitialiser le mot de passe de ${confirm.name} ?`}
+          message="Un code à usage unique sera créé. Son mot de passe actuel restera valable jusqu’à ce qu’il utilise le code ; à ce moment-là, ses autres sessions seront déconnectées."
+          confirmLabel="Créer le code"
+          onCancel={() => setConfirm(null)}
+          onConfirm={() => reset(confirm)}
+        />
+      )}
+    </div>
+  );
+};
+
 const Accounts = ({ admin }) => {
   const [accounts, setAccounts] = useState([]);
   const [draft, setDraft] = useState({ username: '', password: '' });
@@ -348,7 +432,7 @@ const AdminPanel = ({ onBack, onRoomUpdate, admin }) => {
     { id: 'quiz', icon: 'quiz', label: 'Quiz' },
     { id: 'rules', icon: 'rules', label: 'Règles' },
     { id: 'boosters', icon: 'booster', label: 'Boosters' },
-    ...(isSuper ? [{ id: 'accounts', icon: 'crown', label: 'Comptes' }] : [])
+    ...(isSuper ? [{ id: 'accounts', icon: 'crown', label: 'Comptes' }, { id: 'players', icon: 'pad', label: 'Joueurs' }] : [])
   ];
 
   const shell = (children, action = null) => (
@@ -387,6 +471,7 @@ const AdminPanel = ({ onBack, onRoomUpdate, admin }) => {
   if (section === 'boosters') return shell(<BoosterPlayground />);
   if (section === 'rules') return shell(<QuizRules />);
   if (section === 'accounts' && isSuper) return shell(<Accounts admin={admin} />);
+  if (section === 'players' && isSuper) return shell(<PlayerAccounts />);
   if (section === 'quiz') return shell(<QuizAdmin admin={admin} />);
 
   if (loading) {

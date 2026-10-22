@@ -399,3 +399,28 @@ h1, h2, h3 {
 .login-legal { margin: 22px 0 0; text-align: center; font-size: 0.85rem; opacity: 0.8; }
 .login-legal a { color: var(--ce-mist); }
 .login-legal a:hover { color: #fff; }
+
+/* ———————————— Compte : connexion / inscription ———————————— */
+.auth { display: grid; gap: 14px; }
+.auth-title { margin: 0; text-align: center; color: #fff; }
+.auth-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 999px; background: rgba(4, 12, 50, 0.55); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18); }
+.auth-tabs button {
+  border: 0; border-radius: 999px; padding: 9px 6px; cursor: pointer;
+  font-family: var(--ce-title); font-style: italic; font-weight: 800; font-size: 0.85rem; color: var(--ce-mist); background: transparent;
+}
+.auth-tabs button.is-on { color: #3a1d00; background: linear-gradient(180deg, var(--ce-gold-hi), var(--ce-gold) 60%, var(--ce-orange)); }
+.auth-form { display: grid; gap: 10px; }
+.auth-form .input { margin: 0; padding: 13px 16px; text-align: center; font-size: 1.05rem; }
+.auth-hint { margin: 0; text-align: center; font-size: 0.9rem; color: var(--ce-mist); }
+.auth-error { margin: 0; padding: 8px 12px; border-radius: 10px; text-align: center; font-weight: 700; color: #fff; background: rgba(255, 35, 71, 0.85); }
+.auth-go { width: 100%; margin: 4px 0 0 !important; }
+.auth-forgot { margin: 0; text-align: center; font-size: 0.85rem; color: var(--ce-mist); }
+.auth-forgot a { color: var(--ce-gold); }
+.auth-or { display: flex; align-items: center; gap: 10px; color: var(--ce-mist); font-size: 0.85rem; }
+.auth-or::before, .auth-or::after { content: ''; flex: 1; height: 2px; background: rgba(255, 255, 255, 0.18); }
+.auth-discord {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border: 0; border-radius: 999px; cursor: pointer;
+  font-family: var(--ce-title); font-style: italic; font-weight: 800; color: #fff; background: #5865f2; box-shadow: 0 5px 0 #3c45a5;
+}
+.auth-discord:hover { background: #6b77ff; }
+.auth-gate { margin: 0 0 14px; text-align: center; font-weight: 700; color: var(--ce-gold); }

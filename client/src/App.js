@@ -15,7 +15,8 @@ import SonicBonk, { BONK_HASH } from './components/SonicBonk';
 import PokeRush, { RUSH_HASH } from './components/PokeRush';
 import Portfolio, { PORTFOLIO_HASH } from './components/Portfolio';
 import GameShelf, { GAMES_HASH } from './components/GameShelf';
-import { AccountChip, useAccount } from './components/account';
+import { useAccount, logout as accountLogout } from './components/account';
+import AuthPanel from './components/AuthPanel';
 import LegalPage, { PRIVACY_HASH, TERMS_HASH } from './components/LegalPage';
 import { readAdminSession, storeAdminSession, clearAdminSession } from './utils/adminSession';
 import './index.css';
@@ -66,10 +67,6 @@ function App() {
   const [currentView, setCurrentView] = useState(() => secretViewFromHash() || 'login');
   const [username, setUsername] = useState('');
   const account = useAccount();
-  // Connecté avec Discord : le pseudo est pré-rempli
-  useEffect(() => {
-    if (account.user && !username) setUsername(account.user.name);
-  }, [account.user]); // eslint-disable-line react-hooks/exhaustive-deps
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [lobby, setLobby] = useState(null);
@@ -105,7 +102,6 @@ function App() {
       setCurrentView(secret);
       return undefined;
     }
-    const savedUsername = localStorage.getItem('animeQuizUsername');
     const seat = readSeat();
 
     if (seat?.username && seat.id) {
@@ -125,12 +121,19 @@ function App() {
       return;
     }
 
-    if (savedUsername) {
-      setUsername(savedUsername);
-      setIsLoggedIn(true);
-      setCurrentView('modes');
-    }
   }, []);
+
+  // Compte obligatoire : connecté → on passe au choix des modes avec le pseudo du compte
+  useEffect(() => {
+    if (!account.ready) return;
+    if (account.user) {
+      setUsername(account.user.name);
+      setIsLoggedIn(true);
+      setCurrentView((view) => (view === 'login' ? 'modes' : view));
+    } else {
+      setIsLoggedIn(false);
+    }
+  }, [account.ready, account.user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const onHash = () => {
@@ -562,22 +565,6 @@ function App() {
     }
   };
 
-  const handleLogin = () => {
-    if (!username.trim()) {
-      setError('Veuillez entrer un pseudo');
-      return;
-    }
-
-    const cleanName = username.trim();
-    localStorage.setItem('animeQuizUsername', cleanName);
-    setUsername(cleanName);
-    setIsLoggedIn(true);
-    setCurrentView('modes');
-    setError('');
-    setSuccess(`Bienvenue ${cleanName} !`);
-    setTimeout(() => setSuccess(''), 3000);
-  };
-
   const chooseMode = (mode) => {
     setPlayMode(mode);
     setCurrentView(mode === 'quiz' ? 'quiz-menu' : 'menu');
@@ -598,6 +585,7 @@ function App() {
     
     clearSeat();
     localStorage.removeItem('animeQuizUsername');
+    accountLogout();
     setUsername('');
     setIsLoggedIn(false);
     setCurrentView('login');
@@ -703,6 +691,25 @@ function App() {
   };
 
   const renderCurrentView = () => {
+    // Pages ouvertes à tous ; le reste demande un compte
+    const PUBLIC_VIEWS = ['login', 'portfolio', 'jeux', 'terms', 'privacy', 'academy', 'admin-login', 'admin', 'rejoin'];
+    if (!PUBLIC_VIEWS.includes(currentView) && !account.user) {
+      return (
+        <div className="container">
+          <div className="card">
+            {account.ready ? (
+              <div style={{ maxWidth: '420px', margin: '0 auto', padding: '10px' }}>
+                <p className="auth-gate">Un compte est nécessaire pour jouer : connecte-toi ou crée-le en dix secondes.</p>
+                <AuthPanel returnHash={window.location.hash} title="Connecte-toi pour jouer" />
+                <div className="login-games">
+                  <button type="button" className="btn btn-quiet" onClick={() => { window.history.replaceState(null, '', '/'); setCurrentView('login'); }}>Retour à l’accueil</button>
+                </div>
+              </div>
+            ) : <div className="loading">Chargement</div>}
+          </div>
+        </div>
+      );
+    }
     switch (currentView) {
       case 'rejoin':
         return (
@@ -727,8 +734,6 @@ function App() {
                 Fais toi bully par tes potes avec un maximum de plaisir toujours :)
               </p>
 
-              <div className="login-account"><AccountChip returnHash="" /></div>
-
               <div className="login-games">
                 <button
                   type="button"
@@ -746,40 +751,8 @@ function App() {
                 </button>
               </div>
 
-              <div style={{ maxWidth: '400px', margin: '0 auto', padding: '30px' }}>
-                <h2 style={{ textAlign: 'center', marginBottom: '30px', color: 'white' }}>
-                  <Icon name="pad" tone="mark" />Connexion
-                </h2>
-                
-                <p style={{ textAlign: 'center', marginBottom: '20px', opacity: 0.8 }}>
-                  Choisis ton pseudo pour commencer à jouer !
-                </p>
-
-                <input
-                  type="text"
-                  placeholder="Entre ton pseudo"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleLogin();
-                  }}
-                  className="input"
-                  style={{ 
-                    marginBottom: '20px',
-                    fontSize: '1.1rem',
-                    padding: '15px',
-                    textAlign: 'center'
-                  }}
-                />
-
-                <button
-                  type="button"
-                  onClick={handleLogin}
-                  className="btn btn-success"
-                  style={{ width: '100%', margin: 0 }}
-                >
-                  <Icon name="go" />Entrer
-                </button>
+              <div style={{ maxWidth: '420px', margin: '0 auto', padding: '20px 10px' }}>
+                <AuthPanel />
 
                 <div className="login-split">
                   <button

@@ -1,7 +1,8 @@
 /**
- * Comptes joueurs via Discord (OAuth2, scope « identify ») :
- * connexion, session dans un cookie signé, sauvegarde en ligne des progressions,
- * historique des parties et classements du Swarm et du Poké Rush.
+ * Comptes joueurs : pseudo + mot de passe (sans e-mail) ou connexion Discord (OAuth2, scope « identify »).
+ * Session dans un cookie signé, sauvegarde en ligne des progressions, historique et classements.
+ * Mot de passe oublié : le superadmin génère un code de réinitialisation à usage unique (48 h)
+ * qu'il transmet lui-même au joueur.
  *
  * Variables d'environnement :
  *   DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET  (obligatoires pour activer la connexion)
@@ -10,6 +11,7 @@
  */
 const crypto = require('crypto');
 const mongoose = require('mongoose');
+const { requireSuper } = require('./admins');
 
 const GAMES = ['swarm', 'rush'];
 const SESSION_COOKIE = 'bl_session';
@@ -18,7 +20,14 @@ const SESSION_TTL = 30 * 24 * 60 * 60 * 1000;
 const MAX_SAVE_BYTES = 250 * 1000;
 
 const UserSchema = new mongoose.Schema({
-  discordId: { type: String, required: true, unique: true },
+  discordId: { type: String, unique: true, sparse: true },
+  // Compte classique : pseudo unique (sans tenir compte des majuscules) + mot de passe
+  loginKey: { type: String, unique: true, sparse: true },
+  loginName: { type: String, default: '' },
+  passwordHash: { type: String, default: '' },
+  resetHash: { type: String, default: '' },
+  resetExpires: { type: Date, default: null },
+  sessionVersion: { type: Number, default: 0 },
   username: { type: String, default: '' },
   globalName: { type: String, default: '' },
   avatar: { type: String, default: '' },
@@ -93,21 +102,57 @@ const verify = (token) => {
 };
 
 const avatarUrl = (u) => {
+  if (!u.discordId) return '';
   if (u.avatar) return `https://cdn.discordapp.com/avatars/${u.discordId}/${u.avatar}.png?size=96`;
   let idx = 0;
   try { idx = Number((BigInt(u.discordId) >> 22n) % 6n); } catch { idx = 0; }
   return `https://cdn.discordapp.com/embed/avatars/${idx}.png`;
 };
-const publicUser = (u) => ({ id: String(u._id), name: u.globalName || u.username, username: u.username, avatar: avatarUrl(u) });
+const displayName = (u) => u.loginName || u.globalName || u.username || 'Joueur';
+const publicUser = (u) => ({
+  id: String(u._id), name: displayName(u), username: u.loginName || u.username, avatar: avatarUrl(u),
+  discord: Boolean(u.discordId), password: Boolean(u.passwordHash)
+});
+
+/* ——— Pseudo et mot de passe ——— */
+const loginKeyOf = (name) => String(name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+const cleanLoginName = (name) => String(name || '').trim().replace(/\s+/g, ' ');
+const validName = (name) => /^[\p{L}\p{N} _.-]{3,20}$/u.test(name);
+const hashSecret = (secret, salt = crypto.randomBytes(16).toString('hex')) => `${salt}:${crypto.scryptSync(String(secret), salt, 32).toString('hex')}`;
+const checkSecret = (secret, stored) => {
+  const [salt, hash] = String(stored || '').split(':');
+  if (!salt || !hash) return false;
+  const a = Buffer.from(hash, 'hex'); const b = crypto.scryptSync(String(secret), salt, 32);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+};
+// Code de réinitialisation lisible (sans 0/O ni 1/I) : XXXX-XXXX
+const resetCode = () => {
+  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = crypto.randomBytes(8);
+  const raw = [...bytes].map((b) => abc[b % abc.length]).join('');
+  return `${raw.slice(0, 4)}-${raw.slice(4)}`;
+};
+const normCode = (code) => String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+// Trop d'essais ratés : on bloque 15 minutes (par adresse IP et par pseudo)
+const failures = new Map();
+const tooMany = (key) => { const f = failures.get(key); return f && f.n >= 8 && Date.now() - f.at < 15 * 60 * 1000; };
+const fail = (key) => { const f = failures.get(key); failures.set(key, { n: f && Date.now() - f.at < 15 * 60 * 1000 ? f.n + 1 : 1, at: Date.now() }); };
 
 const currentUser = async (req) => {
   const data = verify(parseCookies(req)[SESSION_COOKIE]);
   if (!data?.uid || mongoose.connection.readyState !== 1) return null;
-  try { return await Account.findById(data.uid); } catch { return null; }
+  try {
+    const user = await Account.findById(data.uid);
+    // une réinitialisation du mot de passe déconnecte les anciennes sessions
+    if (!user || (user.sessionVersion || 0) !== (data.sv || 0)) return null;
+    return user;
+  } catch { return null; }
 };
+const openSession = (req, res, user) => setCookie(req, res, SESSION_COOKIE, sign({ uid: String(user._id), sv: user.sessionVersion || 0, exp: Date.now() + SESSION_TTL }), SESSION_TTL);
 const requireUser = async (req, res, next) => {
   const user = await currentUser(req);
-  if (!user) return res.status(401).json({ error: 'Connecte-toi avec Discord.' });
+  if (!user) return res.status(401).json({ error: 'Connecte-toi à ton compte.' });
   req.account = user;
   return next();
 };
@@ -142,7 +187,89 @@ const cleanRun = (game, r = {}) => ({
 const attachAccounts = (app) => {
   app.set('trust proxy', 1);
 
-  app.get('/api/auth/config', (req, res) => res.json({ discord: enabled() }));
+  app.get('/api/auth/config', (req, res) => res.json({ discord: enabled(), accounts: true }));
+
+  // Inscription : pseudo + mot de passe, sans e-mail
+  app.post('/api/register', async (req, res) => {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Base de données indisponible, réessaie plus tard.' });
+    const name = cleanLoginName(req.body?.username);
+    const password = String(req.body?.password || '');
+    if (!validName(name)) return res.status(400).json({ error: 'Pseudo : 3 à 20 caractères (lettres, chiffres, espace, point, tiret).' });
+    if (password.length < 6 || password.length > 100) return res.status(400).json({ error: 'Mot de passe : au moins 6 caractères.' });
+    const ipKey = `reg:${req.ip}`;
+    if (tooMany(ipKey)) return res.status(429).json({ error: 'Trop de comptes créés, réessaie plus tard.' });
+    if (await Account.exists({ loginKey: loginKeyOf(name) })) return res.status(409).json({ error: 'Ce pseudo est déjà pris.' });
+    fail(ipKey); // compte aussi les inscriptions réussies (limite d'abus)
+    try {
+      const user = await Account.create({ loginKey: loginKeyOf(name), loginName: name, passwordHash: hashSecret(password), createdAt: new Date(), lastLogin: new Date() });
+      openSession(req, res, user);
+      return res.json({ user: publicUser(user) });
+    } catch (e) {
+      return res.status(409).json({ error: 'Ce pseudo est déjà pris.' });
+    }
+  });
+
+  app.post('/api/login', async (req, res) => {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Base de données indisponible, réessaie plus tard.' });
+    const key = loginKeyOf(req.body?.username);
+    const limitKey = `login:${req.ip}:${key}`;
+    if (tooMany(limitKey)) return res.status(429).json({ error: 'Trop d’essais. Attends 15 minutes.' });
+    const user = key ? await Account.findOne({ loginKey: key }) : null;
+    if (!user || !checkSecret(String(req.body?.password || ''), user.passwordHash)) {
+      fail(limitKey);
+      return res.status(401).json({ error: 'Pseudo ou mot de passe incorrect.' });
+    }
+    failures.delete(limitKey);
+    user.lastLogin = new Date();
+    await user.save();
+    openSession(req, res, user);
+    return res.json({ user: publicUser(user) });
+  });
+
+  // Mot de passe oublié : le joueur saisit le code reçu du superadmin
+  app.post('/api/reset-password', async (req, res) => {
+    if (mongoose.connection.readyState !== 1) return res.status(503).json({ error: 'Base de données indisponible.' });
+    const key = loginKeyOf(req.body?.username);
+    const limitKey = `reset:${req.ip}:${key}`;
+    if (tooMany(limitKey)) return res.status(429).json({ error: 'Trop d’essais. Attends 15 minutes.' });
+    const password = String(req.body?.password || '');
+    if (password.length < 6 || password.length > 100) return res.status(400).json({ error: 'Mot de passe : au moins 6 caractères.' });
+    const user = key ? await Account.findOne({ loginKey: key }) : null;
+    const ok = user && user.resetHash && user.resetExpires && user.resetExpires > new Date() && checkSecret(normCode(req.body?.code), user.resetHash);
+    if (!ok) {
+      fail(limitKey);
+      return res.status(400).json({ error: 'Code invalide ou expiré. Redemande un code à l’administrateur.' });
+    }
+    user.passwordHash = hashSecret(password);
+    user.resetHash = '';
+    user.resetExpires = null;
+    user.sessionVersion = (user.sessionVersion || 0) + 1;
+    user.lastLogin = new Date();
+    await user.save();
+    openSession(req, res, user);
+    return res.json({ user: publicUser(user) });
+  });
+
+  // Superadmin : liste des comptes et code de réinitialisation
+  app.get('/api/admin/accounts', requireSuper, async (req, res) => {
+    const q = String(req.query.q || '').trim().toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const filter = q ? { $or: [{ loginKey: { $regex: q } }, { username: { $regex: q, $options: 'i' } }, { globalName: { $regex: q, $options: 'i' } }] } : {};
+    const list = await Account.find(filter).sort({ lastLogin: -1 }).limit(50).lean();
+    res.json(list.map((u) => ({
+      id: String(u._id), name: displayName(u), discord: u.discordId ? (u.username || 'oui') : '', password: Boolean(u.passwordHash),
+      createdAt: u.createdAt, lastLogin: u.lastLogin, resetPending: Boolean(u.resetHash && u.resetExpires && new Date(u.resetExpires) > new Date())
+    })));
+  });
+  app.post('/api/admin/accounts/:id/reset', requireSuper, async (req, res) => {
+    const user = await Account.findById(req.params.id).catch(() => null);
+    if (!user) return res.status(404).json({ error: 'Compte introuvable' });
+    if (!user.loginKey) return res.status(400).json({ error: 'Ce compte se connecte uniquement avec Discord : pas de mot de passe à réinitialiser.' });
+    const code = resetCode();
+    user.resetHash = hashSecret(normCode(code));
+    user.resetExpires = new Date(Date.now() + 48 * 3600 * 1000);
+    await user.save();
+    res.json({ code, name: displayName(user), expires: user.resetExpires });
+  });
 
   app.get('/auth/discord', (req, res) => {
     if (!enabled()) return res.redirect('/');
@@ -169,12 +296,22 @@ const attachAccounts = (app) => {
       const meRes = await fetch('https://discord.com/api/users/@me', { headers: { Authorization: `Bearer ${token.access_token}` } });
       if (!meRes.ok) throw new Error(`me ${meRes.status}`);
       const me = await meRes.json();
+      // Déjà connecté avec un pseudo : on relie Discord à ce compte (si ce Discord n'a pas déjà son compte)
+      const current = await currentUser(req);
+      if (current && !current.discordId && !(await Account.exists({ discordId: String(me.id) }))) {
+        current.discordId = String(me.id);
+        current.username = str(me.username, 64); current.globalName = str(me.global_name, 64); current.avatar = str(me.avatar, 64);
+        current.lastLogin = new Date();
+        await current.save();
+        openSession(req, res, current);
+        return res.redirect(back);
+      }
       const user = await Account.findOneAndUpdate(
         { discordId: String(me.id) },
         { $set: { username: str(me.username, 64), globalName: str(me.global_name, 64), avatar: str(me.avatar, 64), lastLogin: new Date() }, $setOnInsert: { createdAt: new Date() } },
         { upsert: true, new: true }
       );
-      setCookie(req, res, SESSION_COOKIE, sign({ uid: String(user._id), exp: Date.now() + SESSION_TTL }), SESSION_TTL);
+      openSession(req, res, user);
     } catch (e) {
       console.error('Connexion Discord impossible :', e.message);
     }
@@ -249,7 +386,7 @@ const attachAccounts = (app) => {
       return rows.map((r) => {
         const u = r.who?.[0];
         return {
-          name: u ? (u.globalName || u.username) : 'Joueur', avatar: u ? avatarUrl(u) : '', partnerId: r.partnerId, form: r.form, formDex: r.formDex,
+          name: u ? displayName(u) : 'Joueur', avatar: u ? avatarUrl(u) : '', partnerId: r.partnerId, form: r.form, formDex: r.formDex,
           t: r.t, kills: r.kills, level: r.level, rank: r.rank, caught: r.caught, at: r.at
         };
       });

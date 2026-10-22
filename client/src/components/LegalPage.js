@@ -9,15 +9,16 @@ const Mail = () => <a href={`mailto:${CONTACT}`}>{CONTACT}</a>;
 
 const TERMS = {
   title: 'Conditions d’utilisation',
-  intro: 'Bully’s Lair est un site de jeux gratuit et non commercial, fait entre amis. En l’utilisant, tu acceptes les règles ci-dessous.',
+  intro: 'Bully’s Lair est un site de jeux gratuit et non commercial, fait entre amis. En créant un compte ou en utilisant le site, tu acceptes les règles ci-dessous.',
   sections: [
     ['Le service', [
       'Le site propose des quiz multijoueurs et des jeux jouables dans le navigateur. Il est gratuit, sans publicité et sans achat.',
       'Il est fourni « tel quel » : il peut changer, être interrompu ou fermer à tout moment, et des données de jeu peuvent être perdues.'
     ]],
     ['Ton compte', [
-      'Tu peux jouer sans compte. La connexion avec Discord est facultative : elle sert à sauvegarder ta progression et à apparaître dans les classements.',
-      'Tu dois respecter les conditions d’utilisation de Discord, y compris l’âge minimum qu’elles imposent.',
+      'Un compte est nécessaire pour jouer. Tu le crées avec un pseudo et un mot de passe (sans adresse e-mail), ou avec Discord.',
+      'Tu es responsable de ton mot de passe. Comme le site ne connaît pas ton e-mail, en cas d’oubli c’est l’administrateur qui te donne un code de réinitialisation, après avoir vérifié que le compte est bien le tien.',
+      'Si tu passes par Discord, tu dois respecter ses conditions d’utilisation, y compris l’âge minimum qu’elles imposent.',
       'Tu peux supprimer ton compte à tout moment depuis le menu de ton compte sur le site.'
     ]],
     ['Bonne conduite', [
@@ -44,17 +45,18 @@ const PRIVACY = {
   title: 'Politique de confidentialité',
   intro: 'Le site collecte le minimum nécessaire pour faire tourner les jeux. Rien n’est vendu, rien ne sert à de la publicité, et il n’y a pas d’outil de mesure d’audience.',
   sections: [
-    ['Sans compte', [
-      'Le pseudo que tu choisis pour un quiz et tes réponses servent uniquement pendant la partie ; ils sont gardés en mémoire par le serveur le temps de la partie.',
-      'Ta progression dans les jeux (Poké Swarm, Poké Rush…), tes réglages (volume de la musique) et ton dernier pseudo sont enregistrés dans le stockage local de ton navigateur : ils restent sur ton appareil.'
+    ['Ton compte', [
+      'Compte classique : ton pseudo et ton mot de passe. Le mot de passe n’est jamais stocké en clair, seulement une empreinte chiffrée (scrypt). Aucune adresse e-mail n’est demandée.',
+      'Compte Discord : le site reçoit seulement ce que l’autorisation « identify » permet, c’est-à-dire ton identifiant, ton nom d’utilisateur, ton nom affiché et ton avatar. Pas ton e-mail, pas tes serveurs, pas tes messages.',
+      'Le site enregistre aussi la date de création et de dernière connexion, ta progression dans les jeux et le résumé de tes parties (date, Pokémon joué, durée, nombre de K.O., niveau, résultat).',
+      'Les classements sont publics : ils affichent ton pseudo (ou ton nom Discord), ton avatar Discord si tu en as un et tes meilleurs scores.'
     ]],
-    ['Avec un compte Discord', [
-      'Quand tu te connectes avec Discord, le site reçoit seulement ce que l’autorisation « identify » permet : ton identifiant Discord, ton nom d’utilisateur, ton nom affiché et ton avatar. Pas ton e-mail, pas tes serveurs, pas tes messages.',
-      'Le site enregistre en plus ta progression dans les jeux et le résumé de tes parties (date, Pokémon joué, durée, nombre de K.O., niveau, résultat).',
-      'Les classements sont publics : ils affichent ton nom affiché Discord, ton avatar et tes meilleurs scores.'
+    ['Pendant les parties', [
+      'Tes réponses aux quiz servent uniquement pendant la partie : le serveur les garde en mémoire le temps de la partie.',
+      'Certains réglages (volume de la musique) et une copie de ta progression sont enregistrés dans le stockage local de ton navigateur.'
     ]],
     ['Cookies', [
-      'Un cookie de session (« bl_session ») te garde connecté pendant 30 jours au plus.',
+      'Un cookie de session (« bl_session ») te garde connecté pendant 30 jours au plus ; il est invalidé si ton mot de passe est réinitialisé.',
       'Un cookie temporaire (« bl_oauth », 10 minutes) protège la connexion avec Discord.',
       'Ce sont des cookies strictement nécessaires au fonctionnement du compte : aucun cookie publicitaire ou de suivi.'
     ]],
@@ -67,7 +69,7 @@ const PRIVACY = {
     ]],
     ['Tes droits', [
       'Tu peux supprimer ton compte et toutes ses données depuis le menu de ton compte sur le site (bouton « Supprimer mon compte »).',
-      'Tu peux aussi retirer l’accès du site à ton compte Discord dans Discord : Paramètres utilisateur → Applications autorisées.',
+      'Si tu utilises Discord, tu peux aussi retirer l’accès du site dans Discord : Paramètres utilisateur → Applications autorisées.',
       <>Pour toute autre demande (accès, rectification, question), écris à <Mail />.</>
     ]]
   ]

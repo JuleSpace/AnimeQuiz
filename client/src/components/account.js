@@ -1,6 +1,6 @@
 /**
- * Compte joueur (connexion Discord) côté client : qui est connecté, sauvegardes en ligne,
- * envoi des parties et classements.
+ * Compte joueur côté client (pseudo + mot de passe, ou Discord) : qui est connecté,
+ * inscription, connexion, sauvegardes en ligne, envoi des parties et classements.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import './account.css';
@@ -12,7 +12,13 @@ const call = async (path, opts = {}) => {
     ...opts,
     headers: { ...(opts.body ? { 'Content-Type': 'application/json' } : {}), ...(opts.headers || {}) }
   });
-  if (!res.ok) throw new Error(String(res.status));
+  if (!res.ok) {
+    let msg = String(res.status);
+    try { msg = (await res.json()).error || msg; } catch { /* pas de JSON */ }
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
+  }
   return res.json();
 };
 
@@ -24,14 +30,14 @@ const publish = (v) => { cache = v; listeners.forEach((fn) => fn(v)); };
 const fetchAccount = () => {
   if (!pending) {
     pending = Promise.all([
-      call('/api/auth/config').catch(() => ({ discord: false })),
+      call('/api/auth/config').catch(() => ({ discord: false, accounts: false })),
       call('/api/me').catch(() => ({ user: null }))
-    ]).then(([c, me]) => { const v = { enabled: !!c.discord, user: me.user || null, ready: true }; publish(v); return v; });
+    ]).then(([c, me]) => { const v = { enabled: true, discord: !!c.discord, online: !!c.accounts, user: me.user || null, ready: true }; publish(v); return v; });
   }
   return pending;
 };
 
-/** { ready, enabled, user } — user = { id, name, avatar } ou null. */
+/** { ready, discord, user } — user = { id, name, avatar, discord, password } ou null. */
 export const useAccount = () => {
   const [state, setState] = useState(cache || { ready: false, enabled: false, user: null });
   useEffect(() => {
@@ -50,6 +56,11 @@ export const logout = async () => {
   pending = null;
   publish({ ...(cache || {}), user: null, ready: true });
 };
+
+const signedIn = (res) => { pending = null; publish({ ...(cache || { enabled: true, ready: true }), user: res.user, ready: true }); return res.user; };
+export const registerAccount = (username, password) => call('/api/register', { method: 'POST', body: JSON.stringify({ username, password }) }).then(signedIn);
+export const loginAccount = (username, password) => call('/api/login', { method: 'POST', body: JSON.stringify({ username, password }) }).then(signedIn);
+export const resetWithCode = (username, code, password) => call('/api/reset-password', { method: 'POST', body: JSON.stringify({ username, code, password }) }).then(signedIn);
 
 export const deleteAccount = async () => {
   await call('/api/me', { method: 'DELETE' });
@@ -96,26 +107,29 @@ const DiscordLogo = () => (
 );
 
 /** Pastille de compte : bouton « Connexion Discord » ou avatar + pseudo. */
-export const AccountChip = ({ returnHash, compact = false, className = '' }) => {
+export const AccountChip = ({ returnHash, className = "" }) => {
   const { ready, enabled, user } = useAccount();
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   if (!ready || !enabled) return null;
   if (!user) {
     return (
-      <button type="button" className={`acc-chip is-login ${className}`} onClick={() => loginWithDiscord(returnHash)}>
-        <DiscordLogo /><span>{compact ? 'Connexion' : 'Se connecter avec Discord'}</span>
-      </button>
+      <a className={`acc-chip is-login ${className}`} href="/">
+        <span>Se connecter</span>
+      </a>
     );
   }
   return (
     <span className={`acc-chip-wrap ${className}`}>
       <button type="button" className="acc-chip" onClick={() => setOpen((v) => !v)} aria-expanded={open} title="Compte Discord">
-        <img src={user.avatar} alt="" referrerPolicy="no-referrer" /><span>{user.name}</span>
+        {user.avatar ? <img src={user.avatar} alt="" referrerPolicy="no-referrer" /> : <i className="acc-initial">{user.name.slice(0, 1).toUpperCase()}</i>}<span>{user.name}</span>
       </button>
       {open && (
         <span className="acc-menu">
           <small>Ta progression est sauvegardée sur ton compte.</small>
+          {!user.discord && returnHash !== undefined && (
+            <button type="button" className="is-discord" onClick={() => loginWithDiscord(returnHash)}><DiscordLogo /> Relier Discord (avatar)</button>
+          )}
           <button type="button" onClick={() => { setOpen(false); logout(); }}>Se déconnecter</button>
           {confirmDelete ? (
             <span className="acc-danger">
@@ -153,13 +167,7 @@ export const Leaderboard = ({ game, gens = [{ id: 1, name: 'Kanto' }], partnerNa
   const rows = board?.[tab] || [];
   return (
     <div className="acc-board">
-      {!enabled && <p className="acc-note">Le classement s’active quand la connexion Discord est configurée sur le serveur.</p>}
-      {enabled && !user && (
-        <p className="acc-note">
-          Connecte-toi avec Discord pour apparaître au classement.{' '}
-          <button type="button" className="acc-link" onClick={() => loginWithDiscord()}>Se connecter</button>
-        </p>
-      )}
+      {enabled && !user && <p className="acc-note">Connecte-toi à ton compte pour apparaître au classement.</p>}
       <div className="acc-board-tools">
         {gens.length > 1 && (
           <select value={gen} onChange={(e) => setGen(Number(e.target.value))} aria-label="Région">
@@ -186,4 +194,5 @@ export const Leaderboard = ({ game, gens = [{ id: 1, name: 'Kanto' }], partnerNa
   );
 };
 
+export { DiscordLogo };
 export default AccountChip;
