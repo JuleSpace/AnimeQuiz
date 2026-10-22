@@ -1,9 +1,11 @@
 import React, { useRef } from 'react';
-import { GAMES } from './showcase';
+import { GAMES as ALL_GAMES } from './showcase';
 import GameLogo from './GameLogo';
 import './GameShelf.css';
 
 export const GAMES_HASH = '#jeux';
+// L'atelier des cartes reste accessible depuis le quiz ; la ludothèque ne montre que les jeux
+const GAMES = ALL_GAMES.filter((g) => g.id !== 'cards');
 
 const RARITY_MARK = { Légendaire: '★', Rare: '◆', 'Peu commune': '▲', Commune: '●' };
 
@@ -40,7 +42,6 @@ const GameCard = ({ game, index, total, onOpen }) => {
       <span className="gs-face">
         <span className="gs-top">
           <b>{game.title}</b>
-          <em>{game.genre.split(' · ')[0]}</em>
         </span>
         <span className="gs-art">
           <GameLogo id={game.id} />
@@ -56,10 +57,9 @@ const GameCard = ({ game, index, total, onOpen }) => {
             </span>
           ))}
         </span>
-        <span className="gs-flavor">{game.pitch}</span>
         <span className="gs-foot">
-          <span>{String(index + 1).padStart(3, '0')}/{String(total).padStart(3, '0')} {RARITY_MARK[game.rarity] || '●'}</span>
-          <span>{game.tech.slice(0, 2).join(' · ')}</span>
+          <span>{String(index + 1).padStart(3, '0')}/{String(total).padStart(3, '0')}</span>
+          <span>{RARITY_MARK[game.rarity] || '●'} {game.rarity}</span>
         </span>
       </span>
       <span className="gs-play">Jouer →</span>
@@ -69,19 +69,21 @@ const GameCard = ({ game, index, total, onOpen }) => {
 
 const GameShelf = ({ onClose, onOpen, onPortfolio }) => (
   <div className="gs-root">
+    <div className="gs-bar">
+      <button type="button" className="gs-btn is-back" onClick={onClose}>← Retour</button>
+      <button type="button" className="gs-btn" onClick={onPortfolio}>Portfolio</button>
+    </div>
     <header className="gs-head">
-      <div>
-        <span className="gs-kicker">Bully’s Lair · ludothèque</span>
-        <h1>Choisis ta carte</h1>
-        <p>Tous les jeux du site, en cartes à collectionner. Passe la souris dessus, clique pour jouer.</p>
-      </div>
-      <div className="gs-head-actions">
-        <button type="button" className="gs-btn" onClick={onPortfolio}>Portfolio</button>
-        <button type="button" className="gs-btn is-back" onClick={onClose}>Retour</button>
-      </div>
+      <span className="gs-kicker">Bully’s Lair · ludothèque</span>
+      <h1>Choisis ta carte</h1>
+      <p>{GAMES.length} jeux à collectionner. Clique sur une carte pour jouer.</p>
     </header>
-    <div className="gs-grid">
-      {GAMES.map((g, i) => <GameCard key={g.id} game={g} index={i} total={GAMES.length} onOpen={onOpen} />)}
+    <div className="gs-grid" style={{ '--n': GAMES.length }}>
+      {GAMES.map((g, i) => (
+        <div key={g.id} className="gs-slot" style={{ '--k': i - (GAMES.length - 1) / 2 }}>
+          <GameCard game={g} index={i} total={GAMES.length} onOpen={onOpen} />
+        </div>
+      ))}
     </div>
   </div>
 );
