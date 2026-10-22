@@ -5,6 +5,8 @@ import { Avatar } from './SonicRoster';
 import GameHome, { HomeBoard } from './GameHome';
 import GamePage, { BoardPage, Cta, Panel, Stat, StatBars } from './GamePage';
 import { AccountChip, postRun } from './account';
+import ScoreCard from './ScoreCard';
+import { bonkScore } from './scoring';
 import './SonicBonk.css';
 
 export const BONK_HASH = '#bonk';
@@ -85,14 +87,15 @@ const SonicBonk = ({ onClose }) => {
     const game = createBonk(mountRef.current, overlayRef.current, character, {
       onLevelUp: (options, level, rerolls) => setLevelUp({ options, level, rerolls }),
       onEnd: (result, snap) => {
-        setEnd({ result, ...snap });
-        postRun('bonk', { gen: 1, mode: 'classic', partnerId: character.id, form: character.name, result, t: snap.t, kills: snap.kills, level: snap.level });
+        const sc = bonkScore({ result, t: snap.t, kills: snap.kills, level: snap.level, rings: snap.rings });
+        setEnd({ result, ...snap, score: sc, prevBest: best[character.id]?.score || 0 });
+        postRun('bonk', { gen: 1, mode: 'classic', partnerId: character.id, form: character.name, result, t: snap.t, kills: snap.kills, level: snap.level, score: sc.total });
         setBest((prev) => {
           const mine = prev[character.id] || {};
           const better = result === 'win'
             ? { win: true, t: Math.min(mine.win ? mine.t : Infinity, snap.t), kills: Math.max(mine.kills || 0, snap.kills) }
             : mine.win ? mine : { win: false, t: Math.max(mine.t || 0, snap.t), kills: Math.max(mine.kills || 0, snap.kills) };
-          const next = { ...prev, [character.id]: better };
+          const next = { ...prev, [character.id]: { ...better, score: Math.max(mine.score || 0, sc.total) } };
           try { localStorage.setItem(BEST_KEY, JSON.stringify(next)); } catch { /* stockage indisponible */ }
           return next;
         });
@@ -130,6 +133,7 @@ const SonicBonk = ({ onClose }) => {
           <BoardPage
             game="bonk"
             tabs={[
+              { id: 'score', label: 'Score', sub: 'Meilleur score', value: (r) => (r.score || 0).toLocaleString('fr-FR'), unit: 'pts' },
               { id: 'fastest', label: 'Victoires', sub: 'Le Colosse le plus vite', value: (r) => clock(r.t), unit: '' },
               { id: 'kills', label: 'K.O.', sub: 'Le plus de robots', value: (r) => r.kills.toLocaleString('fr-FR'), unit: 'K.O.' }
             ]}
@@ -290,6 +294,7 @@ const SonicBonk = ({ onClose }) => {
                   <small>Tes records</small>
                   <span><b>{rec?.win ? 'Oui' : 'Non'}</b>victoire</span>
                   <span><b>{rec ? clock(rec.t) : '—'}</b>{rec?.win ? 'meilleure victoire' : 'meilleur temps'}</span>
+                  <span><b>{(rec?.score || 0).toLocaleString('fr-FR')}</b>meilleur score</span>
                   <span><b>{(rec?.kills || 0).toLocaleString('fr-FR')}</b>K.O.</span>
                 </div>
                 <Cta onClick={start}>C’est parti !</Cta>
@@ -412,6 +417,7 @@ const SonicBonk = ({ onClose }) => {
             <Avatar id={character.id} size={110} />
             <h2>{end.result === 'win' ? 'Le Colosse est détruit !' : `${character.name} est K.O.`}</h2>
             <p>{clock(end.t)} · niveau {end.level} · {end.kills} robots détruits · {end.rings} anneaux</p>
+            <ScoreCard score={end.score} best={end.prevBest} />
             <div className="bk-actions">
               <button type="button" className="bk-btn is-go" onClick={start}>Rejouer</button>
               <button type="button" className="bk-btn is-light" onClick={() => setScreen('menu')}>Changer de perso</button>

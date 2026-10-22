@@ -71,7 +71,7 @@ export const deleteAccount = async () => {
 export const cloudLoad = (game) => call(`/api/me/save/${game}`).catch(() => null);
 export const cloudSave = (game, save) => call(`/api/me/save/${game}`, { method: 'PUT', body: JSON.stringify({ save }) }).catch(() => null);
 export const postRun = (game, run) => call(`/api/runs/${game}`, { method: 'POST', body: JSON.stringify({ run }) }).catch(() => null);
-export const fetchLeaderboard = (game, gen = 1) => call(`/api/leaderboard/${game}?gen=${gen}`).catch(() => ({ fastest: [], kills: [], endless: [] }));
+export const fetchLeaderboard = (game, gen = 1) => call(`/api/leaderboard/${game}?gen=${gen}`).catch(() => ({ score: [], fastest: [], kills: [], endless: [] }));
 
 /**
  * Synchronise une progression locale avec le compte :

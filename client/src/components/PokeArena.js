@@ -3,6 +3,8 @@ import io from 'socket.io-client';
 import ArenaBoardIso, { BOARD_THEMES, BOARD_THEME_LABELS, DEFAULT_BOARD_THEME, resolveScene } from './ArenaBoardIso';
 import ArenaHome, { ArenaFrame, addToRecord, loadRecord, saveRecord } from './ArenaHome';
 import { postRun, useCloudSync } from './account';
+import ScoreCard from './ScoreCard';
+import { arenaScore } from './scoring';
 import './PokeArena.css';
 import './PokeArenaPremium.css';
 import {
@@ -321,6 +323,7 @@ const PokeArena = ({ onClose }) => {
   const [starterId, setStarterId] = useState('');
   const playTimeRef = useRef(0);
   const recordedRef = useRef(false);
+  const [lastScore, setLastScore] = useState(null);
   const [record, setRecordState] = useState(loadRecord);
   const setRecord = (r) => { saveRecord(r); setRecordState(r); };
   useCloudSync('arena', record, (remote) => setRecord({ ...loadRecord(), ...remote }), (r) => r?.runs || 0);
@@ -459,8 +462,14 @@ const PokeArena = ({ onClose }) => {
       at: Date.now(), result: victory ? 'win' : 'lose', floor: Math.min(floor + (victory ? 0 : 1), totalFloors), level, wins,
       t: Math.round(playTimeRef.current), starter: starterId, mvp: mvp ? displayName(mvp.name) : '', mvpArt: mvp ? (mvp.sprite || mvp.home || '') : ''
     };
-    setRecord(addToRecord(loadRecord(), run));
+    const stars = team.reduce((n, u) => n + (u.star || 1), 0);
+    const sc = arenaScore({ result: run.result, floor: run.floor, wins, level, hp: Math.max(0, hp), stars });
+    run.score = sc.total;
+    const before = loadRecord();
+    setLastScore({ score: sc, best: before.bestScore || 0 });
+    setRecord(addToRecord(before, run));
     postRun('arena', {
+      score: sc.total,
       gen: 1, mode: 'classic', partnerId: starterId, form: run.mvp, formDex: mvp ? String(mvp.dex || '') : '', result: run.result,
       t: run.t, kills: run.floor, level, caught: wins
     });
@@ -523,6 +532,7 @@ const PokeArena = ({ onClose }) => {
     setStarterId(data.starterId || '');
     playTimeRef.current = data.playTime || 0;
     recordedRef.current = false;
+    setLastScore(null);
     setNode(null);
     setResult(null);
     setPhase('map');
@@ -559,6 +569,7 @@ const PokeArena = ({ onClose }) => {
     setStarterId(lineId);
     playTimeRef.current = 0;
     recordedRef.current = false;
+    setLastScore(null);
     setResult(null);
     setSelectedUid(null);
     setSelectedItem(null);
@@ -1526,6 +1537,7 @@ const PokeArena = ({ onClose }) => {
               </figure>
             ))}
           </div>
+          {lastScore && <ScoreCard score={lastScore.score} best={lastScore.best} />}
           <div className="pa-hub-actions">
             <button type="button" className="ui-btn is-primary is-big" onClick={() => setPhase('starter')}>Nouvelle partie</button>
             <button type="button" className="ui-btn" onClick={() => setPhase('hub')}>Menu</button>

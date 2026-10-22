@@ -8,6 +8,8 @@ import { FOES, WEAPONS, ultimateOf } from './swarmData';
 import { Missions, MusicControls, PmdSprite, RunRecap, TcgCard, itemSprite } from './PokeSwarm';
 import GameHome, { HomeBoard, HomeIcon } from './GameHome';
 import { RushMetaPage, RushPickPage, RushPrepPage } from './RushPages';
+import ScoreCard from './ScoreCard';
+import { rushScore } from './scoring';
 import { musicPlayer } from './pokeArenaMusic';
 import { AccountChip, postRun, useCloudSync } from './account';
 import './PokeSwarm.css';
@@ -83,13 +85,17 @@ const PokeRush = ({ onClose }) => {
       onLevelUp: (options, level, rerolls) => setLevelUp({ options, level, rerolls }),
       onAltar: (options) => setAltar(options),
       onEnd: (result, snap) => {
+        const missionsDone = snap.missions.filter((m) => m.done).length;
+        const sc = rushScore({ result, t: snap.t, kills: snap.kills, level: snap.level, caught: snap.caught.length, bosses: snap.bosses, alphaKills: snap.alphaKills, missions: missionsDone });
         const rec = recordRush(metaRef.current, {
+          score: sc.total,
           result, t: snap.t, kills: snap.kills, level: snap.level, caught: snap.caught, met: snap.met, bosses: snap.bosses,
           missions: snap.missions.filter((m) => m.done).length, partnerId: partner.id, form: snap.form
         });
         setMeta(rec.meta);
-        setEnd({ result, ...snap, reward: rec });
+        setEnd({ result, ...snap, reward: rec, score: sc });
         postRun('rush', {
+          score: sc.total,
           gen: 1, mode: 'classic', partnerId: partner.id, form: snap.form.name, formDex: String(snap.form.dex), result, t: snap.t, kills: snap.kills,
           level: snap.level, caught: snap.caught.length, missions: snap.missions.filter((m) => m.done).length
         });
@@ -413,6 +419,7 @@ const PokeRush = ({ onClose }) => {
                 {end.caught.slice(0, 12).map((id, i) => <PmdSprite key={`${id}-${i}`} dex={FOES[id].dex} anim="idle" size={44} scale={1.3} still />)}
               </div>
             )}
+            <ScoreCard score={end.score} best={end.reward.prevScore} />
             {end.missions?.length > 0 && <div className="sw-end-missions"><Missions list={end.missions} compact /></div>}
             <div className="sw-reward">
               <ul>{end.reward.lines.map((l) => <li key={l.label}><span>{l.label}</span><b>+{l.v} PL</b></li>)}</ul>

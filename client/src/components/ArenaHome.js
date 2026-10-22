@@ -16,7 +16,7 @@ const clock = (s) => {
 
 /* ——— Carnet de dresseur : les parties solo terminées, gardées sur l'appareil (et sur le compte) ——— */
 export const RECORD_KEY = 'poke-arena-record';
-export const blankRecord = () => ({ v: 1, runs: 0, wins: 0, best: 0, history: [] });
+export const blankRecord = () => ({ v: 1, runs: 0, wins: 0, best: 0, bestScore: 0, history: [] });
 export const loadRecord = () => {
   try {
     const raw = JSON.parse(localStorage.getItem(RECORD_KEY) || 'null');
@@ -31,6 +31,7 @@ export const addToRecord = (rec, run) => ({
   runs: rec.runs + 1,
   wins: rec.wins + (run.result === 'win' ? 1 : 0),
   best: Math.max(rec.best, run.floor),
+  bestScore: Math.max(rec.bestScore || 0, run.score || 0),
   history: [run, ...(rec.history || [])].slice(0, 20)
 });
 
@@ -101,6 +102,7 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
     : { title: 'Multi', sub: 'Salon en ligne', art: <HomeIcon src={itemSprite('link-cable')} fallback="⇄" />, onClick: onMulti };
 
   const ARENA_TABS = [
+    { id: 'score', label: 'Score', sub: 'Meilleur score', value: (r) => (r.score || 0).toLocaleString('fr-FR'), unit: 'pts' },
     { id: 'fastest', label: 'Maîtres', sub: 'Ligue la plus rapide', value: (r) => clock(r.t), unit: '' },
     { id: 'kills', label: 'Plus loin', sub: 'Étape atteinte', value: (r) => `${r.kills}`, unit: 'étape' }
   ];
@@ -135,7 +137,7 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
                   <span className="gp-hist-face"><HomeIcon src={h.mvpArt} fallback="★" /></span>
                   <span>
                     <b>{h.result === 'win' ? 'Maître de la Ligue !' : `Arrêt à l’étape ${h.floor}`}</b>
-                    <small>{h.mvp ? `MVP ${h.mvp} · ` : ''}niv. {h.level} · {h.wins} combats gagnés{h.t ? ` · ${clock(h.t)}` : ''}</small>
+                    <small>{h.score ? `${h.score.toLocaleString('fr-FR')} pts · ` : ''}{h.mvp ? `MVP ${h.mvp} · ` : ''}niv. {h.level} · {h.wins} combats gagnés{h.t ? ` · ${clock(h.t)}` : ''}</small>
                   </span>
                   <time>{new Date(h.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</time>
                 </div>
@@ -219,6 +221,7 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
             subtitle="Meilleure partie de chaque dresseur"
             describe={(r) => `${r.form || 'Équipe'} · niv. ${r.level}`}
             tabs={[
+              { id: 'score', label: 'Score', value: (r) => (r.score || 0).toLocaleString('fr-FR'), unit: 'pts' },
               { id: 'fastest', label: 'Maîtres', value: (r) => clock(r.t), unit: 'temps' },
               { id: 'kills', label: 'Plus loin', value: (r) => `${r.kills}`, unit: 'étape' }
             ]}

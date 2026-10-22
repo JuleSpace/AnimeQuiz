@@ -190,11 +190,13 @@ export const recordRush = (m0, run) => {
   if (run.result === 'win') m.wins += 1;
   const prev = m.best[run.partnerId];
   if (!prev || (run.result === 'win' && (!prev.win || run.t < prev.t)) || (!prev.win && run.result !== 'win' && run.t > prev.t)) {
-    m.best[run.partnerId] = { win: run.result === 'win', t: Math.round(run.t), kills: run.kills };
+    m.best[run.partnerId] = { win: run.result === 'win', t: Math.round(run.t), kills: run.kills, score: prev?.score || 0 };
   }
-  m.history = [{ at: Date.now(), partnerId: run.partnerId, result: run.result, t: Math.round(run.t), kills: run.kills, level: run.level, caught: run.caught.length, form: run.form }, ...(m0.history || [])].slice(0, 15);
+  const prevScore = prev?.score || 0;
+  if (m.best[run.partnerId] && (run.score || 0) > (m.best[run.partnerId].score || 0)) m.best[run.partnerId] = { ...m.best[run.partnerId], score: run.score };
+  m.history = [{ at: Date.now(), partnerId: run.partnerId, result: run.result, t: Math.round(run.t), kills: run.kills, level: run.level, caught: run.caught.length, form: run.form, score: run.score || 0 }, ...(m0.history || [])].slice(0, 15);
   saveRush(m);
-  return { meta: m, earned, lines, newCaught };
+  return { meta: m, earned, lines, newCaught, prevScore };
 };
 
 export const foeDef = (id) => FOES[id];

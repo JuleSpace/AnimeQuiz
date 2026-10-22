@@ -51,9 +51,11 @@ const RunSchema = new mongoose.Schema({
   rank: { type: Number, default: 0 },
   caught: { type: Number, default: 0 },
   missions: { type: Number, default: 0 },
+  score: { type: Number, default: null },
   at: { type: Date, default: Date.now, index: true }
 });
 RunSchema.index({ game: 1, gen: 1, mode: 1, result: 1, t: 1 });
+RunSchema.index({ game: 1, gen: 1, score: -1 });
 const Account = mongoose.models.Account || mongoose.model('Account', UserSchema);
 const Run = mongoose.models.Run || mongoose.model('Run', RunSchema);
 
@@ -181,7 +183,8 @@ const cleanRun = (game, r = {}) => ({
   level: Math.round(num(r.level, 1, 999, 1)),
   rank: Math.round(num(r.rank, 0, 20)),
   caught: Math.round(num(r.caught, 0, 999)),
-  missions: Math.round(num(r.missions, 0, 10))
+  missions: Math.round(num(r.missions, 0, 10)),
+  score: r.score === undefined || r.score === null ? null : Math.round(num(r.score, 0, 5e7))
 });
 
 const attachAccounts = (app) => {
@@ -371,11 +374,17 @@ const attachAccounts = (app) => {
   // Classements : meilleur score de chaque joueur
   app.get('/api/leaderboard/:game', async (req, res) => {
     const { game } = req.params;
-    if (!GAMES.includes(game) || mongoose.connection.readyState !== 1) return res.json({ fastest: [], kills: [], endless: [] });
+    if (!GAMES.includes(game) || mongoose.connection.readyState !== 1) return res.json({ score: [], fastest: [], kills: [], endless: [] });
     const gen = Math.round(num(req.query.gen, 1, 9, 1));
+    // Score : celui envoyé par le jeu, sinon une estimation pour les parties d'avant le score
+    const winBonus = (v) => ({ $cond: [{ $eq: ['$result', 'win'] }, v, 0] });
+    const fallback = game === 'arena'
+      ? { $add: [{ $multiply: ['$kills', 1000] }, { $multiply: ['$caught', 300] }, { $multiply: ['$level', 200] }, winBonus(10000)] }
+      : { $add: [{ $multiply: ['$kills', 10] }, { $multiply: ['$level', 150] }, { $multiply: ['$missions', 750] }, { $multiply: ['$caught', 400] }, winBonus(6000)] };
     const top = async (match, sortField, dir) => {
       const rows = await Run.aggregate([
         { $match: { game, gen, ...match } },
+        { $addFields: { score: { $ifNull: ['$score', fallback] } } },
         { $sort: { [sortField]: dir, at: 1 } },
         { $group: { _id: '$user', best: { $first: '$$ROOT' } } },
         { $replaceRoot: { newRoot: '$best' } },
@@ -387,17 +396,18 @@ const attachAccounts = (app) => {
         const u = r.who?.[0];
         return {
           name: u ? displayName(u) : 'Joueur', avatar: u ? avatarUrl(u) : '', partnerId: r.partnerId, form: r.form, formDex: r.formDex,
-          t: r.t, kills: r.kills, level: r.level, rank: r.rank, caught: r.caught, at: r.at
+          t: r.t, kills: r.kills, level: r.level, rank: r.rank, caught: r.caught, score: Math.round(r.score || 0), result: r.result, at: r.at
         };
       });
     };
     try {
-      const [fastest, kills, endless] = await Promise.all([
+      const [score, fastest, kills, endless] = await Promise.all([
+        top({ mode: { $ne: 'endless' } }, 'score', -1),
         top({ result: 'win', mode: { $ne: 'endless' } }, 't', 1),
         top({ mode: { $ne: 'endless' } }, 'kills', -1),
         game === 'swarm' ? top({ mode: 'endless' }, 't', -1) : Promise.resolve([])
       ]);
-      res.json({ fastest, kills, endless });
+      res.json({ score, fastest, kills, endless });
     } catch (e) {
       res.status(500).json({ error: 'Classement indisponible' });
     }

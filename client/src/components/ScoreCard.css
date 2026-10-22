@@ -1,0 +1,18 @@
+/* Score de fin de partie : s'adapte aux couleurs de l'écran de fin de chaque jeu (currentColor). */
+.sc-card { width: 100%; max-width: 520px; margin: 10px auto 4px; border-radius: 14px; overflow: hidden; color: inherit;
+  background: color-mix(in srgb, currentColor 7%, transparent); box-shadow: inset 0 0 0 2px color-mix(in srgb, currentColor 18%, transparent); }
+.sc-card.is-record { box-shadow: inset 0 0 0 2px #ffd447, 0 0 24px rgba(255, 212, 71, 0.35); }
+.sc-head { display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto; align-items: center; gap: 0 12px; width: 100%; padding: 10px 16px; border: 0; color: inherit; background: none; cursor: pointer; text-align: left; font: inherit; }
+.sc-label { grid-row: 1 / 3; font-weight: 900; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
+.sc-head b { font-size: clamp(30px, 5vw, 42px); line-height: 1; font-weight: 900; font-variant-numeric: tabular-nums; }
+.sc-head b small { margin-left: 6px; font-size: 14px; opacity: 0.7; }
+.sc-head i { grid-row: 1 / 3; grid-column: 3; font-style: normal; font-size: 22px; font-weight: 900; opacity: 0.6; }
+.sc-badge, .sc-best { font-style: normal; font-size: 12px; font-weight: 900; justify-self: start; }
+.sc-badge { padding: 2px 8px; border-radius: 999px; color: #2a1d00; background: #ffd447; animation: sc-pop 0.5s 1.1s both; }
+.sc-best { opacity: 0.7; }
+@keyframes sc-pop { from { transform: scale(0.4); opacity: 0; } 70% { transform: scale(1.15); } to { transform: scale(1); opacity: 1; } }
+.sc-lines { list-style: none; margin: 0; padding: 4px 16px 12px; display: grid; gap: 4px; text-align: left; }
+.sc-lines li { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 4px 0; border-top: 1px dashed color-mix(in srgb, currentColor 20%, transparent); font-size: 14px; }
+.sc-lines li span { display: grid; }
+.sc-lines small { font-size: 11px; opacity: 0.65; }
+.sc-lines b { font-weight: 900; font-variant-numeric: tabular-nums; }

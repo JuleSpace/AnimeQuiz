@@ -48,7 +48,7 @@ const PRIVACY = {
     ['Ton compte', [
       'Compte classique : ton pseudo et ton mot de passe. Le mot de passe n’est jamais stocké en clair, seulement une empreinte chiffrée (scrypt). Aucune adresse e-mail n’est demandée.',
       'Compte Discord : le site reçoit seulement ce que l’autorisation « identify » permet, c’est-à-dire ton identifiant, ton nom d’utilisateur, ton nom affiché et ton avatar. Pas ton e-mail, pas tes serveurs, pas tes messages.',
-      'Le site enregistre aussi la date de création et de dernière connexion, ta progression dans les jeux et le résumé de tes parties (date, Pokémon joué, durée, nombre de K.O., niveau, résultat).',
+      'Le site enregistre aussi la date de création et de dernière connexion, ta progression dans les jeux et le résumé de tes parties (date, Pokémon joué, durée, nombre de K.O., niveau, score, résultat).',
       'Les classements sont publics : ils affichent ton pseudo (ou ton nom Discord), ton avatar Discord si tu en as un et tes meilleurs scores.'
     ]],
     ['Pendant les parties', [

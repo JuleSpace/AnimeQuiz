@@ -15,6 +15,8 @@ import { musicPlayer } from './pokeArenaMusic';
 import { AccountChip, postRun, useCloudSync } from './account';
 import GameHome, { HomeBoard, HomeIcon } from './GameHome';
 import { SwarmMetaPage, SwarmPickPage, SwarmPrepPage } from './SwarmPages';
+import ScoreCard from './ScoreCard';
+import { swarmScore } from './scoring';
 import './PokeSwarm.css';
 
 export const SWARM_HASH = '#swarm';
@@ -449,7 +451,10 @@ const PokeSwarm = ({ onClose }) => {
       onLevelUp: (options, level, rerolls) => setLevelUp({ options, level, rerolls }),
       onAltar: (options) => setAltar(options),
       onEnd: (result, snap) => {
+        const missionsDone = (snap.missions || []).filter((m) => m.done).length;
+        const sc = swarmScore({ result, t: snap.t, kills: snap.kills, level: snap.level, bosses: snap.bosses, alphaKills: snap.alphaKills, missions: missionsDone, endless: snap.endless, rank: runRef.current.rank });
         const rec = recordRun(metaRef.current, {
+          score: sc.total,
           t: snap.t, kills: snap.kills, level: snap.level, bosses: snap.bosses, result, daily: dailyRef.current,
           killsBy: snap.killsBy, partnerId: partner.id, gen, reachedFinal: snap.reachedFinal, mega: snap.isMega,
           maxWeapon: snap.maxWeapon, weapons: snap.weaponCount, passives: snap.passiveCount,
@@ -459,8 +464,9 @@ const PokeSwarm = ({ onClose }) => {
           finalDown: snap.finalDown, blessDust: snap.blessDust, ults: snap.ults, altarsUsed: snap.altarsUsed, weaponIds: snap.weapons.map((w) => w.id)
         });
         setMeta(rec.meta);
-        setEnd({ result, ...snap, reward: rec });
+        setEnd({ result, ...snap, reward: rec, score: sc, prevBest: best[partner.id]?.score || 0 });
         postRun('swarm', {
+          score: sc.total,
           gen, mode: dailyRef.current ? 'daily' : snap.endless ? 'endless' : 'classic', partnerId: partner.id, form: snap.form.name, formDex: String(snap.form.dex),
           result, t: snap.t, kills: snap.kills, level: snap.level, rank: runRef.current.rank, missions: (snap.missions || []).filter((m) => m.done).length
         });
@@ -469,7 +475,7 @@ const PokeSwarm = ({ onClose }) => {
           const better = result === 'win'
             ? { win: true, t: Math.min(mine.win ? mine.t : Infinity, snap.t), kills: Math.max(mine.kills || 0, snap.kills) }
             : mine.win ? mine : { win: false, t: Math.max(mine.t || 0, snap.t), kills: Math.max(mine.kills || 0, snap.kills) };
-          const next = { ...prev, [partner.id]: better };
+          const next = { ...prev, [partner.id]: { ...better, score: Math.max(mine.score || 0, sc.total) } };
           try { localStorage.setItem(BEST_KEY, JSON.stringify(next)); } catch { /* stockage indisponible */ }
           return next;
         });
@@ -831,6 +837,7 @@ const PokeSwarm = ({ onClose }) => {
             <p>{clock(end.t)} · niveau {end.level} · {end.kills} Pokémon mis K.O. · {BIOMES[runRef.current.biome]?.name}{runRef.current.rank ? ` · rang ${runRef.current.rank}` : ''}</p>
             {end.reward?.rankUp > 0 && <p className="sw-rankup">Rang {end.reward.rankUp} débloqué dans cette région !</p>}
             {end.endless && <p className="sw-rankup">{end.reward?.endlessRecord ? 'Nouveau record de survie' : 'Survie infinie'} : {clock(end.t)}{end.endlessWave ? ` · ${end.endlessWave} vague${end.endlessWave > 1 ? 's' : ''} infinie${end.endlessWave > 1 ? 's' : ''}` : ''}</p>}
+            <ScoreCard score={end.score} best={end.prevBest} />
             {end.missions?.length > 0 && <div className="sw-end-missions"><Missions list={end.missions} compact /></div>}
             {end.reward && (
               <div className="sw-reward">

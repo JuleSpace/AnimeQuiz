@@ -106,6 +106,7 @@ export const SwarmPickPage = ({ Sprite, backdrop, meta, partnerId, best, onPick,
               <small>Tes parties</small>
               <span><b>{runs.length}</b>parties</span>
               <span><b>{runs.filter((r) => r.result === 'win').length}</b>victoires</span>
+              <span><b>{fr(rec?.score)}</b>meilleur score</span>
               <span><b>{fr(rec?.kills)}</b>record de K.O.</span>
               <span><b>{rec ? clock(rec.t) : '—'}</b>{rec?.win ? 'meilleure victoire' : 'meilleur temps'}</span>
             </div>
@@ -242,6 +243,7 @@ export const SwarmPrepPage = ({
           </div>
           <span className="gp-mini-title">Tes scores · {partner.name}</span>
           <div className="gp-kv">
+            <span><small>Score record</small><b>{fr(rec?.score)}</b></span>
             <span><small>Meilleur</small><b>{rec ? clock(rec.t) : '—'}</b></span>
             <span><small>Record K.O.</small><b>{fr(rec?.kills)}</b></span>
             <span><small>Rang max</small><b>{meta.ranks?.[gen] || 0}</b></span>
@@ -313,6 +315,7 @@ export const SwarmMetaPage = ({ Sprite, panel, backdrop, meta, setMeta, onBack }
           game="swarm"
           gens={GENS.map((g) => ({ id: g.id, name: g.name, sub: g.label }))}
           tabs={[
+            { id: 'score', label: 'Score', sub: 'Meilleur score', value: (r) => (r.score || 0).toLocaleString('fr-FR'), unit: 'pts' },
             { id: 'fastest', label: 'Victoires', sub: 'La plus rapide', value: (r) => clock(r.t), unit: '' },
             { id: 'kills', label: 'K.O.', sub: 'Le plus de K.O.', value: (r) => fr(r.kills), unit: 'K.O.' },
             { id: 'endless', label: 'Survie', sub: 'Le plus long', value: (r) => clock(r.t), unit: '' }
@@ -490,7 +493,7 @@ const History = ({ Sprite, meta }) => {
             <span className="gp-hist-face">{pt && <Sprite dex={pt.dex} anim="idle" size={48} scale={1.5} still />}</span>
             <span>
               <b>{r.result === 'win' ? `Victoire contre ${FOES[r.finalBoss]?.name || 'le légendaire'}` : r.endless ? 'Fin de la survie' : 'K.O.'} · {pt?.name || '?'} à {GENS.find((g) => g.id === r.gen)?.name}</b>
-              <small>{clock(r.t)} · niv. {r.level} · {fr(r.kills)} K.O. · {r.missions}/3 missions{r.rank ? ` · rang ${r.rank}` : ''}{r.weapons?.length ? ` · ${r.weapons.map((id) => WEAPONS[id]?.name || PASSIVES[id]?.name).filter(Boolean).join(', ')}` : ''}</small>
+              <small>{r.score ? `${fr(r.score)} pts · ` : ''}{clock(r.t)} · niv. {r.level} · {fr(r.kills)} K.O. · {r.missions}/3 missions{r.rank ? ` · rang ${r.rank}` : ''}{r.weapons?.length ? ` · ${r.weapons.map((id) => WEAPONS[id]?.name || PASSIVES[id]?.name).filter(Boolean).join(', ')}` : ''}</small>
             </span>
             <time>{new Date(r.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</time>
           </div>

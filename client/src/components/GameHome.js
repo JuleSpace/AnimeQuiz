@@ -17,7 +17,8 @@ const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStar
 
 /** Classement compact : les 7 premiers, deux onglets. */
 const DEFAULT_TABS = [
-  { id: 'fastest', label: 'Victoires rapides', value: (r) => clock(r.t), unit: 'temps' },
+  { id: 'score', label: 'Score', value: (r) => (r.score || 0).toLocaleString('fr-FR'), unit: 'pts' },
+  { id: 'fastest', label: 'Victoires', value: (r) => clock(r.t), unit: 'temps' },
   { id: 'kills', label: 'K.O.', value: (r) => r.kills.toLocaleString('fr-FR'), unit: 'K.O.' }
 ];
 

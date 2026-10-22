@@ -262,7 +262,7 @@ export const recordRun = (m0, run) => {
   // Historique : les 15 dernières parties
   m.history = [{
     at: Date.now(), partnerId: run.partnerId, gen: run.gen, result: run.result, t: Math.round(run.t), kills: run.kills, level: run.level,
-    rank, biome: run.biome, endless: !!run.endless, missions: missionsDone, finalBoss: run.finalBoss, weapons: run.weaponIds || []
+    rank, biome: run.biome, endless: !!run.endless, missions: missionsDone, finalBoss: run.finalBoss, weapons: run.weaponIds || [], score: run.score || 0
   }, ...(m0.history || [])].slice(0, 15);
   if (run.biome) m.biomes[run.biome] = true;
   // victoire : boss final ajouté aux légendes, rang suivant débloqué pour la région
