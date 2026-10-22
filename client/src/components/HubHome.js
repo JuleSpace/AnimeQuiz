@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AccountChip, fetchLeaderboard } from './account';
 import { PROJECTS } from './showcase';
 import Icon from './ArcadeIcon';
+import GameLogo from './GameLogo';
 import './HubHome.css';
 
 /** Accueil après connexion : le quiz entre potes, les jeux avec tes records, et les meilleurs scores du serveur. */
@@ -62,7 +63,7 @@ const HubHome = ({ name, onQuiz, onMusic, onGame, onAdmin, onPortfolio, onShelf 
         </div>
         <div className="hub-fan" aria-hidden="true">
           {[games[1], quiz, games[0]].filter(Boolean).map((g, i) => (
-            <span key={g.id} className="hub-fan-card" style={{ '--i': i - 1, '--c': g.color }}><img src={g.img} alt="" /></span>
+            <span key={g.id} className="hub-fan-card" style={{ '--i': i - 1, '--c': g.color }}><span className="hub-fan-logo"><GameLogo id={g.id} /></span></span>
           ))}
         </div>
       </section>
@@ -71,7 +72,7 @@ const HubHome = ({ name, onQuiz, onMusic, onGame, onAdmin, onPortfolio, onShelf 
         <h2 className="hub-h2"><span>Entre potes</span>Les quiz</h2>
         <div className="hub-modes">
           <button type="button" className="hub-mode is-quiz" onClick={onQuiz}>
-            <img src={quiz?.img} alt="" />
+            <span className="hub-mode-logo"><GameLogo id="quiz" /></span>
             <span className="hub-mode-text">
               <b><Icon name="quiz" />Quiz</b>
               <small>Choix multiples, images, vidéos, vrai/faux, texte libre… et les cartes jokers pour saboter tes potes.</small>
@@ -96,7 +97,7 @@ const HubHome = ({ name, onQuiz, onMusic, onGame, onAdmin, onPortfolio, onShelf 
             const r = rankOf(g.id);
             return (
               <button key={g.id} type="button" className="hub-game" style={{ '--c': g.color, '--i': i }} onClick={() => onGame(g)}>
-                <span className="hub-game-art"><img src={g.img} alt="" /></span>
+                <span className="hub-game-art"><GameLogo id={g.id} /></span>
                 <span className="hub-game-body">
                   <small>{g.subtitle}</small>
                   <b>{g.title}</b>
@@ -114,7 +115,7 @@ const HubHome = ({ name, onQuiz, onMusic, onGame, onAdmin, onPortfolio, onShelf 
           <div className="hub-extras">
             {extra.map((g) => (
               <button key={g.id} type="button" className="hub-extra" style={{ '--c': g.color }} onClick={() => onGame(g)}>
-                <img src={g.img} alt="" /><span><b>{g.title}</b><small>{g.subtitle}</small></span>
+                <span className="hub-extra-logo"><GameLogo id={g.id} /></span><span><b>{g.title}</b><small>{g.subtitle}</small></span>
               </button>
             ))}
           </div>

@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Pixelify+Sans:wght@700&family=Playfair+Display:ital,wght@1,900&display=swap');
+
+/* ——— Logos des jeux ——— */
+.gl-root {
+  --fill: #ffcb05; --stroke: #2a4aa0; --shade: #13235e; --top: #fff; --top-stroke: #13235e; --tag-bg: #ff2347; --tag-ink: #fff;
+  container-type: size; position: relative; display: grid; place-items: center; width: 100%; height: 100%; overflow: hidden; isolation: isolate;
+  font-family: 'Luckiest Guy', 'Saira', 'Arial Black', sans-serif; line-height: 1; text-transform: uppercase; user-select: none;
+}
+.gl-bg { position: absolute; inset: 0; z-index: -2; }
+.gl-word { position: relative; z-index: 2; display: grid; justify-items: center; transform: rotate(-4deg); filter: drop-shadow(0 1.2cqw 0 rgba(0, 0, 0, 0.25)); }
+.gl-top { margin-bottom: -1.4cqw; font-size: 8cqw; letter-spacing: 0.05em; color: var(--top); -webkit-text-stroke: 2.2cqw var(--top-stroke); paint-order: stroke fill; }
+.gl-main { display: flex; align-items: flex-end; }
+.gl-main span { color: var(--fill); -webkit-text-stroke: 3.4cqw var(--stroke); paint-order: stroke fill; text-shadow: 0 1.6cqw 0 var(--shade), 0 2.4cqw 0 var(--shade); letter-spacing: 0.01em; line-height: 0.92; }
+.gl-tag { margin-top: 1.2cqw; padding: 0.9cqw 3cqw; border-radius: 99cqw; font: italic 900 4.6cqw/1.1 'Saira', 'Arial Black', sans-serif; letter-spacing: 0.06em; color: var(--tag-ink); background: var(--tag-bg); box-shadow: 0 0.8cqw 0 rgba(0, 0, 0, 0.3); transform: rotate(2deg); }
+
+/* Emblèmes */
+.gl-emblem { position: absolute; z-index: -1; }
+.gl-ball { position: absolute; right: -8cqw; top: -10cqw; width: 58cqw; aspect-ratio: 1; border-radius: 50%; opacity: 0.22;
+  background: radial-gradient(circle, #fff 0 13%, #111 13% 19%, transparent 19%), linear-gradient(180deg, #ff3b3b 0 46%, #111 46% 54%, #fff 54%);
+  box-shadow: 0 0 0 2.2cqw #111; animation: gl-spin 28s linear infinite; }
+.gl-ring { right: -6cqw; top: -8cqw; width: 52cqw; aspect-ratio: 1; border-radius: 50%; border: 9cqw solid #ffd23a; box-shadow: inset 0 0 0 1.6cqw #b35c00, 0 0 0 1.6cqw #b35c00; opacity: 0.85; animation: gl-flip 3s linear infinite; }
+.gl-crown { inset: 0; }
+.gl-crown .gl-ball { left: -10cqw; right: auto; top: auto; bottom: -16cqw; opacity: 0.16; }
+.gl-crown::before { content: '♛'; position: absolute; right: 6cqw; top: 2cqw; font: 34cqw/1 Georgia, serif; color: #f2d38c; opacity: 0.35; transform: rotate(12deg); }
+.gl-quiz { right: 4cqw; top: -4cqw; font: 64cqw/1 'Luckiest Guy', sans-serif; color: rgba(255, 255, 255, 0.16); transform: rotate(14deg); }
+.gl-cardfan { right: 6cqw; top: 6cqw; width: 30cqw; height: 40cqw; }
+.gl-cardfan i { position: absolute; inset: 0; border-radius: 3cqw; background: linear-gradient(160deg, #fff, #ffd6e0); box-shadow: 0 0 0 1.4cqw #fff, 0 2cqw 4cqw rgba(0, 0, 0, 0.25); transform-origin: bottom center; opacity: 0.5; }
+.gl-cardfan i:nth-child(1) { transform: rotate(-22deg); }
+.gl-cardfan i:nth-child(2) { transform: rotate(-4deg); }
+.gl-cardfan i:nth-child(3) { transform: rotate(14deg); }
+.gl-book { right: 4cqw; top: 6cqw; width: 44cqw; height: 30cqw; opacity: 0.35; }
+.gl-book i { position: absolute; top: 0; bottom: 0; width: 50%; background: #fff; border-radius: 2cqw; box-shadow: inset 0 -1.6cqw 0 #cfe; }
+.gl-book i:first-child { left: 0; transform: skewY(8deg); }
+.gl-book i:last-child { right: 0; transform: skewY(-8deg); }
+@keyframes gl-spin { to { transform: rotate(360deg); } }
+@keyframes gl-flip { 50% { transform: scaleX(0.35); } }
+
+/* ——— Décors par jeu ——— */
+/* Bully's Lair : rayons bleus City Escape, ombre rouge */
+.gl-root.is-quiz { --shade: #ff2347; --stroke: #08164d; }
+.is-quiz .gl-bg { background: radial-gradient(circle at 50% 55%, transparent 20%, rgba(5, 12, 51, 0.6) 85%), repeating-conic-gradient(from 0deg at 50% 60%, #1f6dff 0 10deg, #0b3bd1 10deg 20deg); }
+
+/* Tactics : carton sombre, or, Playfair italique pour le mot principal */
+.gl-root.is-arena { --fill: #f6dfa5; --stroke: #2a1d10; --shade: #8a5a1f; --tag-bg: #c9573f; }
+.is-arena .gl-bg { background: radial-gradient(circle at 50% 40%, #5a4128, #241a12 75%), repeating-linear-gradient(45deg, rgba(255, 220, 160, 0.04) 0 2px, transparent 2px 8px); }
+.is-arena .gl-main span { font-family: 'Playfair Display', Georgia, serif; font-style: italic; font-weight: 900; text-transform: none; -webkit-text-stroke-width: 2.8cqw; }
+.is-arena .gl-top { color: #ffcb05; -webkit-text-stroke-color: #2a4aa0; }
+
+/* Swarm : nuit prune, étoiles pixel, lettrage pixel */
+.gl-root.is-swarm { --fill: #ffd447; --stroke: #2a1d5e; --shade: #0c0818; --tag-bg: #ff6b57; }
+.is-swarm .gl-bg { background:
+  radial-gradient(circle, #fff 0 0.6cqw, transparent 0.8cqw) 0 0 / 14cqw 12cqw,
+  radial-gradient(circle, #ffd447 0 0.5cqw, transparent 0.7cqw) 7cqw 6cqw / 18cqw 16cqw,
+  linear-gradient(180deg, #1a1430, #352a5b 70%, #43367a); }
+.is-swarm .gl-main span { font-family: 'Pixelify Sans', 'Courier New', monospace; font-weight: 700; -webkit-text-stroke-width: 2.8cqw; text-shadow: 1.4cqw 1.4cqw 0 #6b3fd6, 2.8cqw 2.8cqw 0 var(--shade); }
+.is-swarm .gl-ball { image-rendering: pixelated; border-radius: 0; opacity: 0.18; clip-path: polygon(30% 0, 70% 0, 70% 8%, 85% 8%, 85% 15%, 92% 15%, 92% 30%, 100% 30%, 100% 70%, 92% 70%, 92% 85%, 85% 85%, 85% 92%, 70% 92%, 70% 100%, 30% 100%, 30% 92%, 15% 92%, 15% 85%, 8% 85%, 8% 70%, 0 70%, 0 30%, 8% 30%, 8% 15%, 15% 15%, 15% 8%, 30% 8%); animation: none; }
+
+/* Rush : aube de Kanto, lignes de vitesse */
+.gl-root.is-rush { --tag-bg: #ff5d4f; }
+.is-rush .gl-bg { background:
+  repeating-linear-gradient(-12deg, transparent 0 7cqw, rgba(255, 255, 255, 0.22) 7cqw 7.6cqw, transparent 7.6cqw 13cqw),
+  linear-gradient(180deg, #2b6fc2 0%, #5fa8e8 45%, #ffcf9a 68%, #6cc44a 68.5%, #3f8a37 100%); }
+
+/* Sonic Bonk : ciel, damier, anneau */
+.gl-root.is-bonk { --top: #fff; --fill: #ffd23a; --stroke: #0a1f6b; --shade: #ff2347; --tag-bg: #0a1f6b; }
+.is-bonk .gl-bg { background: linear-gradient(180deg, #1f6dff, #8fd6ff 72%); }
+.is-bonk .gl-bg::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 26%; border-top: 3cqw solid #4bb532; background: repeating-conic-gradient(#c97a36 0 25%, #8a4a1c 0 50%) 0 0 / 8cqw 8cqw; }
+.is-bonk .gl-top { font-size: 10cqw; color: #1f6dff; -webkit-text-stroke-color: #fff; }
+
+/* Atelier des cartes : rose et rouge */
+.gl-root.is-cards { --fill: #fff; --stroke: #c2123a; --shade: #6b0a24; --top: #ffd23a; --top-stroke: #6b0a24; --tag-bg: #08164d; }
+.is-cards .gl-bg { background: repeating-conic-gradient(from 0deg at 50% 60%, #ff2f5f 0 10deg, #ff5a7e 10deg 20deg); }
+
+/* Academy : vert Cobblemon */
+.gl-root.is-academy { --fill: #ffe14d; --stroke: #155e3a; --shade: #0b3322; --tag-bg: #2a8cff; }
+.is-academy .gl-bg { background: radial-gradient(circle at 50% 70%, #4fd18b, #1b7a4a 80%); }
+
+@media (prefers-reduced-motion: reduce) { .gl-ball, .gl-ring { animation: none; } }

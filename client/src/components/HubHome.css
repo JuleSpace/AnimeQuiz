@@ -32,7 +32,7 @@
   transform: translateX(calc(var(--i) * 62%)) translateY(calc(var(--i) * var(--i) * 18px)) rotate(calc(var(--i) * 11deg));
   animation: hub-float 6s ease-in-out infinite; animation-delay: calc(var(--i) * 0.6s); }
 .hub-fan-card:nth-child(2) { z-index: 2; }
-.hub-fan-card img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; background: var(--c); }
+.hub-fan-logo { display: block; width: 100%; height: 100%; border-radius: 8px; overflow: hidden; }
 @keyframes hub-float { 50% { translate: 0 -10px; } }
 
 /* Titres de section */
@@ -46,8 +46,9 @@
   box-shadow: 0 0 0 4px #fff, 0 8px 0 4px var(--ce-ink), 0 20px 36px rgba(2, 8, 40, 0.45); transition: transform 0.15s; }
 .hub-mode:hover { transform: translateY(-3px) rotate(-0.4deg); }
 .hub-mode.is-quiz { background: #1f6dff; }
-.hub-mode.is-quiz img { position: absolute; inset: 0 0 0 30%; width: 70%; height: 100%; object-fit: cover; object-position: left center; }
-.hub-mode.is-quiz::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5, 12, 51, 0.96) 0 38%, rgba(5, 12, 51, 0.55) 70%, rgba(5, 12, 51, 0.15)), linear-gradient(180deg, transparent 50%, rgba(5, 12, 51, 0.6)); }
+.hub-mode-logo { position: absolute; inset: 0 0 0 42%; }
+.hub-mode.is-quiz::before { content: ""; position: absolute; inset: 0 58% 0 0; z-index: 1; background: linear-gradient(90deg, #0b2a9e, #0b3bd1); }
+.hub-mode.is-quiz .hub-mode-text { max-width: 58%; z-index: 2; }
 .hub-mode.is-music { background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0 14px, transparent 14px 28px), linear-gradient(160deg, #ff2347, #8a1bd8); }
 .hub-mode-text { position: relative; display: grid; gap: 6px; padding: 18px 20px; }
 .hub-mode-text b { display: flex; align-items: center; gap: 10px; font: italic 900 32px/1 var(--ce-title); text-transform: uppercase; text-shadow: 2px 2px 0 var(--ce-ink); }
@@ -65,8 +66,8 @@
 .hub-game:hover { transform: translateY(-4px); }
 @keyframes hub-in { from { opacity: 0; transform: translateY(20px); } }
 .hub-game-art { display: block; aspect-ratio: 16 / 9; overflow: hidden; background: var(--c); }
-.hub-game-art img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; transition: transform 0.4s; }
-.hub-game:hover .hub-game-art img { transform: scale(1.06); }
+.hub-game-art { transition: transform 0.4s; }
+.hub-game:hover .hub-game-art { transform: scale(1.03); }
 .hub-game-body { display: grid; gap: 4px; padding: 12px 16px 16px; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 18%, #fff), #fff 70%); }
 .hub-game-body small { font: italic 800 12px/1 var(--ce-title); letter-spacing: 0.08em; text-transform: uppercase; color: #4a5d99; }
 .hub-game-body b { font: italic 900 24px/1.05 var(--ce-title); }
@@ -77,7 +78,7 @@
 .hub-extras { display: flex; flex-wrap: wrap; gap: 12px; }
 .hub-extra { display: inline-flex; align-items: center; gap: 12px; padding: 6px 16px 6px 6px; border: 0; border-radius: 999px; text-align: left; color: #fff; background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.2); }
 .hub-extra:hover { background: rgba(255, 255, 255, 0.2); }
-.hub-extra img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: var(--c); }
+.hub-extra-logo { width: 64px; height: 44px; border-radius: 22px; overflow: hidden; flex: none; }
 .hub-extra span { display: grid; }
 .hub-extra b { font: italic 900 16px/1.1 var(--ce-title); }
 .hub-extra small { font-size: 12px; color: var(--ce-mist); }
@@ -115,8 +116,10 @@
   .hub-btn { flex: 1 1 100%; justify-content: center; }
   .hub-link { padding: 7px 10px; font-size: 13px !important; }
   .hub-mode { min-height: 200px; }
-  .hub-mode.is-quiz img { inset: 0; width: 100%; opacity: 0.35; }
-  .hub-mode.is-quiz::before { background: linear-gradient(180deg, rgba(5, 12, 51, 0.35), rgba(5, 12, 51, 0.92) 70%); }
+  .hub-mode-logo { inset: 0 0 45% 0; }
+  .hub-mode.is-quiz::before { inset: 55% 0 0 0; }
+  .hub-mode.is-quiz { min-height: 340px; }
+  .hub-mode.is-quiz .hub-mode-text { max-width: none; }
   .hub-mode-eq { height: 56px; top: 16px; right: 16px; opacity: 0.45; }
   .hub-game-art { aspect-ratio: 21 / 9; }
 }

@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { GAMES } from './showcase';
+import GameLogo from './GameLogo';
 import './GameShelf.css';
 
 export const GAMES_HASH = '#jeux';
@@ -42,7 +43,7 @@ const GameCard = ({ game, index, total, onOpen }) => {
           <em>{game.genre.split(' · ')[0]}</em>
         </span>
         <span className="gs-art">
-          <img src={game.img} alt="" loading="lazy" />
+          <GameLogo id={game.id} />
           <span className="gs-shine" aria-hidden="true" />
         </span>
         <span className="gs-strip">{game.subtitle}</span>
