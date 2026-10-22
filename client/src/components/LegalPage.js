@@ -4,6 +4,8 @@ import './Legal.css';
 export const TERMS_HASH = '#terms';
 export const PRIVACY_HASH = '#privacy';
 const UPDATED = '22 octobre 2026';
+const CONTACT = 'ytspana@gmail.com';
+const Mail = () => <a href={`mailto:${CONTACT}`}>{CONTACT}</a>;
 
 const TERMS = {
   title: 'Conditions d’utilisation',
@@ -27,7 +29,7 @@ const TERMS = {
     ['Propriété intellectuelle', [
       'Bully’s Lair est un projet de fans sans but lucratif. Pokémon, Sonic et les autres noms, personnages et images cités appartiennent à leurs détenteurs respectifs (Nintendo, Game Freak, The Pokémon Company, SEGA…) ; le site n’est ni affilié ni approuvé par eux.',
       'Les sprites animés viennent du projet PMDCollab SpriteCollab (licence CC BY-NC 4.0) ; les crédits sont indiqués dans les jeux concernés.',
-      'Si tu es titulaire de droits et qu’un contenu te pose problème, il sera retiré sur demande.'
+      <>Si tu es titulaire de droits et qu’un contenu te pose problème, écris à <Mail /> : il sera retiré.</>
     ]],
     ['Responsabilité', [
       'Le site est un loisir : dans les limites permises par la loi, l’éditeur ne peut être tenu responsable d’une interruption, d’une perte de progression ou d’un contenu ajouté par un utilisateur.'
@@ -66,7 +68,7 @@ const PRIVACY = {
     ['Tes droits', [
       'Tu peux supprimer ton compte et toutes ses données depuis le menu de ton compte sur le site (bouton « Supprimer mon compte »).',
       'Tu peux aussi retirer l’accès du site à ton compte Discord dans Discord : Paramètres utilisateur → Applications autorisées.',
-      'Pour toute autre demande (accès, rectification), contacte l’administrateur du site.'
+      <>Pour toute autre demande (accès, rectification, question), écris à <Mail />.</>
     ]]
   ]
 };
@@ -90,10 +92,11 @@ const LegalPage = ({ doc = 'terms', onClose, onOther }) => {
         {d.sections.map(([title, items], i) => (
           <section key={title}>
             <h2><span>{i + 1}.</span> {title}</h2>
-            <ul>{items.map((t) => <li key={t}>{t}</li>)}</ul>
+            <ul>{items.map((t, k) => <li key={k}>{t}</li>)}</ul>
           </section>
         ))}
         <footer className="lg-foot">
+          <p className="lg-contact">Contact : <Mail /></p>
           <button type="button" className="lg-link" onClick={onOther}>
             {doc === 'privacy' ? 'Lire les conditions d’utilisation' : 'Lire la politique de confidentialité'}
           </button>

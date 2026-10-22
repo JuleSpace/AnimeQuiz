@@ -32,3 +32,6 @@
   .lg-page { box-shadow: none; }
   .lg-back, .lg-foot { display: none; }
 }
+
+.lg-page a { color: #0b3bd1; font-weight: 700; }
+.lg-contact { margin: 0 0 14px; }
