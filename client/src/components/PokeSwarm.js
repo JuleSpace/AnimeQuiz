@@ -13,6 +13,7 @@ import {
 } from './swarmMeta';
 import { musicPlayer } from './pokeArenaMusic';
 import { AccountChip, Leaderboard, postRun, useCloudSync } from './account';
+import GameHome, { HomeBoard, HomeIcon } from './GameHome';
 import './PokeSwarm.css';
 
 export const SWARM_HASH = '#swarm';
@@ -569,7 +570,8 @@ const MetaPanel = ({ panel, meta, setMeta, onClose }) => {
 };
 
 const PokeSwarm = ({ onClose }) => {
-  const [screen, setScreen] = useState('menu');
+  const [screen, setScreen] = useState('home');
+  const [howto, setHowto] = useState(false);
   const [gen, setGen] = useState(() => {
     try { return Number(localStorage.getItem(GEN_KEY)) || 1; } catch { return 1; }
   });
@@ -730,6 +732,118 @@ const PokeSwarm = ({ onClose }) => {
     if (options) setLevelUp((cur) => ({ ...cur, options, rerolls: cur.rerolls - 1 }));
   };
 
+  if (screen === 'home') {
+    const pts = Object.values(meta.talents).reduce((a, b) => a + b, 0);
+    const affordTalents = TALENTS.filter((t) => rankOf(meta, t.id) < t.max && !talentLocked(meta, t) && meta.dust >= talentCost(meta, t)).length;
+    const affordMoves = UNLOCKABLES.filter((u) => !meta.unlocks?.[u.id] && meta.dust >= u.cost).length;
+    const seenCount = ALL_FOE_IDS.filter((id) => meta.dex[id] > 0).length;
+    const regionName = GENS.find((g) => g.id === gen)?.name;
+    const legend = pool.finals[Math.floor(Date.now() / 60000) % pool.finals.length];
+    const openPrep = (m) => { if (m) setMode(m); setScreen('menu'); };
+    return (
+      <div className="sw-root sw-home-wrap">
+        <GameHome
+          theme="gh-swarm"
+          backdrop={<MenuBackdrop world={world} />}
+          topLeft={(
+            <>
+              <button type="button" className="gh-pill is-plain" onClick={onClose}>← Bully’s Lair</button>
+              <button type="button" className="gh-pill is-plain" onClick={() => setHowto(true)}>Comment jouer</button>
+            </>
+          )}
+          topRight={(
+            <>
+              <AccountChip returnHash="#swarm" />
+              <span className="gh-pill" title="Parties jouées">{(meta.runs || 0).toLocaleString('fr-FR')} parties</span>
+              <span className="gh-pill" title="Légendaires vaincus">★ {Object.keys(meta.legends || {}).length}</span>
+              <span className="gh-pill is-strong" title="Poussière Étoile">✦ {meta.dust.toLocaleString('fr-FR')}</span>
+            </>
+          )}
+          logo={(
+            <div className="swh-logo">
+              <span className="sw-kicker">Mode secret · Veillée pixel</span>
+              <h1>Poké <em>Swarm</em></h1>
+            </div>
+          )}
+          stage={(
+            <>
+              <span className="swh-legend"><PmdSprite dex={FOES[legend].dex} anim="idle" size={220} scale={2.4} foot={0.92} /></span>
+              <span className="swh-partner"><PmdSprite dex={partner.dex} anim="walk" size={170} scale={4} foot={0.92} /></span>
+            </>
+          )}
+          play={{
+            title: 'Jouer',
+            sub: `Mode classique · ${partner.name} · ${regionName}${rank ? ` · rang ${rank}` : ''}`,
+            art: <PmdSprite dex={partner.dex} anim="idle" size={96} scale={2.6} />,
+            onClick: () => openPrep('classic')
+          }}
+          side={{
+            title: 'Survie',
+            sub: endlessOpen ? (meta.endless?.[gen] ? `Record ${clock(meta.endless[gen])}` : 'Mode infini') : 'Gagne une partie',
+            art: <HomeIcon src={itemSprite('dusk-stone')} fallback="∞" />,
+            locked: !endlessOpen,
+            hint: endlessOpen ? '' : 'Gagne une partie pour débloquer ce mode',
+            onClick: () => openPrep('endless')
+          }}
+          cards={[
+            {
+              key: 'daily', tone: dailyDone ? 'done' : 'event', kicker: `Défi du jour · ${daily.mod.name}`,
+              title: dailyDone ? 'Défi réussi !' : `${dailyPartner.name} à ${GENS.find((g) => g.id === daily.gen)?.name}`,
+              sub: dailyDone ? 'Reviens demain pour un nouveau défi' : `${daily.mod.desc} · +200 ✦`,
+              art: <PmdSprite dex={dailyPartner.dex} anim="idle" size={52} scale={1.5} />,
+              onClick: playDaily
+            },
+            {
+              key: 'region', tone: 'light', kicker: `Région · ${Object.keys(meta.regions).length}/${GENS.length} débloquées`,
+              title: regionName, sub: `Légendaires : ${pool.finals.map((id) => FOES[id].name).join(', ')}`,
+              art: <PmdSprite dex={FOES[pool.finals[0]].dex} anim="idle" size={52} scale={0.8} still />,
+              onClick: () => openPrep()
+            }
+          ]}
+          tiles={[
+            { key: 'talents', label: 'Talents', value: `${pts} pts`, badge: affordTalents, color: '#ff6b57', icon: <HomeIcon src={itemSprite('rare-candy')} fallback="✦" />, onClick: () => setPanel('talents') },
+            { key: 'moves', label: 'Capacités', value: `${UNLOCKABLES.filter((u) => meta.unlocks?.[u.id]).length}/${UNLOCKABLES.length}`, badge: affordMoves, color: '#4fa8ff', icon: <HomeIcon src={itemSprite('tm-normal')} fallback="◆" />, onClick: () => setPanel('moves') },
+            { key: 'ach', label: 'Défis', value: `${Object.keys(meta.achievements).length}/${ACHIEVEMENTS.length}`, color: '#ffd447', icon: <HomeIcon src={itemSprite('star-piece')} fallback="★" />, onClick: () => setPanel('achievements') },
+            { key: 'dex', label: 'Pokédex', value: `${seenCount}/${ALL_FOE_IDS.length}`, color: '#5fd98a', icon: <HomeIcon src={itemSprite('poke-ball')} fallback="●" />, onClick: () => setPanel('dex') },
+            { key: 'history', label: 'Historique', value: `${(meta.history || []).length}`, color: '#c77dff', icon: <HomeIcon src={itemSprite('town-map')} fallback="☰" />, onClick: () => setPanel('history') }
+          ]}
+          board={(
+            <HomeBoard
+              game="swarm"
+              gen={gen}
+              title="Classement"
+              subtitle={`${regionName} · meilleur score de chaque dresseur`}
+              describe={(r) => `${r.form || PARTNERS.find((p) => p.id === r.partnerId)?.name || ''} · niv. ${r.level}`}
+              onMore={() => setPanel('board')}
+            />
+          )}
+          footer="Fan-game non officiel, gratuit et sans but lucratif. Pokémon © Nintendo / Game Freak / The Pokémon Company. Sprites animés : PMDCollab SpriteCollab (CC BY-NC 4.0) · Méga-Évolutions manquantes : communauté pokeemerald-expansion (RHH)."
+        />
+        {panel && <MetaPanel panel={panel} meta={meta} setMeta={setMeta} onClose={() => setPanel(null)} />}
+        {howto && (
+          <div className="sw-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) setHowto(false); }}>
+            <div className="sw-card is-panel swh-howto">
+              <div className="sw-panel-head"><b className="sw-kicker">Comment jouer</b><button type="button" className="sw-btn is-small is-ghost" onClick={() => setHowto(false)}>Fermer</button></div>
+              <div className="sw-panel-body">
+                <p className="sw-panel-note">Survis aux hordes sauvages pendant 9 minutes, puis bats le Pokémon légendaire de la région. Tes attaques partent toutes seules : à toi de bouger, de remplir tes 3 missions, de trouver les autels et de déchaîner ton ultime au bon moment.</p>
+                <div className="sw-howto">
+                  <span><b>Bouger</b> ZQSD, WASD ou flèches · au doigt, glisse sur l'écran</span>
+                  <span><b>Esquive</b> Espace ou Maj : un bond rapide, invincible pendant le saut</span>
+                  <span><b>Ultime</b> R ou le bouton : chaque K.O. remplit la jauge</span>
+                  <span><b>Pause</b> Échap ou P</span>
+                  <span><b>Bonbons</b> ramasse l'XP pour monter de niveau et choisir une carte</span>
+                  <span><b>Autels</b> reste 2 s dessus pour choisir une bénédiction</span>
+                  <span><b>Alpha</b> un Pokémon géant à l’aura rouge : il lâche un coffre</span>
+                  <span><b>Méga</b> à la dernière forme, prends 3 fois la Méga-Gemme</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (screen === 'menu') {
     return (
       <div className="sw-root sw-menu">
@@ -741,7 +855,7 @@ const PokeSwarm = ({ onClose }) => {
             <p>Survis aux hordes sauvages pendant 9 minutes, puis bats le Pokémon légendaire de la région. Ennemis, boss et décor changent à chaque partie. Tes attaques partent toutes seules : à toi de bouger, de remplir tes 3 missions, de trouver les autels et de déchaîner ton ultime au bon moment.</p>
           </div>
           <div className="sw-head-side">
-            <AccountChip returnHash="#swarm" compact />
+            <button type="button" className="sw-btn is-ghost" onClick={() => setScreen('home')}>← Accueil</button>
             <span className="sw-dust" title="Poussière Étoile : gagnée à chaque partie">✦ {meta.dust.toLocaleString('fr-FR')}</span>
             <button type="button" className="sw-btn is-ghost" onClick={onClose}>Quitter</button>
           </div>
@@ -1012,7 +1126,7 @@ const PokeSwarm = ({ onClose }) => {
               <MusicControls />
               <div className="sw-pause-actions">
                 <button type="button" className="sw-btn is-go" onClick={() => setPaused(false)}>Reprendre</button>
-                <button type="button" className="sw-btn" onClick={() => { setPaused(false); setScreen('menu'); }}>Abandonner</button>
+                <button type="button" className="sw-btn" onClick={() => { setPaused(false); setScreen('home'); }}>Abandonner</button>
               </div>
               <small className="sw-pause-hint">Échap ou P pour reprendre</small>
             </aside>
@@ -1044,6 +1158,7 @@ const PokeSwarm = ({ onClose }) => {
             <div className="sw-actions">
               <button type="button" className="sw-btn is-go" onClick={() => start(dailyRef.current)}>Rejouer</button>
               <button type="button" className="sw-btn" onClick={() => setScreen('menu')}>Changer de partenaire</button>
+              <button type="button" className="sw-btn" onClick={() => setScreen('home')}>Accueil</button>
               <button type="button" className="sw-btn is-ghost" onClick={onClose}>Quitter</button>
             </div>
           </div>

@@ -780,3 +780,71 @@ button.sw-dex-cell:not(:disabled):hover { --fc: var(--star); }
 @media (min-width: 701px) and (max-width: 1180px) {
   .sw-missions.is-low { top: 140px; }
 }
+
+/* ——— Accueil (structure GameHome) habillé « Veillée pixel » ——— */
+.sw-home-wrap { background: var(--night); }
+.gh-root.gh-swarm {
+  --gh-bg: var(--night);
+  --gh-card: var(--panel);
+  --gh-card-text: var(--moon);
+  --gh-mute: var(--mist);
+  --gh-play-a: #ff7a5c;
+  --gh-play-b: #d8432f;
+  --gh-side-a: #8a6bd6;
+  --gh-side-b: #5b45a8;
+  --gh-accent: var(--star);
+  --gh-radius: 0;
+  --gh-title: var(--f-px);
+  --gh-body: var(--f-body);
+  --gh-shadow: 0 8px 0 var(--ink);
+  --gh-ring: 0 -3px 0 var(--fc), 0 3px 0 var(--fc), -3px 0 0 var(--fc), 3px 0 0 var(--fc);
+  --fc: var(--line);
+}
+.gh-swarm > canvas.sw-backdrop { filter: brightness(0.9) saturate(1.05); }
+.gh-swarm .gh-shade { background: radial-gradient(120% 90% at 0% 100%, rgba(12, 8, 24, 0.85), transparent 55%), linear-gradient(180deg, rgba(26, 20, 48, 0.55), transparent 35%, rgba(26, 20, 48, 0.25)); }
+.gh-swarm .gh-play-text b, .gh-swarm .gh-side b, .gh-swarm .gh-card-text b, .gh-swarm .gh-tile b, .gh-swarm .gh-board-head b, .gh-swarm .gh-pos, .gh-swarm .gh-score { font-style: normal; }
+.gh-swarm .gh-play { --fc: #ffd6c8; box-shadow: var(--gh-ring), var(--gh-shadow); background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0 10px, transparent 10px 20px), linear-gradient(180deg, var(--gh-play-a), var(--gh-play-b)); }
+.gh-swarm .gh-play-text b { font-size: clamp(40px, 4.6vw, 58px); text-shadow: 4px 4px 0 var(--ink); }
+.gh-swarm .gh-play-ball { position: relative; flex: none; width: 60px; height: 60px; border-radius: 0; box-shadow: 0 0 0 4px var(--ink), 4px 4px 0 4px rgba(12, 8, 24, 0.5);
+  background: linear-gradient(180deg, #e2303f 0 45%, var(--ink) 45% 55%, #f6f1ff 55%); }
+.gh-swarm .gh-play-ball::after { content: ''; position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; transform: translate(-50%, -50%); background: #fff; box-shadow: 0 0 0 4px var(--ink); }
+.gh-swarm .gh-play-art { border-radius: 0; background: rgba(12, 8, 24, 0.25); box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.45); }
+.gh-swarm .gh-side { --fc: #cbb8ff; }
+.gh-swarm .gh-side-art { border-radius: 0; }
+.gh-swarm .gh-card { --fc: var(--panel-3); border-radius: 0; background: var(--panel-2); }
+.gh-swarm .gh-card.is-event { --fc: var(--ember); background: linear-gradient(90deg, color-mix(in srgb, var(--ember) 28%, var(--panel-2)), var(--panel-2)); }
+.gh-swarm .gh-card.is-light { --fc: var(--star-deep); color: var(--moon); background: linear-gradient(90deg, color-mix(in srgb, var(--star) 22%, var(--panel-2)), var(--panel-2)); }
+.gh-swarm .gh-card.is-light .gh-card-kicker { color: var(--star); }
+.gh-swarm .gh-card-art { border-radius: 0; background: rgba(12, 8, 24, 0.45); }
+.gh-swarm .gh-tile { --fc: var(--panel-3); border-radius: 0; background: var(--panel-2); box-shadow: var(--gh-ring), inset 0 -5px 0 var(--tc), var(--gh-shadow); }
+.gh-swarm .gh-tile-icon { border-radius: 0; background: color-mix(in srgb, var(--tc) 22%, var(--panel)); }
+.gh-swarm .gh-badge { border-radius: 0; background: var(--ember); box-shadow: 0 0 0 3px var(--ink); font-family: var(--f-px); }
+.gh-swarm .gh-top-right { border-radius: 0; background: rgba(26, 20, 48, 0.92); box-shadow: 0 -3px 0 var(--line), 0 3px 0 var(--line), -3px 0 0 var(--line), 3px 0 0 var(--line), 0 6px 0 var(--ink); }
+.gh-swarm .gh-pill { border-radius: 0; color: var(--moon); background: var(--panel-2); font-family: var(--f-px); font-weight: 600; }
+.gh-swarm .gh-pill.is-strong { color: var(--ink); background: var(--star); }
+.gh-swarm .gh-pill.is-plain { background: rgba(26, 20, 48, 0.92); box-shadow: 0 -3px 0 var(--line), 0 3px 0 var(--line), -3px 0 0 var(--line), 3px 0 0 var(--line); }
+.gh-swarm .gh-board { --fc: var(--line); border-radius: 0; overflow: visible; box-shadow: var(--gh-ring), var(--gh-shadow); }
+.gh-swarm .gh-board-head { background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0 10px, transparent 10px 20px), linear-gradient(180deg, #ffb43a, #d9811a); color: var(--ink); }
+.gh-swarm .gh-board-tabs { border-radius: 0; background: var(--ink); }
+.gh-swarm .gh-board-tabs button { border-radius: 0; font-family: var(--f-px); }
+.gh-swarm .gh-board-tabs button.is-on { color: var(--ink); background: var(--star); box-shadow: none; }
+.gh-swarm .gh-board-rows li { border-radius: 0; background: var(--panel-2); }
+.gh-swarm .gh-board-rows li.is-top { background: color-mix(in srgb, var(--star) 16%, var(--panel-2)); box-shadow: inset 0 0 0 2px var(--star-deep); }
+.gh-swarm .gh-board-rows li.is-2 { background: color-mix(in srgb, #d8dfee 12%, var(--panel-2)); box-shadow: inset 0 0 0 2px #8f97b0; }
+.gh-swarm .gh-board-rows li.is-3 { background: color-mix(in srgb, #e09a5a 14%, var(--panel-2)); box-shadow: inset 0 0 0 2px #a5683a; }
+.gh-swarm .gh-board-rows img, .gh-swarm .gh-board-rows i { border-radius: 0; background: var(--panel-3); }
+.gh-swarm .gh-board-more { border-radius: 0; font-family: var(--f-px); background: var(--line); box-shadow: 0 4px 0 var(--ink); }
+.swh-logo h1 { margin: 6px 0 0; font: 700 clamp(48px, 6.2vw, 84px)/0.9 var(--f-px); color: var(--moon); text-shadow: 5px 5px 0 #6b3fd6, 9px 9px 0 var(--ink); }
+.swh-logo h1 em { font-style: normal; color: var(--star); }
+.gh-swarm .gh-stage { gap: 0; }
+.swh-legend { margin-right: -40px; filter: drop-shadow(0 0 18px rgba(180, 140, 255, 0.55)); animation: swh-float 5s ease-in-out infinite; }
+.swh-partner { filter: drop-shadow(0 6px 0 rgba(12, 8, 24, 0.5)); }
+@keyframes swh-float { 50% { transform: translateY(-14px); } }
+.swh-howto { max-width: 760px; }
+@media (max-width: 1100px) {
+  .swh-legend { display: none; }
+}
+@media (max-width: 520px) {
+  .gh-swarm .gh-side { grid-auto-flow: column; justify-content: center; align-items: center; gap: 10px; padding: 10px; }
+  .gh-swarm .gh-side-art { display: none; }
+}

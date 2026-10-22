@@ -63,6 +63,8 @@ function clearSeat() {
   sessionStorage.removeItem(SEAT_KEY);
 }
 
+const FULLSCREEN_VIEWS = ['reliques', 'academy', 'bonk', 'pokerush', 'swarm', 'arena', 'terms', 'privacy', 'portfolio', 'jeux'];
+
 function App() {
   const [currentView, setCurrentView] = useState(() => secretViewFromHash() || 'login');
   const [username, setUsername] = useState('');
@@ -1142,9 +1144,9 @@ function App() {
   };
 
   return (
-    <div className={isLoggedIn && username ? 'App has-logout' : 'App'}>
-      {/* Bouton de déconnexion global */}
-      {isLoggedIn && username && (
+    <div className={isLoggedIn && username && !FULLSCREEN_VIEWS.includes(currentView) ? 'App has-logout' : 'App'}>
+      {/* Bouton de déconnexion global (les jeux plein écran ont leur propre menu de compte) */}
+      {isLoggedIn && username && !FULLSCREEN_VIEWS.includes(currentView) && (
         <div style={{
           position: 'fixed',
           top: '20px',
