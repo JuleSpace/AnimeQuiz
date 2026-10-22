@@ -51,6 +51,12 @@ export const logout = async () => {
   publish({ ...(cache || {}), user: null, ready: true });
 };
 
+export const deleteAccount = async () => {
+  await call('/api/me', { method: 'DELETE' });
+  pending = null;
+  publish({ ...(cache || {}), user: null, ready: true });
+};
+
 export const cloudLoad = (game) => call(`/api/me/save/${game}`).catch(() => null);
 export const cloudSave = (game, save) => call(`/api/me/save/${game}`, { method: 'PUT', body: JSON.stringify({ save }) }).catch(() => null);
 export const postRun = (game, run) => call(`/api/runs/${game}`, { method: 'POST', body: JSON.stringify({ run }) }).catch(() => null);
@@ -93,6 +99,7 @@ const DiscordLogo = () => (
 export const AccountChip = ({ returnHash, compact = false, className = '' }) => {
   const { ready, enabled, user } = useAccount();
   const [open, setOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   if (!ready || !enabled) return null;
   if (!user) {
     return (
@@ -110,6 +117,18 @@ export const AccountChip = ({ returnHash, compact = false, className = '' }) => 
         <span className="acc-menu">
           <small>Ta progression est sauvegardée sur ton compte.</small>
           <button type="button" onClick={() => { setOpen(false); logout(); }}>Se déconnecter</button>
+          {confirmDelete ? (
+            <span className="acc-danger">
+              <small>Supprimer ton compte, ta sauvegarde en ligne et tes scores ? C’est définitif.</small>
+              <span>
+                <button type="button" className="is-ghost" onClick={() => setConfirmDelete(false)}>Annuler</button>
+                <button type="button" onClick={() => { setOpen(false); setConfirmDelete(false); deleteAccount().catch(() => {}); }}>Supprimer</button>
+              </span>
+            </span>
+          ) : (
+            <button type="button" className="is-ghost" onClick={() => setConfirmDelete(true)}>Supprimer mon compte</button>
+          )}
+          <span className="acc-legal"><a href="/#terms">Conditions</a> · <a href="/#privacy">Confidentialité</a></span>
         </span>
       )}
     </span>

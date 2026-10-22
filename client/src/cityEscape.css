@@ -395,3 +395,7 @@ h1, h2, h3 {
   .joker-pool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .joker-pool-count { margin-left: 0; width: 100%; }
 }
+
+.login-legal { margin: 22px 0 0; text-align: center; font-size: 0.85rem; opacity: 0.8; }
+.login-legal a { color: var(--ce-mist); }
+.login-legal a:hover { color: #fff; }

@@ -1,0 +1,34 @@
+/* Pages légales : sobres et lisibles, dans les couleurs du site. */
+.lg-root {
+  position: fixed; inset: 0; z-index: 20000; overflow-y: auto;
+  padding: clamp(16px, 4vw, 48px) 16px 60px;
+  background: linear-gradient(180deg, #0b3bd1 0%, #0a2a9e 40%, #071a66 80%, #050c33 100%);
+}
+.lg-page {
+  max-width: 760px; margin: 0 auto; padding: clamp(22px, 4vw, 44px);
+  border-radius: 22px; color: #1a2448; background: #fff;
+  box-shadow: 0 0 0 4px #0a1f6b, 0 0 0 7px #fff, 0 24px 50px rgba(2, 8, 40, 0.45);
+  font: 500 17px/1.6 'Saira Semi Condensed', 'Segoe UI', sans-serif;
+}
+.lg-page h1, .lg-page h2 { text-shadow: none; -webkit-text-stroke: 0; background: none; letter-spacing: normal; text-transform: none; }
+.lg-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+.lg-kicker { font: italic 800 14px/1 'Saira', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: #0b3bd1; }
+.lg-back, .lg-link {
+  border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer;
+  font: italic 800 15px/1 'Saira', sans-serif; color: #0a1f6b; background: #e8eeff;
+}
+.lg-back:hover, .lg-link:hover { background: #d6e1ff; }
+.lg-page h1 { margin: 0 0 4px; font: italic 900 clamp(30px, 5vw, 42px)/1.1 'Saira', sans-serif; color: #0a1f6b; }
+.lg-date { margin: 0 0 18px; color: #5a6690; font-size: 15px; }
+.lg-intro { margin: 0 0 8px; padding: 12px 16px; border-radius: 12px; background: #fff7d6; box-shadow: inset 4px 0 0 #ffd23a; }
+.lg-page section { margin-top: 24px; }
+.lg-page h2 { margin: 0 0 8px; font: italic 800 21px/1.2 'Saira', sans-serif; color: #0a1f6b; }
+.lg-page h2 span { color: #ff2347; }
+.lg-page ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.lg-page li::marker { color: #1f6dff; }
+.lg-foot { margin-top: 30px; padding-top: 18px; border-top: 1px solid #e1e7f7; }
+@media print {
+  .lg-root { position: static; background: #fff; padding: 0; }
+  .lg-page { box-shadow: none; }
+  .lg-back, .lg-foot { display: none; }
+}

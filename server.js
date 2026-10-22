@@ -509,6 +509,14 @@ const PAGE_PREVIEWS = {
     title: 'Ludothèque · Bully’s Lair',
     description: 'Tous les jeux du site en cartes à collectionner : Poké Rush, Poké Swarm, Poké Bully Tactics, Sonic Bonk, le quiz et l’atelier des cartes.'
   },
+  terms: {
+    title: 'Conditions d’utilisation · Bully’s Lair',
+    description: 'Les règles d’utilisation de Bully’s Lair, site de jeux gratuit et non commercial.'
+  },
+  privacy: {
+    title: 'Politique de confidentialité · Bully’s Lair',
+    description: 'Quelles données Bully’s Lair utilise (compte Discord, progression, cookies) et comment les supprimer.'
+  },
   reliques: {
     title: 'Atelier des cartes · Bully’s Lair',
     description: 'Les cartes jokers du quiz en grand : animations, sons et ouverture de boosters.'

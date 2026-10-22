@@ -39,3 +39,10 @@
 .acc-who small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--mist, #b8c6ee); font-weight: 700; }
 .acc-score { font: 700 18px/1 var(--f-px, inherit); color: var(--star, #ffd23a); white-space: nowrap; }
 .acc-chip.is-login span { max-width: none; }
+
+.acc-menu button.is-ghost { color: #ff8a9a; background: rgba(255, 255, 255, 0.06); }
+.acc-danger { display: grid; gap: 6px; }
+.acc-danger > span { display: flex; gap: 6px; }
+.acc-danger > span button { flex: 1; }
+.acc-legal { font-size: 12px; color: #9aa8d4; }
+.acc-legal a { color: #cdd6f7; }

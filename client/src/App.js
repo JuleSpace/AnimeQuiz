@@ -16,6 +16,7 @@ import PokeRush, { RUSH_HASH } from './components/PokeRush';
 import Portfolio, { PORTFOLIO_HASH } from './components/Portfolio';
 import GameShelf, { GAMES_HASH } from './components/GameShelf';
 import { AccountChip, useAccount } from './components/account';
+import LegalPage, { PRIVACY_HASH, TERMS_HASH } from './components/LegalPage';
 import { readAdminSession, storeAdminSession, clearAdminSession } from './utils/adminSession';
 import './index.css';
 
@@ -23,7 +24,7 @@ const socket = io(process.env.REACT_APP_SERVER_URL || window.location.origin);
 const SEAT_KEY = 'animeQuizSeat';
 
 // Lien partagé en /academy, /swarm… (pour un aperçu Discord adapté) : on repasse en #academy, #swarm…
-const SECRET_PATHS = ['academy', 'swarm', 'arena', 'bonk', 'reliques', 'pokerush', 'portfolio', 'jeux'];
+const SECRET_PATHS = ['academy', 'swarm', 'arena', 'bonk', 'reliques', 'pokerush', 'portfolio', 'jeux', 'terms', 'privacy'];
 (() => {
   const page = window.location.pathname.replace(/^\/+|\/+$/g, '');
   if (SECRET_PATHS.includes(page) && !window.location.hash) window.history.replaceState(null, '', `/${window.location.search}#${page}`);
@@ -38,6 +39,8 @@ const secretViewFromHash = () => {
   if (window.location.hash === RUSH_HASH) return 'pokerush';
   if (window.location.hash === PORTFOLIO_HASH) return 'portfolio';
   if (window.location.hash === GAMES_HASH) return 'jeux';
+  if (window.location.hash === TERMS_HASH) return 'terms';
+  if (window.location.hash === PRIVACY_HASH) return 'privacy';
   return null;
 };
 
@@ -787,6 +790,9 @@ function App() {
                     <Icon name="lock" />Connexion Admin
                   </button>
                 </div>
+                <p className="login-legal">
+                  <a href="/#terms">Conditions d’utilisation</a> · <a href="/#privacy">Confidentialité</a>
+                </p>
               </div>
             </div>
           </div>
@@ -1088,6 +1094,16 @@ function App() {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
             setCurrentView('login');
           }} />
+        );
+
+      case 'terms':
+      case 'privacy':
+        return (
+          <LegalPage
+            doc={currentView}
+            onClose={() => { window.history.replaceState(null, '', '/' + window.location.search); setCurrentView('login'); }}
+            onOther={() => { window.location.hash = currentView === 'terms' ? PRIVACY_HASH : TERMS_HASH; }}
+          />
         );
 
       case 'portfolio':

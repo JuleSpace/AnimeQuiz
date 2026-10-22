@@ -186,6 +186,14 @@ const attachAccounts = (app) => {
     res.json({ user: user ? publicUser(user) : null });
   });
 
+  // Suppression du compte : compte, sauvegardes et historique (et donc classements)
+  app.delete('/api/me', requireUser, async (req, res) => {
+    await Run.deleteMany({ user: req.account._id });
+    await Account.deleteOne({ _id: req.account._id });
+    setCookie(req, res, SESSION_COOKIE, '', 0);
+    res.json({ ok: true });
+  });
+
   app.post('/api/logout', (req, res) => {
     setCookie(req, res, SESSION_COOKIE, '', 0);
     res.json({ ok: true });
