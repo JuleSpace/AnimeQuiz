@@ -403,7 +403,7 @@ h1, h2, h3 {
 /* ———————————— Compte : connexion / inscription ———————————— */
 .auth { display: grid; gap: 14px; }
 .auth-title { margin: 0; text-align: center; color: #fff; }
-.auth-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 999px; background: rgba(4, 12, 50, 0.55); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18); }
+.auth-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 999px; background: rgba(4, 12, 50, 0.55); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18); }
 .auth-tabs button {
   border: 0; border-radius: 999px; padding: 9px 6px; cursor: pointer;
   font-family: var(--ce-title); font-style: italic; font-weight: 800; font-size: 0.85rem; color: var(--ce-mist); background: transparent;
@@ -423,4 +423,10 @@ h1, h2, h3 {
   font-family: var(--ce-title); font-style: italic; font-weight: 800; color: #fff; background: #5865f2; box-shadow: 0 5px 0 #3c45a5;
 }
 .auth-discord:hover { background: #6b77ff; }
+.auth > :last-child { margin-bottom: 22px; }
+.auth-link { justify-self: center; margin-top: -4px; padding: 4px 8px; border: 0; background: none; cursor: pointer; font-weight: 700; font-size: 0.9rem; color: var(--ce-gold); text-decoration: underline; text-underline-offset: 3px; }
+.auth-link:hover { color: #fff; }
+.auth-reset-head { display: grid; gap: 6px; text-align: center; }
+.auth-reset-head b { font-family: var(--ce-title); font-style: italic; font-size: 1.15rem; color: #fff; }
+.auth-reset-head a { color: var(--ce-gold); }
 .auth-gate { margin: 0 0 14px; text-align: center; font-weight: 700; color: var(--ce-gold); }

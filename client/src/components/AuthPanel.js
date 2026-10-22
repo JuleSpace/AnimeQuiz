@@ -33,18 +33,25 @@ const AuthPanel = ({ returnHash = '', title = 'Connexion' }) => {
     }
   };
 
-  const TABS = [['login', 'Se connecter'], ['register', 'Créer un compte'], ['reset', 'J’ai un code']];
+  const TABS = [['login', 'Se connecter'], ['register', 'Créer un compte']];
+  const go = (t) => { setTab(t); setError(''); };
   return (
     <div className="auth">
       <h2 className="auth-title">{title}</h2>
-      <div className="auth-tabs" role="tablist">
-        {TABS.map(([id, label]) => (
-          <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => { setTab(id); setError(''); }}>{label}</button>
-        ))}
-      </div>
+      {tab === 'reset' ? (
+        <div className="auth-reset-head">
+          <b>Mot de passe oublié</b>
+          <p className="auth-hint">Écris à <a href={`mailto:${CONTACT}?subject=Mot%20de%20passe%20Bully's%20Lair`}>{CONTACT}</a> avec ton pseudo : tu recevras un code à saisir ci-dessous.</p>
+        </div>
+      ) : (
+        <div className="auth-tabs" role="tablist">
+          {TABS.map(([id, label]) => (
+            <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => go(id)}>{label}</button>
+          ))}
+        </div>
+      )}
       <form className="auth-form" onSubmit={submit}>
         {tab === 'register' && <p className="auth-hint">Pas d’e-mail : juste un pseudo et un mot de passe. Note-le bien !</p>}
-        {tab === 'reset' && <p className="auth-hint">Entre le code que l’administrateur t’a envoyé, puis choisis un nouveau mot de passe.</p>}
         <input className="input" autoComplete="username" placeholder="Pseudo" value={name} maxLength={20} onChange={(e) => setName(e.target.value)} required />
         {tab === 'reset' && <input className="input" placeholder="Code (ex. K7QM-82PX)" value={code} onChange={(e) => setCode(e.target.value)} required />}
         <input className="input" type="password" autoComplete={tab === 'login' ? 'current-password' : 'new-password'} placeholder={tab === 'reset' ? 'Nouveau mot de passe' : 'Mot de passe'} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={tab === 'login' ? 1 : 6} />
@@ -54,12 +61,9 @@ const AuthPanel = ({ returnHash = '', title = 'Connexion' }) => {
           {busy ? '…' : tab === 'login' ? 'Entrer' : tab === 'register' ? 'Créer mon compte' : 'Changer le mot de passe'}
         </button>
       </form>
-      {tab === 'login' && (
-        <p className="auth-forgot">
-          Mot de passe oublié ? Écris à <a href={`mailto:${CONTACT}?subject=Mot%20de%20passe%20Bully's%20Lair`}>{CONTACT}</a> avec ton pseudo : tu recevras un code, à saisir dans « J’ai un code ».
-        </p>
-      )}
-      {discord && (
+      {tab === 'login' && <button type="button" className="auth-link" onClick={() => go('reset')}>Mot de passe oublié ?</button>}
+      {tab === 'reset' && <button type="button" className="auth-link" onClick={() => go('login')}>← Retour à la connexion</button>}
+      {discord && tab !== 'reset' && (
         <>
           <div className="auth-or"><span>ou</span></div>
           <button type="button" className="auth-discord" onClick={() => loginWithDiscord(returnHash)}>
