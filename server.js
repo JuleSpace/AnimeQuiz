@@ -495,6 +495,10 @@ const PAGE_PREVIEWS = {
     title: 'Sonic Bonk · Bully’s Lair',
     description: 'Une île en 3D, des hordes de robots et quelques minutes pour tenir : cours, saute, enchaîne les spin dash et bats le Colosse.'
   },
+  pokerush: {
+    title: 'Poké Rush · Bully’s Lair',
+    description: 'Une île de Kanto en 3D envahie de Pokémon sauvages : capture des alliés, joue avec la table des types, fais évoluer ton partenaire en pleine partie et affronte le légendaire dans l’arène.'
+  },
   reliques: {
     title: 'Atelier des cartes · Bully’s Lair',
     description: 'Les cartes jokers du quiz en grand : animations, sons et ouverture de boosters.'

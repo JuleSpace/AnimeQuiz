@@ -12,6 +12,7 @@ import AcademyGuide, { ACADEMY_HASH } from './components/AcademyGuide';
 import PokeArena, { ARENA_HASH } from './components/PokeArena';
 import PokeSwarm, { SWARM_HASH } from './components/PokeSwarm';
 import SonicBonk, { BONK_HASH } from './components/SonicBonk';
+import PokeRush, { RUSH_HASH } from './components/PokeRush';
 import { readAdminSession, storeAdminSession, clearAdminSession } from './utils/adminSession';
 import './index.css';
 
@@ -19,7 +20,7 @@ const socket = io(process.env.REACT_APP_SERVER_URL || window.location.origin);
 const SEAT_KEY = 'animeQuizSeat';
 
 // Lien partagé en /academy, /swarm… (pour un aperçu Discord adapté) : on repasse en #academy, #swarm…
-const SECRET_PATHS = ['academy', 'swarm', 'arena', 'bonk', 'reliques'];
+const SECRET_PATHS = ['academy', 'swarm', 'arena', 'bonk', 'reliques', 'pokerush'];
 (() => {
   const page = window.location.pathname.replace(/^\/+|\/+$/g, '');
   if (SECRET_PATHS.includes(page) && !window.location.hash) window.history.replaceState(null, '', `/${window.location.search}#${page}`);
@@ -31,6 +32,7 @@ const secretViewFromHash = () => {
   if (window.location.hash === ARENA_HASH) return 'arena';
   if (window.location.hash === SWARM_HASH) return 'swarm';
   if (window.location.hash === BONK_HASH) return 'bonk';
+  if (window.location.hash === RUSH_HASH) return 'pokerush';
   return null;
 };
 
@@ -1101,6 +1103,14 @@ function App() {
       case 'bonk':
         return (
           <SonicBonk onClose={() => {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            setCurrentView('login');
+          }} />
+        );
+
+      case 'pokerush':
+        return (
+          <PokeRush onClose={() => {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
             setCurrentView('login');
           }} />
