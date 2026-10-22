@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRush } from './rushEngine';
 import {
-  FINAL_AT, FOE_TYPES, MAX_ALLIES, RUSH_ITEMS, RUSH_MOVES, RUSH_STARTERS, TYPE_COLORS, UPGRADES, buyRushThing, buyUpgrade,
+  FINAL_AT, FOE_TYPES, MAX_ALLIES, RUSH_STARTERS, TYPE_COLORS, UPGRADES, buyRushThing,
   loadRush, recordRush, saveRush, rushEffects, rushPool, starterOpen, upCost, upRank, weaknessesOf
 } from './rushData';
 import { FOES, WEAPONS, ultimateOf } from './swarmData';
 import { Missions, MusicControls, PmdSprite, RunRecap, TcgCard, itemSprite } from './PokeSwarm';
 import GameHome, { HomeBoard, HomeIcon } from './GameHome';
+import { RushMetaPage, RushPickPage, RushPrepPage } from './RushPages';
 import { musicPlayer } from './pokeArenaMusic';
-import { AccountChip, Leaderboard, postRun, useCloudSync } from './account';
+import { AccountChip, postRun, useCloudSync } from './account';
 import './PokeSwarm.css';
 import './PokeRush.css';
 
@@ -17,115 +18,6 @@ const MUSIC_KEY = 'poke-arena-music';
 const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 const TypeChip = ({ type }) => <span className="pr-type" style={{ '--c': TYPE_COLORS[type] || '#999' }}>{type}</span>;
-
-/** Boutique, Pokédex des captures, historique. */
-const RushPanel = ({ tab, setTab, meta, setMeta, onClose }) => {
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-  const pool = rushPool(1);
-  const dexIds = [...pool.t1, ...pool.t2, ...pool.t3, ...pool.minis, ...pool.finals];
-  const caughtN = dexIds.filter((id) => meta.caught[id]).length;
-  return (
-    <div className="sw-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="sw-card is-panel">
-        <div className="sw-panel-head">
-          <div className="sw-tabs" role="tablist">
-            {[['shop', 'Centre Pokémon'], ['dex', `Pokédex ${caughtN}/${dexIds.length}`], ['history', 'Historique'], ['board', 'Classement']].map(([id, label]) => (
-              <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>{label}</button>
-            ))}
-          </div>
-          <span className="sw-dust pr-pl">{meta.pl.toLocaleString('fr-FR')} PL</span>
-          <button type="button" className="sw-btn is-small is-ghost" onClick={onClose}>Fermer</button>
-        </div>
-        <div className="sw-panel-body">
-          {tab === 'shop' && (
-            <>
-              <p className="sw-panel-note">Les Points de Ligue (PL) se gagnent à chaque partie du Poké Rush. Ils ne servent qu’ici : rien n’est partagé avec le Swarm.</p>
-              <h3 className="pr-h3">Entraînement</h3>
-              <div className="sw-shop">
-                {UPGRADES.map((u) => {
-                  const r = upRank(meta, u.id); const maxed = r >= u.max; const cost = upCost(meta, u);
-                  return (
-                    <div key={u.id} className={`sw-shop-item${maxed ? ' is-owned' : ''}`} style={{ '--c': '#ffd447' }}>
-                      <div className="sw-tile-top"><b>{u.name}</b><small>{r}/{u.max}</small></div>
-                      <p>{u.desc(Math.max(1, r + (maxed ? 0 : 1)))}</p>
-                      <button type="button" className="sw-btn is-small" disabled={maxed || meta.pl < cost} onClick={() => setMeta(buyUpgrade(meta, u.id))}>{maxed ? 'Maximum' : `${cost} PL`}</button>
-                    </div>
-                  );
-                })}
-              </div>
-              <h3 className="pr-h3">Capacités à apprendre</h3>
-              <div className="sw-shop">
-                {RUSH_MOVES.map((mv) => {
-                  const own = !!meta.unlocks[mv.id];
-                  return (
-                    <div key={mv.id} className={`sw-shop-item${own ? ' is-owned' : ''}`} style={{ '--c': TYPE_COLORS[mv.type] || mv.color }}>
-                      <div className="sw-tile-top"><b>{mv.name}</b><TypeChip type={mv.type} /></div>
-                      <p>{mv.desc}</p>
-                      <button type="button" className="sw-btn is-small" disabled={own || meta.pl < mv.cost} onClick={() => setMeta(buyRushThing(meta, mv.id, mv.cost))}>{own ? 'Apprise' : `${mv.cost} PL`}</button>
-                    </div>
-                  );
-                })}
-                {RUSH_ITEMS.map((it) => {
-                  const own = !!meta.unlocks[it.id];
-                  return (
-                    <div key={it.id} className={`sw-shop-item${own ? ' is-owned' : ''}`} style={{ '--c': it.color }}>
-                      <div className="sw-tile-top"><b>{it.name}</b><small>Objet</small></div>
-                      <p>{it.desc}</p>
-                      <button type="button" className="sw-btn is-small" disabled={own || meta.pl < it.cost} onClick={() => setMeta(buyRushThing(meta, it.id, it.cost))}>{own ? 'Débloqué' : `${it.cost} PL`}</button>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-          {tab === 'dex' && (
-            <>
-              <p className="sw-panel-note">Les Pokémon capturés pendant tes parties. Affaiblis un sauvage (PV rouges), puis lance une Poké Ball avec F ou le bouton « Capturer ».</p>
-              <div className="pr-dex">
-                {dexIds.map((id) => {
-                  const f = FOES[id]; const n = meta.caught[id] || 0; const seen = meta.seen[id];
-                  const types = FOE_TYPES[id] || ['Normal'];
-                  return (
-                    <div key={id} className={`pr-dex-cell${n ? ' is-caught' : seen ? ' is-seen' : ''}`}>
-                      <PmdSprite dex={f.dex} anim="idle" size={64} scale={1.6} still />
-                      <b>{n || seen ? f.name : '???'}</b>
-                      {(n > 0 || seen) && <span className="pr-types">{types.map((t) => <TypeChip key={t} type={t} />)}</span>}
-                      <small>{n ? `${n} capturé${n > 1 ? 's' : ''}` : seen ? 'Aperçu' : 'Inconnu'}</small>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-          {tab === 'board' && <Leaderboard game="rush" partnerName={(id) => RUSH_STARTERS.find((p) => p.id === id)?.name || id} />}
-          {tab === 'history' && (
-            (meta.history || []).length ? (
-              <div className="sw-history">
-                {meta.history.map((r) => {
-                  const pt = RUSH_STARTERS.find((x) => x.id === r.partnerId);
-                  return (
-                    <div key={r.at} className={`sw-hist${r.result === 'win' ? ' is-win' : ''}`}>
-                      {pt && <PmdSprite dex={r.form?.dex || pt.dex} anim="idle" size={48} scale={1.5} still />}
-                      <div>
-                        <b>{r.form?.name || pt?.name} · {r.result === 'win' ? 'Victoire' : 'K.O.'}</b>
-                        <small>{clock(r.t)} · niv. {r.level} · {r.kills} K.O. · {r.caught} capture{r.caught > 1 ? 's' : ''}</small>
-                      </div>
-                      <time>{new Date(r.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</time>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : <p className="sw-panel-note">Aucune partie pour l’instant.</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 /** Décor de l'accueil : une île de Kanto au lever du jour, en aplats pixel. */
 const RushScene = () => (
@@ -174,7 +66,6 @@ const PokeRush = ({ onClose }) => {
   const overlayRef = useRef(null);
   const gameRef = useRef(null);
   const partner = RUSH_STARTERS.find((p) => p.id === partnerId) || RUSH_STARTERS[0];
-  const open = starterOpen(meta, partner);
   const ult = ultimateOf(partner);
 
   useEffect(() => {
@@ -225,6 +116,14 @@ const PokeRush = ({ onClose }) => {
     if (options) setLevelUp((cur) => ({ ...cur, options, rerolls: cur.rerolls - 1 }));
   };
   const bless = (id) => { setAltar(null); gameRef.current?.chooseBlessing(id); };
+
+  if (panel && screen !== 'play') {
+    return (
+      <div className="sw-root pr-root prh-wrap">
+        <RushMetaPage Sprite={PmdSprite} panel={panel} backdrop={<RushScene />} meta={meta} setMeta={setMeta} onBack={() => setPanel(null)} />
+      </div>
+    );
+  }
 
   if (screen === 'home') {
     const pool = rushPool(1);
@@ -318,7 +217,6 @@ const PokeRush = ({ onClose }) => {
           )}
           footer="Fan-game non officiel, gratuit et sans but lucratif. Pokémon © Nintendo / Game Freak / The Pokémon Company. Sprites animés : PMDCollab SpriteCollab (CC BY-NC 4.0) · Inspiré de Pokébonk et Megabonk."
         />
-        {panel && <RushPanel tab={panel} setTab={setPanel} meta={meta} setMeta={setMeta} onClose={() => setPanel(null)} />}
         {howto && (
           <div className="sw-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) setHowto(false); }}>
             <div className="sw-card is-panel prh-howto">
@@ -335,77 +233,26 @@ const PokeRush = ({ onClose }) => {
   }
 
   if (screen === 'menu') {
-    const pool = rushPool(1);
     return (
-      <div className="sw-root sw-menu pr-root pr-menu">
-        <div className="sw-backdrop pr-sky" aria-hidden="true"><i /><i /><i /></div>
-        <header className="sw-head">
-          <div>
-            <span className="sw-kicker">Mode secret · 3D</span>
-            <h1>Poké Rush</h1>
-            <p>Une île de Kanto en 3D, envahie de Pokémon sauvages. Ton partenaire attaque tout seul : cours, saute, esquive, capture des sauvages qui se battront à tes côtés, et rejoins l’arène à 8:00 pour affronter le légendaire.</p>
-          </div>
-          <div className="sw-head-side">
-            <span className="sw-dust pr-pl" title="Points de Ligue : propres au Poké Rush">{meta.pl.toLocaleString('fr-FR')} PL</span>
-            <button type="button" className="sw-btn is-ghost" onClick={() => { setPanel(null); setScreen('home'); }}>← Accueil</button>
-          </div>
-        </header>
-        <div className="sw-metabar">
-          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('shop')}>Centre Pokémon <small>améliorations</small></button>
-          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('dex')}>Pokédex <small>{Object.keys(meta.caught).length} capturés</small></button>
-          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('board')}>Classement <small>en ligne</small></button>
-          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('history')}>Historique <small>{(meta.history || []).length}</small></button>
-        </div>
-        <div className="sw-pool">
-          <div>
-            <span className="sw-kicker">Légendaires de l’arène</span>
-            <div className="sw-pool-row">
-              {pool.finals.map((id) => (
-                <span key={id} className={`sw-pool-mon${meta.caught[id] ? ' is-beaten' : ''}`} title={`${FOES[id].name} · faible contre ${weaknessesOf(FOE_TYPES[id]).join(', ')}`}>
-                  <PmdSprite dex={FOES[id].dex} anim="idle" size={52} scale={0.7} foot={0.9} still />
-                  <small>{FOES[id].name}</small>
-                </span>
-              ))}
-            </div>
-          </div>
-          <div>
-            <span className="sw-kicker">Boss possibles</span>
-            <div className="sw-pool-row">
-              {pool.minis.map((id) => (
-                <span key={id} className="sw-pool-mon" title={`${FOES[id].name} · faible contre ${weaknessesOf(FOE_TYPES[id]).join(', ')}`}>
-                  <PmdSprite dex={FOES[id].dex} anim="idle" size={52} scale={0.7} foot={0.9} still />
-                  <small>{FOES[id].name}</small>
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="sw-partners">
-          {RUSH_STARTERS.map((p) => {
-            const ok = starterOpen(meta, p);
-            const rec = meta.best[p.id];
-            return (
-              <button key={p.id} type="button" className={`sw-partner${p.id === partnerId ? ' is-on' : ''}${ok ? '' : ' is-locked-mon'}`} style={{ '--c': p.color }}
-                onClick={() => setPartnerId(p.id)} onDoubleClick={() => { if (ok) { setPartnerId(p.id); start(); } }} aria-pressed={p.id === partnerId}>
-                <PmdSprite dex={p.dex} anim={p.id === partnerId ? 'walk' : 'idle'} size={112} scale={3} />
-                <strong>{ok ? '' : '🔒 '}{p.name}</strong>
-                <span className="sw-type">{p.type}</span>
-                <span className="sw-attack">{WEAPONS[p.weapon].name}</span>
-                <small>{p.type === 'Eau' ? 'Nage : traverse la rivière et le lac.' : p.id === 'charmander' ? 'Dracaufeu vole : il survole l’eau.' : p.blurb}</small>
-                <span className="sw-stats">{p.hp} PV · vitesse {p.speed.toFixed(1)}</span>
-                {rec && <span className={`sw-record${rec.win ? ' is-win' : ''}`}>{rec.win ? `Victoire en ${clock(rec.t)}` : `Record : ${clock(rec.t)}`}</span>}
-              </button>
-            );
-          })}
-        </div>
-        <div className="sw-howto">{RUSH_HOWTO(ult.name).map(([k, v]) => <span key={k}><b>{k}</b> {v}</span>)}</div>
-        {open
-          ? <button type="button" className="sw-btn is-go" onClick={start}>Partir avec {partner.name}</button>
-          : <button type="button" className="sw-btn is-go is-unlock" disabled={meta.pl < partner.cost} onClick={() => setMeta(buyRushThing(meta, partner.id, partner.cost, 'starters'))}>
-            {meta.pl < partner.cost ? `${partner.name} : ${partner.cost} PL (il t’en manque ${partner.cost - meta.pl})` : `Recruter ${partner.name} : ${partner.cost} PL`}
-          </button>}
-        {panel && <RushPanel tab={panel} setTab={setPanel} meta={meta} setMeta={setMeta} onClose={() => setPanel(null)} />}
-        <p className="sw-credit">Sprites animés : PMDCollab SpriteCollab (CC BY-NC 4.0) · Pokémon © Nintendo / Game Freak · Inspiré de Pokébonk et Megabonk</p>
+      <div className="sw-root pr-root prh-wrap">
+        <RushPickPage
+          Sprite={PmdSprite}
+          backdrop={<RushScene />}
+          meta={meta}
+          partnerId={partner.id}
+          onPick={(p) => setPartnerId(p.id)}
+          onBack={() => setScreen('home')}
+          onNext={() => setScreen('prep')}
+          onRecruit={() => setMeta(buyRushThing(meta, partner.id, partner.cost, 'starters'))}
+        />
+      </div>
+    );
+  }
+
+  if (screen === 'prep') {
+    return (
+      <div className="sw-root pr-root prh-wrap">
+        <RushPrepPage Sprite={PmdSprite} backdrop={<RushScene />} meta={meta} partner={partner} onStart={start} onBack={() => setScreen('menu')} />
       </div>
     );
   }

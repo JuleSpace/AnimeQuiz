@@ -192,7 +192,7 @@
 
 /* ——— Accueil (structure GameHome) « Green Hill » : ciel franc, damier, titres jaunes cerclés de bleu nuit ——— */
 .bkh-wrap { overflow: visible; }
-.gh-root.gh-bonk {
+:is(.gh-root, .gp-root).gh-bonk {
   --gh-bg: #2f86ff;
   --gh-text: #fff;
   --gh-ink: #0a1f6b;
@@ -303,3 +303,18 @@
 @media (prefers-reduced-motion: reduce) {
   .bkh-hero, .bkh-ring, .bkh-rings i, .gh-bonk .gh-play-ball, .bkh-cloud { animation: none; }
 }
+
+/* Pages de menu (GamePage) : blanc, bleu nuit et jaune */
+.gp-root.gh-bonk .gp-veil { backdrop-filter: blur(2px); background: linear-gradient(180deg, rgba(10, 31, 107, 0.25), rgba(10, 31, 107, 0.55)); }
+.gp-root.gh-bonk .gp-ribbon { color: #0a1f6b; text-transform: uppercase; background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.2) 0 14px, transparent 14px 28px), linear-gradient(180deg, #ffe36b, #ff9a00); }
+.gp-root.gh-bonk .gp-ribbon b { color: #fff; -webkit-text-stroke: 2px #0a1f6b; paint-order: stroke fill; text-shadow: 0 4px 0 #0a1f6b; }
+.gp-root.gh-bonk .gp-ribbon small { text-transform: none; }
+.gp-root.gh-bonk .gp-panel-head b, .gp-root.gh-bonk .gp-board-banner b, .gp-root.gh-bonk .gp-cta { text-transform: uppercase; }
+.gp-root.gh-bonk .gp-cta { color: #0a1f6b !important; background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.2) 0 14px, transparent 14px 28px), linear-gradient(180deg, #ffe36b, #ff9a00); box-shadow: 0 0 0 4px #0a1f6b, 0 7px 0 #0a1f6b; }
+.gp-root.gh-bonk .gp-cta .gp-key { color: #fff; background: #0a1f6b; }
+.gp-root.gh-bonk .gp-section-title b, .gp-root.gh-bonk .gp-pod > b, .gp-root.gh-bonk .gp-pod > strong { -webkit-text-stroke: 1px #0a1f6b; paint-order: stroke fill; }
+.gp-root.gh-bonk .gp-stat.is-strong { background: #ffd23a; }
+.bkh-hero-art { background: radial-gradient(circle at 50% 55%, #fff 0 30%, transparent 31%), repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--hc) 85%, #fff) 0 15deg, var(--hc) 15deg 30deg); }
+.bkh-roster { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+.gp-root.gh-bonk .gp-mon { background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--mc) 50%, #fff), var(--mc) 75%); box-shadow: 0 0 0 3px #0a1f6b, 0 5px 0 #0a1f6b; }
+.gp-root.gh-bonk .gp-mon.is-on { box-shadow: 0 0 0 3px #0a1f6b, 0 0 0 7px #ffd23a, 0 9px 0 #0a1f6b; }

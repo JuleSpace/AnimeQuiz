@@ -783,7 +783,7 @@ button.sw-dex-cell:not(:disabled):hover { --fc: var(--star); }
 
 /* ——— Accueil (structure GameHome) habillé « Veillée pixel » ——— */
 .sw-home-wrap { background: var(--night); }
-.gh-root.gh-swarm {
+:is(.gh-root, .gp-root).gh-swarm {
   --gh-bg: var(--night);
   --gh-card: var(--panel);
   --gh-card-text: var(--moon);
@@ -848,3 +848,17 @@ button.sw-dex-cell:not(:disabled):hover { --fc: var(--star); }
   .gh-swarm .gh-side { grid-auto-flow: column; justify-content: center; align-items: center; gap: 10px; padding: 10px; }
   .gh-swarm .gh-side-art { display: none; }
 }
+
+/* ——— Pages de menu (GamePage) en pixel ——— */
+.sw-page-wrap { background: var(--night); }
+.gp-root.gh-swarm, .gp-root.gh-swarm * { border-radius: 0 !important; font-style: normal !important; }
+.gp-root.gh-swarm .gp-ribbon { clip-path: none; filter: none; box-shadow: 0 -3px 0 #ffd6c8, 0 3px 0 #ffd6c8, -3px 0 0 #ffd6c8, 3px 0 0 #ffd6c8, 0 8px 0 var(--ink); }
+.gp-root.gh-swarm .gp-ribbon b { font-size: clamp(22px, 2.6vw, 30px); text-shadow: 3px 3px 0 var(--ink); }
+.gp-root.gh-swarm :is(.gp-back, .gp-stat, .gp-tabs) { box-shadow: 0 -3px 0 var(--line), 0 3px 0 var(--line), -3px 0 0 var(--line), 3px 0 0 var(--line), 0 6px 0 var(--ink); }
+.gp-root.gh-swarm .gp-stat.is-strong { color: var(--ink); background: var(--star); }
+.gp-root.gh-swarm :is(.gp-panel, .gp-up, .gp-quest, .gp-table li, .gp-hist-row, .gp-board-cats button, .gp-board-gens button, .gp-region) { --fc: var(--line); }
+.gp-root.gh-swarm .gp-region.is-on { box-shadow: 0 -3px 0 var(--star), 0 3px 0 var(--star), -3px 0 0 var(--star), 3px 0 0 var(--star), 0 6px 0 var(--ink); background: color-mix(in srgb, var(--star) 22%, var(--panel)); }
+.gp-root.gh-swarm .gp-mon.is-on { box-shadow: 0 -3px 0 var(--star), 0 3px 0 var(--star), -3px 0 0 var(--star), 3px 0 0 var(--star), 0 6px 0 var(--ink); }
+.gp-root.gh-swarm .gp-section-title b { text-shadow: 3px 3px 0 var(--ink); }
+.gp-root.gh-swarm .gp-up-band em, .gp-root.gh-swarm .gp-up-icon { color: var(--moon); }
+.gp-root.gh-swarm .gp-key { font-family: var(--f-px); }

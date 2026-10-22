@@ -4,16 +4,17 @@ import { BIOMES, buildWorld } from './swarmWorld';
 import { animLength, drawPokemon, preloadSprites } from './swarmSprites';
 import { drawDemo } from './swarmDemo';
 import {
-  AI_INFO, FOES, FOE_INFO, GENS, GEN_POOLS, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PARTNERS, PASSIVES, TRAIT_INFO, WEAPONS,
+  FOES, GENS, GEN_POOLS, MAX_LEVEL, MAX_PASSIVES, MAX_WEAPONS, MEGA_LEVELS, PARTNERS, PASSIVES, WEAPONS,
   buildRoster, megaOf, seededRng, ultimateOf
 } from './swarmData';
 import {
-  ACHIEVEMENTS, ALL_FOE_IDS, BRANCHES, MAX_RANK, REGION_COST, TALENTS, TIER_NEEDS, UNLOCKABLES, branchPoints, buyTalent, buyUnlock,
-  dailyChallenge, loadMeta, metaEffects, saveMeta, rankLabel, rankOf, recordRun, refundAll, talentCost, talentLocked, tierNeed, unlockRegion
+  ACHIEVEMENTS, ALL_FOE_IDS, MAX_RANK, TALENTS, UNLOCKABLES,
+  dailyChallenge, loadMeta, metaEffects, saveMeta, rankOf, recordRun, talentCost, talentLocked, unlockRegion
 } from './swarmMeta';
 import { musicPlayer } from './pokeArenaMusic';
-import { AccountChip, Leaderboard, postRun, useCloudSync } from './account';
+import { AccountChip, postRun, useCloudSync } from './account';
 import GameHome, { HomeBoard, HomeIcon } from './GameHome';
+import { SwarmMetaPage, SwarmPickPage, SwarmPrepPage } from './SwarmPages';
 import './PokeSwarm.css';
 
 export const SWARM_HASH = '#swarm';
@@ -363,211 +364,11 @@ const Missions = ({ list, compact = false }) => (
   </ul>
 );
 
-/** Historique des dernières parties. */
-const History = ({ meta }) => {
-  const list = meta.history || [];
-  if (!list.length) return <p className="sw-panel-note">Aucune partie enregistrée pour l’instant. Lance-toi !</p>;
-  return (
-    <div className="sw-history">
-      {list.map((r) => {
-        const pt = PARTNERS.find((x) => x.id === r.partnerId);
-        return (
-          <div key={r.at} className={`sw-hist${r.result === 'win' ? ' is-win' : ''}`}>
-            {pt && <PmdSprite dex={pt.dex} anim="idle" size={48} scale={1.5} still />}
-            <div>
-              <b>{pt?.name || '?'} · {GENS.find((g) => g.id === r.gen)?.name}{r.endless ? ' · Survie infinie' : ''}{r.rank ? ` · rang ${r.rank}` : ''}</b>
-              <small>
-                {r.result === 'win' ? `Victoire contre ${FOES[r.finalBoss]?.name || 'le légendaire'}` : r.endless ? 'Fin de la survie' : 'K.O.'} · {clock(r.t)} · niv. {r.level} · {r.kills} K.O. · {r.missions}/3 missions
-              </small>
-              {r.weapons?.length > 0 && <small className="sw-hist-moves">{r.weapons.map((id) => WEAPONS[id]?.name).filter(Boolean).join(' · ')}</small>}
-            </div>
-            <time>{new Date(r.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</time>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
 const Pips = ({ lv }) => (
   <span className="sw-pips">
     {Array.from({ length: MAX_LEVEL }, (_, i) => <i key={i} className={i < lv ? 'on' : ''} />)}
   </span>
 );
-
-const TIER_LABEL = { t1: 'Commun', t2: 'Peu commun', t3: 'Redoutable', minis: 'Boss', finals: 'Légendaire' };
-
-/** Fiche d'un ennemi : ce qu'il fait et comment le gérer. */
-const FoeSheet = ({ id, meta, onClose }) => {
-  const f = FOES[id];
-  const info = FOE_INFO[id];
-  const n = meta.dex[id] || 0;
-  const traits = [f.flying && 'flying', f.heavy && 'heavy', f.blink && 'blink', f.boss].filter(Boolean);
-  return (
-    <div className="sw-foe" role="dialog" aria-label={f.name}>
-      <button type="button" className="sw-foe-close sw-btn is-small is-ghost" onClick={onClose}>Retour</button>
-      <div className="sw-foe-art" style={{ '--c': f.color }}>
-        <PmdSprite dex={f.dex} anim="walk" size={150} scale={f.boss ? 1.6 : 2.6} dir={0} />
-      </div>
-      <div className="sw-foe-body">
-        <h3>{f.name}</h3>
-        <span className="sw-foe-tag">{GENS.find((g) => g.id === info.gen)?.name} · {TIER_LABEL[info.tier]}</span>
-        <div className="sw-chips is-foe">
-          <span style={{ '--c': '#5fd98a' }}><small>PV</small><b>{f.hp.toLocaleString('fr-FR')}</b></span>
-          <span style={{ '--c': '#ff6b57' }}><small>Dégâts</small><b>{f.dmg}</b></span>
-          <span style={{ '--c': '#4fa8ff' }}><small>Vitesse</small><b>{f.speed.toFixed(1)}</b></span>
-          <span style={{ '--c': '#ffd447' }}><small>Vaincus</small><b>{n.toLocaleString('fr-FR')}</b></span>
-        </div>
-        <h4>Ce qu’il fait</h4>
-        <p>{AI_INFO[f.ai]}</p>
-        {traits.map((t) => <p key={t} className="sw-foe-trait">{TRAIT_INFO[t]}</p>)}
-        {!f.boss && <p className="sw-foe-note">Ses PV et ses dégâts augmentent avec le temps. Les versions « élites », plus grandes, ont 4 fois plus de PV.</p>}
-      </div>
-    </div>
-  );
-};
-
-/** Panneaux de progression : talents, défis, Pokédex. */
-const MetaPanel = ({ panel, meta, setMeta, onClose }) => {
-  const [tab, setTab] = useState(panel);
-  const [foe, setFoe] = useState(null);
-  useEffect(() => setTab(panel), [panel]);
-  useEffect(() => setFoe(null), [tab]);
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-  const seen = ALL_FOE_IDS.filter((id) => meta.dex[id] > 0).length;
-  return (
-    <div className="sw-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="sw-card is-panel">
-        <div className="sw-panel-head">
-          <div className="sw-tabs" role="tablist">
-            {[['talents', 'Talents'], ['moves', `Capacités ${UNLOCKABLES.filter((u) => meta.unlocks?.[u.id]).length}/${UNLOCKABLES.length}`], ['achievements', `Défis ${Object.keys(meta.achievements).length}/${ACHIEVEMENTS.length}`], ['dex', `Pokédex ${seen}/${ALL_FOE_IDS.length}`], ['history', 'Historique'], ['board', 'Classement']].map(([id, label]) => (
-              <button key={id} type="button" role="tab" aria-selected={tab === id} className={tab === id ? 'is-on' : ''} onClick={() => setTab(id)}>{label}</button>
-            ))}
-          </div>
-          <span className="sw-dust">✦ {meta.dust.toLocaleString('fr-FR')}</span>
-          <button type="button" className="sw-btn is-small is-ghost" onClick={onClose}>Fermer</button>
-        </div>
-
-        {tab === 'talents' && (
-          <>
-            <p className="sw-panel-note">Chaque talent acheté rend tous les suivants un peu plus chers. Les paliers se débloquent avec {TIER_NEEDS[1]} puis {TIER_NEEDS[2]} points dans la branche ({tierNeed('mastery', 1)} puis {tierNeed('mastery', 2)} pour la Maîtrise).</p>
-            <div className="sw-tree">
-              {BRANCHES.map((b) => (
-                <div key={b.id} className="sw-branch" style={{ '--c': b.color }}>
-                  <h3>{b.name}<small>{branchPoints(meta, b.id)} pts</small></h3>
-                  {[0, 1, 2].map((tier) => (
-                    <div key={tier} className="sw-tier">
-                      {TALENTS.filter((t) => t.branch === b.id && t.tier === tier).map((t) => {
-                        const r = rankOf(meta, t.id);
-                        const maxed = r >= t.max;
-                        const locked = talentLocked(meta, t);
-                        const cost = talentCost(meta, t);
-                        return (
-                          <button
-                            key={t.id}
-                            type="button"
-                            className={`sw-talent${maxed ? ' is-max' : ''}${locked ? ' is-locked' : ''}${r ? ' is-owned' : ''}`}
-                            disabled={maxed || locked || meta.dust < cost}
-                            onClick={() => setMeta(buyTalent(meta, t.id))}
-                          >
-                            <span className="sw-talent-top"><b>{t.name}</b><i>{r}/{t.max}</i></span>
-                            <span className="sw-talent-desc">{r ? t.desc(r) : t.desc(1)}</span>
-                            {!maxed && r > 0 && <span className="sw-talent-next">Ensuite : {t.desc(r + 1)}</span>}
-                            <span className="sw-talent-cost">
-                              {maxed ? 'Maximum' : locked ? `${branchPoints(meta, t.branch)}/${tierNeed(t.branch, t.tier)} pts dans la branche` : `${cost} ✦`}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-            <div className="sw-actions">
-              <button type="button" className="sw-btn is-small is-ghost" disabled={!meta.spent} onClick={() => setMeta(refundAll(meta))}>Tout rembourser ({meta.spent || 0} ✦)</button>
-            </div>
-          </>
-        )}
-
-        {tab === 'moves' && (
-          <>
-            <p className="sw-panel-note">Débloque de nouvelles capacités et de nouveaux objets : ils pourront ensuite sortir dans les cartes de level-up, pour tous les starters. Les attaques signature des autres starters du même type sont déjà disponibles.</p>
-            <div className="sw-shop">
-              {UNLOCKABLES.map((u) => {
-                const owned = meta.unlocks?.[u.id];
-                return (
-                  <div key={u.id} className={`sw-shop-item${owned ? ' is-owned' : ''}`} style={{ '--c': u.color }}>
-                    <div className="sw-tile-top"><b>{u.name}</b><small>{u.kind === 'weapon' ? u.type : 'Objet'}</small></div>
-                    <p>{u.desc}</p>
-                    <button type="button" className={`sw-btn is-small${owned ? '' : ' is-go'}`} disabled={owned || meta.dust < u.cost} onClick={() => setMeta(buyUnlock(meta, u.id))}>
-                      {owned ? 'Débloqué' : `Débloquer · ${u.cost} ✦`}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {tab === 'achievements' && (
-          <div className="sw-achs">
-            {ACHIEVEMENTS.map((a) => {
-              const done = meta.achievements[a.id];
-              return (
-                <div key={a.id} className={`sw-ach${done ? ' is-done' : ''}`}>
-                  <i>{done ? '★' : '☆'}</i>
-                  <div><b>{a.name}</b><small>{a.desc}</small></div>
-                  <span>{done ? 'Réussi' : `+${a.reward} ✦`}</span>
-                </div>
-              );
-            })}
-            <p className="sw-panel-note">Parties jouées : {meta.runs || 0} · K.O. au total : {(meta.kills || 0).toLocaleString('fr-FR')} · Poussière gagnée au total : {(meta.totalDust || 0).toLocaleString('fr-FR')} ✦</p>
-          </div>
-        )}
-
-        {tab === 'history' && <History meta={meta} />}
-        {tab === 'board' && <Leaderboard game="swarm" gens={GENS.map((g) => ({ id: g.id, name: g.name }))} partnerName={(id) => PARTNERS.find((p) => p.id === id)?.name || id} />}
-        {tab === 'dex' && foe && <FoeSheet id={foe} meta={meta} onClose={() => setFoe(null)} />}
-        {tab === 'dex' && !foe && (
-          <div className="sw-dex">
-            <p className="sw-panel-note">Clique sur un Pokémon déjà croisé pour voir ce qu’il sait faire. À chaque partie, seule une partie du pool de la région apparaît.</p>
-            {GENS.map((gn) => (
-              <section key={gn.id}>
-                <h3>{gn.name}</h3>
-                <div className="sw-dex-grid">
-                  {ALL_FOE_IDS.filter((id) => FOE_INFO[id].gen === gn.id).map((id) => {
-                    const n = meta.dex[id] || 0;
-                    const known = n > 0 || meta.met?.[id];
-                    const f = FOES[id];
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        disabled={!known}
-                        onClick={() => setFoe(id)}
-                        className={`sw-dex-cell${known ? '' : ' is-unseen'}${f.boss ? ' is-boss' : ''}`}
-                        title={known ? `${f.name} : voir sa fiche` : '???'}
-                      >
-                        <PmdSprite dex={f.dex} anim="idle" size={64} scale={f.boss ? 1.2 : 1.8} still />
-                        <b>{known ? f.name : '???'}</b>
-                        <small>{n ? `${n.toLocaleString('fr-FR')} K.O.` : known ? 'Croisé' : 'Jamais vu'}</small>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 const PokeSwarm = ({ onClose }) => {
   const [screen, setScreen] = useState('home');
@@ -716,7 +517,6 @@ const PokeSwarm = ({ onClose }) => {
     setPartnerId(daily.partnerId);
     start(daily, daily.gen);
   };
-  const unlocked = Boolean(meta.regions[gen]);
 
   const bless = (id) => {
     setAltar(null);
@@ -731,6 +531,14 @@ const PokeSwarm = ({ onClose }) => {
     const options = gameRef.current?.reroll();
     if (options) setLevelUp((cur) => ({ ...cur, options, rerolls: cur.rerolls - 1 }));
   };
+
+  if (panel && screen !== 'play') {
+    return (
+      <div className="sw-root sw-page-wrap">
+        <SwarmMetaPage Sprite={PmdSprite} panel={panel} backdrop={<MenuBackdrop world={world} />} meta={meta} setMeta={setMeta} onBack={() => setPanel(null)} />
+      </div>
+    );
+  }
 
   if (screen === 'home') {
     const pts = Object.values(meta.talents).reduce((a, b) => a + b, 0);
@@ -797,7 +605,7 @@ const PokeSwarm = ({ onClose }) => {
               key: 'region', tone: 'light', kicker: `Région · ${Object.keys(meta.regions).length}/${GENS.length} débloquées`,
               title: regionName, sub: `Légendaires : ${pool.finals.map((id) => FOES[id].name).join(', ')}`,
               art: <PmdSprite dex={FOES[pool.finals[0]].dex} anim="idle" size={52} scale={0.8} still />,
-              onClick: () => openPrep()
+              onClick: () => setScreen('prep')
             }
           ]}
           tiles={[
@@ -819,7 +627,6 @@ const PokeSwarm = ({ onClose }) => {
           )}
           footer="Fan-game non officiel, gratuit et sans but lucratif. Pokémon © Nintendo / Game Freak / The Pokémon Company. Sprites animés : PMDCollab SpriteCollab (CC BY-NC 4.0) · Méga-Évolutions manquantes : communauté pokeemerald-expansion (RHH)."
         />
-        {panel && <MetaPanel panel={panel} meta={meta} setMeta={setMeta} onClose={() => setPanel(null)} />}
         {howto && (
           <div className="sw-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) setHowto(false); }}>
             <div className="sw-card is-panel swh-howto">
@@ -846,164 +653,46 @@ const PokeSwarm = ({ onClose }) => {
 
   if (screen === 'menu') {
     return (
-      <div className="sw-root sw-menu">
-        <MenuBackdrop world={world} />
-        <header className="sw-head">
-          <div>
-            <span className="sw-kicker">Mode secret</span>
-            <h1>Poké Swarm</h1>
-            <p>Survis aux hordes sauvages pendant 9 minutes, puis bats le Pokémon légendaire de la région. Ennemis, boss et décor changent à chaque partie. Tes attaques partent toutes seules : à toi de bouger, de remplir tes 3 missions, de trouver les autels et de déchaîner ton ultime au bon moment.</p>
-          </div>
-          <div className="sw-head-side">
-            <button type="button" className="sw-btn is-ghost" onClick={() => setScreen('home')}>← Accueil</button>
-            <span className="sw-dust" title="Poussière Étoile : gagnée à chaque partie">✦ {meta.dust.toLocaleString('fr-FR')}</span>
-            <button type="button" className="sw-btn is-ghost" onClick={onClose}>Quitter</button>
-          </div>
-        </header>
-        <div className="sw-metabar">
-          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('talents')}>
-            Talents <small>{Object.values(meta.talents).reduce((a, b) => a + b, 0)} pts</small>
-          </button>
-          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('moves')}>
-            Capacités <small>{UNLOCKABLES.filter((u) => meta.unlocks?.[u.id]).length}/{UNLOCKABLES.length}</small>
-          </button>
-          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('achievements')}>
-            Défis <small>{Object.keys(meta.achievements).length}/{ACHIEVEMENTS.length}</small>
-          </button>
-          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('dex')}>
-            Pokédex <small>{ALL_FOE_IDS.filter((id) => meta.dex[id] > 0).length}/{ALL_FOE_IDS.length}</small>
-          </button>
-          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('board')}>
-            Classement <small>en ligne</small>
-          </button>
-          <button type="button" className="sw-btn is-small is-meta" onClick={() => setPanel('history')}>
-            Historique <small>{(meta.history || []).length}</small>
-          </button>
-          <div className={`sw-daily${dailyDone ? ' is-done' : ''}`}>
-            <PmdSprite dex={dailyPartner.dex} anim="idle" size={44} scale={1.4} />
-            <div>
-              <span className="sw-kicker">Défi du jour · {daily.mod.name}</span>
-              <small>{dailyPartner.name} · {GENS.find((g) => g.id === daily.gen)?.name} · {daily.mod.desc}</small>
-            </div>
-            <button type="button" className="sw-btn is-small" onClick={playDaily}>{dailyDone ? 'Rejouer' : 'Jouer (+200 ✦)'}</button>
-          </div>
-        </div>
-        <div className="sw-gens" role="tablist" aria-label="Génération">
-          {GENS.map((gn) => {
-            const open = meta.regions[gn.id];
-            return (
-              <button key={gn.id} type="button" role="tab" aria-selected={gn.id === gen} className={`sw-gen${gn.id === gen ? ' is-on' : ''}${open ? '' : ' is-locked'}`} onClick={() => pickGen(gn.id)}>
-                <b>{open ? '' : '🔒 '}{gn.name}</b><small>{open ? gn.label : `${REGION_COST[gn.id]} ✦ pour débloquer`}</small>
-              </button>
-            );
-          })}
-        </div>
-        <div className="sw-pool">
-          <div>
-            <span className="sw-kicker">Légendaires possibles</span>
-            <div className="sw-pool-row">
-              {pool.finals.map((id) => (
-                <span key={id} className={`sw-pool-mon${meta.legends?.[id] ? ' is-beaten' : ''}`} title={meta.legends?.[id] ? `${FOES[id].name} : déjà vaincu` : FOES[id].name}>
-                  <PmdSprite dex={FOES[id].dex} anim="idle" size={52} scale={0.7} foot={0.9} still />
-                  <small>{FOES[id].name}</small>
-                </span>
-              ))}
-            </div>
-          </div>
-          <div>
-            <span className="sw-kicker">Boss possibles</span>
-            <div className="sw-pool-row">
-              {pool.minis.map((id) => (
-                <span key={id} className="sw-pool-mon" title={FOES[id].name}>
-                  <PmdSprite dex={FOES[id].dex} anim="idle" size={52} scale={0.7} foot={0.9} still />
-                  <small>{FOES[id].name}</small>
-                </span>
-              ))}
-            </div>
-          </div>
-          <div className="sw-rank">
-            <span className="sw-kicker">Rang de menace</span>
-            <div className="sw-rank-row" role="radiogroup" aria-label="Rang de menace">
-              {Array.from({ length: MAX_RANK + 1 }, (_, r) => (
-                <button
-                  key={r}
-                  type="button"
-                  role="radio"
-                  aria-checked={r === rank}
-                  disabled={r > maxRank}
-                  className={`sw-rank-pip${r === rank ? ' is-on' : ''}`}
-                  title={r > maxRank ? `Gagne au rang ${r - 1} dans cette région pour le débloquer` : rankLabel(r)}
-                  onClick={() => setRank(r)}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-            <small>{rankLabel(rank)}</small>
-          </div>
-          <div className="sw-mode">
-            <span className="sw-kicker">Mode de jeu</span>
-            <div className="sw-mode-row" role="radiogroup" aria-label="Mode de jeu">
-              <button type="button" role="radio" aria-checked={runMode === 'classic'} className={`sw-mode-btn${runMode === 'classic' ? ' is-on' : ''}`} onClick={() => setMode('classic')}>
-                <b>Classique</b><small>Bats le légendaire</small>
-              </button>
-              <button type="button" role="radio" aria-checked={runMode === 'endless'} disabled={!endlessOpen} className={`sw-mode-btn${runMode === 'endless' ? ' is-on' : ''}`} onClick={() => setMode('endless')} title={endlessOpen ? '' : 'Gagne une partie pour débloquer ce mode'}>
-                <b>{endlessOpen ? '' : '🔒 '}Survie infinie</b>
-                <small>{endlessOpen ? (meta.endless?.[gen] ? `Record : ${clock(meta.endless[gen])}` : 'Tiens le plus longtemps') : 'Gagne une partie'}</small>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className={`sw-partners${unlocked ? '' : ' is-locked'}`}>
-          {starters.map((p) => {
-            const rec = best[p.id];
-            return (
-              <button
-                key={p.id}
-                type="button"
-                className={`sw-partner${p.id === partnerId ? ' is-on' : ''}`}
-                style={{ '--c': p.color }}
-                onClick={() => setPartnerId(p.id)}
-                onDoubleClick={() => { if (unlocked) { setPartnerId(p.id); start(); } }}
-                aria-pressed={p.id === partnerId}
-              >
-                <PmdSprite dex={p.dex} anim={p.id === partnerId ? 'walk' : 'idle'} size={112} scale={3} />
-                <strong>{p.name}</strong>
-                <span className="sw-type">{p.type}</span>
-                <span className="sw-attack">{WEAPONS[p.weapon].name}</span>
-                <small>{p.blurb}</small>
-                <span className="sw-stats">{p.hp} PV · vitesse {p.speed.toFixed(1)}{p.mega ? ' · Méga' : ''}</span>
-                {rec && (
-                  <span className={`sw-record${rec.win ? ' is-win' : ''}`}>
-                    {rec.win ? `Victoire en ${clock(rec.t)}` : `Record : ${clock(rec.t)}`} · {rec.kills} K.O.
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-        <div className="sw-howto">
-          <span><b>Bouger</b> ZQSD, WASD ou flèches · au doigt, glisse sur l'écran</span>
-          <span><b>Esquive</b> Espace ou Maj : un bond rapide, invincible pendant le saut</span>
-          <span><b>Pause</b> Échap ou P</span>
-          <span><b>Bonbons</b> ramasse l'XP pour monter de niveau et choisir un bonus</span>
-          <span><b>Rochers fissurés</b> casse-les : baies, aimants et Super Bonbons</span>
-          <span><b>Boss</b> les zones rouges au sol vont exploser : sors-en !</span>
-          <span><b>Méga</b> une fois la dernière forme atteinte, prends 3 fois la Méga-Gemme au level-up</span>
-          <span><b>Ultime</b> R ou le bouton : chaque K.O. remplit la jauge. {ult.name} : {ult.desc}</span>
-          <span><b>Autels</b> 3 par carte (violets sur la mini-carte) : reste dessus 2 s pour choisir une bénédiction</span>
-          <span><b>Alpha</b> vers 2:30 et 5:30, un Pokémon géant à l’aura rouge débarque : il lâche un coffre</span>
-          <span><b>Missions</b> 3 objectifs par partie : XP, soin et Poussière à la clé</span>
-        </div>
-        {unlocked
-          ? <button type="button" className="sw-btn is-go" onClick={() => start()}>{runMode === 'endless' ? `Survie infinie avec ${partner.name}` : `Partir avec ${partner.name}`}</button>
-          : (
-            <button type="button" className="sw-btn is-go is-unlock" disabled={meta.dust < REGION_COST[gen]} onClick={() => setMeta(unlockRegion(meta, gen))}>
-              {meta.dust < REGION_COST[gen] ? `Région verrouillée : ${REGION_COST[gen]} ✦ (il t'en manque ${REGION_COST[gen] - meta.dust})` : `Débloquer ${GENS.find((g) => g.id === gen)?.name} : ${REGION_COST[gen]} ✦`}
-            </button>
-          )}
-        {panel && <MetaPanel panel={panel} meta={meta} setMeta={setMeta} onClose={() => setPanel(null)} />}
-        <p className="sw-credit">Sprites animés : PMDCollab SpriteCollab (CC BY-NC 4.0) · Méga-Évolutions manquantes : sprites de la communauté pokeemerald-expansion (RHH) · Pokémon © Nintendo / Game Freak</p>
+      <div className="sw-root sw-page-wrap">
+        <SwarmPickPage
+          Sprite={PmdSprite}
+          backdrop={<MenuBackdrop world={world} />}
+          meta={meta}
+          partnerId={partner.id}
+          best={best}
+          onPick={(p) => { if (p.gen !== gen) pickGen(p.gen); setPartnerId(p.id); }}
+          onBack={() => setScreen('home')}
+          onNext={() => setScreen('prep')}
+        />
+      </div>
+    );
+  }
+
+  if (screen === 'prep') {
+    return (
+      <div className="sw-root sw-page-wrap">
+        <SwarmPrepPage
+          Sprite={PmdSprite}
+          backdrop={<MenuBackdrop world={world} />}
+          meta={meta}
+          gen={gen}
+          partner={partner}
+          pickGen={pickGen}
+          rank={rank}
+          setRank={setRank}
+          maxRank={maxRank}
+          runMode={runMode}
+          setMode={setMode}
+          endlessOpen={endlessOpen}
+          best={best}
+          daily={daily}
+          dailyPartner={dailyPartner}
+          dailyDone={dailyDone}
+          onDaily={playDaily}
+          onStart={() => start()}
+          onUnlock={() => setMeta(unlockRegion(meta, gen))}
+          onBack={() => setScreen('menu')}
+        />
       </div>
     );
   }

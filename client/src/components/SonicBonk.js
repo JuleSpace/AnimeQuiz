@@ -3,6 +3,7 @@ import { createBonk } from './bonkEngine';
 import { CHARACTERS, MAX_LEVEL, MODELS, PASSIVES, RUN_SECONDS, WEAPONS } from './bonkData';
 import { Avatar } from './SonicRoster';
 import GameHome, { HomeBoard } from './GameHome';
+import GamePage, { BoardPage, Cta, Panel, Stat, StatBars } from './GamePage';
 import { AccountChip, postRun } from './account';
 import './SonicBonk.css';
 
@@ -45,6 +46,12 @@ const BonkScene = () => (
     <span className="bkh-rings">{Array.from({ length: 7 }, (_, i) => <i key={i} style={{ '--i': i }} />)}</span>
   </div>
 );
+const AIR = {
+  dash: ['Dash aérien', 'Rappuie sur Saut en l’air : un bond horizontal fulgurant.'],
+  fly: ['Vol', 'Maintiens Saut en l’air : les deux queues le portent quelques secondes.'],
+  glide: ['Plané', 'Maintiens Saut en l’air : il plane et descend doucement.'],
+  double: ['Double saut', 'Rappuie sur Saut en l’air pour un second saut.']
+};
 const Ring = () => <span className="bkh-ring" aria-hidden="true" />;
 
 const BONK_HOWTO = [
@@ -60,6 +67,7 @@ const BONK_HOWTO = [
 const SonicBonk = ({ onClose }) => {
   const [screen, setScreen] = useState('home');
   const [howto, setHowto] = useState(false);
+  const [page, setPage] = useState(null);
   const [charId, setCharId] = useState(CHARACTERS[0].id);
   const [hud, setHud] = useState(null);
   const [levelUp, setLevelUp] = useState(null);
@@ -114,6 +122,25 @@ const SonicBonk = ({ onClose }) => {
     const options = gameRef.current?.reroll();
     if (options) setLevelUp((cur) => ({ ...cur, options, rerolls: cur.rerolls - 1 }));
   };
+
+  if (page === 'board' && screen !== 'play') {
+    return (
+      <div className="bk-root bkh-wrap">
+        <GamePage theme="gh-bonk" backdrop={<BonkScene />} title="Classement" subtitle="Records du serveur" onBack={() => setPage(null)}>
+          <BoardPage
+            game="bonk"
+            tabs={[
+              { id: 'fastest', label: 'Victoires', sub: 'Le Colosse le plus vite', value: (r) => clock(r.t), unit: '' },
+              { id: 'kills', label: 'K.O.', sub: 'Le plus de robots', value: (r) => r.kills.toLocaleString('fr-FR'), unit: 'K.O.' }
+            ]}
+            describe={(r) => `${r.form || CHARACTERS.find((c) => c.id === r.partnerId)?.name || ''} · niv. ${r.level}`}
+            avatarOf={(r, size) => <Avatar id={r.partnerId} size={size} />}
+            gens={[{ id: 1, name: 'Green Hill' }]}
+          />
+        </GamePage>
+      </div>
+    );
+  }
 
   if (screen === 'home') {
     const rec = best[character.id];
@@ -188,6 +215,7 @@ const SonicBonk = ({ onClose }) => {
               title="Classement"
               subtitle="Île de Green Hill · meilleur score de chaque joueur"
               describe={(r) => `${r.form || CHARACTERS.find((c) => c.id === r.partnerId)?.name || ''} · niv. ${r.level}`}
+              onMore={() => setPage('board')}
             />
           )}
           footer={`Fan-game non commercial. Personnages © SEGA. Modèles 3D (Sketchfab) : ${CHARACTERS.map((c) => MODELS[c.id]?.credit).filter(Boolean).join(' · ')}.`}
@@ -206,46 +234,82 @@ const SonicBonk = ({ onClose }) => {
   }
 
   if (screen === 'menu') {
+    const rec = best[character.id];
+    const W = WEAPONS[character.weapon];
+    const [airName, airDesc] = AIR[character.air] || AIR.dash;
+    const top = (k) => Math.max(...CHARACTERS.map((c) => c[k]));
     return (
-      <div className="bk-root bk-menu">
-        <div className="bk-sky" aria-hidden="true"><i /><i /><i /></div>
-        <header className="bk-head">
-          <div>
-            <span className="bk-kicker">Mode secret</span>
-            <h1>Sonic <b>Bonk</b></h1>
-            <p>Une île en 3D, des hordes de robots et {Math.round(RUN_SECONDS / 60)} minutes pour tenir. Tes attaques partent toutes seules : cours, saute, enchaîne les spin dash, casse les moniteurs et ouvre les coffres avec tes anneaux. Bats le Colosse pour gagner.</p>
+      <div className="bk-root bkh-wrap">
+        <GamePage
+          theme="gh-bonk"
+          backdrop={<BonkScene />}
+          title="Choisis ton perso"
+          subtitle={`${CHARACTERS.filter((c) => best[c.id]?.win).length}/${CHARACTERS.length} victorieux`}
+          onBack={() => setScreen('home')}
+          onEnter={start}
+          right={<Stat label="Record K.O." value={Math.max(0, ...CHARACTERS.map((c) => best[c.id]?.kills || 0)).toLocaleString('fr-FR')} strong />}
+        >
+          <div className="gp-split">
+            <div className="gp-body">
+              <Panel tone="plain">
+                <div className="gp-hero">
+                  <div className="gp-hero-art bkh-hero-art" style={{ '--hc': character.color }}><Avatar id={character.id} size={150} /></div>
+                  <div className="gp-body" style={{ gap: 10 }}>
+                    <span className="gp-hero-kicker">Île de Green Hill · {Math.round(RUN_SECONDS / 60)} minutes</span>
+                    <h2>{character.name}</h2>
+                    <div className="gp-chips">
+                      <span className="gp-chip" style={{ '--cc': character.color }}>{W.name}</span>
+                      <span className="gp-chip" style={{ '--cc': '#0a1f6b' }}>{airName}</span>
+                    </div>
+                    <StatBars rows={[
+                      ['PV', character.hp, top('hp'), '#ff4d5e'],
+                      ['Vitesse', character.speed, top('speed'), '#1f6dff'],
+                      ['Saut', character.jump, top('jump'), '#3ccf6e']
+                    ]} />
+                  </div>
+                </div>
+              </Panel>
+              <div className="gp-grid is-wide">
+                <Panel title="Attaque de départ" kicker="Kit">
+                  <div className="gp-move" style={{ '--mc': W.color || character.color }}>
+                    <i>✦</i>
+                    <span><b>{W.name}</b><small>{W.desc(1)}</small></span>
+                  </div>
+                  <p className="gpx-note">{character.blurb}</p>
+                </Panel>
+                <Panel title={airName} kicker="Capacité en l’air" tone="side">
+                  <div className="gp-move" style={{ '--mc': '#1f6dff' }}>
+                    <i>↑</i>
+                    <span><b>{airName}</b><small>{airDesc}</small></span>
+                  </div>
+                  <p className="gpx-note">Spin dash (Maj ou E) : fonce et écrase les robots, invincible.</p>
+                </Panel>
+              </div>
+              <Panel tone="plain">
+                <div className="gp-runbar">
+                  <small>Tes records</small>
+                  <span><b>{rec?.win ? 'Oui' : 'Non'}</b>victoire</span>
+                  <span><b>{rec ? clock(rec.t) : '—'}</b>{rec?.win ? 'meilleure victoire' : 'meilleur temps'}</span>
+                  <span><b>{(rec?.kills || 0).toLocaleString('fr-FR')}</b>K.O.</span>
+                </div>
+                <Cta onClick={start}>C’est parti !</Cta>
+              </Panel>
+            </div>
+            <Panel title="Personnages" kicker="Green Hill" tone="side" className="gp-sticky gpx-roster" right={<span>{CHARACTERS.length}</span>}>
+              <div className="gp-roster bkh-roster">
+                {CHARACTERS.map((c) => (
+                  <button key={c.id} type="button" className={`gp-mon${c.id === charId ? ' is-on' : ''}`} style={{ '--mc': c.color }}
+                    onClick={() => setCharId(c.id)} onDoubleClick={() => { setCharId(c.id); start(); }} aria-pressed={c.id === charId}>
+                    <span><Avatar id={c.id} size={72} /></span>
+                    {best[c.id]?.win && <span className="gp-mon-badge">★</span>}
+                    <b>{c.name}</b>
+                  </button>
+                ))}
+              </div>
+              <p className="gpx-note">Double-clic sur un perso pour partir tout de suite.</p>
+            </Panel>
           </div>
-          <button type="button" className="bk-btn is-ghost" onClick={() => setScreen('home')}>← Accueil</button>
-        </header>
-        <div className="bk-chars">
-          {CHARACTERS.map((c) => {
-            const rec = best[c.id];
-            return (
-              <button
-                key={c.id}
-                type="button"
-                className={`bk-char${c.id === charId ? ' is-on' : ''}`}
-                style={{ '--c': c.color }}
-                onClick={() => setCharId(c.id)}
-                onDoubleClick={() => { setCharId(c.id); start(); }}
-                aria-pressed={c.id === charId}
-              >
-                <Avatar id={c.id} size={96} />
-                <strong>{c.name}</strong>
-                <span className="bk-weapon">{WEAPONS[c.weapon].name}</span>
-                <small>{c.blurb}</small>
-                <span className="bk-stats">{c.hp} PV · vitesse {c.speed}</span>
-                {rec && <span className={`bk-record${rec.win ? ' is-win' : ''}`}>{rec.win ? `Victoire en ${clock(rec.t)}` : `Record : ${clock(rec.t)}`} · {rec.kills} K.O.</span>}
-              </button>
-            );
-          })}
-        </div>
-        <div className="bk-howto">{BONK_HOWTO.map(([k, v]) => <span key={k}><b>{k}</b> {v}</span>)}</div>
-        <button type="button" className="bk-btn is-go" onClick={start}>Jouer avec {character.name}</button>
-        <p className="bk-credit">
-          Modèles 3D (Sketchfab) — {CHARACTERS.map((c) => MODELS[c.id]?.credit).filter(Boolean).join(' · ')} · Modèle de secours : RobotExpressive, Tomás Laulhé (CC0).
-          Personnages © SEGA, projet de fans non commercial.
-        </p>
+        </GamePage>
       </div>
     );
   }

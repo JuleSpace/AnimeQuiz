@@ -4,7 +4,7 @@
  * Poké Bully Tactics — accueil « Salle des Champions » :
  * carton sombre et chaud, liserés dorés, cartes rares en éventail sous les projecteurs.
  */
-.gh-root.gh-arena {
+:is(.gh-root, .gp-root, .gp-frame).gh-arena {
   --ah-gold: #dcb066;
   --ah-gold-hi: #f6dfa5;
   --ah-gold-lo: #a97a32;
@@ -161,3 +161,11 @@
   .gh-arena .gh-side { grid-auto-flow: column; justify-content: center; align-items: center; gap: 10px; padding: 12px; }
   .gh-arena .gh-side-art { display: none; }
 }
+
+/* Écrans du jeu habillés de l'en-tête commun */
+.ah-frame { display: flex; flex-direction: column; gap: 14px; min-height: 100%; }
+.ah-frame > .gp-head { position: sticky; top: -14px; z-index: 5; margin: -14px -18px 0; padding: 12px 18px; background: linear-gradient(180deg, rgba(23, 17, 13, 0.96), rgba(23, 17, 13, 0.82)); backdrop-filter: blur(6px); }
+.pa-root.skin-classique .ah-frame > .gp-head { background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.85)); }
+.ah-frame .ui-screen-head { display: none; }
+.ah-frame .gp-ribbon b { font-style: italic; }
+.ah-frame .gp-stat-icon { font-size: 16px; }

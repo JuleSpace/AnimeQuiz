@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import ArenaBoardIso, { BOARD_THEMES, BOARD_THEME_LABELS, DEFAULT_BOARD_THEME, resolveScene } from './ArenaBoardIso';
-import ArenaHome, { addToRecord, loadRecord, saveRecord } from './ArenaHome';
+import ArenaHome, { ArenaFrame, addToRecord, loadRecord, saveRecord } from './ArenaHome';
 import { postRun, useCloudSync } from './account';
 import './PokeArena.css';
 import './PokeArenaPremium.css';
@@ -1441,6 +1441,7 @@ const PokeArena = ({ onClose }) => {
     const count = Math.max(2, vsRoom?.players?.length || 2);
     return (
       <div className={`pa-root ${skinCls} pa-screen`}>
+        <ArenaFrame title="Salon multi" subtitle="De 2 à 8 dresseurs, le dernier debout gagne" onBack={() => { closeSocket(); setPhase('hub'); }}>
         <VersusLobby
           room={vsRoom}
           me={vsMe}
@@ -1454,6 +1455,7 @@ const PokeArena = ({ onClose }) => {
           busy={vsBusy}
           poolPreview={vsRoom ? { size: versusPoolSize(count), starters: versusStarterCount(count), max: VERSUS_MAX_PLAYERS } : null}
         />
+        </ArenaFrame>
       </div>
     );
   }
@@ -1475,7 +1477,9 @@ const PokeArena = ({ onClose }) => {
   if (phase === 'codex') {
     return (
       <div className={`pa-root ${skinCls} pa-screen`}>
-        <CodexScreen onBack={() => setPhase('hub')} onTrait={(t, e) => openTrait(t, e)} />
+        <ArenaFrame title="Pokédex" subtitle="Lignées, talents et synergies de l’arène" onBack={() => setPhase('hub')}>
+          <CodexScreen onBack={() => setPhase('hub')} onTrait={(t, e) => openTrait(t, e)} />
+        </ArenaFrame>
         <TraitPopup pop={traitPop} />
       </div>
     );
@@ -1484,13 +1488,20 @@ const PokeArena = ({ onClose }) => {
   if (phase === 'starter') {
     return (
       <div className={`pa-root ${skinCls} pa-screen`}>
-        <StarterScreen
-          onPick={startRun}
+        <ArenaFrame
+          title="Choisis ton partenaire"
+          subtitle="Il commence sur le terrain ; deux autres starters rejoindront ta boutique"
           onBack={() => setPhase('hub')}
-          onTrait={(t, e) => openTrait(t, e)}
-          trainer={myTrainer}
-          onTrainer={setMyTrainer}
-        />
+          right={<span className="gp-stat"><span><small>Ligues remportées</small><b>♛ {record.wins}</b></span></span>}
+        >
+          <StarterScreen
+            onPick={startRun}
+            onBack={() => setPhase('hub')}
+            onTrait={(t, e) => openTrait(t, e)}
+            trainer={myTrainer}
+            onTrainer={setMyTrainer}
+          />
+        </ArenaFrame>
         <TraitPopup pop={traitPop} />
       </div>
     );

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import GameHome, { HomeBoard, HomeIcon } from './GameHome';
+import GamePage, { BoardPage, PageHead, Section, Stat, useKeys } from './GamePage';
 import { AccountChip } from './account';
 import { CHAMPIONS } from './pokeArenaTrainers';
 import { trainerSprite } from './pokeArenaCampaign';
@@ -66,6 +67,17 @@ const ArenaScene = () => (
   </div>
 );
 
+/** Habille un écran du jeu (sélection, Pokédex, salon) avec l'en-tête commun des menus. */
+export const ArenaFrame = ({ title, subtitle, onBack, right, children }) => {
+  useKeys(onBack);
+  return (
+    <div className="gp-frame gh-arena ah-frame">
+      <PageHead title={title} subtitle={subtitle} onBack={onBack} right={right} />
+      {children}
+    </div>
+  );
+};
+
 /**
  * Accueil de Poké Bully Tactics : salle des champions, cartes rares en éventail, carnet de dresseur.
  */
@@ -87,6 +99,53 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
   const side = saved
     ? { title: 'Nouvelle', sub: 'partie', art: <HomeIcon src={itemSprite('poke-ball')} fallback="●" />, onClick: onNew }
     : { title: 'Multi', sub: 'Salon en ligne', art: <HomeIcon src={itemSprite('link-cable')} fallback="⇄" />, onClick: onMulti };
+
+  const ARENA_TABS = [
+    { id: 'fastest', label: 'Maîtres', sub: 'Ligue la plus rapide', value: (r) => clock(r.t), unit: '' },
+    { id: 'kills', label: 'Plus loin', sub: 'Étape atteinte', value: (r) => `${r.kills}`, unit: 'étape' }
+  ];
+  if (carnet === 'board') {
+    return (
+      <GamePage theme="gh-arena" backdrop={<ArenaScene />} title="Hall de la Ligue" subtitle="Records du serveur" onBack={() => setCarnet(false)}>
+        <BoardPage game="arena" gens={[{ id: 1, name: 'Ligue Pokémon' }]} tabs={ARENA_TABS} describe={(r) => `MVP ${r.form || '—'} · niv. ${r.level}`} />
+      </GamePage>
+    );
+  }
+  if (carnet) {
+    return (
+      <GamePage
+        theme="gh-arena"
+        backdrop={<ArenaScene />}
+        title="Carnet de dresseur"
+        subtitle="Tes parties solo terminées"
+        onBack={() => setCarnet(false)}
+        right={(
+          <>
+            <Stat label="Parties" value={record.runs} />
+            <Stat label="Ligues" value={`♛ ${record.wins}`} strong />
+            <Stat label="Étape record" value={`${record.best || 0}/32`} max={32} />
+          </>
+        )}
+      >
+        <Section title="Dernières parties" count={record.history?.length || 0}>
+          {record.history?.length ? (
+            <div className="gp-hist">
+              {record.history.map((h) => (
+                <div key={h.at} className={`gp-hist-row${h.result === 'win' ? ' is-win' : ''}`}>
+                  <span className="gp-hist-face"><HomeIcon src={h.mvpArt} fallback="★" /></span>
+                  <span>
+                    <b>{h.result === 'win' ? 'Maître de la Ligue !' : `Arrêt à l’étape ${h.floor}`}</b>
+                    <small>{h.mvp ? `MVP ${h.mvp} · ` : ''}niv. {h.level} · {h.wins} combats gagnés{h.t ? ` · ${clock(h.t)}` : ''}</small>
+                  </span>
+                  <time>{new Date(h.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</time>
+                </div>
+              ))}
+            </div>
+          ) : <p className="gp-note">Aucune partie terminée pour l’instant : lance-toi !</p>}
+        </Section>
+      </GamePage>
+    );
+  }
 
   return (
     <div className="ah-wrap">
@@ -164,6 +223,7 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
               { id: 'kills', label: 'Plus loin', value: (r) => `${r.kills}`, unit: 'étape' }
             ]}
             empty="Aucun Maître pour l’instant : le titre est à prendre !"
+            onMore={() => setCarnet('board')}
           />
         )}
         footer="Fan-game non officiel, gratuit et sans but lucratif. Pokémon © Nintendo / Game Freak / The Pokémon Company. Sprites de dresseurs : Pokémon Showdown."
@@ -181,25 +241,6 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
               <li><b>Or</b> les intérêts récompensent l’épargne, les séries rapportent un bonus.</li>
               <li><b>Carte</b> choisis ta route : combats, Boutiques, événements, rivaux et champions.</li>
             </ul>
-          </div>
-        </div>
-      )}
-      {carnet && (
-        <div className="ah-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) setCarnet(false); }}>
-          <div className="ah-sheet">
-            <header><b>Carnet de dresseur</b><button type="button" className="gh-pill" onClick={() => setCarnet(false)}>Fermer</button></header>
-            <p className="ah-stats"><span><b>{record.runs}</b> parties</span><span><b>{record.wins}</b> Ligues</span><span><b>{record.best || 0}</b> étape record</span></p>
-            {record.history?.length ? (
-              <ol className="ah-hist">
-                {record.history.map((h) => (
-                  <li key={h.at} className={h.result === 'win' ? 'is-win' : ''}>
-                    <HomeIcon src={h.mvpArt} fallback="★" />
-                    <span><b>{h.result === 'win' ? 'Maître de la Ligue' : `Étape ${h.floor}`}</b><small>{h.mvp ? `MVP ${h.mvp} · ` : ''}niv. {h.level} · {h.wins} combats{h.t ? ` · ${clock(h.t)}` : ''}</small></span>
-                    <time>{new Date(h.at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</time>
-                  </li>
-                ))}
-              </ol>
-            ) : <p>Aucune partie terminée pour l’instant.</p>}
           </div>
         </div>
       )}
