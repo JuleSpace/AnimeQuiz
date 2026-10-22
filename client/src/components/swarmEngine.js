@@ -499,9 +499,10 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     if (target) p.castDir = dirOf(target.x - p.x, target.y - p.y);
   };
 
-  const fire = (id, w) => {
-    const W = WEAPONS[id];
+  const fire = (wid, w) => {
+    const W = WEAPONS[wid];
     const v = W.at(w.lv);
+    const id = W.base || wid; // les attaques d'Unys et de Kalos reprennent le comportement d'une attaque existante
     const p = g.player;
     const from = { x: p.x, y: p.y - 18 };
     if (id === 'thunder') {

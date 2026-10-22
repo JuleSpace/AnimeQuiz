@@ -98,6 +98,8 @@ export const MOVE_KIND = {
   firespin: 'firering', bloom: 'bloom', flametrail: 'trail',
   gigadrain: 'drain'
 };
+// Attaques d'Unys et de Kalos : même comportement que leur attaque de base
+Object.entries(WEAPONS).forEach(([id, w]) => { if (w.base && !MOVE_KIND[id]) MOVE_KIND[id] = MOVE_KIND[w.base] || 'blast'; });
 
 /* ——— Capture ——— */
 export const catchChance = (foe, hpFrac, bonus = 0) => {

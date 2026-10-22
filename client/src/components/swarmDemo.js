@@ -28,9 +28,10 @@ const KIND = {
   gigadrain: 'drain',
   leafblade: 'boomerang',
   rockslide: 'meteor', aerialace: 'bolt', bodyslam: 'melee', blizzard: 'ring', dazzlinggleam: 'ring',
-  nightslash: 'melee', flashcannon: 'proj', hyperbeam: 'beam'
+  nightslash: 'melee', flashcannon: 'proj', hyperbeam: 'beam',
+  vinewhip: 'melee', flamecharge: 'melee', razorshell: 'boomerang', needlearm: 'melee', mysticalfire: 'psy', watershuriken: 'bolt'
 };
-export const demoAnim = (id) => (['quake', 'bite', 'irontail', 'machpunch', 'doublekick', 'leafblade', 'surf', 'spark', 'bodyslam', 'nightslash', 'blizzard', 'dazzlinggleam'].includes(id) ? 'attack' : 'shoot');
+export const demoAnim = (id) => (['quake', 'bite', 'irontail', 'machpunch', 'doublekick', 'leafblade', 'surf', 'spark', 'bodyslam', 'nightslash', 'blizzard', 'dazzlinggleam', 'vinewhip', 'flamecharge', 'razorshell', 'needlearm'].includes(id) ? 'attack' : 'shoot');
 
 const PAL = {
   ember: ['#fffbe0', '#ffd34a', '#ff6a1f'], electroball: ['#ffffff', '#fff27a', '#f7c61c'], shadow: ['#1a0d2b', '#4b2a7a', '#8b6bd6'],

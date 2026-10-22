@@ -46,7 +46,7 @@ export const TALENTS = [
   { id: 'slotw', branch: 'mastery', tier: 2, name: 'Cinquième capacité', max: 1, base: 900, desc: () => '+1 emplacement d’attaque (5 au lieu de 4)' }
 ];
 
-export const REGION_COST = { 1: 0, 2: 600, 3: 1200, 4: 2000 };
+export const REGION_COST = { 1: 0, 2: 600, 3: 1200, 4: 2000, 5: 2800, 6: 3600 };
 
 /* ——— Défis (une seule fois chacun) ——— */
 export const ACHIEVEMENTS = [
@@ -58,6 +58,8 @@ export const ACHIEVEMENTS = [
   { id: 'win2', name: 'Maître de Johto', desc: 'Gagne une partie à Johto.', reward: 300 },
   { id: 'win3', name: 'Maître de Hoenn', desc: 'Gagne une partie à Hoenn.', reward: 300 },
   { id: 'win4', name: 'Maître de Sinnoh', desc: 'Gagne une partie à Sinnoh.', reward: 300 },
+  { id: 'win5', name: 'Maître d’Unys', desc: 'Gagne une partie à Unys.', reward: 300 },
+  { id: 'win6', name: 'Maître de Kalos', desc: 'Gagne une partie à Kalos.', reward: 300 },
   { id: 'k500', name: 'Raz-de-marée', desc: '500 K.O. en une partie.', reward: 150 },
   { id: 'k1000', name: 'Apocalypse', desc: '1 000 K.O. en une partie.', reward: 300 },
   { id: 'lv20', name: 'Vétéran', desc: 'Atteins le niveau 20.', reward: 100 },

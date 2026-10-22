@@ -235,7 +235,7 @@ const TcgCard = ({ opt, partner, formDex, index, onPick, gen, megaLevels = MEGA_
             <span className="tcg-desc">{l.desc}</span>
           </span>
           <span className="tcg-foot">
-            <span>{['', 'Kanto', 'Johto', 'Hoenn', 'Sinnoh'][gen] || 'Swarm'} · {String(cardNo(`${opt.kind}${opt.id}`)).padStart(3, '0')}/151</span>
+            <span>{['', 'Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Unys', 'Kalos'][gen] || 'Swarm'} · {String(cardNo(`${opt.kind}${opt.id}`)).padStart(3, '0')}/151</span>
             <span className="tcg-rarity">{rarity === 'ultra' ? '★★' : rarity === 'rare' ? '★' : rarity === 'uncommon' ? '◆' : '●'}</span>
           </span>
           {holo && <span className="tcg-shine" aria-hidden="true" />}
