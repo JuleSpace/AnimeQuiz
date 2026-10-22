@@ -22,7 +22,7 @@ export const PROJECTS = [
       'Synchronisation en temps réel : reconnexion après un rafraîchissement, arrivée en cours de partie.',
       'Mode Music Quiz, éditeur de quiz complet et comptes d’administration avec des rôles.'
     ],
-    moves: [['Formats de questions', '11'], ['Cartes jokers', '14']],
+    moves: [['Formats', '11'], ['Cartes jokers', '14']],
     tech: ['React', 'Node.js', 'Express', 'Socket.IO', 'MongoDB']
   },
   {

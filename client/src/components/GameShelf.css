@@ -12,9 +12,10 @@
     radial-gradient(900px 500px at 80% 0%, rgba(31, 109, 255, 0.55), transparent 60%),
     linear-gradient(180deg, #0b3bd1 0%, #0a2a9e 45%, #071a66 80%, #050c33 100%);
   font-family: 'Saira Semi Condensed', 'Segoe UI', sans-serif;
+  display: flex; flex-direction: column;
 }
 .gs-root h1 { text-shadow: none; -webkit-text-stroke: 0; background: none; }
-.gs-bar { display: flex; justify-content: space-between; gap: 10px; max-width: 1320px; margin: 0 auto; }
+.gs-bar { display: flex; justify-content: space-between; gap: 10px; width: 100%; max-width: 1320px; margin: 0 auto; }
 .gs-head { display: grid; justify-items: center; gap: 6px; max-width: 900px; margin: clamp(10px, 3vh, 30px) auto clamp(30px, 6vh, 64px); text-align: center; }
 .gs-kicker { font: italic 800 14px/1 'Saira', sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: #ffd23a; }
 .gs-head h1 {
@@ -31,10 +32,10 @@
 .gs-btn:hover { transform: translateY(-2px); }
 
 /* ——— Cartes ——— */
-.gs-grid { display: flex; justify-content: center; align-items: flex-start; max-width: 1400px; margin: 0 auto; padding: 10px 0 70px; perspective: 1400px; }
+.gs-grid { flex: 1 0 auto; display: flex; justify-content: center; align-items: center; width: 100%; max-width: 1400px; margin: 0 auto; padding: 10px 0 70px; perspective: 1400px; }
 /* Éventail : les cartes se chevauchent un peu et tournent autour du centre */
 .gs-slot {
-  --w: clamp(200px, 17vw, 260px);
+  --w: clamp(210px, 18vw, 280px);
   position: relative; flex: none; width: var(--w); margin: 0 calc(var(--w) * -0.06);
   transform: translateY(calc(var(--k) * var(--k) * 14px)) rotate(calc(var(--k) * 6deg));
   transform-origin: 50% 120%; transition: transform 0.25s cubic-bezier(.2, .9, .3, 1.2), z-index 0s;
@@ -93,7 +94,7 @@
 .gs-moves { display: grid; gap: 4px; }
 .gs-move { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding-bottom: 5px; border-bottom: 1px solid rgba(16, 21, 43, 0.15); }
 .gs-move i { width: 18px; height: 18px; border-radius: 50%; background: var(--c); box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25), 0 0 0 2px #fff; }
-.gs-move span { font: 700 15px/1.1 'Saira Semi Condensed', sans-serif; }
+.gs-move span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 700 15px/1.1 'Saira Semi Condensed', sans-serif; }
 .gs-move strong { font: italic 900 20px/1 'Saira', sans-serif; }
 .gs-flavor {
   display: block; position: relative; max-height: calc(3 * 1.35em + 10px); overflow: hidden;
