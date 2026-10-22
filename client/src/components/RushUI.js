@@ -96,7 +96,7 @@ const PL = ({ meta }) => <span className="rx-chip is-gold"><Item slug="star-piec
 /* ——— Accueil ——— */
 const MENU = [
   { id: 'play', label: 'Jouer', sub: 'Île de Kanto', icon: 'poke-ball', big: true },
-  { id: 'league', label: 'La Ligue', icon: 'master-ball' },
+  { id: 'league', label: 'Collection', icon: 'master-ball' },
   { id: 'shop', label: 'Centre Pokémon', icon: 'potion' },
   { id: 'dex', label: 'Pokédex', icon: 'poke-radar' },
   { id: 'board', label: 'Classement', icon: 'gold-bottle-cap' },
@@ -160,7 +160,7 @@ export const RushHome = ({ meta, partner, onAction }) => {
 
       <aside className="rx-home-side">
         <div className="rx-card rx-league-card">
-          <header><b>La Ligue</b><span>{size}/{FAMILIES.length}</span></header>
+          <header><b>Collection</b><span>{size}/{FAMILIES.length}</span></header>
           <Bar value={size} max={FAMILIES.length} color="#ffcb05" />
           {ready.length > 0 ? (
             <div className="rx-ready-list">
@@ -206,7 +206,7 @@ const MiniBoard = ({ onMore }) => {
 };
 
 /* ——— La Ligue : les 79 familles de Kanto ——— */
-const STATUS_LABEL = { member: 'Dans ta Ligue', ready: 'À capturer !', locked: 'Défi à relever' };
+const STATUS_LABEL = { member: 'Dans ta Collection', ready: 'À capturer !', locked: 'Défi à relever' };
 const RAR_STARS = { Commun: 1, 'Peu commun': 2, Rare: 3, Épique: 4, Légendaire: 5 };
 
 export const RushLeague = ({ meta, setMeta, partnerId, initial, onPick, onBack }) => {
@@ -223,7 +223,7 @@ export const RushLeague = ({ meta, setMeta, partnerId, initial, onPick, onBack }
   const move = (d) => { const i = list.findIndex((x) => x.id === sel); const n = list[Math.max(0, Math.min(list.length - 1, (i < 0 ? 0 : i) + d))]; if (n) setSel(n.id); };
   useKeys({ Enter: go, ArrowRight: () => move(1), ArrowLeft: () => move(-1), ArrowDown: () => move(6), ArrowUp: () => move(-6) });
   return (
-    <Shell title="La Ligue" kicker="Choisis ton partenaire" onBack={onBack} className="rx-league"
+    <Shell title="Collection" kicker="Choisis ton partenaire" onBack={onBack} className="rx-league"
       right={(
         <>
           <span className="rx-chip is-wide"><b>{size}</b>/{FAMILIES.length} membres<Bar value={size} max={FAMILIES.length} color="#ffcb05" thin /></span>
@@ -331,7 +331,7 @@ const LeagueDetail = ({ f, st, meta, partnerId, onGo, onBuy }) => {
       <div className="rx-detail-cta">
         {st === 'member' && <button type="button" className="rx-cta" onClick={onGo}>Je te choisis ! <Key>Entrée</Key></button>}
         {st !== 'member' && buy && <button type="button" className="rx-cta" disabled={(meta.pl || 0) < f.unlock.goal} onClick={onBuy}>Recruter · {fr(f.unlock.goal)} PL</button>}
-        {st !== 'member' && !buy && <button type="button" className="rx-cta is-off" disabled>{st === 'ready' ? 'Capture-le pendant une partie' : 'Pas encore dans ta Ligue'}</button>}
+        {st !== 'member' && !buy && <button type="button" className="rx-cta is-off" disabled>{st === 'ready' ? 'Capture-le pendant une partie' : 'Pas encore dans ta Collection'}</button>}
       </div>
     </aside>
   );
@@ -381,11 +381,11 @@ export const RushPrep = ({ meta, partner, onStart, onBack, onChange }) => {
         </div>
         {ready.length > 0 ? (
           <div className="rx-prep-ready">
-            <b>Pokémon de la Ligue en liberté</b>
+            <b>Pokémon de la Collection en liberté</b>
             <small>{Math.min(2, ready.length)} d’entre eux apparaîtront pendant la partie (★ doré sur la carte).</small>
             <div>{ready.map((f) => <span key={f.id} title={f.name}><Sprite dex={f.dex} size={44} scale={1.3} still /></span>)}</div>
           </div>
-        ) : <p className="rx-muted">Relève des défis de la Ligue pour faire apparaître de nouveaux partenaires sur l’île.</p>}
+        ) : <p className="rx-muted">Relève des défis de la Collection pour faire apparaître de nouveaux partenaires sur l’île.</p>}
         <div className="rx-kv is-rec">
           <span><b>{fr(rec?.score)}</b><small>Score record</small></span>
           <span><b>{rec ? clock(rec.t) : '—'}</b><small>{rec?.win ? 'Victoire' : 'Survie'}</small></span>
@@ -502,7 +502,7 @@ const Dex = ({ meta }) => {
           {known && <div className="rx-detail-tags">{types.map((t) => <TypeTag key={t} type={t} />)}</div>}
           <p className="rx-muted">{byDex.caught[cur] ? `Capturé ${byDex.caught[cur]} fois.` : known ? 'Vu sur l’île, jamais capturé.' : 'Jamais rencontré.'}</p>
           {known && <><small className="rx-label">Faible contre</small><div className="rx-detail-tags">{weaknessesOf(types).map((t) => <TypeTag key={t} type={t} small />)}</div></>}
-          {fam && <p className="rx-muted">Famille jouable dans la Ligue : <b>{fam.name}</b>.</p>}
+          {fam && <p className="rx-muted">Famille jouable dans la Collection : <b>{fam.name}</b>.</p>}
         </div>
       </aside>
     </div>
@@ -582,7 +582,7 @@ export const RushHowto = ({ partner, onClose }) => {
     ['Types', 'Super efficace ×2, pas très efficace ×0,5 : vise les faiblesses'],
     ['Hautes herbes', 'des Pokémon Alpha s’y cachent vers 2:00 et 5:00'],
     ['Coffres et autels', 'les coffres coûtent des ₽, les autels donnent une bénédiction'],
-    ['Ligue', 'relève des défis, puis capture le Pokémon quand il apparaît (★ doré)'],
+    ['Collection', 'relève des défis, puis capture le Pokémon quand il apparaît (★ doré)'],
     ['Arène', `à ${clock(FINAL_AT)}, le légendaire s’y réveille : bats-le pour gagner`]
   ];
   return (
@@ -861,7 +861,7 @@ export const RushEnd = ({ end, meta, onReplay, onLeague, onHome }) => {
         {(lg.joined.length > 0 || lg.ready.length > 0) && (
           <div className="rx-end-league">
             {lg.joined.map((id) => (
-              <div key={id} className="is-joined"><span><Sprite dex={FAMILY[id].dex} anim="idle" size={56} scale={1.6} /></span><b>{FAMILY[id].name} rejoint ta Ligue !</b><small>Tu peux maintenant le choisir comme partenaire.</small></div>
+              <div key={id} className="is-joined"><span><Sprite dex={FAMILY[id].dex} anim="idle" size={56} scale={1.6} /></span><b>{FAMILY[id].name} rejoint ta Collection !</b><small>Tu peux maintenant le choisir comme partenaire.</small></div>
             ))}
             {lg.ready.map((id) => (
               <div key={id} className="is-ready"><span><Sprite dex={FAMILY[id].dex} size={56} scale={1.6} still /></span><b>Défi réussi : {FAMILY[id].name}</b><small>Il apparaîtra à l’état sauvage dans tes prochaines parties. Capture-le !</small></div>
@@ -880,7 +880,7 @@ export const RushEnd = ({ end, meta, onReplay, onLeague, onHome }) => {
         </div>
         <footer>
           <button type="button" className="rx-cta is-go" onClick={onReplay}>Rejouer <Key>Entrée</Key></button>
-          <button type="button" className="rx-btn" onClick={onLeague}>La Ligue</button>
+          <button type="button" className="rx-btn" onClick={onLeague}>Collection</button>
           <button type="button" className="rx-btn is-ghost" onClick={onHome}>Accueil</button>
         </footer>
       </div>

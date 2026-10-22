@@ -265,13 +265,13 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       const b = spawnFoe(roster.final, { x: arena.x, z: arena.z }, { dormant: true });
       if (b) { b.y = arena.y; banner(`${b.def.name} s'est réveillé dans l'arène ! Va l'affronter`, 4); shake(0.6); }
     }
-    // Futurs membres de la Ligue : ils rôdent, il faut les capturer
+    // Futurs membres de la Collection : ils rôdent, il faut les capturer
     while (g.leagueSpawns.length && g.t >= g.leagueSpawns[0].at) {
       const L = g.leagueSpawns.shift();
       const f = spawnFoe(L.key, null, { league: L.fam, legendLeague: !!L.legendary, elite: false });
       if (f) {
         f.hp = Math.round(f.hp * (L.legendary ? 10 : 3.5)) + 40; f.maxHp = f.hp; f.scale = L.legendary ? 1.5 : 1.15;
-        banner(`Un ${f.def.name} sauvage rôde ! Capture-le pour l'ajouter à ta Ligue`, 3.6);
+        banner(`Un ${f.def.name} sauvage rôde ! Capture-le pour l'ajouter à ta Collection`, 3.6);
       } else g.leagueSpawns.push({ ...L, at: g.t + 5 });
     }
     // Pokémon Alpha cachés dans les hautes herbes
@@ -823,7 +823,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
             const fam = f.league || familyOfDex(f.def.dex);
             if (fam && leagueReady.has(fam) && !g.leagueCaught.includes(fam)) {
               g.leagueCaught.push(fam);
-              setTimeout(() => banner(`${f.def.name} rejoint ta Ligue !`, 3.2), 2700);
+              setTimeout(() => banner(`${f.def.name} rejoint ta Collection !`, 3.2), 2700);
             }
             if (f.alpha) g.alphaKills += 1;
             gainXp(f.def.xp * 3);
@@ -1626,7 +1626,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       rings.add(p.x, py, p.z, 1.05 * pScale, '#5fe6ff', 0.95);
       discs.add(p.x, py - 0.01, p.z, 1.05 * pScale, '#5fe6ff', 0.14);
     }
-    // Futurs membres de la Ligue : halo doré au sol
+    // Futurs membres de la Collection : halo doré au sol
     g.foes.forEach((f) => { if (f.league && !f.dead) { const y = Math.max(terrainAt(f.x, f.z), WATER) + 0.08; rings.add(f.x, y, f.z, 1.4 * f.scale + Math.sin(g.t * 5) * 0.12, '#ffd23a', 0.9); } });
     rings.end(); discs.end(); beams.end(); pillars.end();
 
@@ -1741,13 +1741,13 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
         octx.fillStyle = '#14102a'; octx.fillText(`${Math.ceil(p.hp)}`, sp.x, y0 + 9);
       }
     }
-    // Futurs membres de la Ligue : étiquette dorée
+    // Futurs membres de la Collection : étiquette dorée
     g.foes.forEach((f) => {
       if (!f.league || f.dead || f.captureT > 0) return;
       const sp = toScreen(f.x, f.y + spriteHeight(f.def.dex) * f.scale + 0.8, f.z);
       if (!sp || sp.off) return;
       octx.font = '700 12px Fredoka, Nunito, sans-serif'; octx.textAlign = 'center';
-      const label = `★ LIGUE · ${f.def.name}`; const tw = octx.measureText(label).width + 16;
+      const label = `★ COLLECTION · ${f.def.name}`; const tw = octx.measureText(label).width + 16;
       octx.fillStyle = '#ffd23a'; roundRect(sp.x - tw / 2, sp.y - 12, tw, 20, 10); octx.fill();
       octx.fillStyle = '#3a2400'; octx.fillText(label, sp.x, sp.y + 2);
       const bw = 64; const k = Math.max(0, f.hp / f.maxHp);

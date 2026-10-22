@@ -102,9 +102,9 @@ export const STAT_LABEL = {
   alphas: (g) => `Bats ou capture ${fr(g)} Pokémon Alpha.`,
   noHit: (g) => `Tiens ${g} secondes sans être touché.`,
   winners: (g) => `Gagne avec ${g} partenaires différents.`,
-  league: (g) => `Réunis ${g} membres dans ta Ligue.`,
+  league: (g) => `Réunis ${g} membres dans ta Collection.`,
   buy: (g) => `Recrute-le au Centre Pokémon pour ${fr(g)} PL.`,
-  free: () => 'Toujours dans ta Ligue.'
+  free: () => 'Toujours dans ta Collection.'
 };
 export const challengeText = (f) => {
   const [k, t] = f.unlock.kind.split(':');
@@ -211,7 +211,7 @@ export const leagueSpawns = (m, rng = Math.random) => shuffled(FAMILIES.filter((
 
 export const LEGEND_POOL = GEN_POOLS[1].finals;
 
-/** Fin de partie : statistiques cumulées de la Ligue, membres capturés, défis réussis. */
+/** Fin de partie : statistiques cumulées de la Collection, membres capturés, défis réussis. */
 export const applyRunToLeague = (m0, run) => {
   const s = { ...blankStats(), ...(m0.stats || {}) };
   const typeKills = { ...(s.typeKills || {}) };
@@ -250,7 +250,7 @@ export const buyFamily = (m, f) => {
   return saveRush({ ...m, pl: m.pl - f.unlock.goal, league: { ...(m.league || {}), [f.id]: 'member' } });
 };
 
-/** Première ouverture de la Ligue : on reprend les parties déjà jouées pour amorcer les défis. */
+/** Première ouverture de la Collection : on reprend les parties déjà jouées pour amorcer les défis. */
 export const migrateLeague = (m0) => {
   if (m0.stats) {
     const { league, newly } = refreshLeague(m0);
