@@ -7,6 +7,7 @@ import ScoreCard from './ScoreCard';
 import { arenaScore } from './scoring';
 import './PokeArena.css';
 import './PokeArenaPremium.css';
+
 import {
   BENCH_CAP,
   BOARD_CAP,
@@ -103,6 +104,14 @@ import {
   tint
 } from './PokeArenaUI';
 
+// Polices du style « Nuit holo » (injectées une fois : un @import au milieu du CSS fusionné serait ignoré)
+if (typeof document !== 'undefined' && !document.getElementById('nh-fonts')) {
+  const l = document.createElement('link');
+  l.id = 'nh-fonts'; l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@500;700;800&display=swap';
+  document.head.appendChild(l);
+}
+
 export const ARENA_HASH = '#arena';
 
 /** Étiquette de l’adversaire dans la barre du haut. */
@@ -135,7 +144,6 @@ const bannerLine = (node) => {
 
 const SPEED_KEY = 'poke-arena-speed';
 const THEME_KEY = 'poke-arena-board-theme';
-const SKIN_KEY = 'poke-arena-skin';
 const VS_NAME_KEY = 'poke-arena-vs-name';
 const readVsName = () => {
   try {
@@ -150,16 +158,6 @@ const versusLoot = (round) => {
   if (round === 8 || round === 14) return ['keystone'];
   if (round % 3 === 0) return [rollComponent().id];
   return [];
-};
-const SKINS = ['premium', 'classique'];
-const SKIN_LABELS = { premium: 'Premium', classique: 'Classique' };
-const readSkin = () => {
-  try {
-    const v = localStorage.getItem(SKIN_KEY);
-    return SKINS.includes(v) ? v : 'premium';
-  } catch {
-    return 'premium';
-  }
 };
 const THEME_IDS = Object.keys(BOARD_THEMES);
 
@@ -366,11 +364,9 @@ const PokeArena = ({ onClose }) => {
   const [banner, setBanner] = useState(null);
   const [speed, setSpeed] = useState(readSpeed);
   const [boardTheme, setBoardTheme] = useState(readTheme);
-  const [skin, setSkin] = useState(readSkin);
-  const skinCls = `skin-${skin}`;
-  useEffect(() => {
-    try { localStorage.setItem(SKIN_KEY, skin); } catch { /* stockage indisponible */ }
-  }, [skin]);
+  // Un seul style : « Nuit holo » (nuit violette, cases manga, reflets holographiques)
+  const skin = 'premium';
+  const skinCls = 'skin-premium skin-nuit';
   const [saveTick, setSaveTick] = useState(0);
   // Salon multi
   const [mode, setMode] = useState('solo');
@@ -1439,8 +1435,6 @@ const PokeArena = ({ onClose }) => {
           onMulti={() => { setVsError(''); setPhase('lobby'); }}
           onCodex={() => setPhase('codex')}
           music={musicButton}
-          skinLabel={SKIN_LABELS[skin]}
-          onSkin={() => setSkin((k) => SKINS[(SKINS.indexOf(k) + 1) % SKINS.length])}
           myTrainer={myTrainer}
           record={record}
         />
@@ -1579,14 +1573,6 @@ const PokeArena = ({ onClose }) => {
           </button>
         )}
         {musicButton}
-        <button
-          type="button"
-          className="ui-btn is-small is-ghost"
-          title="Changer le style de l’interface"
-          onClick={() => setSkin((k) => SKINS[(SKINS.indexOf(k) + 1) % SKINS.length])}
-        >
-          Style : {SKIN_LABELS[skin]}
-        </button>
         <button
           type="button"
           className="ui-btn is-small is-ghost"

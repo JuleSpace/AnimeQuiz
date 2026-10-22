@@ -274,35 +274,90 @@ const MiniStage = ({ stage }) => (
 /* ———————————————— Ton dresseur ———————————————— */
 
 /** Dresseurs jouables (sprites Showdown), choisis au démarrage et affichés de ton côté du terrain. */
+/* Liste vérifiée sur les sprites Showdown (noms français officiels) ; `sprite` = essais dans l'ordre. */
 export const PLAYER_TRAINERS = [
-  { id: 'red', name: 'Red' }, { id: 'leaf', name: 'Leaf', sprite: ['leaf-gen3', 'leaf-masters', 'leaf-gen3rs', 'leaf'] }, { id: 'ethan', name: 'Ethan' }, { id: 'lyra', name: 'Lyra' },
-  { id: 'brendan', name: 'Brendan' }, { id: 'may', name: 'Flora' }, { id: 'lucas', name: 'Louka' }, { id: 'dawn', name: 'Aurore' },
-  { id: 'hilbert', name: 'Ludvan' }, { id: 'hilda', name: 'Ludvina' }, { id: 'nate', name: 'Matis' }, { id: 'rosa', name: 'Mei' },
-  { id: 'calem', name: 'Kalem' }, { id: 'serena', name: 'Serena' }, { id: 'elio', name: 'Elio' }, { id: 'selene', name: 'Selene' },
-  { id: 'victor', name: 'Victor' }, { id: 'gloria', name: 'Gloria' }, { id: 'florian', name: 'Florian', sprite: ['florian-s', 'florian-bb', 'florian-masters', 'florian'] },
-  { id: 'juliana', name: 'Juliana', sprite: ['juliana-s', 'juliana-bb', 'juliana-masters', 'juliana'] },
-  { id: 'silver', name: 'Silver' }, { id: 'blue-gen7', name: 'Blue' }, { id: 'n', name: 'N' }, { id: 'steven', name: 'Pierre Rochard' },
-  { id: 'cynthia', name: 'Cynthia' }, { id: 'cyrus', name: 'Hélio' }
+  { id: 'red', name: 'Red', gen: 1, sprite: ["red", "red-gen1"] },
+  { id: 'leaf', name: 'Leaf', gen: 1, sprite: ["leaf-gen3", "leaf-masters"] },
+  { id: 'blue-gen7', name: 'Blue', gen: 1, sprite: ["blue-gen7", "blue", "blue-lgpe"] },
+  { id: 'ethan', name: 'Ethan', gen: 2 },
+  { id: 'kris', name: 'Kris', gen: 2, sprite: ["kris-gen2", "kris"] },
+  { id: 'lyra', name: 'Lyra', gen: 2 },
+  { id: 'silver', name: 'Silver', gen: 2 },
+  { id: 'brendan', name: 'Brice', gen: 3, sprite: ["brendan-gen3", "brendan-contest", "brendan"] },
+  { id: 'may', name: 'Flora', gen: 3, sprite: ["may-gen3", "may-contest", "may"] },
+  { id: 'wally', name: 'Timmy', gen: 3, sprite: ["wally", "wally-gen3"] },
+  { id: 'steven', name: 'Pierre Rochard', gen: 3, sprite: ["steven", "steven-gen3"] },
+  { id: 'lucas', name: 'Louka', gen: 4 },
+  { id: 'dawn', name: 'Aurore', gen: 4 },
+  { id: 'barry', name: 'Barry', gen: 4 },
+  { id: 'cynthia', name: 'Cynthia', gen: 4 },
+  { id: 'cyrus', name: 'Hélio', gen: 4 },
+  { id: 'hilbert', name: 'Ludvan', gen: 5 },
+  { id: 'hilda', name: 'Ludvina', gen: 5 },
+  { id: 'cheren', name: 'Tcheren', gen: 5 },
+  { id: 'bianca', name: 'Bianca', gen: 5 },
+  { id: 'n', name: 'N', gen: 5 },
+  { id: 'nate', name: 'Matis', gen: 5 },
+  { id: 'rosa', name: 'Mei', gen: 5 },
+  { id: 'hugh', name: 'Mélis', gen: 5 },
+  { id: 'calem', name: 'Kalem', gen: 6, sprite: ["calem", "calem-masters"] },
+  { id: 'serena', name: 'Serena', gen: 6, sprite: ["serena", "serena-masters"] },
+  { id: 'shauna', name: 'Shauna', gen: 6 },
+  { id: 'diantha', name: 'Dianthéa', gen: 6 },
+  { id: 'elio', name: 'Elio', gen: 7, sprite: ["elio", "elio-usum"] },
+  { id: 'selene', name: 'Selene', gen: 7, sprite: ["selene", "selene-usum"] },
+  { id: 'hau', name: 'Tili', gen: 7, sprite: ["hau", "hau-masters"] },
+  { id: 'gladion', name: 'Gladio', gen: 7, sprite: ["gladion", "gladion-stance", "gladion-masters"] },
+  { id: 'lillie', name: 'Lilie', gen: 7, sprite: ["lillie", "lillie-z", "lillie-masters"] },
+  { id: 'victor', name: 'Victor', gen: 8 },
+  { id: 'gloria', name: 'Gloria', gen: 8 },
+  { id: 'hop', name: 'Nabil', gen: 8 },
+  { id: 'marnie', name: 'Rosemary', gen: 8, sprite: ["marnie", "marnie-league"] },
+  { id: 'bede', name: 'Travis', gen: 8, sprite: ["bede", "bede-leader"] },
+  { id: 'leon', name: 'Tarak', gen: 8, sprite: ["leon", "leon-masters"] },
+  { id: 'florian', name: 'Florian', gen: 9, sprite: ["florian-s", "florian-bb"] },
+  { id: 'juliana', name: 'Juliana', gen: 9, sprite: ["juliana-s", "juliana-bb"] },
+  { id: 'nemona', name: 'Menzi', gen: 9, sprite: ["nemona-v", "nemona-s"] },
+  { id: 'arven', name: 'Pepper', gen: 9, sprite: ["arven-v", "arven-s"] },
+  { id: 'penny', name: 'Pania', gen: 9 },
+  { id: 'geeta', name: 'Alisma', gen: 9 }
 ];
 
-export const TrainerPicker = ({ value, onChange }) => (
-  <div className="ui-trainer-pick" role="listbox" aria-label="Ton dresseur">
-    {PLAYER_TRAINERS.map((t) => (
-      <button
-        key={t.id}
-        type="button"
-        role="option"
-        aria-selected={value === t.id}
-        className={`ui-trainer-opt${value === t.id ? ' is-on' : ''}`}
-        onClick={() => onChange(t.id)}
-        title={t.name}
-      >
-        <TrainerPortrait trainer={{ sprite: t.sprite || t.id, name: t.name }} size="md" />
-        <span>{t.name}</span>
-      </button>
-    ))}
-  </div>
-);
+export const playerTrainerSprite = (id) => {
+  const t = PLAYER_TRAINERS.find((x) => x.id === id);
+  return (t && (Array.isArray(t.sprite) ? t.sprite[0] : t.sprite)) || id;
+};
+const TRAINER_GENS = [[0, 'Tous'], [1, 'Kanto'], [2, 'Johto'], [3, 'Hoenn'], [4, 'Sinnoh'], [5, 'Unys'], [6, 'Kalos'], [7, 'Alola'], [8, 'Galar'], [9, 'Paldea']];
+
+export const TrainerPicker = ({ value, onChange }) => {
+  const [gen, setGen] = useState(0);
+  const list = PLAYER_TRAINERS.filter((t) => !gen || t.gen === gen);
+  return (
+    <div className="ui-trainer-box">
+      <div className="ui-trainer-gens" role="tablist" aria-label="Génération">
+        {TRAINER_GENS.map(([g, label]) => (
+          <button key={g} type="button" role="tab" aria-selected={gen === g} className={gen === g ? 'is-on' : ''} onClick={() => setGen(g)}>{label}</button>
+        ))}
+      </div>
+      <div className="ui-trainer-pick" role="listbox" aria-label="Ton dresseur">
+        {list.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="option"
+            aria-selected={value === t.id}
+            className={`ui-trainer-opt${value === t.id ? ' is-on' : ''}`}
+            onClick={() => onChange(t.id)}
+            title={t.name}
+          >
+            <TrainerPortrait trainer={{ sprite: t.sprite || t.id, name: t.name }} size="md" />
+            <span>{t.name}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 /** Starters dans l'ordre du Pokédex : Bulbizarre, Salamèche, Carapuce, Pikachu, Évoli, puis Johto, Hoenn… */
 const STARTERS_BY_DEX = [...STARTER_LINES].sort((a, b) => (a.stages[0]?.dex || 0) - (b.stages[0]?.dex || 0));

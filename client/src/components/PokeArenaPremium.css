@@ -1,26 +1,26 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700;1,800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Manrope:wght@500;700;800&display=swap');
 
 /*
  * Style « Premium » : l’interface comme une collection de cartes rares.
  * Carton sombre et chaud, liserés dorés fins, cartes de boutique cadrées par rareté
- * avec un reflet holographique. Playfair Display (italique) pour les titres.
+ * avec un reflet holographique. Anton pour les titres (style « Nuit holo » : cases manga).
  * Activé par la classe .skin-premium sur .pa-root (bouton « Style » en jeu).
  */
 
 .pa-root.skin-premium {
-  --ink: #f3e9d6;
-  --ink-2: #d9cbb1;
-  --muted: #a69779;
-  --line: rgba(222, 184, 120, 0.2);
-  --line-2: rgba(222, 184, 120, 0.4);
-  --paper: #2c231d;
-  --paper-2: #382d25;
-  --tint-base: #2c231d;
-  --gold: #dcb066;
-  --gold-hi: #f6dfa5;
-  --gold-lo: #a97a32;
-  --sel: #e9c46a;
-  --yellow: #e9c46a;
+  --ink: #f3f0ff;
+  --ink-2: #d6cff5;
+  --muted: #a99bd6;
+  --line: rgba(201, 184, 255, 0.2);
+  --line-2: rgba(201, 184, 255, 0.4);
+  --paper: #17122e;
+  --paper-2: #1f1940;
+  --tint-base: #17122e;
+  --gold: #c9b8ff;
+  --gold-hi: #f1ecff;
+  --gold-lo: #8a6bff;
+  --sel: #ffe38a;
+  --yellow: #ffe38a;
   --scarlet: #c9573f;
   --scarlet-2: #a8402b;
   --violet: #5f4d8f;
@@ -28,33 +28,33 @@
   --blue: #7b98dc;
   --grass: #79b673;
   --grass-d: #5a9a55;
-  --sky-1: #3a2e25;
-  --sky-2: #3a2e25;
+  --sky-1: #241d45;
+  --sky-2: #241d45;
   --c1: #9d968b;
   --c2: #63b27a;
   --c3: #5e98da;
   --c4: #a77bd9;
   --c5: #e3b44f;
   --frame: var(--c1);
-  --foil: linear-gradient(135deg, var(--gold-hi), #c9963f 42%, #f2d38c 58%, var(--gold-lo));
+  --foil: linear-gradient(110deg, #ff9ad5, #9ab8ff 35%, #8ff0d4 62%, #ffe38a);
   --lift-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --lift: inset 0 1px 0 rgba(255, 230, 180, 0.05), 0 14px 30px -16px rgba(0, 0, 0, 0.85);
-  --lift-lg: inset 0 1px 0 rgba(255, 230, 180, 0.06), 0 26px 50px -20px rgba(0, 0, 0, 0.95);
+  --lift: inset 0 1px 0 rgba(220, 210, 255, 0.05), 0 14px 30px -16px rgba(0, 0, 0, 0.85);
+  --lift-lg: inset 0 1px 0 rgba(220, 210, 255, 0.06), 0 26px 50px -20px rgba(0, 0, 0, 0.95);
   color: var(--ink);
   background:
-    radial-gradient(90% 60% at 50% 0%, rgba(255, 200, 130, 0.09), transparent 70%),
+    radial-gradient(90% 60% at 50% 0%, rgba(170, 140, 255, 0.09), transparent 70%),
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px),
-    radial-gradient(120% 90% at 50% 20%, #33271f 0%, #1b1511 70%, #141009 100%);
+    radial-gradient(120% 90% at 50% 20%, #1f1838 0%, #120e24 70%, #0b0918 100%);
 }
 
 /* ——— Panneaux : carton sombre, double liseré doré ——— */
 .pa-root.skin-premium :is(.pa-top, .ui-traits, .ui-card, .ui-help, .ui-meter, .pa-bag, .pa-shopbar, .pa-fightbar,
   .ui-node-info, .ui-map-team, .ui-bag-preview, .ui-codex-list, .ui-codex-step, .ui-codex-text, .ui-chapter,
   .ui-starter-detail, .ui-modal-card, .ui-result-card, .pa-over, .pa-hub-card, .ui-pop, .ui-event-card, .ui-ware, .ui-reward-card) {
-  background: linear-gradient(160deg, #31271f, #241c17);
+  background: linear-gradient(160deg, #1c1736, #120e26);
   border: 0;
   border-radius: 12px;
-  box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.42), inset 0 0 0 4px #241c17, inset 0 0 0 5px rgba(222, 184, 120, 0.12), var(--lift);
+  box-shadow: 0 0 0 1px rgba(201, 184, 255, 0.42), inset 0 0 0 4px #120e26, inset 0 0 0 5px rgba(201, 184, 255, 0.12), var(--lift);
 }
 .pa-root.skin-premium :is(.pa-top, .pa-hub-card, .ui-result-card, .pa-over)::before { display: none; }
 
@@ -66,15 +66,15 @@
   margin-bottom: 8px !important;
   background: none;
   color: var(--gold);
-  font: italic 700 19px/1.1 'Playfair Display', Georgia, serif;
+  font: 400 19px/1.1 'Anton', Impact, sans-serif;
   letter-spacing: 0.01em;
   border-bottom: 1px solid transparent;
-  border-image: linear-gradient(90deg, rgba(222, 184, 120, 0.6), transparent) 1;
+  border-image: linear-gradient(90deg, rgba(201, 184, 255, 0.6), transparent) 1;
 }
 .pa-root.skin-premium :is(.ui-screen-head h1, .pa-top-where strong, .ui-chapter h2, .ui-node-info h3, .ui-card-id h3,
   .ui-starter-detail h2, .ui-modal-card h2, .ui-result-card h2, .pa-over h1, .ui-ware strong, .ui-event-card strong, .ui-reward-card strong) {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-style: italic;
+  font-family: 'Anton', Impact, sans-serif;
+  font-style: normal; letter-spacing: 0.02em;
   font-weight: 700;
   letter-spacing: 0;
   color: var(--ink);
@@ -86,8 +86,8 @@
 
 /* ——— Accueil ——— */
 .pa-root.skin-premium .pa-logo span:first-child {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-style: italic;
+  font-family: 'Anton', Impact, sans-serif;
+  font-style: normal; letter-spacing: 0.02em;
   background: var(--foil);
   -webkit-background-clip: text;
   background-clip: text;
@@ -103,54 +103,54 @@
   text-transform: uppercase;
   padding: 0;
 }
-.pa-root.skin-premium .pa-hub-ball { opacity: 0.35; border-color: rgba(222, 184, 120, 0.15); background: linear-gradient(rgba(201, 87, 63, 0.12) 0 47%, rgba(222, 184, 120, 0.12) 47% 53%, rgba(255, 255, 255, 0.03) 53%); }
+.pa-root.skin-premium .pa-hub-ball { opacity: 0.35; border-color: rgba(201, 184, 255, 0.15); background: linear-gradient(rgba(201, 87, 63, 0.12) 0 47%, rgba(201, 184, 255, 0.12) 47% 53%, rgba(255, 255, 255, 0.03) 53%); }
 
 /* ——— Boutons ——— */
 .pa-root.skin-premium .ui-btn {
   clip-path: none;
   filter: none;
   border-radius: 999px;
-  background: #3a2e25;
+  background: #241d45;
   color: var(--ink);
-  box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.5), var(--lift-sm);
+  box-shadow: 0 0 0 1px rgba(201, 184, 255, 0.5), var(--lift-sm);
   font-weight: 600;
 }
-.pa-root.skin-premium .ui-btn:hover:not(:disabled) { background: #483a2e; }
+.pa-root.skin-premium .ui-btn:hover:not(:disabled) { background: #2e2556; }
 .pa-root.skin-premium .ui-btn.is-ghost { background: transparent; box-shadow: none; color: var(--ink-2); }
-.pa-root.skin-premium .ui-btn.is-ghost:hover:not(:disabled) { background: rgba(222, 184, 120, 0.1); color: var(--ink); }
+.pa-root.skin-premium .ui-btn.is-ghost:hover:not(:disabled) { background: rgba(201, 184, 255, 0.1); color: var(--ink); }
 .pa-root.skin-premium :is(.ui-btn.is-primary, .ui-btn.is-fight, .ui-btn.is-buy) {
   background: var(--foil);
-  color: #2a1a0a;
-  box-shadow: 0 0 0 1px var(--gold-hi), 0 8px 20px -8px rgba(233, 196, 106, 0.55);
-  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6);
+  color: #0e0b1f;
+  box-shadow: 0 0 0 1px var(--gold-hi), 0 8px 20px -8px rgba(200, 170, 255, 0.55);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 .pa-root.skin-premium :is(.ui-btn.is-primary, .ui-btn.is-fight, .ui-btn.is-buy):hover:not(:disabled) { background: var(--foil); filter: brightness(1.08); }
-.pa-root.skin-premium .ui-btn.is-big { font: italic 700 21px/1 'Playfair Display', Georgia, serif; }
-.pa-root.skin-premium .ui-btn.is-fight { border-radius: 14px; font: italic 800 28px/1 'Playfair Display', Georgia, serif; }
-.pa-root.skin-premium :is(.ui-btn.is-xp, .ui-btn.is-roll) { background: #241c17; border-radius: 10px; }
+.pa-root.skin-premium .ui-btn.is-big { font: 400 21px/1 'Anton', Impact, sans-serif; }
+.pa-root.skin-premium .ui-btn.is-fight { border-radius: 14px; font: 400 28px/1 'Anton', Impact, sans-serif; }
+.pa-root.skin-premium :is(.ui-btn.is-xp, .ui-btn.is-roll) { background: #120e26; border-radius: 10px; }
 .pa-root.skin-premium .pa-shop-actions .ui-btn { border-radius: 10px; }
-.pa-root.skin-premium .pa-shop-actions .ui-btn em { background: var(--foil); color: #2a1a0a; border-radius: 999px; }
+.pa-root.skin-premium .pa-shop-actions .ui-btn em { background: var(--foil); color: #0e0b1f; border-radius: 999px; }
 .pa-root.skin-premium .ui-btn.is-danger { background: rgba(201, 87, 63, 0.25); }
 
-.pa-root.skin-premium .ui-chip { background: #2c231d; border: 1px solid rgba(222, 184, 120, 0.3); border-radius: 999px; color: var(--ink-2); }
-.pa-root.skin-premium .ui-chip:hover { background: #3a2e25; color: var(--ink); }
-.pa-root.skin-premium .ui-chip.is-on { background: var(--foil); color: #2a1a0a; border-color: var(--gold-hi); }
+.pa-root.skin-premium .ui-chip { background: #17122e; border: 1px solid rgba(201, 184, 255, 0.3); border-radius: 999px; color: var(--ink-2); }
+.pa-root.skin-premium .ui-chip:hover { background: #241d45; color: var(--ink); }
+.pa-root.skin-premium .ui-chip.is-on { background: var(--foil); color: #0e0b1f; border-color: var(--gold-hi); }
 .pa-root.skin-premium .ui-type { clip-path: none; border-radius: 999px; padding: 1px 10px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25); }
 .pa-root.skin-premium .ui-cost { border-radius: 999px; }
 
 /* ——— Barre du haut ——— */
 .pa-root.skin-premium .pa-top { padding-left: 14px; }
 .pa-root.skin-premium :is(.pa-hud-hp, .pa-hud-gold, .pa-hud-level) {
-  background: #1d1713;
+  background: #100c22;
   border-radius: 999px;
-  box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(201, 184, 255, 0.25);
 }
 .pa-root.skin-premium :is(.pa-hud-hp strong, .pa-hud-gold strong, .pa-hud-level strong) {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-style: italic;
+  font-family: 'Anton', Impact, sans-serif;
+  font-style: normal; letter-spacing: 0.02em;
   color: var(--gold-hi);
 }
-.pa-root.skin-premium :is(.pa-hud-hp i, .pa-hud-level i) { background: #3a2e25; }
+.pa-root.skin-premium :is(.pa-hud-hp i, .pa-hud-level i) { background: #241d45; }
 .pa-root.skin-premium .pa-hud-level b { background: linear-gradient(90deg, var(--gold-lo), var(--gold-hi)); }
 .pa-root.skin-premium .pa-heart { background: radial-gradient(circle at 35% 30%, #f08a72, var(--scarlet) 60%, #7a2a1a); }
 .pa-root.skin-premium .pa-foe { clip-path: none; border-radius: 999px; background: rgba(201, 87, 63, 0.18); box-shadow: inset 0 0 0 1px rgba(201, 87, 63, 0.45); }
@@ -158,34 +158,34 @@
 .pa-root.skin-premium .pa-income { color: #9fd49a; }
 
 /* ——— Synergies ——— */
-.pa-root.skin-premium .ui-traits li.is-active { background: color-mix(in srgb, var(--t) 16%, #2c231d); box-shadow: inset 2px 0 0 var(--t); }
-.pa-root.skin-premium .ui-pips i { background: #4a3d32; }
-.pa-root.skin-premium .ui-traits li:not(.is-active) .ui-trait-badge::before { background: #4a3d32; }
+.pa-root.skin-premium .ui-traits li.is-active { background: color-mix(in srgb, var(--t) 16%, #17122e); box-shadow: inset 2px 0 0 var(--t); }
+.pa-root.skin-premium .ui-pips i { background: #3a3166; }
+.pa-root.skin-premium .ui-traits li:not(.is-active) .ui-trait-badge::before { background: #3a3166; }
 
 /* ——— Fiche, compteur, sac ——— */
-.pa-root.skin-premium .ui-ability { background: #241c17; }
-.pa-root.skin-premium .ui-ability.is-talent { background: rgba(233, 196, 106, 0.1); }
-.pa-root.skin-premium :is(.ui-stat i, .ui-meter-row i) { background: #1d1713; }
+.pa-root.skin-premium .ui-ability { background: #120e26; }
+.pa-root.skin-premium .ui-ability.is-talent { background: rgba(200, 170, 255, 0.1); }
+.pa-root.skin-premium :is(.ui-stat i, .ui-meter-row i) { background: #100c22; }
 .pa-root.skin-premium .ui-meter-row b { background: linear-gradient(90deg, var(--gold-lo), var(--gold-hi)); }
-.pa-root.skin-premium .pa-bag-item { background: #241c17; border: 1px solid rgba(222, 184, 120, 0.22); }
-.pa-root.skin-premium .pa-bag-item.is-comp { background: #26241a; }
-.pa-root.skin-premium .pa-bag-item:hover { background: #3a2e25; }
-.pa-root.skin-premium .pa-bag-item.is-on { background: rgba(233, 196, 106, 0.3); }
+.pa-root.skin-premium .pa-bag-item { background: #120e26; border: 1px solid rgba(201, 184, 255, 0.22); }
+.pa-root.skin-premium .pa-bag-item.is-comp { background: #1e1a38; }
+.pa-root.skin-premium .pa-bag-item:hover { background: #241d45; }
+.pa-root.skin-premium .pa-bag-item.is-on { background: rgba(200, 170, 255, 0.3); }
 
 /* ——— Banc : pochettes de cartes ——— */
 .pa-root.skin-premium .pa-bench {
-  background: linear-gradient(180deg, #1d1713, #15100d);
+  background: linear-gradient(180deg, #100c22, #15100d);
   border-radius: 12px;
-  box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.3), inset 0 6px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 1px rgba(201, 184, 255, 0.3), inset 0 6px 16px rgba(0, 0, 0, 0.5);
 }
 .pa-root.skin-premium .pa-slot {
-  background: linear-gradient(180deg, #3a2e25, #2c231d);
+  background: linear-gradient(180deg, #241d45, #17122e);
   border-radius: 8px;
   border-bottom: 3px solid var(--c1);
-  box-shadow: inset 0 0 0 1px rgba(255, 230, 180, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(220, 210, 255, 0.08);
 }
-.pa-root.skin-premium .pa-slot.is-empty { background: rgba(255, 230, 180, 0.02); border: 1px dashed rgba(222, 184, 120, 0.18); box-shadow: none; }
-.pa-root.skin-premium .pa-slot.is-selected { background: rgba(233, 196, 106, 0.35); }
+.pa-root.skin-premium .pa-slot.is-empty { background: rgba(220, 210, 255, 0.02); border: 1px dashed rgba(201, 184, 255, 0.18); box-shadow: none; }
+.pa-root.skin-premium .pa-slot.is-selected { background: rgba(200, 170, 255, 0.35); }
 
 /* ——— Cartes de boutique : vraies cartes, cadre de rareté, reflet holo ——— */
 .pa-root.skin-premium .pa-card { --frame: var(--c1); }
@@ -198,13 +198,13 @@
   border-radius: 10px;
   padding-top: 8px;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--t) 50%, #2c231d) 0%, color-mix(in srgb, var(--t) 22%, #2c231d) 60%, #221a15 60.5%, #1c1612 100%);
-  box-shadow: 0 0 0 2px var(--frame), inset 0 0 0 3px #1c1612, inset 0 0 0 4px rgba(255, 230, 180, 0.22), var(--lift);
+    linear-gradient(180deg, color-mix(in srgb, var(--t) 50%, #17122e) 0%, color-mix(in srgb, var(--t) 22%, #17122e) 60%, #120e26 60.5%, #0e0b1f 100%);
+  box-shadow: 0 0 0 2px var(--frame), inset 0 0 0 3px #0e0b1f, inset 0 0 0 4px rgba(220, 210, 255, 0.22), var(--lift);
 }
 .pa-root.skin-premium .pa-card.cost-5 {
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--t) 45%, #3a2c18) 0%, color-mix(in srgb, var(--t) 18%, #33271a) 60%, #2a2014 60.5%, #1c1612 100%);
-  box-shadow: 0 0 0 2px var(--gold-hi), 0 0 0 3px var(--gold-lo), inset 0 0 0 3px #1c1612, inset 0 0 0 4px rgba(246, 223, 165, 0.45), 0 0 22px -6px rgba(233, 196, 106, 0.6);
+    linear-gradient(180deg, color-mix(in srgb, var(--t) 45%, #2a1f4a) 0%, color-mix(in srgb, var(--t) 18%, #231a40) 60%, #1a1433 60.5%, #0e0b1f 100%);
+  box-shadow: 0 0 0 2px var(--gold-hi), 0 0 0 3px var(--gold-lo), inset 0 0 0 3px #0e0b1f, inset 0 0 0 4px rgba(230, 220, 255, 0.45), 0 0 22px -6px rgba(200, 170, 255, 0.6);
 }
 .pa-root.skin-premium .pa-card::after {
   content: '';
@@ -223,84 +223,84 @@
 @keyframes pa-holo { 0%, 100% { background-position: 130% 0; } 50% { background-position: -30% 0; } }
 .pa-root.skin-premium .pa-card:hover:not(:disabled) {
   transform: translateY(-5px);
-  box-shadow: 0 0 0 2px var(--gold-hi), inset 0 0 0 3px #1c1612, inset 0 0 0 4px rgba(255, 230, 180, 0.3), var(--lift-lg);
+  box-shadow: 0 0 0 2px var(--gold-hi), inset 0 0 0 3px #0e0b1f, inset 0 0 0 4px rgba(220, 210, 255, 0.3), var(--lift-lg);
 }
-.pa-root.skin-premium .pa-card.is-sold { background: transparent; box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.18); }
+.pa-root.skin-premium .pa-card.is-sold { background: transparent; box-shadow: inset 0 0 0 1px rgba(201, 184, 255, 0.18); }
 .pa-root.skin-premium .pa-card.is-sold::after { display: none; }
 .pa-root.skin-premium .pa-card strong { color: var(--ink); font-weight: 700; }
 .pa-root.skin-premium .pa-card-types { color: var(--ink-2); }
-.pa-root.skin-premium .pa-card-cost { background: #1c1612; color: var(--gold-hi); box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.5); }
-.pa-root.skin-premium .pa-card-owned { background: #1c1612; box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.4); }
-.pa-root.skin-premium .pa-card-owned i { background: #4a3d32; }
+.pa-root.skin-premium .pa-card-cost { background: #0e0b1f; color: var(--gold-hi); box-shadow: 0 0 0 1px rgba(201, 184, 255, 0.5); }
+.pa-root.skin-premium .pa-card-owned { background: #0e0b1f; box-shadow: 0 0 0 1px rgba(201, 184, 255, 0.4); }
+.pa-root.skin-premium .pa-card-owned i { background: #3a3166; }
 .pa-root.skin-premium .pa-card-owned i.is-have { background: var(--ink); }
-.pa-root.skin-premium .pa-sell-zone { background: rgba(40, 20, 15, 0.95); color: #f0a08e; border-color: var(--scarlet); }
+.pa-root.skin-premium .pa-sell-zone { background: rgba(40, 14, 30, 0.95); color: #f0a08e; border-color: var(--scarlet); }
 
 /* ——— Arène : cadre doré autour du plateau peint ——— */
 .pa-root.skin-premium .bd-stage {
   border-radius: 14px;
-  box-shadow: 0 0 0 2px var(--gold), 0 0 0 6px #241c17, 0 0 0 7px rgba(222, 184, 120, 0.35), var(--lift-lg);
+  box-shadow: 0 0 0 2px var(--gold), 0 0 0 6px #120e26, 0 0 0 7px rgba(201, 184, 255, 0.35), var(--lift-lg);
 }
-.pa-root.skin-premium .pa-arena-caption { background: rgba(28, 22, 18, 0.92); color: var(--ink); box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.45); }
-.pa-root.skin-premium .pa-banner { background: linear-gradient(90deg, transparent, rgba(20, 15, 12, 0.92) 12%, rgba(20, 15, 12, 0.92) 88%, transparent); }
-.pa-root.skin-premium .pa-banner strong { font-family: 'Playfair Display', Georgia, serif; font-style: italic; background: var(--foil); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.pa-root.skin-premium .pa-arena-caption { background: rgba(14, 11, 31, 0.92); color: var(--ink); box-shadow: 0 0 0 1px rgba(201, 184, 255, 0.45); }
+.pa-root.skin-premium .pa-banner { background: linear-gradient(90deg, transparent, rgba(14, 11, 31, 0.92) 12%, rgba(14, 11, 31, 0.92) 88%, transparent); }
+.pa-root.skin-premium .pa-banner strong { font-family: 'Anton', Impact, sans-serif; font-style: normal; letter-spacing: 0.02em; background: var(--foil); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
 /* ——— Starter ——— */
 .pa-root.skin-premium .ui-starter-card {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--t) 34%, #2c231d), #241c17);
-  box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.3), var(--lift);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--t) 34%, #17122e), #120e26);
+  box-shadow: 0 0 0 1px rgba(201, 184, 255, 0.3), var(--lift);
 }
 .pa-root.skin-premium .ui-starter-card::before { background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--t) 40%, transparent), transparent 60%); }
-.pa-root.skin-premium .ui-starter-card.is-on { background: linear-gradient(180deg, color-mix(in srgb, var(--t) 40%, #3a2c18), #2a2014); box-shadow: 0 0 0 2px var(--gold-hi), 0 0 24px -6px rgba(233, 196, 106, 0.6); }
+.pa-root.skin-premium .ui-starter-card.is-on { background: linear-gradient(180deg, color-mix(in srgb, var(--t) 40%, #2a1f4a), #1a1433); box-shadow: 0 0 0 2px var(--gold-hi), 0 0 24px -6px rgba(200, 170, 255, 0.6); }
 .pa-root.skin-premium .ui-starter-card.is-on::after { background: var(--foil); }
 .pa-root.skin-premium .ui-starter-hero {
   background:
     radial-gradient(circle at 50% 75%, color-mix(in srgb, var(--t) 45%, transparent) 0 32%, transparent 62%),
-    linear-gradient(180deg, color-mix(in srgb, var(--t) 35%, #2c231d), #1c1612);
-  box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.3);
+    linear-gradient(180deg, color-mix(in srgb, var(--t) 35%, #17122e), #0e0b1f);
+  box-shadow: inset 0 0 0 1px rgba(201, 184, 255, 0.3);
 }
-.pa-root.skin-premium .ui-evo { background: #241c17; }
+.pa-root.skin-premium .ui-evo { background: #120e26; }
 
 /* ——— Carte de campagne ——— */
 .pa-root.skin-premium .ui-chapter::before { background: linear-gradient(118deg, rgba(121, 182, 115, 0.16) 0 80%, transparent 80.2%); }
 .pa-root.skin-premium .ui-chapter.biome-mountain::before { background: linear-gradient(118deg, rgba(150, 140, 210, 0.15) 0 80%, transparent 80.2%); }
 .pa-root.skin-premium .ui-chapter.biome-league::before { background: linear-gradient(118deg, rgba(227, 180, 79, 0.16) 0 80%, transparent 80.2%); }
-.pa-root.skin-premium .ui-node { background: #3a2e25; box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.4), var(--lift); }
-.pa-root.skin-premium .ui-node.kind-elite { background: #4a2a22; }
-.pa-root.skin-premium .ui-node.kind-mart { background: #263247; }
-.pa-root.skin-premium .ui-node.kind-center { background: #46283a; }
-.pa-root.skin-premium .ui-node.kind-event { background: #352a48; }
+.pa-root.skin-premium .ui-node { background: #241d45; box-shadow: 0 0 0 1px rgba(201, 184, 255, 0.4), var(--lift); }
+.pa-root.skin-premium .ui-node.kind-elite { background: #3a1f3e; }
+.pa-root.skin-premium .ui-node.kind-mart { background: #1d2a4d; }
+.pa-root.skin-premium .ui-node.kind-center { background: #3d2046; }
+.pa-root.skin-premium .ui-node.kind-event { background: #2c2350; }
 .pa-root.skin-premium .ui-node.kind-boss { background: var(--foil); }
-.pa-root.skin-premium .ui-node.is-playable { box-shadow: 0 0 0 2px var(--gold-hi), 0 0 18px -4px rgba(233, 196, 106, 0.7); animation-name: pa-node-premium; }
+.pa-root.skin-premium .ui-node.is-playable { box-shadow: 0 0 0 2px var(--gold-hi), 0 0 18px -4px rgba(200, 170, 255, 0.7); animation-name: pa-node-premium; }
 @keyframes pa-node-premium { 50% { transform: translateY(-4px); } }
-.pa-root.skin-premium .ui-node-tag { background: #1c1612; color: var(--gold-hi); box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.4); }
-.pa-root.skin-premium .ui-node-info .ui-node-icon { background: #241c17; }
-.pa-root.skin-premium .ui-team-mon { background: #241c17; }
+.pa-root.skin-premium .ui-node-tag { background: #0e0b1f; color: var(--gold-hi); box-shadow: 0 0 0 1px rgba(201, 184, 255, 0.4); }
+.pa-root.skin-premium .ui-node-info .ui-node-icon { background: #120e26; }
+.pa-root.skin-premium .ui-team-mon { background: #120e26; }
 
 /* ——— Poké Mart, événements, récompenses ——— */
 .pa-root.skin-premium .ui-shelf {
   background:
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.015) 0 2px, transparent 2px 10px),
-    linear-gradient(160deg, #3b2830, #221920);
-  box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.35), var(--lift);
+    linear-gradient(160deg, #2a1d44, #16112c);
+  box-shadow: 0 0 0 1px rgba(201, 184, 255, 0.35), var(--lift);
 }
-.pa-root.skin-premium :is(.ui-ware-icon, .ui-event-art) { background: #1c1612; box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.3); }
-.pa-root.skin-premium .ui-event-reward { background: var(--foil); color: #2a1a0a; }
+.pa-root.skin-premium :is(.ui-ware-icon, .ui-event-art) { background: #0e0b1f; box-shadow: inset 0 0 0 1px rgba(201, 184, 255, 0.3); }
+.pa-root.skin-premium .ui-event-reward { background: var(--foil); color: #0e0b1f; }
 .pa-root.skin-premium :is(.ui-reward-card, .ui-event-card):hover { box-shadow: 0 0 0 2px var(--gold-hi), var(--lift-lg); }
-.pa-root.skin-premium .ui-result-lines li { background: #241c17; }
+.pa-root.skin-premium .ui-result-lines li { background: #120e26; }
 .pa-root.skin-premium .ui-result-lines li.is-bad { background: rgba(201, 87, 63, 0.2); }
-.pa-root.skin-premium .ui-recipes li { background: #241c17; }
+.pa-root.skin-premium .ui-recipes li { background: #120e26; }
 
 /* ——— Pokédex ——— */
-.pa-root.skin-premium :is(.ui-search, .ui-select) { background: #1c1612; color: var(--ink); border-color: rgba(222, 184, 120, 0.3); }
-.pa-root.skin-premium .ui-codex-row:hover { background: #3a2e25; }
+.pa-root.skin-premium :is(.ui-search, .ui-select) { background: #0e0b1f; color: var(--ink); border-color: rgba(201, 184, 255, 0.3); }
+.pa-root.skin-premium .ui-codex-row:hover { background: #241d45; }
 
 /* ——— Petits éléments ——— */
 .pa-root.skin-premium .ui-modal,
-.pa-root.skin-premium .ui-result { background: rgba(10, 8, 6, 0.65); }
+.pa-root.skin-premium .ui-result { background: rgba(6, 4, 16, 0.65); }
 .pa-root.skin-premium .pa-toast {
   clip-path: none;
   border-radius: 999px;
-  background: #1c1612;
+  background: #0e0b1f;
   color: var(--gold-hi);
   box-shadow: 0 0 0 1px var(--gold), var(--lift-lg);
 }
@@ -319,34 +319,80 @@
 .pa-root.skin-premium .ui-chapter.biome-neige::before { background: linear-gradient(118deg, rgba(170, 200, 240, 0.14) 0 80%, transparent 80.2%); }
 .pa-root.skin-premium .ui-chapter.biome-volcan::before { background: linear-gradient(118deg, rgba(220, 90, 50, 0.18) 0 80%, transparent 80.2%); }
 .pa-root.skin-premium .ui-chapter.biome-grotte::before { background: linear-gradient(118deg, rgba(150, 110, 190, 0.15) 0 80%, transparent 80.2%); }
-.pa-root.skin-premium .ui-trainer-portrait { background: radial-gradient(circle at 50% 35%, #4a3b30 0 40%, #241c17 80%); box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.45); }
+.pa-root.skin-premium .ui-trainer-portrait { background: radial-gradient(circle at 50% 35%, #2e2556 0 40%, #120e26 80%); box-shadow: inset 0 0 0 1px rgba(201, 184, 255, 0.45); }
 .pa-root.skin-premium .ui-trainer-portrait.is-xs { background: transparent; box-shadow: none; }
 .pa-root.skin-premium .ui-trainer-portrait.is-lg { background: none; box-shadow: none; }
 .pa-root.skin-premium .ui-trainer-portrait b { color: var(--gold-hi); }
 .pa-root.skin-premium .ui-trainer-portrait.role-gym { box-shadow: inset 0 0 0 2px var(--gold-hi); }
 .pa-root.skin-premium .ui-trainer-portrait.role-e4 { box-shadow: inset 0 0 0 2px #a991e6; }
-.pa-root.skin-premium .ui-trainer-portrait.role-champion { box-shadow: inset 0 0 0 2px #e0705c, 0 0 12px -2px rgba(233, 196, 106, 0.8); }
-.pa-root.skin-premium .ui-node.kind-rival { background: #4a3d1e; }
-.pa-root.skin-premium .ui-node.kind-villain { background: #2c2236; }
-.pa-root.skin-premium .pa-foe .ui-trainer-portrait.is-sm { background: radial-gradient(circle at 50% 35%, #4a3b30 0 40%, #241c17 80%); }
-.pa-root.skin-premium .ui-trainer em { color: var(--muted, #b9a68d); }
-.pa-root.skin-premium .pa-music-pop { background: #241c17; border-color: rgba(222, 184, 120, 0.35); color: #f3e6cf; }
+.pa-root.skin-premium .ui-trainer-portrait.role-champion { box-shadow: inset 0 0 0 2px #e0705c, 0 0 12px -2px rgba(200, 170, 255, 0.8); }
+.pa-root.skin-premium .ui-node.kind-rival { background: #3a2f5a; }
+.pa-root.skin-premium .ui-node.kind-villain { background: #221a3a; }
+.pa-root.skin-premium .pa-foe .ui-trainer-portrait.is-sm { background: radial-gradient(circle at 50% 35%, #2e2556 0 40%, #120e26 80%); }
+.pa-root.skin-premium .ui-trainer em { color: var(--muted, #a99bd6); }
+.pa-root.skin-premium .pa-music-pop { background: #120e26; border-color: rgba(201, 184, 255, 0.35); color: #f3f0ff; }
 .pa-root.skin-premium .pa-music-src { color: var(--gold-hi); }
 .pa-root.skin-premium .ui-crafts-pop,
-.pa-root.skin-premium .ui-combo-pop { background: #241c17; border-color: rgba(222, 184, 120, 0.35); color: #f3e6cf; }
-.pa-root.skin-premium .ui-crafts-pop li { background: #2f251e; }
+.pa-root.skin-premium .ui-combo-pop { background: #120e26; border-color: rgba(201, 184, 255, 0.35); color: #f3f0ff; }
+.pa-root.skin-premium .ui-crafts-pop li { background: #1c1736; }
 .pa-root.skin-premium .ui-crafts-pop li.is-owned { box-shadow: inset 0 0 0 2px var(--gold-hi); }
-.pa-root.skin-premium :is(.ui-crafts-txt small, .ui-combo-pop p, .ui-crafts-none) { color: #d9c7a8; }
-.pa-root.skin-premium .pa-music-vol input[type='range'] { background: linear-gradient(90deg, var(--gold-hi) var(--p), rgba(222, 184, 120, 0.2) var(--p)); }
-.pa-root.skin-premium .pa-music-vol input[type='range']::-webkit-slider-thumb { background: #f6dfa5; }
+.pa-root.skin-premium :is(.ui-crafts-txt small, .ui-combo-pop p, .ui-crafts-none) { color: #d6cff5; }
+.pa-root.skin-premium .pa-music-vol input[type='range'] { background: linear-gradient(90deg, var(--gold-hi) var(--p), rgba(201, 184, 255, 0.2) var(--p)); }
+.pa-root.skin-premium .pa-music-vol input[type='range']::-webkit-slider-thumb { background: #f1ecff; }
 /* Rareté : le cadre métal animé (PokeArena.css) remplace l’anneau de couleur. */
 .pa-root.skin-premium .pa-card,
 .pa-root.skin-premium .pa-card.cost-2,
 .pa-root.skin-premium .pa-card.cost-3,
-.pa-root.skin-premium .pa-card.cost-4 { --frame: #1c1612; }
-.pa-root.skin-premium .pa-card.cost-5 { box-shadow: 0 0 0 2px #1c1612, inset 0 0 0 3px #1c1612, 0 0 22px -6px rgba(255, 220, 140, 0.7); }
-.pa-root.skin-premium .pa-slot.cost-1 { border-bottom-color: #8a735c; }
+.pa-root.skin-premium .pa-card.cost-4 { --frame: #0e0b1f; }
+.pa-root.skin-premium .pa-card.cost-5 { box-shadow: 0 0 0 2px #0e0b1f, inset 0 0 0 3px #0e0b1f, 0 0 22px -6px rgba(210, 190, 255, 0.7); }
+.pa-root.skin-premium .pa-slot.cost-1 { border-bottom-color: #6b5fa0; }
 .pa-root.skin-premium .pa-slot.cost-2 { border-bottom-color: #c3c9d1; }
 .pa-root.skin-premium .pa-slot.cost-3 { border-bottom-color: #d9b25c; }
 .pa-root.skin-premium .pa-slot.cost-4 { border-bottom-color: #a77be6; }
 .pa-root.skin-premium .pa-slot.cost-5 { border-bottom-color: #ffd36b; }
+
+/* ——— Style « Nuit holo » : cases de manga sur la nuit violette ——— */
+.pa-root.skin-nuit {
+  --nh-line: #f3f0ff;
+  --nh-tone: radial-gradient(rgba(201, 184, 255, 0.2) 1.2px, transparent 1.5px);
+  font-family: 'Manrope', 'Barlow', sans-serif;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 30%, rgba(160, 130, 255, 0.05) 0deg 3deg, transparent 3deg 11deg),
+    radial-gradient(120% 90% at 50% 20%, #221a44 0%, #120e26 70%, #0b0918 100%);
+}
+.pa-root.skin-nuit :is(.pa-top, .ui-traits, .ui-card, .ui-help, .ui-meter, .pa-bag, .pa-shopbar, .pa-fightbar,
+  .ui-node-info, .ui-map-team, .ui-bag-preview, .ui-codex-list, .ui-codex-step, .ui-codex-text, .ui-chapter,
+  .ui-starter-detail, .ui-modal-card, .ui-result-card, .pa-over, .pa-hub-card, .ui-pop, .ui-event-card, .ui-ware, .ui-reward-card) {
+  border-radius: 4px;
+  background-image: var(--nh-tone), linear-gradient(160deg, #1c1736, #120e26);
+  background-size: 8px 8px, auto;
+  box-shadow: 0 0 0 3px var(--nh-line), 6px 6px 0 rgba(0, 0, 0, 0.55);
+}
+.pa-root.skin-nuit :is(.ui-traits h2, .pa-side h3, .ui-help h3, .ui-meter h3, .pa-bag h3, .ui-map-team h3, .ui-bag-preview h3) {
+  color: #f3f0ff; text-transform: uppercase; letter-spacing: 0.03em; border-image: linear-gradient(90deg, #ff9ad5, #9ab8ff, #8ff0d4, transparent) 1;
+}
+.pa-root.skin-nuit :is(.ui-screen-head h1, .ui-chapter h2, .ui-starter-detail h2, .ui-modal-card h2, .ui-result-card h2, .pa-over h1) { text-transform: uppercase; }
+.pa-root.skin-nuit .ui-screen-head h1 { color: #f3f0ff; text-shadow: 5px 5px 0 rgba(0, 0, 0, 0.5); }
+.pa-root.skin-nuit .ui-screen-head h1::after { background: var(--foil); height: 4px; }
+.pa-root.skin-nuit :is(.ui-result-card h2, .pa-over.is-win h1) { background: var(--foil); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.pa-root.skin-nuit .ui-btn { border-radius: 4px; box-shadow: 0 0 0 2px rgba(243, 240, 255, 0.7); }
+.pa-root.skin-nuit :is(.ui-btn.is-primary, .ui-btn.is-fight, .ui-btn.is-buy) { border-radius: 4px; color: #0e0b1f; text-shadow: none; box-shadow: 0 0 0 3px var(--nh-line), 5px 5px 0 rgba(0, 0, 0, 0.55); }
+.pa-root.skin-nuit :is(.ui-btn.is-big, .ui-btn.is-fight) { text-transform: uppercase; letter-spacing: 0.03em; }
+.pa-root.skin-nuit .ui-chip, .pa-root.skin-nuit .ui-type { border-radius: 3px; }
+.pa-root.skin-nuit .pa-card { border-radius: 6px; }
+.pa-root.skin-nuit .pa-card:hover:not(:disabled) { box-shadow: 0 0 0 3px var(--nh-line), 0 0 26px rgba(160, 130, 255, 0.6), var(--lift-lg); }
+.pa-root.skin-nuit .pa-bench, .pa-root.skin-nuit .bd-stage { border-radius: 4px; }
+.pa-root.skin-nuit .bd-stage { box-shadow: 0 0 0 3px var(--nh-line), 8px 8px 0 rgba(0, 0, 0, 0.5); }
+.pa-root.skin-nuit .pa-toast { border-radius: 4px; box-shadow: 0 0 0 3px var(--nh-line), 6px 6px 0 rgba(0, 0, 0, 0.5); }
+.pa-root.skin-nuit .pa-banner strong { text-transform: uppercase; }
+.pa-root.skin-nuit .ui-starter-card { border-radius: 4px; box-shadow: 0 0 0 2px rgba(243, 240, 255, 0.55); }
+.pa-root.skin-nuit .ui-starter-card.is-on { box-shadow: 0 0 0 3px var(--nh-line), 0 0 24px rgba(160, 130, 255, 0.6); }
+.pa-root.skin-nuit .ui-node { border-radius: 6px; }
+/* Choix du dresseur : cases manga, filtre par génération, cadre holo sur le choix */
+.ui-trainer-box { display: grid; gap: 8px; }
+.ui-trainer-gens { display: flex; flex-wrap: wrap; gap: 4px; }
+.ui-trainer-gens button { border: 0; padding: 5px 10px; cursor: pointer; font: 800 12px/1 'Manrope', 'Barlow', sans-serif; color: #d6cff5; background: transparent; box-shadow: inset 0 0 0 2px #3a3166; border-radius: 3px; }
+.ui-trainer-gens button.is-on { color: #0e0b1f; background: linear-gradient(110deg, #ff9ad5, #9ab8ff 35%, #8ff0d4 62%, #ffe38a); box-shadow: none; }
+.pa-root.skin-nuit .ui-trainer-opt { border-radius: 3px; color: #f3f0ff; background-image: var(--nh-tone), linear-gradient(180deg, #1c1736, #120e26); background-size: 8px 8px, auto; box-shadow: inset 0 0 0 2px rgba(243, 240, 255, 0.5); font-family: 'Manrope', sans-serif; font-weight: 800; }
+.pa-root.skin-nuit .ui-trainer-opt span { color: #f3f0ff; }
+.pa-root.skin-nuit .ui-trainer-opt.is-on { background: linear-gradient(#1c1736, #1c1736) padding-box, linear-gradient(110deg, #ff9ad5, #9ab8ff 35%, #8ff0d4 62%, #ffe38a) border-box; border: 3px solid transparent; box-shadow: 0 0 22px rgba(160, 130, 255, 0.6); }

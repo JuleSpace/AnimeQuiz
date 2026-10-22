@@ -5,7 +5,7 @@ import { AccountChip } from './account';
 import { CHAMPIONS } from './pokeArenaTrainers';
 import { trainerSprite } from './pokeArenaCampaign';
 import { STARTER_LINES, unitFromLine } from './pokeArenaData';
-import { displayName } from './PokeArenaUI';
+import { displayName, playerTrainerSprite } from './PokeArenaUI';
 import './ArenaHome.css';
 
 const itemSprite = (slug) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${slug}.png`;
@@ -56,7 +56,7 @@ const FanCard = ({ unit, tilt, label }) => {
 const Trainer = ({ id, className }) => {
   const [broken, setBroken] = useState(false);
   if (!id || broken) return null;
-  return <img className={className} src={trainerSprite(id)} alt="" draggable={false} onError={() => setBroken(true)} />;
+  return <img className={className} src={trainerSprite(playerTrainerSprite(id))} alt="" draggable={false} onError={() => setBroken(true)} />;
 };
 
 const ArenaScene = () => (
@@ -82,7 +82,7 @@ export const ArenaFrame = ({ title, subtitle, onBack, right, children }) => {
 /**
  * Accueil de Poké Bully Tactics : salle des champions, cartes rares en éventail, carnet de dresseur.
  */
-const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, skinLabel, onSkin, myTrainer, record, regionOf }) => {
+const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, myTrainer, record, regionOf }) => {
   const [howto, setHowto] = useState(false);
   const [carnet, setCarnet] = useState(false);
   const champ = CHAMPIONS[Math.floor(Date.now() / 60000) % CHAMPIONS.length];
@@ -210,7 +210,7 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
           { key: 'dex', label: 'Pokédex', value: 'lignées', color: '#d25a42', icon: <HomeIcon src={itemSprite('poke-ball')} fallback="●" />, onClick: onCodex },
           { key: 'multi', label: 'Multi', value: 'en ligne', color: '#7b98dc', icon: <HomeIcon src={itemSprite('link-cable')} fallback="⇄" />, onClick: onMulti },
           { key: 'carnet', label: 'Carnet', value: `record ${record.best || 0}`, color: '#e9c46a', icon: <HomeIcon src={itemSprite('town-map')} fallback="☰" />, onClick: () => setCarnet(true) },
-          { key: 'skin', label: 'Style', value: skinLabel, color: '#a77bd9', icon: <HomeIcon src={itemSprite('dawn-stone')} fallback="✦" />, onClick: onSkin }
+
         ]}
         links={<span className="ah-music">{music}</span>}
         board={(

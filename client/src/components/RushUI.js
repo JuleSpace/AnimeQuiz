@@ -15,9 +15,17 @@ import { ITEM_SLUG, PmdSprite, itemSprite, optionLabel } from './PokeSwarm';
 import { fxFrameOfType, fxIconUrl } from './rushArt';
 import { fetchLeaderboard, AccountChip } from './account';
 import { musicPlayer } from './pokeArenaMusic';
-import GameLogo from './GameLogo';
 import ScoreCard from './ScoreCard';
 import './RushUI.css';
+
+// Polices du Rush (injectées une fois : un @import au milieu du CSS fusionné serait ignoré)
+if (typeof document !== 'undefined' && !document.getElementById('rx-fonts')) {
+  const l = document.createElement('link');
+  l.id = 'rx-fonts'; l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=Bungee&family=Outfit:wght@300;400;500;600;700;800;900&display=swap';
+  document.head.appendChild(l);
+}
+
 
 export const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const fr = (n) => Math.round(n || 0).toLocaleString('fr-FR');
@@ -93,30 +101,35 @@ const Shell = ({ title, kicker, onBack, right, children, className = '' }) => {
 };
 const PL = ({ meta }) => <span className="rx-chip is-gold"><Item slug="star-piece" size={22} />{fr(meta.pl)} PL</span>;
 
-/* ——— Accueil ——— */
+/* ——— Accueil : écran-titre plein cadre, menu en une ligne ——— */
 const MENU = [
-  { id: 'play', label: 'Jouer', sub: 'Île de Kanto', icon: 'poke-ball', big: true },
-  { id: 'league', label: 'Collection', icon: 'master-ball' },
-  { id: 'shop', label: 'Centre Pokémon', icon: 'potion' },
-  { id: 'dex', label: 'Pokédex', icon: 'poke-radar' },
-  { id: 'board', label: 'Classement', icon: 'gold-bottle-cap' },
-  { id: 'history', label: 'Historique', icon: 'town-map' },
-  { id: 'howto', label: 'Comment jouer', icon: 'exp-share' },
-  { id: 'quit', label: 'Retour au Lair', icon: 'escape-rope' }
+  { id: 'play', label: 'Jouer' },
+  { id: 'league', label: 'Collection' },
+  { id: 'shop', label: 'Centre Pokémon' },
+  { id: 'dex', label: 'Pokédex' },
+  { id: 'board', label: 'Classement' },
+  { id: 'history', label: 'Historique' },
+  { id: 'howto', label: 'Comment jouer' }
 ];
+
+export const RushLogo = ({ small = false }) => (
+  <div className={`rx-logo${small ? ' is-small' : ''}`} aria-label="Poké Rush">
+    <span className="rx-logo-tag">POKÉ</span>
+    <b>RUSH</b>
+  </div>
+);
 
 export const RushHome = ({ meta, partner, onAction }) => {
   const [focus, setFocus] = useState(0);
   const size = leagueSize(meta);
   const ready = FAMILIES.filter((f) => statusOf(meta, f) === 'ready');
   const next = useMemo(() => FAMILIES.filter((f) => statusOf(meta, f) === 'locked' && f.unlock.kind !== 'buy')
-    .map((f) => ({ f, p: progressOf(meta, f) })).sort((a, b) => b.p.pct - a.p.pct).slice(0, 3), [meta]);
+    .map((f) => ({ f, p: progressOf(meta, f) })).sort((a, b) => b.p.pct - a.p.pct)[0], [meta]);
   const affordUp = UPGRADES.filter((u) => upRank(meta, u.id) < u.max && meta.pl >= upCost(meta, u)).length;
   const badge = { league: ready.length || null, shop: affordUp || null };
-  const value = { league: `${size}/${FAMILIES.length}`, history: fr((meta.history || []).length) };
   useKeys({
-    ArrowDown: () => setFocus((i) => (i + 1) % MENU.length),
-    ArrowUp: () => setFocus((i) => (i + MENU.length - 1) % MENU.length),
+    ArrowRight: () => setFocus((i) => (i + 1) % MENU.length),
+    ArrowLeft: () => setFocus((i) => (i + MENU.length - 1) % MENU.length),
     Enter: () => onAction(MENU[focus].id),
     Escape: () => onAction('quit')
   });
@@ -125,85 +138,59 @@ export const RushHome = ({ meta, partner, onAction }) => {
     <div className="rx-root rx-home">
       <RushBackdrop />
       <div className="rx-home-top">
-        <AccountChip returnHash="#pokerush" />
-        <span className="rx-chip">{fr(meta.runs)} parties</span>
-        <span className="rx-chip">🏆 {fr(meta.wins)}</span>
-        <PL meta={meta} />
+        <span className="rx-home-kicker">SURVIVOR · 3D · KANTO</span>
+        <span className="rx-home-chips">
+          <AccountChip returnHash="#pokerush" />
+          <span className="rx-chip">{fr(meta.runs)} parties</span>
+          <span className="rx-chip">🏆 {fr(meta.wins)}</span>
+          <PL meta={meta} />
+        </span>
       </div>
-      <nav className="rx-home-menu">
-        <div className="rx-home-logo"><GameLogo id="rush" /></div>
-        {MENU.map((m, i) => (
-          <button key={m.id} type="button" className={`rx-menu-btn${m.big ? ' is-big' : ''}${i === focus ? ' is-focus' : ''}`}
-            onMouseEnter={() => setFocus(i)} onClick={() => onAction(m.id)}>
-            <span className="rx-menu-icon"><Item slug={m.icon} size={m.big ? 40 : 30} /></span>
-            <span className="rx-menu-text"><b>{m.label}</b>{m.big && <small>{partner.name} · {m.sub}</small>}</span>
-            {value[m.id] && <em>{value[m.id]}</em>}
-            {badge[m.id] && <i className="rx-badge">{badge[m.id]}</i>}
-            {m.big && <Key>Entrée</Key>}
-          </button>
-        ))}
-      </nav>
 
-      <section className="rx-home-hero">
-        <div className="rx-hero-plate">
-          <span className="rx-hero-shadow" />
-          <Sprite dex={partner.dex} anim="walk" size={260} scale={5} foot={0.9} />
-        </div>
-        <button type="button" className="rx-hero-card" onClick={() => onAction('league')}>
-          <small>Ton partenaire</small>
-          <b>{partner.name}</b>
-          <span className="rx-hero-types">{partner.types.map((t) => <TypeTag key={t} type={t} small />)}<span className="rx-class">{partner.cls}</span></span>
-          <span className="rx-hero-rec">{rec ? `${rec.win ? 'Victoire en' : 'Record'} ${clock(rec.t)} · ${fr(rec.score)} pts` : 'Pas encore de partie avec lui'}</span>
-          <em>Changer ›</em>
-        </button>
-      </section>
+      <button type="button" className="rx-home-partner" onClick={() => onAction('league')} title="Changer de partenaire">
+        <span className="rx-hero-plate"><span className="rx-hero-shadow" /><Sprite dex={partner.dex} anim="walk" size={250} scale={5} foot={0.9} /></span>
+        <span className="rx-sticker">{partner.name}<small>{partner.types.join(' / ')} · {partner.cls}</small></span>
+        <span className="rx-home-rec">{rec ? `${rec.win ? 'Victoire en' : 'Record'} ${clock(rec.t)} · ${fr(rec.score)} pts` : 'Changer de partenaire ›'}</span>
+      </button>
+
+      <div className="rx-home-title">
+        <RushLogo />
+        <p>Une île, huit minutes, un légendaire qui se réveille dans l’arène.</p>
+      </div>
 
       <aside className="rx-home-side">
-        <div className="rx-card rx-league-card">
-          <header><b>Collection</b><span>{size}/{FAMILIES.length}</span></header>
-          <Bar value={size} max={FAMILIES.length} color="#ffcb05" />
-          {ready.length > 0 ? (
-            <div className="rx-ready-list">
-              <small>Apparaîtront sur l’île : capture-les !</small>
-              <div>{ready.slice(0, 6).map((f) => <span key={f.id} className="rx-ready-face" title={f.name}><Sprite dex={f.dex} size={44} scale={1.3} still /></span>)}</div>
-            </div>
-          ) : <small className="rx-muted">Relève des défis pour faire apparaître de nouveaux Pokémon sur l’île.</small>}
-          {next.map(({ f, p }) => (
-            <button key={f.id} type="button" className="rx-next" onClick={() => onAction('league', f.id)}>
-              <span className="rx-next-face is-locked"><Sprite dex={f.dex} size={36} scale={1.05} still /></span>
-              <span><b>{f.name}</b><small>{challengeText(f)}</small><Bar value={p.value} max={p.goal} color="#2f7bf0" thin label={`${fr(p.value)}/${fr(p.goal)}`} /></span>
-            </button>
-          ))}
-        </div>
-        <MiniBoard onMore={() => onAction('board')} />
+        {ready.length > 0 ? (
+          <button type="button" className="rx-card rx-free" onClick={() => onAction('league', ready[0].id)}>
+            <header>EN LIBERTÉ</header>
+            <span className="rx-free-faces">{ready.slice(0, 4).map((f) => <Sprite key={f.id} dex={f.dex} size={58} scale={1.8} still />)}</span>
+            <span><b>{ready.map((f) => f.name).slice(0, 3).join(', ')}</b> traîne{ready.length > 1 ? 'nt' : ''} sur l’île. Capture-{ready.length > 1 ? 'les' : 'le'} pendant ta prochaine partie.</span>
+          </button>
+        ) : next && (
+          <button type="button" className="rx-card rx-free is-next" onClick={() => onAction('league', next.f.id)}>
+            <header>PROCHAIN DÉFI</header>
+            <span><b>{next.f.name}</b> · {challengeText(next.f)}</span>
+            <Bar value={next.p.value} max={next.p.goal} color="#2563ff" thin label={`${fr(next.p.value)}/${fr(next.p.goal)}`} />
+          </button>
+        )}
       </aside>
+
+      <nav className="rx-home-bar">
+        {MENU.map((m, i) => (
+          <button key={m.id} type="button" className={`rx-bar-btn${i === 0 ? ' is-play' : ''}${i === focus ? ' is-focus' : ''}`}
+            onMouseEnter={() => setFocus(i)} onClick={() => onAction(m.id)}>
+            {m.label}
+            {m.id === 'league' && <em>{size}/{FAMILIES.length}</em>}
+            {badge[m.id] && <i className="rx-badge">{badge[m.id]}</i>}
+          </button>
+        ))}
+        <button type="button" className="rx-bar-btn is-quit" onClick={() => onAction('quit')}>Retour au Lair</button>
+      </nav>
       <footer className="rx-foot">Fan-game non officiel, gratuit et sans but lucratif. Pokémon © Nintendo / Game Freak / The Pokémon Company. Sprites : PMDCollab SpriteCollab (CC BY-NC 4.0). Inspiré de Pokébonk et Megabonk.</footer>
     </div>
   );
 };
 
 const describeRun = (r) => `${r.form || FAMILY[r.partnerId]?.name || ''}${r.level ? ` · niv. ${r.level}` : ''}`;
-const MiniBoard = ({ onMore }) => {
-  const [rows, setRows] = useState(null);
-  useEffect(() => { let alive = true; fetchLeaderboard('rush', 1).then((b) => { if (alive) setRows(b?.score || []); }); return () => { alive = false; }; }, []);
-  return (
-    <div className="rx-card rx-miniboard">
-      <header><b>Classement</b><span>meilleur score</span></header>
-      <ol>
-        {!rows && <li className="rx-muted">Chargement…</li>}
-        {rows && !rows.length && <li className="rx-muted">La première place est à prendre !</li>}
-        {(rows || []).slice(0, 5).map((r, i) => (
-          <li key={`${r.name}-${i}`} className={`is-${i + 1}`}>
-            <i>{i + 1}</i>
-            <span><b>{r.name}</b><small>{describeRun(r)}</small></span>
-            <em>{fr(r.score)}</em>
-          </li>
-        ))}
-      </ol>
-      <button type="button" className="rx-link" onClick={onMore}>Classement complet ›</button>
-    </div>
-  );
-};
 
 /* ——— La Ligue : les 79 familles de Kanto ——— */
 const STATUS_LABEL = { member: 'Dans ta Collection', ready: 'À capturer !', locked: 'Défi à relever' };

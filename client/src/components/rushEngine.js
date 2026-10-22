@@ -1495,7 +1495,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       if (p.castT > 0) { anim = p.castAnim; at = 0.32 - p.castT; }
       if (p.hurtT > 0) { anim = 'hurt'; at = 0.3 - p.hurtT; }
       const blink = p.inv > 0 && p.dashT <= 0 && Math.floor(g.t * 20) % 2 === 0;
-      bank.draw(p.form.dex, anim, p.x, p.y + (p.swimming ? -0.3 : 0), p.z, pScale, at, rowFor(p.fx, p.fz, yaw), p.dashT > 0 ? 0.5 : 0, blink ? 0.45 : 1, 4, anim === 'walk' || anim === 'idle');
+      if (!g.hidePlayer) bank.draw(p.form.dex, anim, p.x, p.y + (p.swimming ? -0.3 : 0), p.z, pScale, at, rowFor(p.fx, p.fz, yaw), p.dashT > 0 ? 0.5 : 0, blink ? 0.45 : 1, 4, anim === 'walk' || anim === 'idle');
     }
     blob(p.x, p.z, Math.max(terrainAt(p.x, p.z), WATER), 0.55 * pScale);
     // Alliés
@@ -1533,7 +1533,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       fx.sprite(frame, sh.x, sh.y, sh.z, size, rot, 1, sh.kind === 'foe' ? '#ffd0d0' : null);
     });
     // Feuilles en orbite
-    leafList.forEach((L, i) => fx.sprite(FX.leafbig, L.x, L.y, L.z, 0.9, -L.a + g.t * 10 + i, 1));
+    if (!g.hidePlayer) leafList.forEach((L, i) => fx.sprite(FX.leafbig, L.x, L.y, L.z, 0.9, -L.a + g.t * 10 + i, 1));
     // Bonbons Exp. (petit, moyen, Super Bonbon), pièces, Balls, baies
     let oi = 0;
     g.orbs.forEach((o) => {
@@ -1647,7 +1647,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     }
     // Hautes herbes avec Alpha : elles frémissent
     // Anneau sous le joueur (cyan), comme un repère de visée
-    {
+    if (!g.hidePlayer) {
       const py = Math.max(terrainAt(p.x, p.z), WATER) + 0.07;
       rings.add(p.x, py, p.z, 1.05 * pScale, '#5fe6ff', 0.95);
       discs.add(p.x, py - 0.01, p.z, 1.05 * pScale, '#5fe6ff', 0.14);
