@@ -252,7 +252,10 @@ export const buyFamily = (m, f) => {
 
 /** Première ouverture de la Ligue : on reprend les parties déjà jouées pour amorcer les défis. */
 export const migrateLeague = (m0) => {
-  if (m0.stats) return m0;
+  if (m0.stats) {
+    const { league, newly } = refreshLeague(m0);
+    return newly.length ? saveRush({ ...m0, league }) : m0;
+  }
   const catches = Object.values(m0.caught || {}).reduce((a, n) => a + n, 0);
   const kills = (m0.history || []).reduce((a, r) => a + (r.kills || 0), 0);
   const stats = { ...blankStats(), runs: m0.runs || 0, wins: m0.wins || 0, catches, kills, bestKills: Math.max(0, ...(m0.history || []).map((r) => r.kills || 0)), bestLevel: Math.max(0, ...(m0.history || []).map((r) => r.level || 0)) };

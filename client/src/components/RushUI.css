@@ -29,7 +29,8 @@
 .rx-root *, .rx-root *::before, .rx-root *::after { box-sizing: border-box; }
 .rx-root button { font: inherit; color: inherit; cursor: pointer; }
 .rx-root button:disabled { cursor: default; }
-.rx-root h1, .rx-root h2 { margin: 0; font-family: var(--f-h); font-weight: 700; letter-spacing: 0.01em; }
+.rx-root h1, .rx-root h2, .rx-root h3 { margin: 0; font-family: var(--f-h); font-weight: 700; font-style: normal; letter-spacing: 0.01em; text-transform: none; text-shadow: none; line-height: 1.1; }
+.rx-root .rx-title h1, .rx-root .rx-levelup > header h2 { text-shadow: 0 2px 0 rgba(10, 30, 80, 0.35), 0 4px 18px rgba(10, 30, 80, 0.35); }
 .sw-pmd { display: block; image-rendering: pixelated; }
 .rx-muted { color: var(--mute); font-weight: 700; }
 .rx-label { display: block; margin: 12px 0 6px; font: 600 12px/1 var(--f-h); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); }
@@ -89,7 +90,7 @@
 }
 .rx-btn:hover:not(:disabled) { transform: translateY(-2px); }
 .rx-btn:disabled { opacity: 0.5; }
-.rx-btn.is-ghost { background: transparent; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.0), inset 0 0 0 2px var(--line); }
+.rx-btn.is-ghost { background: rgba(255, 255, 255, 0.82); color: var(--ink-2); box-shadow: inset 0 0 0 2px var(--line); }
 .rx-btn.is-danger { color: #c4283a; }
 .rx-cta {
   display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 60px; padding: 0 20px;
