@@ -267,7 +267,7 @@ export const buildRushWorld = (scene, track, opts = {}) => {
     return Math.hypot(x - px, z - pz);
   };
 
-  const rawHeight = (x, z) => {
+  const baseHeight = (x, z) => {
     const r = Math.hypot(x, z);
     const f = noise(x / 46, z / 46, seed) * 0.6 + noise(x / 20, z / 20, seed + 1) * 0.3 + noise(x / 8, z / 8, seed + 2) * 0.1;
     let h = Math.max(0, (f - 0.4) * 26) + 0.4;
@@ -288,6 +288,50 @@ export const buildRushWorld = (scene, track, opts = {}) => {
     const edge = smooth(0.8, 0.98, r / R);
     return h * (1 - edge) + -3.2 * edge;
   };
+
+  // Ponts de bois au-dessus de la rivière : un sur le chemin, deux autres plus loin.
+  // Chaque pont est perpendiculaire à la rivière à cet endroit ; le terrain est aplani en rampe à ses deux bouts.
+  const bridges = [];
+  {
+    const ux = -Math.sin(aAng); const uz = Math.cos(aAng);
+    const cx = Math.cos(aAng); const cz = Math.sin(aAng);
+    const centerAt = (along) => 8 + Math.sin(along / 17 + seed) * 9 + (noise(along / 30, 0, riverSeed) - 0.5) * 12;
+    let best = null;
+    for (let k = 0; k <= 200; k += 1) {
+      const t = k / 200;
+      const x = start.x + (arena.x - start.x) * t; const z = start.z + (arena.z - start.z) * t;
+      let bx = x; let bz = z; let bd = 1e9;
+      for (let o = -9; o <= 9; o += 0.5) { const px = x - uz * o; const pz = z + ux * o; const d = pathDist(px, pz); if (d < bd) { bd = d; bx = px; bz = pz; } }
+      const rd = riverDist(bx, bz);
+      if (!best || rd < best.rd) best = { rd, along: bx * ux + bz * uz };
+    }
+    [best.along, best.along + 40, best.along - 40].forEach((along) => {
+      const c = centerAt(along);
+      const mx = ux * along + cx * c; const mz = uz * along + cz * c;
+      if (Math.hypot(mx, mz) > R * 0.76 || Math.hypot(mx - lake.x, mz - lake.z) < lake.r + 8) return;
+      // direction locale de la rivière -> le pont part à angle droit
+      const dc = (centerAt(along + 1) - centerAt(along - 1)) / 2;
+      let tx = ux + cx * dc; let tz = uz + cz * dc; const tl = Math.hypot(tx, tz); tx /= tl; tz /= tl;
+      const dx = -tz; const dz = tx;
+      const len = 16; const half = 1.8;
+      const endH = (sgn) => { let h = -99; for (let o = 0; o <= 3; o += 1) h = Math.max(h, baseHeight(mx + dx * sgn * (len / 2 + o), mz + dz * sgn * (len / 2 + o))); return h; };
+      const H = Math.max(WATER + 1.4, Math.max(endH(-1), endH(1)));
+      const yAt = (t) => H + Math.sin(Math.PI * Math.max(0, Math.min(1, t))) * 0.5;
+      bridges.push({ mx, mz, dx, dz, len, half, H, yAt });
+    });
+  }
+  // Abords des ponts : rampe de terre qui rejoint le tablier
+  const rawHeight = (x, z) => {
+    let h = baseHeight(x, z);
+    for (const b of bridges) {
+      const rx = x - b.mx; const rz = z - b.mz;
+      const s0 = Math.abs(rx * b.dx + rz * b.dz); const w = Math.abs(-rx * b.dz + rz * b.dx);
+      if (s0 < b.len / 2 - 2.5 || w > b.half + 3.5) continue;
+      const k = (1 - smooth(b.len / 2 + 1, b.len / 2 + 9, s0)) * (1 - smooth(b.half + 0.8, b.half + 3.5, w));
+      if (k > 0) h = h * (1 - k) + (b.H - 0.02) * k;
+    }
+    return h;
+  };
   const N1 = SEG + 1;
   const CS = SIZE / SEG;
   const heights = new Float32Array(N1 * N1);
@@ -304,41 +348,11 @@ export const buildRushWorld = (scene, track, opts = {}) => {
   const isWater = (x, z) => terrainAt(x, z) < WATER - 0.05;
   const slopeAt = (x, z) => Math.abs(terrainAt(x + 1, z) - terrainAt(x - 1, z)) + Math.abs(terrainAt(x, z + 1) - terrainAt(x, z - 1));
 
-  // Ponts de bois au-dessus de la rivière : un sur le chemin, deux autres plus loin
-  const bridges = [];
-  {
-    const ux = -Math.sin(aAng); const uz = Math.cos(aAng); // axe de la rivière
-    const cx = Math.cos(aAng); const cz = Math.sin(aAng); // en travers
-    const centerAt = (along) => 8 + Math.sin(along / 17 + seed) * 9 + (noise(along / 30, 0, riverSeed) - 0.5) * 12;
-    // point du chemin le plus proche de la rivière
-    let best = null;
-    for (let k = 0; k <= 200; k += 1) {
-      const t = k / 200;
-      const x = start.x + (arena.x - start.x) * t; const z = start.z + (arena.z - start.z) * t;
-      let bx = x; let bz = z; let bd = 1e9;
-      for (let o = -9; o <= 9; o += 0.5) { const px = x - uz * o; const pz = z + ux * o; const d = pathDist(px, pz); if (d < bd) { bd = d; bx = px; bz = pz; } }
-      const rd = riverDist(bx, bz);
-      if (!best || rd < best.rd) best = { rd, along: bx * ux + bz * uz };
-    }
-    const alongs = [best.along, best.along + 40, best.along - 40];
-    alongs.forEach((along) => {
-      const c = centerAt(along);
-      const mx = ux * along + cx * c; const mz = uz * along + cz * c;
-      const len = 17;
-      const ax = mx - cx * len / 2; const az = mz - cz * len / 2; const bx = mx + cx * len / 2; const bz = mz + cz * len / 2;
-      if (Math.hypot(mx, mz) > R * 0.78 || Math.hypot(mx - lake.x, mz - lake.z) < lake.r + 6) return;
-      const hA = Math.max(WATER + 0.6, terrainAt(ax, az)); const hB = Math.max(WATER + 0.6, terrainAt(bx, bz));
-      bridges.push({ mx, mz, dx: cx, dz: cz, len, half: 1.8, hA, hB });
-    });
-  }
   const deckAt = (x, z) => {
     for (const b of bridges) {
       const rx = x - b.mx; const rz = z - b.mz;
-      const s = rx * b.dx + rz * b.dz; const w = -rx * b.dz + rz * b.dx;
-      if (Math.abs(s) <= b.len / 2 && Math.abs(w) <= b.half) {
-        const t = s / b.len + 0.5;
-        return b.hA + (b.hB - b.hA) * t + Math.sin(Math.PI * t) * 0.7;
-      }
+      const s0 = rx * b.dx + rz * b.dz; const w = -rx * b.dz + rz * b.dx;
+      if (Math.abs(s0) <= b.len / 2 && Math.abs(w) <= b.half) return b.yAt(s0 / b.len + 0.5);
     }
     return null;
   };
@@ -454,6 +468,7 @@ export const buildRushWorld = (scene, track, opts = {}) => {
       if (terrainAt(x, z) < WATER + 0.5 || slopeAt(x, z) > maxSlope) continue;
       if (Math.hypot(x - arena.x, z - arena.z) < arena.r + 4) continue;
       if (pathDist(x, z) < 2.6) continue;
+      if (bridges.some((b) => Math.abs((x - b.mx) * b.dx + (z - b.mz) * b.dz) < b.len / 2 + 9 && Math.abs(-(x - b.mx) * b.dz + (z - b.mz) * b.dx) < b.half + 3)) continue;
       if (avoid && (Math.hypot(x - start.x, z - start.z) < avoid || inGrass(x, z))) continue;
       return { x, z };
     }
@@ -619,7 +634,7 @@ export const buildRushWorld = (scene, track, opts = {}) => {
     let pi = 0; let qi = 0; let ri = 0;
     bridges.forEach((b) => {
       const ry = Math.atan2(-b.dz, b.dx);
-      const yAt = (t) => b.hA + (b.hB - b.hA) * t + Math.sin(Math.PI * t) * 0.7;
+      const { yAt } = b;
       const segLen = b.len / SEGS;
       for (let k = 0; k < SEGS; k += 1) {
         const t = (k + 0.5) / SEGS;
@@ -657,7 +672,7 @@ export const buildRushWorld = (scene, track, opts = {}) => {
         const x = -SIZE / 2 + (i / 128) * SIZE; const z = -SIZE / 2 + (j / 128) * SIZE;
         const h = terrainAt(x, z);
         let c;
-        if (deckAt(x, z) !== null && h < WATER + 0.6) c = [168, 116, 63];
+        if (deckAt(x, z) !== null) c = [168, 116, 63];
         else if (h < WATER) c = [63, 155, 232];
         else if (h < WATER + 0.3) c = [234, 215, 162];
         else if (Math.hypot(x - arena.x, z - arena.z) < arena.r) c = [217, 211, 232];

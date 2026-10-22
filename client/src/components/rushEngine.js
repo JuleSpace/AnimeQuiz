@@ -1569,8 +1569,20 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       const y = Math.max(terrainAt(z.x, z.z), WATER) + 0.08;
       const a = Math.min(1, z.life / 0.4) * Math.min(1, (z.max - z.life) / 0.2 + 0.3);
       if (z.kind === 'tornado') {
-        pillars.add(z.x, y, z.z, z.r, '#e8f4ff', 0.28 * a, g.t * 6, 4.5, z.r);
-        pillars.add(z.x, y, z.z, z.r * 0.5, z.color, 0.35 * a, -g.t * 8, 5, z.r * 0.5);
+        // Tourbillon en entonnoir : une spirale de sprites (gouttes, rafales, poussière) qui monte en s'élargissant
+        const H = 4.6; const N = 34; const frame = fxFrameOfType(z.type);
+        for (let i = 0; i < N; i += 1) {
+          const k = i / N; const hh = ((k + g.t * 0.6) % 1) * H;
+          const ang = g.t * 7 + i * 2.4 + hh * 0.9;
+          const rad = z.r * (0.22 + 0.78 * (hh / H) ** 0.8);
+          const px = z.x + Math.cos(ang) * rad; const pz = z.z + Math.sin(ang) * rad;
+          const fa = a * Math.min(1, (H - hh) / 1.2) * Math.min(1, hh / 0.4 + 0.3);
+          if (i % 3 === 0) fx.sprite(FX.smoke, px, y + hh, pz, 0.7 + hh * 0.12, ang, 0.8 * fa, '#e8f4ff');
+          else fx.sprite(frame, px, y + hh, pz, 0.45 + hh * 0.06, ang * 2, fa);
+        }
+        fx.glow(z.x, y + 0.6, z.z, z.r * 1.4, z.color, 0.35 * a);
+        rings.add(z.x, y + 0.01, z.z, z.r * (0.8 + Math.sin(g.t * 9) * 0.06), z.color, 0.6 * a);
+        rings.add(z.x, y + 0.01, z.z, z.r * 0.45, '#ffffff', 0.5 * a);
       } else {
         discs.add(z.x, y, z.z, z.r, z.color, (z.kind === 'flame' ? 0.3 : 0.22) * a);
         rings.add(z.x, y + 0.01, z.z, z.r, z.color, 0.7 * a);
