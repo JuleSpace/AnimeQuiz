@@ -3,6 +3,7 @@ const {
   JOKER_IDS,
   TARGET_JOKERS,
   drawJoker,
+  cleanJokerPool,
   freshJoker,
   activePackRange,
   isPackQuestion,
@@ -890,6 +891,7 @@ function publicLobby(lobby) {
     hostAvatar: lobby.hostAvatar || null,
     teamMode: Boolean(lobby.teamMode),
     jokersEnabled: lobby.jokersEnabled !== false,
+    jokerPool: lobby.jokerPool || null,
     players: playerSnapshot(lobby),
     isGameStarted: lobby.isGameStarted,
     totalQuestions: total,
@@ -1220,7 +1222,7 @@ function dealBoosters(io, lobby) {
   lobby.phase = 'booster';
   lobby.io = io;
   lobby.players.forEach((player) => {
-    player.joker = freshJoker(drawJoker());
+    player.joker = freshJoker(drawJoker(lobby.jokerPool));
   });
   io.to(lobby.quizId).emit('quiz-booster-start', boosterPayload(lobby));
   lobby.players.forEach((player) => {
@@ -1773,7 +1775,7 @@ function attachQuiz(app, io) {
             player.satOutIndex = lobby.currentQuestion;
           }
           if (jokersActive(lobby)) {
-            player.joker = freshJoker(drawJoker());
+            player.joker = freshJoker(drawJoker(lobby.jokerPool));
           }
           giveFreeAvatar(lobby, player);
           lobby.players.push(player);
@@ -1905,6 +1907,16 @@ function attachQuiz(app, io) {
       const lobby = quizLobbies.get(player.roomId);
       if (!lobby || !isHostSocket(lobby, socket.id) || lobby.isGameStarted || lobby.teamMode) return;
       lobby.jokersEnabled = Boolean(data?.enabled);
+      io.to(lobby.quizId).emit('lobby-updated', publicLobby(lobby));
+    });
+
+    // Cartes jokers autorisées dans la partie (l'organisateur coche celles qu'il garde)
+    socket.on('set-joker-pool', (data) => {
+      const player = quizPlayers.get(socket.id);
+      if (!player) return;
+      const lobby = quizLobbies.get(player.roomId);
+      if (!lobby || !isHostSocket(lobby, socket.id) || lobby.isGameStarted) return;
+      lobby.jokerPool = cleanJokerPool(data?.cards);
       io.to(lobby.quizId).emit('lobby-updated', publicLobby(lobby));
     });
 

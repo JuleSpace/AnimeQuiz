@@ -342,3 +342,54 @@ h1, h2, h3 {
 .login-split {
   background: linear-gradient(90deg, transparent, var(--ce-gold), transparent) top / 100% 3px no-repeat;
 }
+
+/* ———————————— Choix des cartes jokers (lobby du quiz) ———————————— */
+.lobby-joker-pool {
+  position: absolute; top: 86px; right: 16px; z-index: 2; margin: 0;
+  border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer;
+  font-family: var(--ce-title); font-style: italic; font-weight: 800; font-size: 0.9rem;
+  color: var(--ce-navy); background: #fff; box-shadow: 0 3px 0 #6b84c9;
+}
+.lobby-joker-pool:hover { transform: translateY(-1px); }
+.lobby-joker-pool.is-info { cursor: default; color: var(--ce-gold); background: rgba(8, 22, 77, 0.8); box-shadow: 0 0 0 2px var(--ce-gold); }
+.joker-pool-modal {
+  position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; padding: 16px;
+  background: rgba(3, 8, 36, 0.78); backdrop-filter: blur(4px);
+}
+.joker-pool-card {
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 16px;
+  width: min(1060px, 100%); max-height: calc(100dvh - 32px); padding: 22px clamp(14px, 3vw, 28px);
+  border-radius: 22px; background: var(--ce-panel); box-shadow: var(--ce-ring);
+}
+.joker-pool-head h3 { margin: 0 0 4px; font-family: var(--ce-title); font-style: italic; font-weight: 900; font-size: 1.8rem; color: #fff; }
+.joker-pool-head p { margin: 0 0 12px; color: var(--ce-mist); }
+.joker-pool-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.joker-pool-tools .btn { margin: 0; padding: 8px 16px; font-size: 0.9rem; }
+.joker-pool-count { margin-left: auto; font-family: var(--ce-title); font-style: italic; font-weight: 800; color: var(--ce-gold); }
+.joker-pool-count.is-empty { color: #ff8a9a; }
+.joker-pool-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px;
+  overflow-y: auto; padding: 6px 4px 10px;
+}
+.joker-pool-item {
+  position: relative; display: grid; justify-items: center; align-content: start; gap: 8px;
+  padding: 10px 6px 12px; border: 0; border-radius: 14px; cursor: pointer; color: #fff;
+  background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.15);
+  transition: transform 0.12s, box-shadow 0.12s, opacity 0.12s, filter 0.12s;
+  opacity: 0.45; filter: grayscale(0.85);
+}
+.joker-pool-item.is-on { opacity: 1; filter: none; background: rgba(255, 210, 58, 0.12); box-shadow: inset 0 0 0 3px var(--ce-gold); }
+.joker-pool-item:hover { transform: translateY(-3px); }
+.joker-pool-item small { font-size: 0.78rem; line-height: 1.25; text-align: center; color: var(--ce-mist); }
+.joker-pool-check {
+  position: absolute; top: 6px; right: 6px; z-index: 3; display: grid; place-items: center;
+  width: 26px; height: 26px; border-radius: 50%; font-weight: 900;
+  color: var(--ce-navy); background: #fff; box-shadow: 0 0 0 2px var(--ce-navy);
+}
+.joker-pool-item.is-on .joker-pool-check { background: var(--ce-gold); }
+.joker-pool-actions { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+.joker-pool-actions .btn { margin: 0; }
+@media (max-width: 600px) {
+  .joker-pool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .joker-pool-count { margin-left: 0; width: 100%; }
+}

@@ -3,8 +3,19 @@ const PACKS_PER_QUIZ = 5;
 const JOKER_IDS = ['double', 'filet', 'seconde', 'copie', 'indice', 'silence', 'vol', 'melange', 'pot', 'renversement', 'toutourien', 'gambling', 'rumeur', 'bouclier'];
 const TARGET_JOKERS = new Set(['copie', 'silence', 'vol']);
 
-function drawJoker() {
-  return JOKER_IDS[Math.floor(Math.random() * JOKER_IDS.length)];
+/** Tire une carte, parmi celles que l'organisateur a laissées actives (toutes par défaut). */
+function drawJoker(pool = null) {
+  const ids = Array.isArray(pool) ? pool.filter((id) => JOKER_IDS.includes(id)) : [];
+  const from = ids.length ? ids : JOKER_IDS;
+  return from[Math.floor(Math.random() * from.length)];
+}
+
+/** Liste de cartes envoyée par le client → liste propre (null = toutes). */
+function cleanJokerPool(cards) {
+  if (!Array.isArray(cards)) return null;
+  const ids = JOKER_IDS.filter((id) => cards.includes(id));
+  if (!ids.length || ids.length === JOKER_IDS.length) return null;
+  return ids;
 }
 
 function packCount(total) {
@@ -252,6 +263,7 @@ module.exports = {
   JOKER_IDS,
   TARGET_JOKERS,
   drawJoker,
+  cleanJokerPool,
   packStarts,
   isPackQuestion,
   packRange,

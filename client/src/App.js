@@ -950,6 +950,7 @@ function App() {
             onTransferLeadership={handleTransferLeadership}
             onSetTeamMode={(enabled) => socket.emit('set-team-mode', { enabled })}
             onSetJokers={(enabled) => socket.emit('set-jokers', { enabled })}
+            onSetJokerPool={(cards) => socket.emit('set-joker-pool', { cards })}
             onChooseTeam={(team) => socket.emit('choose-team', { team })}
             onChooseAvatar={(avatar) => socket.emit('choose-avatar', { avatar })}
           />

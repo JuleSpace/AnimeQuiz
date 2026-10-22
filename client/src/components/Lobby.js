@@ -1,6 +1,57 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Icon from './ArcadeIcon';
 import { Avatar, AvatarPicker, takenByMap } from './SonicRoster';
+import { JOKERS, JokerCard } from './JokerCards';
+
+const ALL_JOKERS = Object.keys(JOKERS);
+
+/** Fenêtre de choix des cartes jokers autorisées dans la partie. */
+const JokerPoolPicker = ({ pool, onSave, onClose }) => {
+  const [picked, setPicked] = useState(() => new Set(pool && pool.length ? pool : ALL_JOKERS));
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  const toggle = (id) => setPicked((cur) => {
+    const next = new Set(cur);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const count = picked.size;
+  return createPortal(
+    <div className="joker-pool-modal" role="dialog" aria-label="Cartes jokers de la partie" onPointerDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="joker-pool-card">
+        <div className="joker-pool-head">
+          <h3>Cartes de la partie</h3>
+          <p>Coche les cartes qui peuvent sortir des boosters. Les autres ne seront jamais tirées.</p>
+          <div className="joker-pool-tools">
+            <button type="button" className="btn btn-quiet" onClick={() => setPicked(new Set(ALL_JOKERS))}>Tout cocher</button>
+            <button type="button" className="btn btn-quiet" onClick={() => setPicked(new Set())}>Tout décocher</button>
+            <span className={`joker-pool-count${count ? '' : ' is-empty'}`}>{count}/{ALL_JOKERS.length} cartes</span>
+          </div>
+        </div>
+        <div className="joker-pool-grid">
+          {ALL_JOKERS.map((id) => (
+            <button key={id} type="button" className={`joker-pool-item${picked.has(id) ? ' is-on' : ''}`} onClick={() => toggle(id)} aria-pressed={picked.has(id)} title={JOKERS[id].rule}>
+              <JokerCard cardId={id} size="hand" quiet />
+              <span className="joker-pool-check" aria-hidden="true">{picked.has(id) ? '✓' : ''}</span>
+              <small>{JOKERS[id].rule}</small>
+            </button>
+          ))}
+        </div>
+        <div className="joker-pool-actions">
+          <button type="button" className="btn btn-quiet" onClick={onClose}>Annuler</button>
+          <button type="button" className="btn btn-success" disabled={!count} onClick={() => { onSave(ALL_JOKERS.filter((id) => picked.has(id))); onClose(); }}>
+            {count ? 'Valider' : 'Garde au moins une carte'}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
 
 const Lobby = ({
   lobby,
@@ -10,6 +61,7 @@ const Lobby = ({
   onTransferLeadership,
   onSetTeamMode,
   onSetJokers,
+  onSetJokerPool,
   onChooseTeam,
   onChooseAvatar,
   variant = 'music'
@@ -17,6 +69,7 @@ const Lobby = ({
   const [numberOfSongs, setNumberOfSongs] = useState(10);
   const [maxSongs, setMaxSongs] = useState(10);
   const isQuiz = variant === 'quiz';
+  const [poolOpen, setPoolOpen] = useState(false);
 
   useEffect(() => {
     const pool = lobby?.totalQuestions || lobby?.totalSongs;
@@ -31,6 +84,7 @@ const Lobby = ({
   const isLeader = isQuiz ? lobby.hostId === player.id : lobby.players[0]?.id === player.id;
   const teamMode = Boolean(isQuiz && lobby.teamMode);
   const jokersOn = lobby.jokersEnabled !== false;
+  const poolSize = lobby.jokerPool?.length || ALL_JOKERS.length;
   const shadowPlayers = lobby.players.filter((entry) => entry.team === 'shadow');
   const sonicPlayers = lobby.players.filter((entry) => entry.team === 'sonic');
   const unassigned = lobby.players.filter((entry) => entry.team !== 'shadow' && entry.team !== 'sonic');
@@ -71,6 +125,18 @@ const Lobby = ({
           ) : (
             <div className={`lobby-joker-switch${jokersOn ? ' is-on' : ''}`}>{jokersOn ? 'Jokers' : 'Sans jokers'}</div>
           )
+        )}
+        {isQuiz && !lobby.isGameStarted && !teamMode && jokersOn && (
+          isLeader ? (
+            <button type="button" className="lobby-joker-pool" onClick={() => setPoolOpen(true)}>
+              Cartes {poolSize}/{ALL_JOKERS.length}
+            </button>
+          ) : poolSize < ALL_JOKERS.length && (
+            <div className="lobby-joker-pool is-info">Cartes {poolSize}/{ALL_JOKERS.length}</div>
+          )
+        )}
+        {poolOpen && isLeader && (
+          <JokerPoolPicker pool={lobby.jokerPool} onSave={(cards) => onSetJokerPool && onSetJokerPool(cards)} onClose={() => setPoolOpen(false)} />
         )}
         <h2 style={{ textAlign: 'center', marginBottom: '30px', padding: isQuiz ? '0 140px' : undefined }}>
           <Icon name="pad" tone="mark" />
