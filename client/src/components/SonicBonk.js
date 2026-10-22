@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createBonk } from './bonkEngine';
 import { CHARACTERS, MAX_LEVEL, MODELS, PASSIVES, RUN_SECONDS, WEAPONS } from './bonkData';
 import { Avatar } from './SonicRoster';
+import GameHome, { HomeBoard } from './GameHome';
+import { AccountChip, postRun } from './account';
 import './SonicBonk.css';
 
 export const BONK_HASH = '#bonk';
@@ -28,8 +30,36 @@ const Pips = ({ lv }) => (
   <span className="bk-pips">{Array.from({ length: MAX_LEVEL }, (_, i) => <i key={i} className={i < lv ? 'on' : ''} />)}</span>
 );
 
+/** Décor de l'accueil : Green Hill, damier, palmiers, looping et anneaux. */
+const BonkScene = () => (
+  <div className="bkh-scene" aria-hidden="true">
+    <span className="bkh-cloud is-1" /><span className="bkh-cloud is-2" /><span className="bkh-cloud is-3" />
+    <span className="bkh-mount" />
+    <span className="bkh-sea" />
+    <span className="bkh-hill is-back" />
+    <span className="bkh-loop" />
+    <span className="bkh-palm is-1"><i /></span>
+    <span className="bkh-palm is-2"><i /></span>
+    <span className="bkh-palm is-3"><i /></span>
+    <span className="bkh-hill is-front" />
+    <span className="bkh-rings">{Array.from({ length: 7 }, (_, i) => <i key={i} style={{ '--i': i }} />)}</span>
+  </div>
+);
+const Ring = () => <span className="bkh-ring" aria-hidden="true" />;
+
+const BONK_HOWTO = [
+  ['Courir', 'ZQSD / WASD · caméra à la souris (clique sur le jeu)'],
+  ['Saut', 'Espace · rappuie en l’air pour la capacité du perso'],
+  ['Spin dash', 'Maj ou E : fonce et écrase les robots, invincible'],
+  ['Bunny hop', 'ressaute pile à l’atterrissage pour garder ta vitesse'],
+  ['Ressorts', 'et accélérateurs pour traverser l’île'],
+  ['Coffres', 'payés en anneaux, ramassés sur les robots'],
+  ['Téléphone', 'joystick à gauche, caméra à droite, boutons Saut / Spin']
+];
+
 const SonicBonk = ({ onClose }) => {
-  const [screen, setScreen] = useState('menu');
+  const [screen, setScreen] = useState('home');
+  const [howto, setHowto] = useState(false);
   const [charId, setCharId] = useState(CHARACTERS[0].id);
   const [hud, setHud] = useState(null);
   const [levelUp, setLevelUp] = useState(null);
@@ -48,6 +78,7 @@ const SonicBonk = ({ onClose }) => {
       onLevelUp: (options, level, rerolls) => setLevelUp({ options, level, rerolls }),
       onEnd: (result, snap) => {
         setEnd({ result, ...snap });
+        postRun('bonk', { gen: 1, mode: 'classic', partnerId: character.id, form: character.name, result, t: snap.t, kills: snap.kills, level: snap.level });
         setBest((prev) => {
           const mine = prev[character.id] || {};
           const better = result === 'win'
@@ -84,6 +115,96 @@ const SonicBonk = ({ onClose }) => {
     if (options) setLevelUp((cur) => ({ ...cur, options, rerolls: cur.rerolls - 1 }));
   };
 
+  if (screen === 'home') {
+    const rec = best[character.id];
+    const wins = CHARACTERS.filter((c) => best[c.id]?.win).length;
+    const bestKills = Math.max(0, ...CHARACTERS.map((c) => best[c.id]?.kills || 0));
+    const next = CHARACTERS.find((c) => !best[c.id]?.win);
+    return (
+      <div className="bk-root bkh-wrap">
+        <GameHome
+          theme="gh-bonk"
+          backdrop={<BonkScene />}
+          topLeft={(
+            <>
+              <button type="button" className="gh-pill is-plain" onClick={onClose}>← Bully’s Lair</button>
+              <button type="button" className="gh-pill is-plain" onClick={() => setHowto(true)}>Comment jouer</button>
+            </>
+          )}
+          topRight={(
+            <>
+              <AccountChip returnHash="#bonk" />
+              <span className="gh-pill" title="Personnages victorieux">🏆 {wins}/{CHARACTERS.length}</span>
+              <span className="gh-pill is-strong" title="Record de K.O.">{bestKills.toLocaleString('fr-FR')} K.O.</span>
+            </>
+          )}
+          logo={(
+            <div className="bkh-logo">
+              <span className="bk-kicker">Mode secret · Green Hill</span>
+              <h1>Sonic <b>Bonk</b></h1>
+            </div>
+          )}
+          stage={<span className="bkh-hero"><Avatar id={character.id} size={230} /></span>}
+          play={{
+            title: 'Jouer',
+            sub: `${character.name} · ${WEAPONS[character.weapon].name}${rec ? ` · ${rec.win ? 'victoire en' : 'record'} ${clock(rec.t)}` : ''}`,
+            art: <Avatar id={character.id} size={84} />,
+            onClick: start
+          }}
+          side={{
+            title: 'Perso',
+            sub: `${CHARACTERS.length} au choix`,
+            art: <span className="bkh-side-stack">{CHARACTERS.slice(0, 3).map((c) => <Avatar key={c.id} id={c.id} size={34} />)}</span>,
+            onClick: () => setScreen('menu')
+          }}
+          cards={[
+            {
+              key: 'boss', tone: 'event', kicker: `Le Colosse · à ${clock(RUN_SECONDS)}`,
+              title: 'Tiens bon, puis abats-le',
+              sub: `${Math.round(RUN_SECONDS / 60)} minutes de hordes de robots avant le boss`,
+              art: <Ring />,
+              onClick: start
+            },
+            next ? {
+              key: 'next', tone: 'light', kicker: `Victoires · ${wins}/${CHARACTERS.length} personnages`,
+              title: `Gagne avec ${next.name}`,
+              sub: next.blurb,
+              art: <Avatar id={next.id} size={52} />,
+              onClick: () => { setCharId(next.id); setScreen('menu'); }
+            } : {
+              key: 'all', tone: 'done', kicker: 'Tous les personnages', title: 'Île entièrement conquise !', sub: 'Bats tes records de temps et de K.O.',
+              art: <Ring />, onClick: () => setScreen('menu')
+            }
+          ]}
+          tiles={CHARACTERS.slice(0, 5).map((c) => ({
+            key: c.id, label: c.name, value: best[c.id]?.win ? `✓ ${clock(best[c.id].t)}` : best[c.id] ? `${best[c.id].kills} K.O.` : 'à jouer',
+            color: c.color, icon: <Avatar id={c.id} size={44} />,
+            onClick: () => { setCharId(c.id); setScreen('menu'); }
+          }))}
+          board={(
+            <HomeBoard
+              game="bonk"
+              gen={1}
+              title="Classement"
+              subtitle="Île de Green Hill · meilleur score de chaque joueur"
+              describe={(r) => `${r.form || CHARACTERS.find((c) => c.id === r.partnerId)?.name || ''} · niv. ${r.level}`}
+            />
+          )}
+          footer={`Fan-game non commercial. Personnages © SEGA. Modèles 3D (Sketchfab) : ${CHARACTERS.map((c) => MODELS[c.id]?.credit).filter(Boolean).join(' · ')}.`}
+        />
+        {howto && (
+          <div className="bkh-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) setHowto(false); }}>
+            <div className="bkh-sheet">
+              <header><b>Comment jouer</b><button type="button" className="bk-btn is-small is-light" onClick={() => setHowto(false)}>Fermer</button></header>
+              <p>Une île en 3D, des hordes de robots et {Math.round(RUN_SECONDS / 60)} minutes pour tenir. Tes attaques partent toutes seules : cours, saute, enchaîne les spin dash, casse les moniteurs et ouvre les coffres avec tes anneaux. Bats le Colosse pour gagner.</p>
+              <div className="bk-howto">{BONK_HOWTO.map(([k, v]) => <span key={k}><b>{k}</b> {v}</span>)}</div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (screen === 'menu') {
     return (
       <div className="bk-root bk-menu">
@@ -94,7 +215,7 @@ const SonicBonk = ({ onClose }) => {
             <h1>Sonic <b>Bonk</b></h1>
             <p>Une île en 3D, des hordes de robots et {Math.round(RUN_SECONDS / 60)} minutes pour tenir. Tes attaques partent toutes seules : cours, saute, enchaîne les spin dash, casse les moniteurs et ouvre les coffres avec tes anneaux. Bats le Colosse pour gagner.</p>
           </div>
-          <button type="button" className="bk-btn is-ghost" onClick={onClose}>Quitter</button>
+          <button type="button" className="bk-btn is-ghost" onClick={() => setScreen('home')}>← Accueil</button>
         </header>
         <div className="bk-chars">
           {CHARACTERS.map((c) => {
@@ -119,14 +240,7 @@ const SonicBonk = ({ onClose }) => {
             );
           })}
         </div>
-        <div className="bk-howto">
-          <span><b>Courir</b> ZQSD / WASD · <b>Caméra</b> souris (clique sur le jeu)</span>
-          <span><b>Saut</b> Espace · rappuie en l'air pour la capacité du perso</span>
-          <span><b>Spin dash</b> Maj ou E : fonce et écrase les robots, invincible</span>
-          <span><b>Bunny hop</b> ressaute pile à l'atterrissage pour garder ta vitesse</span>
-          <span><b>Ressorts et accélérateurs</b> pour traverser l'île · <b>Coffres</b> payés en anneaux</span>
-          <span><b>Téléphone</b> joystick à gauche, caméra à droite, boutons Saut / Spin</span>
-        </div>
+        <div className="bk-howto">{BONK_HOWTO.map(([k, v]) => <span key={k}><b>{k}</b> {v}</span>)}</div>
         <button type="button" className="bk-btn is-go" onClick={start}>Jouer avec {character.name}</button>
         <p className="bk-credit">
           Modèles 3D (Sketchfab) — {CHARACTERS.map((c) => MODELS[c.id]?.credit).filter(Boolean).join(' · ')} · Modèle de secours : RobotExpressive, Tomás Laulhé (CC0).
@@ -222,7 +336,7 @@ const SonicBonk = ({ onClose }) => {
             <h2>Pause</h2>
             <div className="bk-actions">
               <button type="button" className="bk-btn is-go" onClick={() => setPaused(false)}>Reprendre</button>
-              <button type="button" className="bk-btn is-light" onClick={() => { setPaused(false); setScreen('menu'); }}>Abandonner</button>
+              <button type="button" className="bk-btn is-light" onClick={() => { setPaused(false); setScreen('home'); }}>Abandonner</button>
             </div>
           </div>
         </div>
@@ -237,7 +351,7 @@ const SonicBonk = ({ onClose }) => {
             <div className="bk-actions">
               <button type="button" className="bk-btn is-go" onClick={start}>Rejouer</button>
               <button type="button" className="bk-btn is-light" onClick={() => setScreen('menu')}>Changer de perso</button>
-              <button type="button" className="bk-btn is-light" onClick={onClose}>Quitter</button>
+              <button type="button" className="bk-btn is-light" onClick={() => setScreen('home')}>Accueil</button>
             </div>
           </div>
         </div>
