@@ -157,3 +157,63 @@
   .pr-act b { font-size: 12px; }
   .sw-loadout { max-width: calc(100% - 140px); }
 }
+
+/* ——— Accueil « Aube de Kanto » (structure GameHome, cadres pixel du Swarm, palette du matin) ——— */
+.prh-wrap { background: #2b6fc2; }
+.gh-root.gh-rush {
+  --gh-bg: #2b6fc2;
+  --gh-play-a: #ff5d4f;
+  --gh-play-b: #d6283a;
+  --gh-side-a: #3fa6ff;
+  --gh-side-b: #1f6fd0;
+}
+.gh-rush .gh-shade { background: radial-gradient(110% 80% at 0% 100%, rgba(7, 16, 30, 0.7), transparent 55%), linear-gradient(180deg, rgba(15, 31, 54, 0.35), transparent 25%); }
+.gh-rush .gh-board-head { color: var(--ink); background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 10px, transparent 10px 20px), linear-gradient(180deg, #8cd4ff, #3f9be8); }
+.gh-rush .gh-board-tabs button.is-on { background: #ffe07a; }
+.gh-rush .gh-pill.is-strong { background: #ffe07a; }
+.prh-logo h1 { margin: 6px 0 0; font: 700 clamp(48px, 6.2vw, 84px)/0.9 var(--f-px); color: #fff; text-shadow: 5px 5px 0 #1f6fd0, 9px 9px 0 var(--ink); }
+.prh-logo h1 em { font-style: normal; color: #ffd447; }
+.prh-logo .sw-kicker { color: #fff3c4; text-shadow: 2px 2px 0 var(--ink); }
+.prh-legend { margin-right: -30px; margin-bottom: 70px; filter: drop-shadow(0 0 22px rgba(255, 230, 160, 0.7)); animation: prh-float 6s ease-in-out infinite; }
+.prh-partner { filter: drop-shadow(0 6px 0 rgba(7, 16, 30, 0.45)); }
+@keyframes prh-float { 50% { transform: translateY(-16px); } }
+.prh-howto { max-width: 760px; }
+
+/* Décor : ciel, soleil levant, nuages pixel, mer, collines et arène au loin. */
+.prh-scene { position: fixed; inset: 0; z-index: 0; overflow: hidden; image-rendering: pixelated;
+  background: linear-gradient(180deg, #2b6fc2 0 14%, #3f86d6 14% 26%, #5fa2e4 26% 36%, #8cbbe9 36% 44%, #ffcf9a 44% 50%, #ffb27a 50% 54%); }
+.prh-scene > span { position: absolute; display: block; }
+.prh-sun { left: 58%; top: 34%; width: 120px; height: 120px; background: #fff1b8;
+  box-shadow: 0 0 0 14px rgba(255, 233, 160, 0.45), 0 0 0 30px rgba(255, 220, 140, 0.22), 0 0 90px 40px rgba(255, 210, 140, 0.45);
+  clip-path: polygon(25% 0, 75% 0, 75% 8%, 92% 8%, 92% 25%, 100% 25%, 100% 75%, 92% 75%, 92% 92%, 75% 92%, 75% 100%, 25% 100%, 25% 92%, 8% 92%, 8% 75%, 0 75%, 0 25%, 8% 25%, 8% 8%, 25% 8%); }
+.prh-cloud { width: 96px; height: 24px; background: #fff; box-shadow: 24px -16px 0 #fff, 48px -16px 0 #fff, 48px -28px 0 #fff, 72px -8px 0 #f2f7ff, 120px 0 0 #f2f7ff, 24px 8px 0 #dbe8fb, 72px 8px 0 #dbe8fb;
+  animation: prh-drift 90s linear infinite; }
+.prh-cloud.is-1 { top: 12%; left: 6%; }
+.prh-cloud.is-2 { top: 22%; left: 38%; scale: 0.7; animation-duration: 120s; animation-delay: -40s; opacity: 0.9; }
+.prh-cloud.is-3 { top: 8%; left: 70%; scale: 1.3; animation-duration: 105s; animation-delay: -70s; }
+.prh-cloud.is-4 { top: 30%; left: 86%; scale: 0.6; animation-duration: 140s; animation-delay: -20s; opacity: 0.8; }
+@keyframes prh-drift { from { translate: -30vw 0; } to { translate: 40vw 0; } }
+.prh-bird { width: 6px; height: 6px; background: #1d3a5f; box-shadow: -6px -6px 0 #1d3a5f, 6px -6px 0 #1d3a5f, -12px -6px 0 #1d3a5f, 12px -6px 0 #1d3a5f; animation: prh-fly 38s linear infinite; }
+.prh-bird.is-1 { top: 20%; left: 30%; }
+.prh-bird.is-2 { top: 25%; left: 34%; scale: 0.7; animation-delay: -1.5s; }
+@keyframes prh-fly { from { translate: -40vw 4vh; } to { translate: 80vw -6vh; } }
+.prh-sea { left: 0; right: 0; top: 54%; bottom: 0; background: repeating-linear-gradient(180deg, #3b8fd8 0 10px, #4a9ee4 10px 14px, #3b8fd8 14px 26px, #6fb8f0 26px 28px); }
+.prh-hill { left: -5%; right: -5%; bottom: 0; }
+.prh-hill.is-far { height: 44%; background: #7fbf6a; clip-path: polygon(0 40%, 8% 40%, 8% 28%, 18% 28%, 18% 18%, 30% 18%, 30% 30%, 44% 30%, 44% 22%, 52% 22%, 52% 34%, 66% 34%, 66% 14%, 76% 14%, 76% 26%, 88% 26%, 88% 36%, 100% 36%, 100% 100%, 0 100%); }
+.prh-hill.is-mid { height: 34%; background: #5aa94a; clip-path: polygon(0 30%, 12% 30%, 12% 20%, 26% 20%, 26% 34%, 40% 34%, 40% 26%, 58% 26%, 58% 40%, 72% 40%, 72% 18%, 84% 18%, 84% 30%, 100% 30%, 100% 100%, 0 100%); }
+.prh-arena { left: 39%; bottom: 29%; width: 150px; height: 70px; background: #e8d9b8;
+  box-shadow: inset 0 14px 0 #c94a3a, inset 0 18px 0 #8c2f25, inset 0 -10px 0 #b9a27a;
+  clip-path: polygon(10% 0, 90% 0, 100% 30%, 100% 100%, 0 100%, 0 30%); }
+.prh-arena::after { content: ''; position: absolute; left: 44%; bottom: 0; width: 12%; height: 40%; background: #2a1d14; }
+.prh-hill.is-near { height: 22%; background: #3f8a37; clip-path: polygon(0 24%, 20% 24%, 20% 12%, 46% 12%, 46% 30%, 70% 30%, 70% 16%, 100% 16%, 100% 100%, 0 100%); }
+.prh-grass { left: 0; right: 0; bottom: 0; height: 9%; background: repeating-linear-gradient(90deg, #2f6e2a 0 8px, #357a2f 8px 16px); box-shadow: 0 -6px 0 #4a9a3e; }
+@media (max-width: 1100px) {
+  .prh-legend { display: none; }
+  .prh-arena { left: 66%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prh-cloud, .prh-bird, .prh-legend { animation: none; }
+}
+@media (max-width: 520px) {
+  .gh-rush .gh-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

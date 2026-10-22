@@ -161,7 +161,7 @@ const ITEM_SLUG = {
   protein: 'protein', carbos: 'carbos', hpup: 'hp-up', magnet: 'magnet', quickclaw: 'quick-claw', leftovers: 'leftovers', scope: 'scope-lens',
   shellbell: 'shell-bell', expshare: 'exp-share', brightpowder: 'bright-powder'
 };
-const itemSprite = (slug) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${slug}.png`;
+export const itemSprite = (slug) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${slug}.png`;
 // numéro « de collection » stable pour chaque carte
 const cardNo = (id) => (([...String(id)].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 150) + 1);
 

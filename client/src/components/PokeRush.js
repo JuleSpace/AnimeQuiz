@@ -5,7 +5,8 @@ import {
   loadRush, recordRush, saveRush, rushEffects, rushPool, starterOpen, upCost, upRank, weaknessesOf
 } from './rushData';
 import { FOES, WEAPONS, ultimateOf } from './swarmData';
-import { Missions, MusicControls, PmdSprite, RunRecap, TcgCard } from './PokeSwarm';
+import { Missions, MusicControls, PmdSprite, RunRecap, TcgCard, itemSprite } from './PokeSwarm';
+import GameHome, { HomeBoard, HomeIcon } from './GameHome';
 import { musicPlayer } from './pokeArenaMusic';
 import { AccountChip, Leaderboard, postRun, useCloudSync } from './account';
 import './PokeSwarm.css';
@@ -126,8 +127,37 @@ const RushPanel = ({ tab, setTab, meta, setMeta, onClose }) => {
   );
 };
 
+/** Décor de l'accueil : une île de Kanto au lever du jour, en aplats pixel. */
+const RushScene = () => (
+  <div className="prh-scene" aria-hidden="true">
+    <span className="prh-sun" />
+    <span className="prh-cloud is-1" /><span className="prh-cloud is-2" /><span className="prh-cloud is-3" /><span className="prh-cloud is-4" />
+    <span className="prh-bird is-1" /><span className="prh-bird is-2" />
+    <span className="prh-sea" />
+    <span className="prh-hill is-far" />
+    <span className="prh-hill is-mid" />
+    <span className="prh-arena" />
+    <span className="prh-hill is-near" />
+    <span className="prh-grass" />
+  </div>
+);
+
+const RUSH_HOWTO = (ultName) => [
+  ['Bouger', 'ZQSD / WASD · caméra à la souris (clic) ou en glissant à droite de l’écran'],
+  ['Sauter', 'Espace : les falaises se franchissent en sautant'],
+  ['Esquive', 'Maj : un bond rapide, invincible'],
+  ['Capturer', `F : PV rouges = capturable, il se bat ensuite avec toi (${MAX_ALLIES} max)`],
+  ['Types', 'les attaques super efficaces font ×2, les mauvaises ×0,5'],
+  ['Ultime', `R : ${ultName}`],
+  ['Hautes herbes', 'des Pokémon Alpha s’y cachent vers 2:00 et 5:00'],
+  ['Eau', 'seuls les types Eau et Vol s’y aventurent'],
+  ['Coffres', 'payés en Poké Dollars ₽, ramassés sur les sauvages'],
+  ['Arène', 'à 8:00, le légendaire s’y réveille : bats-le pour gagner']
+];
+
 const PokeRush = ({ onClose }) => {
-  const [screen, setScreen] = useState('menu');
+  const [screen, setScreen] = useState('home');
+  const [howto, setHowto] = useState(false);
   const [meta, setMetaState] = useState(loadRush);
   const metaRef = useRef(meta);
   const setMeta = (m) => { metaRef.current = m; setMetaState(m); };
@@ -196,6 +226,114 @@ const PokeRush = ({ onClose }) => {
   };
   const bless = (id) => { setAltar(null); gameRef.current?.chooseBlessing(id); };
 
+  if (screen === 'home') {
+    const pool = rushPool(1);
+    const dexIds = [...pool.t1, ...pool.t2, ...pool.t3, ...pool.minis, ...pool.finals];
+    const caughtN = dexIds.filter((id) => meta.caught[id]).length;
+    const affordUp = UPGRADES.filter((u) => upRank(meta, u.id) < u.max && meta.pl >= upCost(meta, u)).length;
+    const legend = pool.finals[Math.floor(Date.now() / 60000) % pool.finals.length];
+    const beaten = pool.finals.filter((id) => meta.caught[id]).length;
+    const rec = meta.best[partner.id];
+    const locked = RUSH_STARTERS.find((p) => !starterOpen(meta, p));
+    return (
+      <div className="sw-root pr-root prh-wrap">
+        <GameHome
+          theme="gh-swarm gh-rush"
+          backdrop={<RushScene />}
+          topLeft={(
+            <>
+              <button type="button" className="gh-pill is-plain" onClick={onClose}>← Bully’s Lair</button>
+              <button type="button" className="gh-pill is-plain" onClick={() => setHowto(true)}>Comment jouer</button>
+            </>
+          )}
+          topRight={(
+            <>
+              <AccountChip returnHash="#pokerush" />
+              <span className="gh-pill" title="Parties jouées">{(meta.runs || 0).toLocaleString('fr-FR')} parties</span>
+              <span className="gh-pill" title="Victoires">🏆 {meta.wins || 0}</span>
+              <span className="gh-pill is-strong" title="Points de Ligue">{meta.pl.toLocaleString('fr-FR')} PL</span>
+            </>
+          )}
+          logo={(
+            <div className="prh-logo">
+              <span className="sw-kicker">Mode secret · Aube de Kanto · 3D</span>
+              <h1>Poké <em>Rush</em></h1>
+            </div>
+          )}
+          stage={(
+            <>
+              <span className="prh-legend"><PmdSprite dex={FOES[legend].dex} anim="idle" size={230} scale={2.5} foot={0.92} /></span>
+              <span className="prh-partner"><PmdSprite dex={partner.dex} anim="walk" size={170} scale={4} foot={0.92} /></span>
+            </>
+          )}
+          play={{
+            title: 'Jouer',
+            sub: `Île de Kanto · ${partner.name}${rec ? ` · ${rec.win ? 'victoire en' : 'record'} ${clock(rec.t)}` : ''}`,
+            art: <PmdSprite dex={partner.dex} anim="idle" size={96} scale={2.6} />,
+            onClick: () => setScreen('menu')
+          }}
+          side={{
+            title: 'Partenaire',
+            sub: `${RUSH_STARTERS.filter((p) => starterOpen(meta, p)).length}/${RUSH_STARTERS.length} recrutés`,
+            art: <HomeIcon src={itemSprite('friend-ball')} fallback="◎" />,
+            onClick: () => setScreen('menu')
+          }}
+          cards={[
+            {
+              key: 'arena', tone: beaten === pool.finals.length ? 'done' : 'event', kicker: `Arène de 8:00 · ${beaten}/${pool.finals.length} capturés`,
+              title: `${FOES[legend].name} t’attend`,
+              sub: `Faible contre ${weaknessesOf(FOE_TYPES[legend]).join(', ') || '—'}`,
+              art: <PmdSprite dex={FOES[legend].dex} anim="idle" size={52} scale={0.8} still />,
+              onClick: () => setScreen('menu')
+            },
+            locked ? {
+              key: 'recruit', tone: 'light', kicker: 'Recrue',
+              title: `${locked.name} · ${locked.cost} PL`,
+              sub: meta.pl >= locked.cost ? 'Tu peux le recruter !' : `Il te manque ${locked.cost - meta.pl} PL`,
+              art: <PmdSprite dex={locked.dex} anim="idle" size={52} scale={1.5} still />,
+              onClick: () => { setPartnerId(locked.id); setScreen('menu'); }
+            } : {
+              key: 'record', tone: 'light', kicker: 'Palmarès',
+              title: `${meta.wins || 0} victoire${(meta.wins || 0) > 1 ? 's' : ''} · ${meta.runs || 0} parties`,
+              sub: `${(meta.total || 0).toLocaleString('fr-FR')} PL gagnés au total`,
+              art: <HomeIcon src={itemSprite('gold-bottle-cap')} fallback="🏆" />,
+              onClick: () => setPanel('history')
+            }
+          ]}
+          tiles={[
+            { key: 'shop', label: 'Centre', value: `${UPGRADES.reduce((n, u) => n + upRank(meta, u.id), 0)} niv.`, badge: affordUp, color: '#ff6f8a', icon: <HomeIcon src={itemSprite('potion')} fallback="✚" />, onClick: () => setPanel('shop') },
+            { key: 'dex', label: 'Pokédex', value: `${caughtN}/${dexIds.length}`, color: '#ff4f4f', icon: <HomeIcon src={itemSprite('poke-ball')} fallback="●" />, onClick: () => setPanel('dex') },
+            { key: 'board', label: 'Classement', value: 'en ligne', color: '#ffc93c', icon: <HomeIcon src={itemSprite('gold-bottle-cap')} fallback="★" />, onClick: () => setPanel('board') },
+            { key: 'history', label: 'Historique', value: `${(meta.history || []).length}`, color: '#5fb8ff', icon: <HomeIcon src={itemSprite('town-map')} fallback="☰" />, onClick: () => setPanel('history') }
+          ]}
+          board={(
+            <HomeBoard
+              game="rush"
+              gen={1}
+              title="Classement"
+              subtitle="Île de Kanto · meilleur score de chaque dresseur"
+              describe={(r) => `${r.form || RUSH_STARTERS.find((p) => p.id === r.partnerId)?.name || ''} · niv. ${r.level}`}
+              onMore={() => setPanel('board')}
+            />
+          )}
+          footer="Fan-game non officiel, gratuit et sans but lucratif. Pokémon © Nintendo / Game Freak / The Pokémon Company. Sprites animés : PMDCollab SpriteCollab (CC BY-NC 4.0) · Inspiré de Pokébonk et Megabonk."
+        />
+        {panel && <RushPanel tab={panel} setTab={setPanel} meta={meta} setMeta={setMeta} onClose={() => setPanel(null)} />}
+        {howto && (
+          <div className="sw-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) setHowto(false); }}>
+            <div className="sw-card is-panel prh-howto">
+              <div className="sw-panel-head"><b className="sw-kicker">Comment jouer</b><button type="button" className="sw-btn is-small is-ghost" onClick={() => setHowto(false)}>Fermer</button></div>
+              <div className="sw-panel-body">
+                <p className="sw-panel-note">Une île de Kanto en 3D, envahie de Pokémon sauvages. Ton partenaire attaque tout seul : cours, saute, esquive, capture des sauvages qui se battront à tes côtés, et rejoins l’arène à 8:00 pour affronter le légendaire.</p>
+                <div className="sw-howto">{RUSH_HOWTO(ult.name).map(([k, v]) => <span key={k}><b>{k}</b> {v}</span>)}</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (screen === 'menu') {
     const pool = rushPool(1);
     return (
@@ -208,9 +346,8 @@ const PokeRush = ({ onClose }) => {
             <p>Une île de Kanto en 3D, envahie de Pokémon sauvages. Ton partenaire attaque tout seul : cours, saute, esquive, capture des sauvages qui se battront à tes côtés, et rejoins l’arène à 8:00 pour affronter le légendaire.</p>
           </div>
           <div className="sw-head-side">
-            <AccountChip returnHash="#pokerush" compact />
             <span className="sw-dust pr-pl" title="Points de Ligue : propres au Poké Rush">{meta.pl.toLocaleString('fr-FR')} PL</span>
-            <button type="button" className="sw-btn is-ghost" onClick={onClose}>Quitter</button>
+            <button type="button" className="sw-btn is-ghost" onClick={() => { setPanel(null); setScreen('home'); }}>← Accueil</button>
           </div>
         </header>
         <div className="sw-metabar">
@@ -261,18 +398,7 @@ const PokeRush = ({ onClose }) => {
             );
           })}
         </div>
-        <div className="sw-howto">
-          <span><b>Bouger</b> ZQSD / WASD · caméra à la souris (clic) ou en glissant à droite de l’écran</span>
-          <span><b>Sauter</b> Espace : les falaises se franchissent en sautant</span>
-          <span><b>Esquive</b> Maj : un bond rapide, invincible</span>
-          <span><b>Capturer</b> F : PV rouges = capturable, il se bat ensuite avec toi ({MAX_ALLIES} max)</span>
-          <span><b>Types</b> les attaques super efficaces font ×2, les mauvaises ×0,5</span>
-          <span><b>Ultime</b> R : {ult.name}</span>
-          <span><b>Hautes herbes</b> des Pokémon Alpha s’y cachent vers 2:00 et 5:00</span>
-          <span><b>Eau</b> seuls les types Eau et Vol s’y aventurent</span>
-          <span><b>Coffres</b> payés en Poké Dollars ₽, ramassés sur les sauvages</span>
-          <span><b>Arène</b> à 8:00, le légendaire s’y réveille : bats-le pour gagner</span>
-        </div>
+        <div className="sw-howto">{RUSH_HOWTO(ult.name).map(([k, v]) => <span key={k}><b>{k}</b> {v}</span>)}</div>
         {open
           ? <button type="button" className="sw-btn is-go" onClick={start}>Partir avec {partner.name}</button>
           : <button type="button" className="sw-btn is-go is-unlock" disabled={meta.pl < partner.cost} onClick={() => setMeta(buyRushThing(meta, partner.id, partner.cost, 'starters'))}>
@@ -421,7 +547,7 @@ const PokeRush = ({ onClose }) => {
               <MusicControls />
               <div className="sw-pause-actions">
                 <button type="button" className="sw-btn is-go" onClick={() => setPaused(false)}>Reprendre</button>
-                <button type="button" className="sw-btn" onClick={() => { setPaused(false); setScreen('menu'); }}>Abandonner</button>
+                <button type="button" className="sw-btn" onClick={() => { setPaused(false); setScreen('home'); }}>Abandonner</button>
               </div>
               <small className="sw-pause-hint">Échap ou P pour reprendre</small>
             </aside>
@@ -447,8 +573,8 @@ const PokeRush = ({ onClose }) => {
             </div>
             <div className="sw-actions">
               <button type="button" className="sw-btn is-go" onClick={start}>Rejouer</button>
-              <button type="button" className="sw-btn" onClick={() => setScreen('menu')}>Menu</button>
-              <button type="button" className="sw-btn is-ghost" onClick={onClose}>Quitter</button>
+              <button type="button" className="sw-btn" onClick={() => setScreen('menu')}>Changer de partenaire</button>
+              <button type="button" className="sw-btn is-ghost" onClick={() => setScreen('home')}>Accueil</button>
             </div>
           </div>
         </div>
