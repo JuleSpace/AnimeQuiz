@@ -534,12 +534,14 @@ const ClassicGame = ({
       const lengths = lyricHoleLengths(question.clip?.line);
       const ready = holes.length === count && holes.every((value) => String(value).trim());
       return (
-        <div className="answer-input">
+        <div className={`answer-input${count > 3 ? ' has-many-holes' : ''}`}>
+          <div className="holes-grid">
           {Array.from({ length: count }, (_, index) => {
             const length = lengths[index] || 0;
             const value = holes[index] || '';
             return (
               <div key={index} className="lyrics-blank">
+                {count > 1 && <b className="hole-no">{index + 1}</b>}
                 <input
                   type="text"
                   className="input"
@@ -556,6 +558,7 @@ const ClassicGame = ({
               </div>
             );
           })}
+          </div>
           <button
             type="button"
             className="btn btn-success"

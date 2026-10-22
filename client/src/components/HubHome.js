@@ -3,6 +3,7 @@ import { AccountChip, fetchLeaderboard } from './account';
 import { PROJECTS } from './showcase';
 import Icon from './ArcadeIcon';
 import GameLogo from './GameLogo';
+import { GameCard } from './GameShelf';
 import './HubHome.css';
 
 /** Accueil après connexion : le quiz entre potes, les jeux avec tes records, et les meilleurs scores du serveur. */
@@ -34,6 +35,16 @@ const HubHome = ({ name, onQuiz, onMusic, onGame, onAdmin, onPortfolio, onShelf 
     return () => { alive = false; };
   }, []);
   const best = Object.fromEntries(GAME_IDS.map((id) => [id, myBest[id]()]));
+  const sw = read('poke-swarm-meta') || {};
+  const ru = read('poke-rush-meta') || {};
+  const ar = read('poke-arena-record') || {};
+  const bk = read('sonic-bonk-best') || {};
+  const totals = {
+    runs: (sw.runs || 0) + (ru.runs || 0) + (ar.runs || 0),
+    wins: (sw.history || []).filter((h) => h.result === 'win').length + (ru.wins || 0) + (ar.wins || 0) + Object.values(bk).filter((v) => v?.win).length,
+    top: Math.max(0, ...Object.values(best)),
+    tried: [sw.runs, ru.runs, ar.runs, Object.keys(bk).length].filter(Boolean).length
+  };
   const rankOf = (id) => {
     const i = (boards[id] || []).findIndex((r) => r.name === name);
     return i >= 0 ? i + 1 : null;
@@ -61,11 +72,20 @@ const HubHome = ({ name, onQuiz, onMusic, onGame, onAdmin, onPortfolio, onShelf 
             <button type="button" className="hub-btn is-white" onClick={onMusic}><Icon name="music" />Music Quiz</button>
           </div>
         </div>
-        <div className="hub-fan" aria-hidden="true">
+        <div className="hub-fan">
           {[games[1], quiz, games[0]].filter(Boolean).map((g, i) => (
-            <span key={g.id} className="hub-fan-card" style={{ '--i': i - 1, '--c': g.color }}><span className="hub-fan-logo"><GameLogo id={g.id} /></span></span>
+            <span key={g.id} className="hub-fan-slot" style={{ '--k': i - 1 }}>
+              <GameCard game={g} index={PROJECTS.indexOf(g)} total={5} onOpen={(x) => (x.id === 'quiz' ? onQuiz() : onGame(x))} />
+            </span>
           ))}
         </div>
+      </section>
+
+      <section className="hub-ribbon" aria-label="Tes stats">
+        <span><small>Parties jouées</small><b>{fr(totals.runs)}</b></span>
+        <span><small>Victoires</small><b>{fr(totals.wins)}</b></span>
+        <span><small>Meilleur score</small><b>{totals.top ? `${fr(totals.top)} pts` : '—'}</b></span>
+        <span><small>Jeux essayés</small><b>{totals.tried}/{games.length}</b></span>
       </section>
 
       <section className="hub-section">
@@ -105,8 +125,8 @@ const HubHome = ({ name, onQuiz, onMusic, onGame, onAdmin, onPortfolio, onShelf 
                     <span>Ton record <strong>{best[g.id] ? `${fr(best[g.id])} pts` : '—'}</strong></span>
                     {r && <span className="hub-rank">#{r} mondial</span>}
                   </span>
+                  <span className="hub-play">Jouer →</span>
                 </span>
-                <span className="hub-play">Jouer</span>
               </button>
             );
           })}

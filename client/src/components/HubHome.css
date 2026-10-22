@@ -126,3 +126,40 @@
 @media (prefers-reduced-motion: reduce) {
   .hub-fan-card, .hub-mode-eq i, .hub-game { animation: none; }
 }
+
+/* ——— v2 : vraies cartes dans l'accroche, bandeau de stats, tuiles rangées ——— */
+.hub-fan { height: clamp(330px, 32vw, 420px); }
+.hub-fan-slot { position: absolute; width: clamp(170px, 15vw, 210px); transform: translateX(calc(var(--k) * 70%)) translateY(calc(var(--k) * var(--k) * 26px)) rotate(calc(var(--k) * 10deg)); transform-origin: 50% 110%; transition: transform 0.25s cubic-bezier(.2, .9, .3, 1.2); z-index: calc(5 - var(--k) * var(--k)); }
+.hub-fan-slot:hover { z-index: 9; transform: translateX(calc(var(--k) * 70%)) translateY(-14px) rotate(0deg) scale(1.05); }
+.hub-fan-slot .gs-card { animation: none; }
+.hub-fan-slot .gs-top b { font-size: 14px; }
+.hub-fan-slot .gs-move span, .hub-fan-slot .gs-move strong { font-size: 12px; }
+.hub-fan-slot .gs-stats b { font-size: 10px; }
+.hub-fan-slot .gs-foot { display: none; }
+.hub-ribbon { display: grid; grid-template-columns: repeat(4, 1fr); border-radius: 20px; overflow: hidden; color: var(--ce-ink);
+  background: linear-gradient(180deg, #fff, #e8eeff); box-shadow: 0 0 0 4px #fff, 0 8px 0 4px var(--ce-ink), 0 18px 30px rgba(2, 8, 40, 0.35); }
+.hub-ribbon span { display: grid; justify-items: center; gap: 2px; padding: 14px 8px; }
+.hub-ribbon span + span { border-left: 2px dashed rgba(8, 22, 77, 0.15); }
+.hub-ribbon small { font: italic 800 12px/1 var(--ce-title); letter-spacing: 0.08em; text-transform: uppercase; color: #4a5d99; }
+.hub-ribbon b { font: italic 900 clamp(22px, 2.6vw, 32px)/1.05 var(--ce-title); }
+.hub-ribbon span:first-child b { color: #ff2347; }
+.hub-mode.is-quiz .hub-mode-text { max-width: 44%; }
+.hub-play { position: static; justify-self: start; margin-top: 8px; }
+.hub-game-body { align-content: start; }
+.hub-game { box-shadow: 0 0 0 4px #fff, 0 8px 0 4px var(--ce-ink), 0 18px 30px rgba(2, 8, 40, 0.4), 0 0 0 9px color-mix(in srgb, var(--c) 0%, transparent); transition: transform 0.15s, box-shadow 0.2s; }
+.hub-game:hover { box-shadow: 0 0 0 4px #fff, 0 8px 0 4px var(--ce-ink), 0 22px 40px rgba(2, 8, 40, 0.5), 0 0 0 9px color-mix(in srgb, var(--c) 55%, transparent); }
+@media (max-width: 860px) {
+  .hub-fan { height: 300px; }
+  .hub-fan-slot { width: 150px; }
+  .hub-ribbon { grid-template-columns: repeat(2, 1fr); }
+  .hub-ribbon span:nth-child(3) { border-left: 0; }
+  .hub-ribbon span:nth-child(n+3) { border-top: 2px dashed rgba(8, 22, 77, 0.15); }
+  .hub-mode.is-quiz .hub-mode-text { max-width: none; }
+}
+.hub-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.hub-fan { overflow: visible; }
+.hub-fan-slot { transform: translateX(calc(var(--k) * 58%)) translateY(calc(var(--k) * var(--k) * 26px)) rotate(calc(var(--k) * 9deg)); }
+.hub-fan-slot:hover { transform: translateX(calc(var(--k) * 58%)) translateY(-14px) rotate(0deg) scale(1.05); }
+@media (max-width: 860px) { .hub-hero { grid-template-columns: 1fr; } }
+.hub-hello h1 { font-size: clamp(36px, 4.6vw, 60px); }
+@media (max-width: 860px) { .hub-fan { display: none; } }
