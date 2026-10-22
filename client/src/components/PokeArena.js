@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import io from 'socket.io-client';
 import ArenaBoardIso, { BOARD_THEMES, BOARD_THEME_LABELS, DEFAULT_BOARD_THEME, resolveScene } from './ArenaBoardIso';
+import ArenaHome, { addToRecord, loadRecord, saveRecord } from './ArenaHome';
+import { postRun, useCloudSync } from './account';
 import './PokeArena.css';
 import './PokeArenaPremium.css';
 import {
@@ -12,8 +14,6 @@ import {
   LINE_MAP,
   MAX_LEVEL,
   REROLL_COST,
-  ROSTER_FORMS,
-  ROSTER_LINES,
   SHOP_SIZE,
   START_GOLD,
   START_HP,
@@ -318,6 +318,12 @@ const PokeArena = ({ onClose }) => {
   const [musicVol, setMusicVol] = useState(readMusic);
   const [nowPlaying, setNowPlaying] = useState(null);
   const [wins, setWins] = useState(0);
+  const [starterId, setStarterId] = useState('');
+  const playTimeRef = useRef(0);
+  const recordedRef = useRef(false);
+  const [record, setRecordState] = useState(loadRecord);
+  const setRecord = (r) => { saveRecord(r); setRecordState(r); };
+  useCloudSync('arena', record, (remote) => setRecord({ ...loadRecord(), ...remote }), (r) => r?.runs || 0);
   // Interface
   const [toast, setToast] = useState('');
   const [selectedUid, setSelectedUid] = useState(null);
@@ -435,6 +441,31 @@ const PokeArena = ({ onClose }) => {
   useEffect(() => {
     musicPlayer().setMode(inLeague ? 'league' : 'main');
   }, [inLeague]);
+  // Temps de jeu d'une partie solo (sauvegardé avec elle), pour le Hall de la Ligue.
+  useEffect(() => {
+    if (mode !== 'solo' || !['map', 'mart', 'event', 'battle'].includes(phase)) return undefined;
+    const id = setInterval(() => { if (document.visibilityState === 'visible') playTimeRef.current += 1; }, 1000);
+    return () => clearInterval(id);
+  }, [phase, mode]);
+
+  // Fin d'une partie solo : carnet de dresseur + classement en ligne.
+  useEffect(() => {
+    if (phase !== 'over' || recordedRef.current || !map.length) return;
+    recordedRef.current = true;
+    const victory = floor >= totalFloors && hp > 0;
+    const team = board.filter(Boolean);
+    const mvp = [...team].sort((a, b) => (b.star || 1) - (a.star || 1) || (b.items?.length || 0) - (a.items?.length || 0))[0];
+    const run = {
+      at: Date.now(), result: victory ? 'win' : 'lose', floor: Math.min(floor + (victory ? 0 : 1), totalFloors), level, wins,
+      t: Math.round(playTimeRef.current), starter: starterId, mvp: mvp ? displayName(mvp.name) : '', mvpArt: mvp ? (mvp.sprite || mvp.home || '') : ''
+    };
+    setRecord(addToRecord(loadRecord(), run));
+    postRun('arena', {
+      gen: 1, mode: 'classic', partnerId: starterId, form: run.mvp, formDex: mvp ? String(mvp.dex || '') : '', result: run.result,
+      t: run.t, kills: run.floor, level, caught: wins
+    });
+  }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const musicButton = <MusicControl volume={musicVol} onVolume={setMusicVol} now={nowPlaying} />;
 
   const openTrait = (trait, event, extra = {}) => {
@@ -455,7 +486,7 @@ const PokeArena = ({ onClose }) => {
 
   const snapshot = (over = {}) => ({
     map, floor, path, runPoolIds: runPool.map((l) => l.id), bench, board, shop, shopLocked, bag,
-    gold, xp, level, hp, streak, coin, wins, ...over
+    gold, xp, level, hp, streak, coin, wins, starterId, playTime: Math.round(playTimeRef.current), ...over
   });
 
   const persist = (over = {}) => {
@@ -489,6 +520,9 @@ const PokeArena = ({ onClose }) => {
     setStreak(data.streak || 0);
     setCoin(data.coin || 0);
     setWins(data.wins || 0);
+    setStarterId(data.starterId || '');
+    playTimeRef.current = data.playTime || 0;
+    recordedRef.current = false;
     setNode(null);
     setResult(null);
     setPhase('map');
@@ -522,6 +556,9 @@ const PokeArena = ({ onClose }) => {
     setStreak(0);
     setCoin(0);
     setWins(0);
+    setStarterId(lineId);
+    playTimeRef.current = 0;
+    recordedRef.current = false;
     setResult(null);
     setSelectedUid(null);
     setSelectedItem(null);
@@ -1381,28 +1418,21 @@ const PokeArena = ({ onClose }) => {
 
   if (phase === 'hub') {
     return (
-      <div className={`pa-root ${skinCls} pa-hub`}>
-        <div className="pa-hub-scene" aria-hidden>
-          <span className="pa-hub-ball" />
-        </div>
-        <div className="pa-hub-card">
-          <h1 className="pa-logo">
-            <span>Poké Bully</span>
-            <span>Tactics</span>
-          </h1>
-          <p className="pa-hub-copy">
-            Recrute, fusionne trois exemplaires pour faire évoluer, place ton équipe et traverse trois régions jusqu’à la Ligue et son Maître.
-          </p>
-          <div className="pa-hub-actions">
-            {canContinue && <button type="button" className="ui-btn is-primary is-big" onClick={resumeSave}>Continuer la partie</button>}
-            <button type="button" className={`ui-btn is-big${canContinue ? '' : ' is-primary'}`} onClick={() => setPhase('starter')}>Nouvelle partie</button>
-            <button type="button" className="ui-btn" onClick={() => { setVsError(''); setPhase('lobby'); }}>Salon multi</button>
-            <button type="button" className="ui-btn" onClick={() => setPhase('codex')}>Pokédex</button>
-            {musicButton}
-            <button type="button" className="ui-btn is-ghost" onClick={onClose}>Quitter</button>
-          </div>
-          <p className="pa-hub-foot">{ROSTER_LINES} lignées, {ROSTER_FORMS} formes, {TOTAL_FLOORS} étapes, 6 régions et plus de 100 dresseurs célèbres.</p>
-        </div>
+      <div className={`pa-root ${skinCls} pa-hub-home`}>
+        <ArenaHome
+          onClose={onClose}
+          save={canContinue ? loadCampaign() : null}
+          regionOf={(d) => chapterLabel(d.floor || 0, d.map)}
+          onContinue={resumeSave}
+          onNew={() => setPhase('starter')}
+          onMulti={() => { setVsError(''); setPhase('lobby'); }}
+          onCodex={() => setPhase('codex')}
+          music={musicButton}
+          skinLabel={SKIN_LABELS[skin]}
+          onSkin={() => setSkin((k) => SKINS[(SKINS.indexOf(k) + 1) % SKINS.length])}
+          myTrainer={myTrainer}
+          record={record}
+        />
       </div>
     );
   }

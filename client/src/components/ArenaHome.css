@@ -1,0 +1,163 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700;1,800;1,900&display=swap');
+
+/*
+ * Poké Bully Tactics — accueil « Salle des Champions » :
+ * carton sombre et chaud, liserés dorés, cartes rares en éventail sous les projecteurs.
+ */
+.gh-root.gh-arena {
+  --ah-gold: #dcb066;
+  --ah-gold-hi: #f6dfa5;
+  --ah-gold-lo: #a97a32;
+  --ah-foil: linear-gradient(135deg, #f6dfa5, #c9963f 42%, #f2d38c 58%, #a97a32);
+  --gh-bg: #17110d;
+  --gh-text: #f3e9d6;
+  --gh-ink: #0d0907;
+  --gh-card: linear-gradient(160deg, #33281f, #231b15);
+  --gh-card-text: #f3e9d6;
+  --gh-mute: #b5a383;
+  --gh-play-a: #c9573f;
+  --gh-play-b: #8e2f1f;
+  --gh-side-a: #6a5699;
+  --gh-side-b: #3f3166;
+  --gh-accent: var(--ah-gold);
+  --gh-radius: 14px;
+  --gh-title: 'Playfair Display', Georgia, serif;
+  --gh-body: 'Saira Semi Condensed', 'Segoe UI', sans-serif;
+  --gh-shadow: 0 18px 34px -14px rgba(0, 0, 0, 0.9);
+  --gh-ring: 0 0 0 1px rgba(222, 184, 120, 0.55), inset 0 0 0 4px rgba(20, 14, 10, 0.55), inset 0 0 0 5px rgba(222, 184, 120, 0.18);
+}
+.pa-hub-home { background: #17110d; }
+.gh-arena .gh-shade { background: radial-gradient(120% 90% at 0% 100%, rgba(10, 6, 4, 0.85), transparent 55%), linear-gradient(180deg, rgba(10, 6, 4, 0.5), transparent 30%); }
+
+/* Cartes et boutons : carton + liseré doré */
+.gh-arena :is(.gh-card, .gh-tile, .gh-board, .gh-top-right) { background: var(--gh-card); box-shadow: var(--gh-ring), var(--gh-shadow); }
+.gh-arena .gh-play { box-shadow: 0 0 0 2px var(--ah-gold), inset 0 0 0 5px rgba(0, 0, 0, 0.18), inset 0 0 0 6px rgba(246, 223, 165, 0.5), var(--gh-shadow);
+  background: radial-gradient(90% 140% at 100% 0%, rgba(246, 223, 165, 0.28), transparent 55%), repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 2px, transparent 2px 9px), linear-gradient(160deg, var(--gh-play-a), var(--gh-play-b)); }
+.gh-arena .gh-play-text b { font-style: italic; font-weight: 900; letter-spacing: -0.01em; text-shadow: 0 3px 0 rgba(0, 0, 0, 0.35); }
+.gh-arena .gh-play-ball { background: radial-gradient(circle at 50% 50%, #f6dfa5 0 15%, #3a2a1c 15% 21%, transparent 21%), linear-gradient(180deg, #e2593d 0 46%, #3a2a1c 46% 54%, #f3e9d6 54%); box-shadow: 0 0 0 4px var(--ah-gold), 0 0 0 6px #3a2a1c, 0 8px 16px rgba(0, 0, 0, 0.45); }
+.gh-arena .gh-play-art { background: rgba(20, 12, 8, 0.28); box-shadow: inset 0 0 0 1px rgba(246, 223, 165, 0.6); border-radius: 10px; }
+.ah-play-crest { font: 400 54px/1 Georgia, serif; color: var(--ah-gold-hi); text-shadow: 0 2px 0 var(--ah-gold-lo), 0 0 18px rgba(246, 223, 165, 0.55); }
+.gh-arena .gh-side { box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.6), inset 0 0 0 5px rgba(0, 0, 0, 0.18), inset 0 0 0 6px rgba(222, 184, 120, 0.3), var(--gh-shadow); }
+.gh-arena .gh-side b { font: italic 800 22px/1 var(--gh-title); }
+.gh-arena .gh-card.is-event { background: linear-gradient(90deg, rgba(201, 87, 63, 0.35), transparent 70%), var(--gh-card); }
+.gh-arena .gh-card.is-light { color: var(--gh-card-text); background: linear-gradient(90deg, rgba(220, 176, 102, 0.22), transparent 70%), var(--gh-card); }
+.gh-arena .gh-card.is-done { background: linear-gradient(90deg, rgba(121, 182, 115, 0.3), transparent 70%), var(--gh-card); }
+.gh-arena .gh-card-kicker { color: var(--ah-gold) !important; letter-spacing: 0.04em; }
+.gh-arena .gh-card-text b { font: italic 800 19px/1.15 var(--gh-title); }
+.gh-arena .gh-card-art { background: rgba(10, 6, 4, 0.45); box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.3); border-radius: 10px; overflow: hidden; }
+.ah-mini-trainer { width: 100%; height: 100%; object-fit: contain; object-position: center 20%; image-rendering: pixelated; transform: scale(1.35); transform-origin: center 30%; }
+.gh-arena .gh-tile { box-shadow: var(--gh-ring), inset 0 -3px 0 var(--tc), var(--gh-shadow); }
+.gh-arena .gh-tile b { font: italic 800 16px/1.1 var(--gh-title); }
+.gh-arena .gh-tile-icon { background: radial-gradient(circle, color-mix(in srgb, var(--tc) 30%, transparent), transparent 70%); }
+.gh-arena .gh-badge { background: var(--ah-foil); color: #2a1d10; }
+.gh-arena .gh-pill { color: var(--gh-card-text); background: rgba(54, 42, 32, 0.95); box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.4); }
+.gh-arena .gh-pill.is-strong { color: #2a1d10; background: var(--ah-foil); }
+.gh-arena .gh-pill.is-plain { background: rgba(28, 21, 16, 0.85); }
+.gh-arena .gh-links { display: flex; justify-content: flex-start; }
+.ah-music .ui-btn { margin: 0; }
+
+/* Hall de la Ligue */
+.gh-arena .gh-board-head { color: #2a1d10; background: var(--ah-foil); }
+.gh-arena .gh-board-head b { font: italic 900 26px/1 var(--gh-title); }
+.gh-arena .gh-board-tabs { background: rgba(10, 6, 4, 0.55); }
+.gh-arena .gh-board-tabs button.is-on { color: #2a1d10; background: var(--ah-gold); }
+.gh-arena .gh-board-rows li { background: rgba(255, 236, 200, 0.05); box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.12); }
+.gh-arena .gh-board-rows li.is-1 { background: linear-gradient(90deg, rgba(246, 223, 165, 0.22), rgba(255, 236, 200, 0.04)); box-shadow: inset 0 0 0 1px rgba(246, 223, 165, 0.6); }
+.gh-arena .gh-board-rows li.is-2 { box-shadow: inset 0 0 0 1px rgba(210, 214, 226, 0.45); }
+.gh-arena .gh-board-rows li.is-3 { box-shadow: inset 0 0 0 1px rgba(205, 140, 90, 0.5); }
+.gh-arena .gh-board-rows i, .gh-arena .gh-board-rows img { background: #3a2d22; color: var(--ah-gold-hi); }
+.gh-arena .gh-pos { font-family: var(--gh-title); font-style: italic; color: var(--ah-gold); }
+
+/* Logo */
+.ah-logo h1 { margin: 4px 0 0; font: italic 900 clamp(44px, 5.6vw, 76px)/0.92 'Playfair Display', Georgia, serif; color: #f3e9d6; text-shadow: 0 4px 0 #2a1d10, 0 10px 24px rgba(0, 0, 0, 0.6); }
+.ah-logo h1 em { display: block; padding-left: 0.9em; background: var(--ah-foil); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 4px 0 #2a1d10); }
+.ah-kicker { display: inline-flex; align-items: center; gap: 10px; font: 700 13px/1 var(--gh-body); letter-spacing: 0.32em; text-transform: uppercase; color: var(--ah-gold); }
+.ah-kicker::before, .ah-kicker::after { content: ''; width: 28px; height: 1px; background: var(--ah-gold); }
+
+/* Scène : lueur, projecteurs, sol de l'arène en perspective, poussière dorée */
+.ah-scene { position: fixed; inset: 0; z-index: 0; overflow: hidden;
+  background: radial-gradient(60% 55% at 62% 42%, #4a3624 0%, #2a1f17 45%, #17110d 100%); }
+.ah-scene > span { position: absolute; display: block; pointer-events: none; }
+.ah-glow { left: 40%; top: 18%; width: 46vw; height: 46vw; border-radius: 50%; background: radial-gradient(circle, rgba(246, 210, 140, 0.35), transparent 65%); filter: blur(10px); animation: ah-breathe 7s ease-in-out infinite; }
+.ah-beam { top: -10%; width: 16vw; height: 95%; transform-origin: top center; background: linear-gradient(180deg, rgba(255, 228, 170, 0.22), transparent 85%); clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%); mix-blend-mode: screen; }
+.ah-beam.is-1 { left: 40%; transform: rotate(18deg); animation: ah-sway 11s ease-in-out infinite; }
+.ah-beam.is-2 { left: 56%; transform: rotate(-4deg); opacity: 0.8; animation: ah-sway 13s ease-in-out infinite reverse; }
+.ah-beam.is-3 { left: 70%; transform: rotate(-20deg); animation: ah-sway 9s ease-in-out infinite; }
+.ah-floor { left: -20%; right: -20%; bottom: -8%; height: 52%; perspective: 600px; }
+.ah-floor i { position: absolute; inset: 0; transform: rotateX(62deg); transform-origin: center bottom;
+  background:
+    radial-gradient(55% 60% at 62% 30%, rgba(246, 210, 140, 0.25), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(222, 184, 120, 0.22) 0 2px, transparent 2px 90px),
+    repeating-linear-gradient(0deg, rgba(222, 184, 120, 0.22) 0 2px, transparent 2px 90px),
+    linear-gradient(180deg, #3a2a1d, #20170f);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 30%); mask-image: linear-gradient(180deg, transparent, #000 30%); }
+.ah-dust { inset: 0; opacity: 0.7;
+  background-image: radial-gradient(circle, rgba(246, 223, 165, 0.8) 0 1.5px, transparent 2px), radial-gradient(circle, rgba(246, 223, 165, 0.5) 0 1px, transparent 1.5px);
+  background-size: 180px 220px, 110px 140px; background-position: 0 0, 60px 40px; animation: ah-rise 40s linear infinite; }
+@keyframes ah-breathe { 50% { opacity: 0.7; transform: scale(1.06); } }
+@keyframes ah-sway { 50% { translate: 2vw 0; } }
+@keyframes ah-rise { to { background-position: 0 -880px, 60px -520px; } }
+
+/* Centre : dresseurs et cartes rares en éventail */
+.gh-arena .gh-stage { align-items: flex-end; gap: 0; padding-bottom: 6vh; }
+.ah-trainer { height: clamp(150px, 22vh, 230px); width: auto; image-rendering: pixelated; filter: drop-shadow(0 10px 0 rgba(0, 0, 0, 0.35)); }
+.ah-trainer.is-me { margin-right: -10px; }
+.ah-trainer.is-champ { margin-left: -10px; filter: drop-shadow(0 0 18px rgba(246, 210, 140, 0.35)) drop-shadow(0 10px 0 rgba(0, 0, 0, 0.35)); }
+.ah-fan { position: relative; display: flex; align-items: flex-end; margin-bottom: 8vh; }
+.ah-card {
+  position: relative; display: grid; grid-template-rows: 1fr auto; width: clamp(110px, 9vw, 150px); aspect-ratio: 5 / 7; margin: 0 -18px; padding: 8px;
+  border-radius: 10px; background: var(--ah-foil); box-shadow: 0 18px 30px -10px rgba(0, 0, 0, 0.8);
+  transform: translateY(var(--drop)) rotate(var(--tilt)); transform-origin: bottom center;
+  animation: ah-card 6s ease-in-out infinite; animation-delay: var(--delay);
+}
+.ah-card:nth-child(2) { z-index: 1; }
+.ah-card-art { display: grid; place-items: center; border-radius: 6px; overflow: hidden; background: radial-gradient(circle at 50% 40%, #5b4632, #241a12); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.4); }
+.ah-card-art img { width: 92%; height: 92%; object-fit: contain; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.5)); }
+.ah-card-fb { width: 56%; aspect-ratio: 1; border-radius: 50%; opacity: 0.35; background: linear-gradient(180deg, #dcb066 0 45%, #241a12 45% 55%, #f3e9d6 55%); box-shadow: 0 0 0 4px #241a12; }
+.ah-card-name { padding: 6px 2px 1px; font: italic 800 13px/1 'Playfair Display', Georgia, serif; color: #2a1d10; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ah-card-holo { position: absolute; inset: 0; border-radius: 10px; pointer-events: none; mix-blend-mode: color-dodge; opacity: 0.35;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 120, 200, 0.6) 42%, rgba(120, 220, 255, 0.6) 50%, rgba(255, 240, 140, 0.6) 58%, transparent 70%);
+  background-size: 250% 250%; animation: ah-holo 5s ease-in-out infinite; }
+@keyframes ah-card { 50% { translate: 0 -8px; } }
+@keyframes ah-holo { 0%, 100% { background-position: 100% 0; } 50% { background-position: 0 100%; } }
+
+/* Fenêtres : comment jouer, carnet */
+.ah-modal { position: fixed; inset: 0; z-index: 20100; display: grid; place-items: center; padding: 16px; background: rgba(10, 6, 4, 0.7); }
+.ah-sheet { width: min(680px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; padding: 22px 24px; border-radius: 14px; color: #f3e9d6;
+  background: linear-gradient(160deg, #33281f, #231b15); box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.55), inset 0 0 0 5px #231b15, inset 0 0 0 6px rgba(222, 184, 120, 0.18), 0 30px 60px rgba(0, 0, 0, 0.6);
+  font: 500 16px/1.5 'Saira Semi Condensed', 'Segoe UI', sans-serif; }
+.ah-sheet header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.ah-sheet header b { font: italic 900 28px/1 'Playfair Display', Georgia, serif; color: #f6dfa5; }
+.ah-sheet .gh-pill { border: 0; padding: 8px 14px; border-radius: 999px; color: #f3e9d6; background: rgba(54, 42, 32, 0.95); box-shadow: 0 0 0 1px rgba(222, 184, 120, 0.4); cursor: pointer; font: 700 14px/1 'Saira Semi Condensed', sans-serif; }
+.ah-sheet ul { margin: 12px 0 0; padding-left: 18px; display: grid; gap: 6px; }
+.ah-sheet li b { color: #dcb066; margin-right: 6px; }
+.ah-stats { display: flex; flex-wrap: wrap; gap: 10px; }
+.ah-stats span { padding: 6px 12px; border-radius: 8px; background: rgba(255, 236, 200, 0.06); box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.25); }
+.ah-stats b { font: italic 900 20px/1 'Playfair Display', Georgia, serif; color: #f6dfa5; }
+.ah-hist { list-style: none; margin: 12px 0 0; padding: 0 !important; display: grid; gap: 8px; }
+.ah-hist li { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 10px; background: rgba(255, 236, 200, 0.05); box-shadow: inset 0 0 0 1px rgba(222, 184, 120, 0.15); }
+.ah-hist li.is-win { box-shadow: inset 0 0 0 1px rgba(246, 223, 165, 0.6); background: linear-gradient(90deg, rgba(246, 223, 165, 0.16), transparent); }
+.ah-hist li > span:nth-child(2) { display: grid; }
+.ah-hist small { color: #b5a383; }
+.ah-hist time { color: #b5a383; font-size: 14px; }
+.ah-hist .gh-icon-img { width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; }
+
+@media (max-width: 1100px) {
+  .ah-trainer { display: none; }
+  .ah-fan { margin-bottom: 0; }
+  .ah-beam.is-3 { display: none; }
+}
+@media (max-width: 520px) {
+  .ah-card { width: 96px; }
+  .gh-arena .gh-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ah-glow, .ah-beam, .ah-dust, .ah-card, .ah-card-holo { animation: none; }
+}
+@media (max-width: 1100px) {
+  .gh-arena .gh-stage { margin-top: 28px; padding-bottom: 0; }
+}
+@media (max-width: 520px) {
+  .gh-arena .gh-side { grid-auto-flow: column; justify-content: center; align-items: center; gap: 10px; padding: 12px; }
+  .gh-arena .gh-side-art { display: none; }
+}
