@@ -331,6 +331,14 @@ h1, h2, h3 {
 @media (prefers-reduced-motion: reduce) {
   body::after { animation: none; }
 }
+.login-games { display: flex; justify-content: center; align-items: center; gap: 18px; flex-wrap: wrap; margin: 6px 0 26px; }
+.login-games .btn { margin: 0; }
+.login-portfolio {
+  border: 0; background: none; padding: 6px 4px; cursor: pointer;
+  font-family: var(--ce-title); font-style: italic; font-weight: 800; font-size: 1rem; letter-spacing: 0.03em;
+  color: var(--ce-gold); text-decoration: underline; text-underline-offset: 4px;
+}
+.login-portfolio:hover { color: #fff; }
 .login-split {
   background: linear-gradient(90deg, transparent, var(--ce-gold), transparent) top / 100% 3px no-repeat;
 }

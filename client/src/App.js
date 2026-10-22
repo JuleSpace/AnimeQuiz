@@ -13,6 +13,8 @@ import PokeArena, { ARENA_HASH } from './components/PokeArena';
 import PokeSwarm, { SWARM_HASH } from './components/PokeSwarm';
 import SonicBonk, { BONK_HASH } from './components/SonicBonk';
 import PokeRush, { RUSH_HASH } from './components/PokeRush';
+import Portfolio, { PORTFOLIO_HASH } from './components/Portfolio';
+import GameShelf, { GAMES_HASH } from './components/GameShelf';
 import { readAdminSession, storeAdminSession, clearAdminSession } from './utils/adminSession';
 import './index.css';
 
@@ -20,7 +22,7 @@ const socket = io(process.env.REACT_APP_SERVER_URL || window.location.origin);
 const SEAT_KEY = 'animeQuizSeat';
 
 // Lien partagé en /academy, /swarm… (pour un aperçu Discord adapté) : on repasse en #academy, #swarm…
-const SECRET_PATHS = ['academy', 'swarm', 'arena', 'bonk', 'reliques', 'pokerush'];
+const SECRET_PATHS = ['academy', 'swarm', 'arena', 'bonk', 'reliques', 'pokerush', 'portfolio', 'jeux'];
 (() => {
   const page = window.location.pathname.replace(/^\/+|\/+$/g, '');
   if (SECRET_PATHS.includes(page) && !window.location.hash) window.history.replaceState(null, '', `/${window.location.search}#${page}`);
@@ -33,6 +35,8 @@ const secretViewFromHash = () => {
   if (window.location.hash === SWARM_HASH) return 'swarm';
   if (window.location.hash === BONK_HASH) return 'bonk';
   if (window.location.hash === RUSH_HASH) return 'pokerush';
+  if (window.location.hash === PORTFOLIO_HASH) return 'portfolio';
+  if (window.location.hash === GAMES_HASH) return 'jeux';
   return null;
 };
 
@@ -704,61 +708,30 @@ function App() {
         return (
           <div className="container">
             <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px', gap: '20px' }}>
-                <button
-                  type="button"
-                  className="arena-secret"
-                  onClick={() => {
-                    window.location.hash = BONK_HASH;
-                    setCurrentView('bonk');
-                  }}
-                  aria-label=" "
-                >
-                  <img
-                    src="https://media.tenor.com/PxudDH41WKcAAAAj/pepe-music-pepe-listening-to-music.gif"
-                    alt="Pepe Music"
-                    style={{ width: '60px', height: '60px', borderRadius: '10px', pointerEvents: 'none' }}
-                  />
-                </button>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '20px' }}>
                 <h1 className="stage-title">
                   Bully's Lair
                 </h1>
-                <button
-                  type="button"
-                  className="arena-secret"
-                  onClick={() => {
-                    window.location.hash = SWARM_HASH;
-                    setCurrentView('swarm');
-                  }}
-                  aria-label=" "
-                >
-                  <img
-                    src="https://media.tenor.com/-oEgnxYtci4AAAAj/kirby-dancing-bop.gif"
-                    alt=""
-                    style={{ width: '60px', height: '60px', borderRadius: '10px', pointerEvents: 'none' }}
-                  />
-                </button>
               </div>
-              
+
               <p style={{ textAlign: 'center', marginBottom: '15px', fontSize: '1.2rem', opacity: 0.9 }}>
                 Fais toi bully par tes potes avec un maximum de plaisir toujours :)
               </p>
-              
-              <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+
+              <div className="login-games">
                 <button
                   type="button"
-                  className="arena-secret"
-                  onClick={() => {
-                    window.location.hash = ARENA_HASH;
-                    setCurrentView('arena');
-                  }}
-                  aria-label=" "
+                  className="btn btn-quiet"
+                  onClick={() => { window.location.hash = GAMES_HASH; setCurrentView('jeux'); }}
                 >
-                  <img
-                    src="https://media1.tenor.com/m/8o5zzcKRkRAAAAAC/bully-soccer.gif"
-                    alt=""
-                    style={{ width: '80px', height: '64px', borderRadius: '10px', pointerEvents: 'none' }}
-                  />
+                  <Icon name="pad" />Voir les jeux
+                </button>
+                <button
+                  type="button"
+                  className="login-portfolio"
+                  onClick={() => { window.location.hash = PORTFOLIO_HASH; setCurrentView('portfolio'); }}
+                >
+                  Portfolio
                 </button>
               </div>
 
@@ -1107,6 +1080,24 @@ function App() {
             setCurrentView('login');
           }} />
         );
+
+      case 'portfolio':
+      case 'jeux': {
+        const toLogin = () => {
+          window.history.replaceState(null, '', '/' + window.location.search);
+          setCurrentView('login');
+        };
+        const openGame = (game) => {
+          if (!game.hash) { toLogin(); return; }
+          window.location.hash = game.hash;
+          setCurrentView(secretViewFromHash() || 'login');
+        };
+        const showGames = () => { window.location.hash = GAMES_HASH; setCurrentView('jeux'); };
+        const showPortfolio = () => { window.location.hash = PORTFOLIO_HASH; setCurrentView('portfolio'); };
+        return currentView === 'portfolio'
+          ? <Portfolio onClose={toLogin} onGames={showGames} onOpen={openGame} />
+          : <GameShelf onClose={toLogin} onOpen={openGame} onPortfolio={showPortfolio} />;
+      }
 
       case 'pokerush':
         return (

@@ -499,6 +499,14 @@ const PAGE_PREVIEWS = {
     title: 'Poké Rush · Bully’s Lair',
     description: 'Une île de Kanto en 3D envahie de Pokémon sauvages : capture des alliés, joue avec la table des types, fais évoluer ton partenaire en pleine partie et affronte le légendaire dans l’arène.'
   },
+  portfolio: {
+    title: 'Portfolio · Bully’s Lair',
+    description: 'Sept projets web jouables : quiz multijoueur en temps réel (Socket.IO, MongoDB), jeux d’action 2D et 3D (Canvas, Three.js, shaders), auto-battler et pages éditoriales animées.'
+  },
+  jeux: {
+    title: 'Ludothèque · Bully’s Lair',
+    description: 'Tous les jeux du site en cartes à collectionner : Poké Rush, Poké Swarm, Poké Bully Tactics, Sonic Bonk, le quiz et l’atelier des cartes.'
+  },
   reliques: {
     title: 'Atelier des cartes · Bully’s Lair',
     description: 'Les cartes jokers du quiz en grand : animations, sons et ouverture de boosters.'
