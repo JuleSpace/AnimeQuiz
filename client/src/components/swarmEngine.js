@@ -354,6 +354,8 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     if (f.hp <= 0) kill(f);
   };
 
+  // Jauge d'ultime : rien ne se recharge pendant 15 s après un ultime, puis chaque ultime lancé ralentit la suivante
+  const chargeUlt = (v) => { if (g.t < (g.ultLock || 0)) return; g.ult = Math.min(1, g.ult + v / (1 + 0.3 * g.ults)); };
   const dropOrb = (x, y, v) => {
     const a = rand(0, TAU); const sp = rand(0.6, 2.2);
     g.orbs.push({ x, y, v, z: 6, vz: rand(2.5, 4.5), vx: Math.cos(a) * sp, vy: Math.sin(a) * sp });
@@ -381,7 +383,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     }
     g.kills += 1;
     g.killsBy[f.id] = (g.killsBy[f.id] || 0) + 1;
-    g.ult = Math.min(1, g.ult + (f.boss ? 0.2 : f.alpha ? 0.3 : f.elite ? 0.04 : 0.008) * E.ultRate);
+    chargeUlt((f.boss ? 0.2 : f.alpha ? 0.25 : f.elite ? 0.03 : 0.005) * E.ultRate);
     if (f.boss) g.bossKills += 1;
     g.dying.push({ dex: f.def.dex, x: f.x, y: f.y, z: f.z, dir: f.dir, t: 0, vx: f.kx * 0.6 + rand(-0.5, 0.5), vy: f.ky * 0.6, scale: f.scale, elite: f.elite });
     smoke(f.x, f.y - 8, f.boss ? 20 : 4, 'rgba(240,240,240,.85)', f.boss ? 26 : 9);
@@ -970,6 +972,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
     const p = g.player;
     g.ult = 0;
     g.ults += 1;
+    g.ultLock = g.t + 15;
     const power = 70 + p.level * 9;
     const type = partner.type;
     g.banner = { text: `${ULT.name} !`, life: 2 };
@@ -1073,7 +1076,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
         m.done = true;
         g.banner = { text: `Mission accomplie : ${m.label} !`, life: 2.8 };
         p.hp = Math.min(p.maxHp, p.hp + 30);
-        g.ult = Math.min(1, g.ult + 0.25);
+        chargeUlt(0.2);
         text(p.x, p.y - 64, 'Mission !', '#ffd23a', true);
         burst(p.x, p.y - 20, '#ffd23a', 16, 4, { up: 2 });
         gainXp(Math.round(p.need * 0.5));
@@ -1178,8 +1181,16 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
 
   const askLevel = () => {
     if (g.paused || !g.pendingLevels || g.over) return;
+    const opts = levelOptions();
+    // Tout est au maximum : simple Baie Oran, sans couper la partie avec un menu
+    if (opts.every((o) => o.kind === 'heal')) {
+      const p = g.player; const heal = 30 * g.pendingLevels;
+      p.hp = Math.min(p.maxHp, p.hp + heal); g.pendingLevels = 0;
+      text(p.x, p.y - 64, `Niv. ${p.level} · +${heal} PV`, '#6bd17a');
+      return;
+    }
     g.paused = true;
-    if (callbacks.onLevelUp) callbacks.onLevelUp(levelOptions(), g.player.level, g.rerolls);
+    if (callbacks.onLevelUp) callbacks.onLevelUp(opts, g.player.level, g.rerolls);
   };
 
   const gainXp = (v) => {
@@ -1934,7 +1945,7 @@ export const createGame = (canvas, partner, callbacks = {}, prebuilt = null, gen
           burst(p.x, p.y - 20, '#6bd17a', 10, 3, { up: 1.5 });
         } else if (b.kind === 'chest') {
           p.hp = Math.min(p.maxHp, p.hp + 40);
-          g.ult = Math.min(1, g.ult + 0.35);
+          chargeUlt(0.3);
           text(p.x, p.y - 60, 'Coffre Alpha !', '#ffd23a', true);
           burst(p.x, p.y - 20, '#ffd23a', 18, 5, { up: 2 });
           gainXp(p.need - p.xp + 1);

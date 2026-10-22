@@ -4,7 +4,7 @@
  * Ils sont remplis à chaque image puis dessinés en un seul appel chacun.
  */
 import * as THREE from 'three';
-import { FX_COLS, makeFxAtlas, makeGlowTexture } from './rushArt';
+import { FXN, FX_COLS, makeFxAtlas, makeGlowTexture } from './rushArt';
 
 const VERT = `
 attribute vec3 iPos;
@@ -104,7 +104,7 @@ class Batch {
 export const createFx = (scene) => {
   const atlas = makeFxAtlas();
   const glowTex = makeGlowTexture();
-  const rows = Math.ceil(36 / FX_COLS);
+  const rows = Math.ceil(FXN / FX_COLS);
   const sprites = new Batch(scene, atlas, FX_COLS, rows, 4000, false);
   const glows = new Batch(scene, glowTex, 1, 1, 1500, true);
   const col = new THREE.Color();

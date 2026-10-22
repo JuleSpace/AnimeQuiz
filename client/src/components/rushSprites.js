@@ -204,10 +204,12 @@ export const createSpriteBank = (scene) => {
     get,
     /** Ajoute un sprite ; `cap` = capacité du lot s'il doit être créé. */
     draw(dex, anim, x, y, z, scale, t, row, flash = 0, alpha = 1, cap = 8, loop = true) {
-      const real = hasAnim(dex, anim) ? anim : 'walk';
+      // Taupiqueur et Triopikeur : leur « marche » PMD n'est qu'une traînée de terre, on garde leur pose visible
+      const a = (dex === 50 || dex === 51) && anim === 'walk' ? 'idle' : anim;
+      const real = hasAnim(dex, a) ? a : 'walk';
       get(dex, real, cap).push(x, y, z, scale, t, row, flash, alpha, loop);
     },
-    preload(dex, anims, cap) { anims.forEach((a) => { if (hasAnim(dex, a)) get(dex, a, cap); }); },
+    preload(dex, anims, cap) { anims.forEach((a0) => { const a = (dex === 50 || dex === 51) && a0 === 'walk' ? 'idle' : a0; if (hasAnim(dex, a)) get(dex, a, cap); }); },
     flush() { batches.forEach((b) => b.flush()); },
     dispose() { batches.forEach((b) => { scene.remove(b.mesh); b.dispose(); }); batches.clear(); }
   };

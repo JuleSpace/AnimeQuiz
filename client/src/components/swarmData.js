@@ -965,4 +965,5 @@ export const megaOf = (partner, choice) => {
 export const spriteOf = (dex) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${dex}.png`;
 
 /** XP pour passer du niveau `lv` au suivant. */
-export const xpToNext = (lv) => Math.round(5 + lv * 4 + lv * lv * 0.35);
+// Courbe d'expérience : 1re évolution (niv. 8) vers le 1er boss, forme finale (niv. 16) vers le 2e boss ou le légendaire
+export const xpToNext = (lv) => Math.round(8 + lv * 6 + lv * lv * 0.7);

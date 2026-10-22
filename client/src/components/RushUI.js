@@ -727,11 +727,11 @@ const UpgradeCard = ({ opt, partner, index, onPick, h }) => {
   const [rar, rc] = rarityOf(opt);
   const type = opt.kind === 'evo' ? (l.type || partner.type) : l.type;
   let icon;
-  if (opt.kind === 'weapon') icon = <TypeIcon type={type} size={40} />;
-  else if (opt.kind === 'evo') icon = <Sprite dex={l.evoDex} anim="idle" size={64} scale={1.8} />;
-  else if (opt.kind === 'mega') icon = <Item slug="key-stone" size={44} />;
-  else if (opt.kind === 'passive') icon = <Item slug={ITEM_SLUG[opt.id] || opt.id} size={44} />;
-  else icon = <Item slug="oran-berry" size={44} />;
+  if (opt.kind === 'weapon') icon = <TypeIcon type={type} size={52} />;
+  else if (opt.kind === 'evo') icon = <Sprite dex={l.evoDex} anim="idle" size={96} scale={2.6} />;
+  else if (opt.kind === 'mega') icon = <Item slug="key-stone" size={56} />;
+  else if (opt.kind === 'passive') icon = <Item slug={ITEM_SLUG[opt.id] || opt.id} size={56} />;
+  else icon = <Item slug="oran-berry" size={56} />;
   let delta = null;
   if (opt.kind === 'weapon') {
     const W = WEAPONS[opt.id]; const v = W.at(opt.lv); const dm = h?.stats?.dmg || 1;
@@ -740,17 +740,16 @@ const UpgradeCard = ({ opt, partner, index, onPick, h }) => {
   }
   return (
     <button type="button" className={`rx-up-card is-${opt.kind}`} style={{ '--rc': rc, '--tc': TYPE_COLORS[type] || l.color || rc, '--i': index }} onClick={() => onPick(opt)}>
-      <Key>{index + 1}</Key>
-      <span className="rx-up-card-icon">{icon}</span>
-      <span className="rx-up-card-text">
-        <span className="rx-up-card-head">
-          <b>{l.title}</b>
-          {opt.kind === 'weapon' || opt.kind === 'passive' ? (opt.lv === 1 ? <i className="is-new">Nouveau</i> : <i>Niv. {opt.lv - 1} → {opt.lv}</i>) : <i>{l.tag}</i>}
-        </span>
-        <small style={{ color: rc }}>{rar} · {opt.kind === 'weapon' ? `Attaque ${type}` : opt.kind === 'passive' ? 'Objet' : opt.kind === 'evo' ? 'Évolution' : opt.kind === 'mega' ? 'Méga' : 'Soin'}</small>
-        <em>{l.desc}</em>
-        {delta && <span className="rx-delta">{delta}</span>}
+      <span className="rx-up-card-top">
+        <Key>{index + 1}</Key>
+        {opt.kind === 'weapon' || opt.kind === 'passive' ? (opt.lv === 1 ? <i className="is-new">Nouveau</i> : <i>Niv. {opt.lv - 1} → {opt.lv}</i>) : <i>{l.tag}</i>}
+        <span className="rx-up-card-icon">{icon}</span>
       </span>
+      <span className="rx-up-card-rar" style={{ color: rc }}>{rar} · {opt.kind === 'weapon' ? `Attaque ${type}` : opt.kind === 'passive' ? 'Objet' : opt.kind === 'evo' ? 'Évolution' : opt.kind === 'mega' ? 'Méga' : 'Soin'}</span>
+      <b className="rx-up-card-name">{l.title}</b>
+      <em className="rx-up-card-desc">{l.desc}</em>
+      {delta && <span className="rx-delta">{delta}</span>}
+      {(opt.kind === 'weapon' || opt.kind === 'passive') && <span className="rx-pips">{Array.from({ length: 5 }, (_, i) => <i key={i} className={i < opt.lv ? 'on' : ''} />)}</span>}
     </button>
   );
 };

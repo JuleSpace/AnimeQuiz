@@ -304,6 +304,48 @@ export const buildRushWorld = (scene, track, opts = {}) => {
   const isWater = (x, z) => terrainAt(x, z) < WATER - 0.05;
   const slopeAt = (x, z) => Math.abs(terrainAt(x + 1, z) - terrainAt(x - 1, z)) + Math.abs(terrainAt(x, z + 1) - terrainAt(x, z - 1));
 
+  // Ponts de bois au-dessus de la rivière : un sur le chemin, deux autres plus loin
+  const bridges = [];
+  {
+    const ux = -Math.sin(aAng); const uz = Math.cos(aAng); // axe de la rivière
+    const cx = Math.cos(aAng); const cz = Math.sin(aAng); // en travers
+    const centerAt = (along) => 8 + Math.sin(along / 17 + seed) * 9 + (noise(along / 30, 0, riverSeed) - 0.5) * 12;
+    // point du chemin le plus proche de la rivière
+    let best = null;
+    for (let k = 0; k <= 200; k += 1) {
+      const t = k / 200;
+      const x = start.x + (arena.x - start.x) * t; const z = start.z + (arena.z - start.z) * t;
+      let bx = x; let bz = z; let bd = 1e9;
+      for (let o = -9; o <= 9; o += 0.5) { const px = x - uz * o; const pz = z + ux * o; const d = pathDist(px, pz); if (d < bd) { bd = d; bx = px; bz = pz; } }
+      const rd = riverDist(bx, bz);
+      if (!best || rd < best.rd) best = { rd, along: bx * ux + bz * uz };
+    }
+    const alongs = [best.along, best.along + 40, best.along - 40];
+    alongs.forEach((along) => {
+      const c = centerAt(along);
+      const mx = ux * along + cx * c; const mz = uz * along + cz * c;
+      const len = 17;
+      const ax = mx - cx * len / 2; const az = mz - cz * len / 2; const bx = mx + cx * len / 2; const bz = mz + cz * len / 2;
+      if (Math.hypot(mx, mz) > R * 0.78 || Math.hypot(mx - lake.x, mz - lake.z) < lake.r + 6) return;
+      const hA = Math.max(WATER + 0.6, terrainAt(ax, az)); const hB = Math.max(WATER + 0.6, terrainAt(bx, bz));
+      bridges.push({ mx, mz, dx: cx, dz: cz, len, half: 1.8, hA, hB });
+    });
+  }
+  const deckAt = (x, z) => {
+    for (const b of bridges) {
+      const rx = x - b.mx; const rz = z - b.mz;
+      const s = rx * b.dx + rz * b.dz; const w = -rx * b.dz + rz * b.dx;
+      if (Math.abs(s) <= b.len / 2 && Math.abs(w) <= b.half) {
+        const t = s / b.len + 0.5;
+        return b.hA + (b.hB - b.hA) * t + Math.sin(Math.PI * t) * 0.7;
+      }
+    }
+    return null;
+  };
+  // Sol praticable (terrain + ponts) : c'est ce que voient le joueur et les Pokémon
+  const groundAt = (x, z) => { const h = terrainAt(x, z); const d = bridges.length ? deckAt(x, z) : null; return d !== null && d > h ? d : h; };
+  const walkWater = (x, z) => groundAt(x, z) < WATER - 0.05;
+
   // Hautes herbes : des zones rondes
   const grass = [];
   for (let k = 0; k < 400 && grass.length < 16; k += 1) {
@@ -422,6 +464,7 @@ export const buildRushWorld = (scene, track, opts = {}) => {
   const colliders = [];
   const atlas = makePropAtlas(); track(atlas.tex);
   const props = [];
+  const rocks = [];
   {
     const put = (kind, n, minR, maxR, slope, avoid, o = {}) => {
       let made = 0;
@@ -441,7 +484,15 @@ export const buildRushWorld = (scene, track, opts = {}) => {
     put('fern', 90, 6, R * 0.9, 0.6, 4, { s: [0.9, 1.3], sway: 0.1 });
     put('sunflower', 45, 8, R * 0.9, 0.5, 6, { noGrass: true, s: [0.9, 1.2], sway: 0.12 });
     put(['flowersA', 'flowersB', 'flowersC'], 260, 4, R * 0.9, 0.5, 0, { noGrass: true, s: [0.9, 1.3], sway: 0.06 });
-    put(['rock', 'rockM'], 40, 14, R * 0.92, 1.4, 8, { s: [1, 2], col: 0.7 });
+    // rochers : de vrais volumes 3D (voir plus bas), pas des sprites
+    for (let k = 0, made = 0; k < 500 && made < 46; k += 1) {
+      const sp = freeSpot(14, R * 0.92, 1.4, 8);
+      if (!sp) continue;
+      const sc = rr(0.7, 1.9);
+      rocks.push({ x: sp.x, z: sp.z, y: terrainAt(sp.x, sp.z), s: sc, ry: rr(0, TAU), v: Math.floor(rng() * 3) });
+      colliders.push({ x: sp.x, z: sp.z, r: 0.85 * sc });
+      made += 1;
+    }
     put('stump', 20, 10, R * 0.9, 0.5, 8, { col: 0.4 });
     put('mush', 50, 8, R * 0.9, 0.5, 4, {});
     // hautes herbes : touffes serrées
@@ -455,6 +506,29 @@ export const buildRushWorld = (scene, track, opts = {}) => {
     });
   }
   const propBatch = makePropBatch(scene, track, atlas, props);
+  // Rochers en 3D : icosaèdres cabossés, facettes plates, texture de pierre pixel et mousse sur le dessus
+  {
+    const rockMat = track(new THREE.MeshLambertMaterial({ map: tex.stone, vertexColors: true, flatShading: true }));
+    const moss = new THREE.Color('#7fb84a'); const grey = new THREE.Color('#d8d4e6'); const dark = new THREE.Color('#9a94b0');
+    [0, 1, 2].forEach((v) => {
+      const geo = new THREE.IcosahedronGeometry(1, 1);
+      const pos = geo.attributes.position;
+      const cols = [];
+      for (let i = 0; i < pos.count; i += 1) {
+        const x = pos.getX(i); const y = pos.getY(i); const z = pos.getZ(i);
+        const n = 0.78 + 0.32 * (noise(x * 1.7 + v * 5, z * 1.7 + y, v + 2) * 0.5 + 0.5);
+        pos.setXYZ(i, x * n * (v === 1 ? 1.3 : 1), Math.max(-0.25, y * n * (v === 2 ? 0.85 : 0.62)) + 0.3, z * n);
+        const c = (y > 0.55 ? moss : y < -0.1 ? dark : grey).clone();
+        cols.push(c.r, c.g, c.b);
+      }
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+      geo.computeVertexNormals();
+      const list = rocks.filter((r) => r.v === v);
+      const m = instanced(geo, list.length, rockMat);
+      list.forEach((r, i) => setInst(m, i, r.x, r.y - 0.15, r.z, r.ry, r.s));
+      m.instanceMatrix.needsUpdate = true;
+    });
+  }
   // Nuages qui dérivent, très haut et loin
   const clouds = [];
   for (let k = 0; k < 26; k += 1) {
@@ -527,6 +601,51 @@ export const buildRushWorld = (scene, track, opts = {}) => {
     }
   };
 
+  // Ponts : planches qui suivent l'arche, poteaux et rambardes
+  if (bridges.length) {
+    const c = document.createElement('canvas'); c.width = 32; c.height = 32;
+    const x = c.getContext('2d');
+    for (let i = 0; i < 4; i += 1) {
+      x.fillStyle = ['#b07a40', '#a06c36', '#bb8546', '#9a6430'][i]; x.fillRect(0, i * 8, 32, 8);
+      x.fillStyle = '#6a4220'; x.fillRect(0, i * 8 + 7, 32, 1); x.fillRect((i * 11) % 32, i * 8, 1, 7);
+      x.fillStyle = '#d8a868'; x.fillRect(0, i * 8, 32, 1);
+    }
+    const wt = track(new THREE.CanvasTexture(c)); wt.magFilter = THREE.NearestFilter; wt.minFilter = THREE.NearestFilter; wt.colorSpace = THREE.SRGBColorSpace;
+    const woodMat = track(new THREE.MeshLambertMaterial({ map: wt }));
+    const SEGS = 12;
+    const planks = instanced(new THREE.BoxGeometry(1, 0.3, 1), bridges.length * SEGS, woodMat);
+    const posts = instanced(new THREE.BoxGeometry(0.28, 1.3, 0.28), bridges.length * 14, woodMat);
+    const rails = instanced(new THREE.BoxGeometry(1, 0.16, 0.16), bridges.length * SEGS * 2, woodMat);
+    let pi = 0; let qi = 0; let ri = 0;
+    bridges.forEach((b) => {
+      const ry = Math.atan2(-b.dz, b.dx);
+      const yAt = (t) => b.hA + (b.hB - b.hA) * t + Math.sin(Math.PI * t) * 0.7;
+      const segLen = b.len / SEGS;
+      for (let k = 0; k < SEGS; k += 1) {
+        const t = (k + 0.5) / SEGS;
+        const s = (t - 0.5) * b.len;
+        const px = b.mx + b.dx * s; const pz = b.mz + b.dz * s;
+        const tilt = Math.atan2(yAt(t + 0.5 / SEGS) - yAt(t - 0.5 / SEGS), segLen);
+        planks.setMatrixAt(pi, new THREE.Matrix4().compose(new THREE.Vector3(px, yAt(t) - 0.15, pz), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, tilt, 'YXZ')), new THREE.Vector3(segLen * 1.12, 1, b.half * 2)));
+        pi += 1;
+        [-1, 1].forEach((side) => {
+          const ox = -b.dz * side * (b.half - 0.1); const oz = b.dx * side * (b.half - 0.1);
+          rails.setMatrixAt(ri, new THREE.Matrix4().compose(new THREE.Vector3(px + ox, yAt(t) + 0.95, pz + oz), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, tilt, 'YXZ')), new THREE.Vector3(segLen * 1.12, 1, 1)));
+          ri += 1;
+        });
+      }
+      for (let k = 0; k <= 6; k += 1) {
+        const t = k / 6; const s = (t - 0.5) * b.len;
+        [-1, 1].forEach((side) => {
+          const px = b.mx + b.dx * s - b.dz * side * (b.half - 0.1); const pz = b.mz + b.dz * s + b.dx * side * (b.half - 0.1);
+          setInst(posts, qi, px, yAt(t) + 0.35, pz, ry, 1); qi += 1;
+        });
+      }
+    });
+    planks.count = pi; posts.count = qi; rails.count = ri;
+    [planks, posts, rails].forEach((m) => { m.instanceMatrix.needsUpdate = true; });
+  }
+
   // Mini-carte
   const mini = document.createElement('canvas');
   mini.width = 128; mini.height = 128;
@@ -538,7 +657,8 @@ export const buildRushWorld = (scene, track, opts = {}) => {
         const x = -SIZE / 2 + (i / 128) * SIZE; const z = -SIZE / 2 + (j / 128) * SIZE;
         const h = terrainAt(x, z);
         let c;
-        if (h < WATER) c = [63, 155, 232];
+        if (deckAt(x, z) !== null && h < WATER + 0.6) c = [168, 116, 63];
+        else if (h < WATER) c = [63, 155, 232];
         else if (h < WATER + 0.3) c = [234, 215, 162];
         else if (Math.hypot(x - arena.x, z - arena.z) < arena.r) c = [217, 211, 232];
         else if (pathDist(x, z) < 1.8) c = [201, 160, 106];
@@ -562,6 +682,6 @@ export const buildRushWorld = (scene, track, opts = {}) => {
   };
 
   return {
-    seed, terrainAt, isWater, slopeAt, inGrass, grass, arena, start, lake, altars, chests, chestMesh, setInst, freeSpot, pushOut, mini, tick, instanced
+    seed, terrainAt: groundAt, isWater: walkWater, slopeAt, inGrass, grass, arena, start, lake, altars, chests, chestMesh, setInst, freeSpot, pushOut, mini, tick, instanced, bridges
   };
 };

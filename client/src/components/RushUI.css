@@ -448,29 +448,36 @@
 .rx-act.is-ult.is-ready span { color: var(--gold-d); font-size: 34px; }
 
 /* Montée de niveau */
-.rx-levelup { width: min(700px, 100%); display: grid; gap: 14px; animation: rx-rise 0.25s ease-out; }
+.rx-levelup { width: min(920px, 100%); display: grid; gap: 14px; animation: rx-rise 0.25s ease-out; }
 @keyframes rx-rise { from { opacity: 0; transform: translateY(16px); } }
 .rx-levelup > header { display: grid; justify-items: center; gap: 4px; color: #fff; text-align: center; text-shadow: 0 3px 0 rgba(10, 30, 80, 0.4), 0 6px 22px rgba(10, 30, 80, 0.5); }
 .rx-levelup > header small { padding: 5px 12px; font: 600 14px/1 var(--f-h); color: var(--ink); text-shadow: none; background: var(--gold); border-radius: 999px; }
 .rx-levelup > header h2 { font-size: clamp(32px, 5vw, 48px); }
-.rx-up-cards { display: grid; gap: 10px; }
+.rx-up-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; perspective: 900px; }
 .rx-up-card {
-  position: relative; display: flex; align-items: center; gap: 16px; padding: 14px 18px 14px 14px; border: 0; text-align: left;
-  border-radius: 20px; background: #fff; box-shadow: inset 6px 0 0 var(--rc), 0 5px 0 rgba(27, 35, 64, 0.16), 0 14px 30px rgba(10, 30, 80, 0.25);
-  animation: rx-rise 0.3s ease-out backwards; animation-delay: calc(var(--i) * 70ms); transition: transform 0.12s, box-shadow 0.12s;
+  position: relative; display: flex; flex-direction: column; align-items: stretch; gap: 6px; min-height: 330px; padding: 0 0 14px; border: 0; text-align: center;
+  border-radius: 22px; background: #fff; overflow: hidden;
+  box-shadow: 0 0 0 3px var(--rc), 0 6px 0 color-mix(in srgb, var(--rc) 70%, #000), 0 18px 34px rgba(10, 30, 80, 0.3);
+  animation: rx-deal 0.42s cubic-bezier(.2, 1.2, .4, 1) backwards; animation-delay: calc(var(--i) * 90ms); transition: transform 0.15s, box-shadow 0.15s;
 }
-.rx-up-card:hover { transform: translateX(6px) scale(1.01); box-shadow: inset 6px 0 0 var(--rc), 0 0 0 3px var(--rc), 0 14px 30px rgba(10, 30, 80, 0.3); }
-.rx-up-card > .rx-key { position: absolute; top: 10px; right: 12px; }
-.rx-up-card-icon { display: grid; place-items: center; width: 76px; height: 76px; flex: none; border-radius: 18px; background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--tc) 18%, #fff), color-mix(in srgb, var(--tc) 38%, #fff)); box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--tc) 60%, #fff); }
-.rx-up-card-text { flex: 1; display: grid; gap: 4px; min-width: 0; }
-.rx-up-card-head { display: flex; align-items: center; gap: 8px; padding-right: 36px; }
-.rx-up-card-head b { font: 700 22px/1.05 var(--f-h); }
-.rx-up-card-head i { padding: 4px 9px; font: 600 12px/1 var(--f-h); font-style: normal; border-radius: 999px; background: var(--soft, #f3f6fc); color: var(--ink-2, #2b3561); white-space: nowrap; }
-.rx-up-card-head i.is-new { background: #36c972; color: #fff; }
-.rx-up-card-text > small { font: 600 12px/1 var(--f-h); letter-spacing: 0.04em; }
-.rx-up-card-text em { font-style: normal; font-size: 14px; line-height: 1.3; color: var(--ink-2, #2b3561); }
-.rx-delta { justify-self: start; padding: 4px 8px; font: 600 12px/1 var(--f-h); color: #1d5fd0; background: #eef4ff; border-radius: 8px; }
-.rx-up-card.is-evo, .rx-up-card.is-mega { background: linear-gradient(90deg, #fff8dc, #fff 60%); }
+@keyframes rx-deal { from { opacity: 0; transform: translateY(40px) rotateY(70deg) scale(0.9); } }
+.rx-up-card:hover { transform: translateY(-8px) scale(1.03); box-shadow: 0 0 0 4px var(--rc), 0 0 28px color-mix(in srgb, var(--rc) 60%, transparent), 0 22px 40px rgba(10, 30, 80, 0.35); }
+.rx-up-card-top {
+  position: relative; display: grid; place-items: center; height: 138px; margin-bottom: 4px;
+  background: radial-gradient(circle at 50% 60%, color-mix(in srgb, var(--tc) 30%, #fff) 0 34%, transparent 35%), linear-gradient(160deg, color-mix(in srgb, var(--tc) 75%, #fff), color-mix(in srgb, var(--tc) 95%, #000));
+}
+.rx-up-card-top::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0 12px, transparent 12px 24px); pointer-events: none; }
+.rx-up-card-top > .rx-key { position: absolute; top: 10px; left: 10px; z-index: 1; }
+.rx-up-card-top > i { position: absolute; top: 10px; right: 10px; z-index: 1; padding: 5px 9px; font: 600 12px/1 var(--f-h); font-style: normal; border-radius: 999px; background: rgba(255, 255, 255, 0.92); color: var(--ink-2, #2b3561); white-space: nowrap; }
+.rx-up-card-top > i.is-new { background: #36c972; color: #fff; }
+.rx-up-card-icon { position: relative; z-index: 1; display: grid; place-items: center; width: 92px; height: 92px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--tc) 40%, #fff), 0 6px 14px rgba(0, 0, 0, 0.2); }
+.rx-up-card.is-evo .rx-up-card-icon { width: 112px; height: 112px; }
+.rx-up-card-rar { font: 600 12px/1 var(--f-h); letter-spacing: 0.06em; text-transform: uppercase; padding: 0 12px; }
+.rx-up-card-name { padding: 0 12px; font: 700 23px/1.05 var(--f-h); color: var(--ink, #1b2340); }
+.rx-up-card-desc { flex: 1; padding: 0 14px; font-style: normal; font-size: 14px; line-height: 1.3; color: var(--ink-2, #2b3561); }
+.rx-up-card .rx-delta { align-self: center; }
+.rx-up-card .rx-pips { justify-content: center; --c: var(--rc); }
+.rx-up-card.is-evo, .rx-up-card.is-mega { background: linear-gradient(180deg, #fff, #fff8dc); }
 .rx-levelup > footer { display: flex; justify-content: center; gap: 10px; }
 .rx-blessings { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .rx-blessing { position: relative; display: grid; justify-items: center; gap: 8px; padding: 22px 14px 18px; border: 0; border-radius: 20px; background: #fff; text-align: center; box-shadow: inset 0 -6px 0 color-mix(in srgb, var(--c) 60%, #fff), 0 14px 30px rgba(10, 30, 80, 0.25); animation: rx-rise 0.3s ease-out backwards; animation-delay: calc(var(--i) * 80ms); transition: transform 0.12s; }
@@ -577,8 +584,11 @@
 }
 @media (max-width: 560px) {
   .rx-facts, .rx-kv.is-rec { grid-template-columns: 1fr 1fr; }
-  .rx-up-card-icon { width: 56px; height: 56px; }
-  .rx-up-card-head b { font-size: 18px; }
+  .rx-up-cards { grid-template-columns: 1fr; gap: 10px; }
+  .rx-up-card { min-height: 0; }
+  .rx-up-card-top { height: 96px; }
+  .rx-up-card-icon { width: 66px; height: 66px; }
+  .rx-up-card-name { font-size: 19px; }
   .rx-end > footer { grid-template-columns: 1fr; }
   .rx-howto li { grid-template-columns: 1fr; }
   .rx-hud-team { top: 92px; }

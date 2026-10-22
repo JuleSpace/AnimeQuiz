@@ -317,6 +317,8 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     if (f.hp <= 0) kill(f);
     return dmg;
   };
+  // Jauge d'ultime : rien ne se recharge pendant 15 s après un ultime, puis chaque ultime lancé ralentit la suivante
+  const chargeUlt = (v) => { if (g.t < (g.ultLock || 0)) return; g.ult = Math.min(1, g.ult + v / (1 + 0.3 * g.ults)); };
   const dropOrb = (x, z, v) => g.orbs.push({ x, z, y: terrainAt(x, z) + 0.6, v, vx: rand(-3, 3), vy: rand(4, 7), vz: rand(-3, 3), pulled: false });
   const kill = (f) => {
     if (f.dead) return;
@@ -324,7 +326,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     g.kills += 1;
     g.killsBy[f.id] = (g.killsBy[f.id] || 0) + 1;
     if (f.lastType) g.typeKills[f.lastType] = (g.typeKills[f.lastType] || 0) + 1;
-    g.ult = Math.min(1, g.ult + (f.boss ? 0.2 : f.alpha ? 0.3 : f.elite ? 0.04 : 0.008));
+    chargeUlt((f.boss ? 0.2 : f.alpha ? 0.25 : f.elite ? 0.03 : 0.005));
     particle(f.x, f.y + 0.8, f.z, '#ffffff', f.boss ? 30 : 6, f.boss ? 9 : 5, { f: FX.star4, size: 0.4 });
     puff(f.x, f.y + 0.5, f.z, f.boss ? 14 : 3, '#ffffff');
     if (f.boss) fxBurst(f.x, f.y + 1, f.z, f.types[0], 40, 10);
@@ -632,7 +634,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
   const ultimate = () => {
     if (g.ult < 1 || g.over || g.paused || g.evo) return false;
     const p = g.player;
-    g.ult = 0; g.ults += 1;
+    g.ult = 0; g.ults += 1; g.ultLock = g.t + 15;
     const power = (70 + p.level * 9) * (partner.power || 1);
     const type = partner.type;
     banner(`${ULT.name} !`, 2);
@@ -689,9 +691,17 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
   };
   const askLevel = () => {
     if (g.paused || !g.pendingLevels || g.over || g.evo || g.altarOpen) return;
+    const opts = levelOptions();
+    // Tout est au maximum : simple Baie Oran, sans couper la partie avec un menu
+    if (opts.every((o) => o.kind === 'heal')) {
+      const p = g.player; const heal = 30 * g.pendingLevels;
+      p.hp = Math.min(p.maxHp, p.hp + heal); g.pendingLevels = 0;
+      text(p.x, p.y + 2.8, p.z, `Niv. ${p.level} · +${heal} PV`, '#6bd17a');
+      return;
+    }
     g.paused = true;
     releasePointer();
-    if (callbacks.onLevelUp) callbacks.onLevelUp(levelOptions(), g.player.level, g.rerolls);
+    if (callbacks.onLevelUp) callbacks.onLevelUp(opts, g.player.level, g.rerolls);
   };
   // Séquence d'évolution : le temps ralentit, le Pokémon brille et change de forme
   const startEvo = (to, opts = {}) => {
@@ -717,7 +727,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
   };
   const gainXp = (v) => {
     const p = g.player;
-    p.xp += v * 1.4 * (1 + 0.08 * (g.passives.expshare || 0));
+    p.xp += v * 1.1 * (1 + 0.08 * (g.passives.expshare || 0));
     while (p.xp >= p.need) {
       p.xp -= p.need;
       p.level += 1;
@@ -944,8 +954,11 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
       if (dl > maxDv && dl > 0) { p.vx += (dvx / dl) * maxDv; p.vz += (dvz / dl) * maxDv; } else { p.vx = tx; p.vz = tz; }
     }
     // Saut
-    if (input.jumpPressed && p.grounded) { p.vy = 12.5; p.grounded = false; puff(p.x, p.y + 0.2, p.z, 3); }
-    input.jumpPressed = false;
+    // Saut : petite marge après avoir quitté le sol (descente de pente) et appui mémorisé un court instant
+    if (input.jumpPressed) { p.jumpBuf = 0.18; input.jumpPressed = false; }
+    p.jumpBuf = Math.max(0, (p.jumpBuf || 0) - dt);
+    p.coyote = p.grounded ? 0.14 : Math.max(0, (p.coyote || 0) - dt);
+    if (p.jumpBuf > 0 && p.coyote > 0) { p.vy = 13; p.grounded = false; p.coyote = 0; p.jumpBuf = 0; p.jumping = true; puff(p.x, p.y + 0.2, p.z, 3); }
     // Esquive
     p.dashCd = Math.max(0, p.dashCd - dt);
     if (input.dash && p.dashCd <= 0) {
@@ -970,8 +983,10 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     p.y += p.vy * dt;
     const ground = Math.max(terrainAt(p.x, p.z), canSwim() ? WATER : -99);
     if (p.y <= ground && p.vy <= 0) { if (!p.grounded && p.vy < -14) puff(p.x, ground + 0.2, p.z, 5); p.y = ground; p.vy = 0; p.grounded = true; }
+    else if (!p.jumping && p.vy <= 0 && p.y < ground + 0.5) { p.y = ground; p.vy = 0; p.grounded = true; } // colle au sol en descendant une pente
     else if (p.y > ground + 0.08) p.grounded = false;
     else p.y = ground;
+    if (p.grounded) p.jumping = false;
     p.swimming = canSwim() && terrainAt(p.x, p.z) < WATER - 0.05;
     if (p.swimming && Math.random() < dt * 8 && p.moving) particle(p.x, WATER + 0.1, p.z, '#e8f6ff', 2, 2, { up: 1 });
     p.inv = Math.max(0, p.inv - dt);
@@ -1365,7 +1380,7 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
         banner(`Mission accomplie : ${m.label} !`, 2.8);
         p.hp = Math.min(p.maxHp, p.hp + 30);
         g.balls += 1;
-        g.ult = Math.min(1, g.ult + 0.25);
+        chargeUlt(0.2);
         gainXp(Math.round(p.need * 0.5));
       } else if (m.fail && m.fail()) m.failed = true;
     });
@@ -1445,7 +1460,6 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
   [partner.dex, ...partner.evolutions.flatMap((e) => [e.dex, ...(e.choices || []).map((c) => c.dex)])].forEach((d) => bank.preload(d, ['walk', 'idle', 'attack', 'shoot', 'hurt'], 4));
   [...new Set(roster.waves.flatMap((w) => w.foes))].forEach((id) => bank.preload(FOES[id].dex, ['walk'], MAX_FOES));
   [...roster.minis, roster.final].forEach((id) => bank.preload(FOES[id].dex, ['walk', 'idle'], 2));
-  const candyCol = new THREE.Color();
 
   const render = () => {
     const p = g.player;
@@ -1520,18 +1534,18 @@ export const createRush = (mount, overlay, partner, callbacks = {}, effects = {}
     });
     // Feuilles en orbite
     leafList.forEach((L, i) => fx.sprite(FX.leafbig, L.x, L.y, L.z, 0.9, -L.a + g.t * 10 + i, 1));
-    // Cristaux d'XP, pièces, Balls, baies
+    // Bonbons Exp. (petit, moyen, Super Bonbon), pièces, Balls, baies
     let oi = 0;
     g.orbs.forEach((o) => {
-      if (oi >= 1000) return;
-      const big = o.v >= 10 ? 1.6 : o.v >= 3 ? 1.25 : 1;
-      const yy = o.y + Math.sin(g.t * 4 + o.x) * 0.1;
-      setInst(candyMesh, oi, o.x, yy, o.z, g.t * 2 + o.x, big);
-      candyMesh.setColorAt(oi, candyCol.set(o.v >= 10 ? '#ff6ad5' : o.v >= 3 ? '#4fe08a' : '#5fd0ff'));
-      if (oi < 220) fx.glow(o.x, yy, o.z, 1.3 * big, o.v >= 10 ? '#ff6ad5' : o.v >= 3 ? '#3ccf6e' : '#5fc8ff', 0.35);
+      if (oi >= 1200) return;
+      const tier = o.v >= 10 ? 2 : o.v >= 3 ? 1 : 0;
+      const size = [0.55, 0.7, 0.9][tier];
+      const yy = o.y + 0.15 + Math.abs(Math.sin(g.t * 5 + o.x)) * 0.18;
+      fx.sprite([FX.candyS, FX.candyM, FX.candyL][tier], o.x, yy, o.z, size, Math.sin(g.t * 3 + o.z) * 0.35, 1);
+      if (tier && oi < 220) fx.glow(o.x, yy, o.z, 1.2 * size + 0.4, tier === 2 ? '#8a6aff' : '#ffd23a', 0.3);
       oi += 1;
     });
-    candyMesh.count = oi; candyMesh.instanceMatrix.needsUpdate = true; if (candyMesh.instanceColor) candyMesh.instanceColor.needsUpdate = true;
+    candyMesh.count = 0;
     g.drops.forEach((d) => {
       const yy = d.y + 0.25 + Math.sin(g.t * 3 + d.x) * 0.08;
       if (d.kind === 'coin') { fx.sprite(FX.coin0 + (Math.floor(g.t * 8 + d.x) % 4), d.x, yy, d.z, 0.6); fx.glow(d.x, yy, d.z, 0.9, '#ffd23a', 0.25); }

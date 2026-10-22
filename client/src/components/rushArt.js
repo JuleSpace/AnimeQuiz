@@ -320,9 +320,9 @@ export const makePropAtlas = () => {
 export const FX = {
   Feu: 0, Eau: 1, Plante: 2, Électrik: 3, Glace: 4, Poison: 5, Psy: 6, Spectre: 7, Roche: 8, Sol: 9, Vol: 10, Normal: 11,
   Insecte: 12, Combat: 13, Dragon: 14, Ténèbres: 15, Acier: 16, Fée: 17, bone: 18, spark: 19, dot: 20, smoke: 21, ring: 22,
-  coin0: 23, coin1: 24, coin2: 25, coin3: 26, ball: 27, berry: 28, heart: 29, leafbig: 30, star4: 31, bubble: 32, note: 33, slash: 34, gem: 35
+  coin0: 23, coin1: 24, coin2: 25, coin3: 26, ball: 27, berry: 28, heart: 29, leafbig: 30, star4: 31, bubble: 32, note: 33, slash: 34, gem: 35, candyS: 36, candyM: 37, candyL: 38
 };
-const FXN = 36;
+export const FXN = 39;
 export const FX_COLS = 12;
 export const makeFxAtlas = () => {
   const S = 16; const c = canvas(S * FX_COLS, S * Math.ceil(FXN / FX_COLS)); const x = c.getContext('2d');
@@ -368,6 +368,12 @@ export const makeFxAtlas = () => {
   draw(FX.bubble, (px, py) => Math.abs(Math.hypot(px - 8, py - 8) - 5) - 1, ['#7fc4ff', '#e6f6ff', '#ffffff'], { color: (px, py) => (px === 6 && py === 5 ? '#ffffff' : null) });
   draw(FX.note, union(circle(6, 12, 2.6), box(7.5, 3, 9, 12), box(7.5, 3, 12, 5)), ['#2a1a4a', '#4a3a7a'], { outline: '#ffffff' });
   draw(FX.slash, (px, py) => Math.max(circle(4, 12, 11)(px, py), -circle(1.5, 14, 9.5)(px, py)), ['#ffffff', '#ffffff'], {});
+  // Bonbons Exp. (ce que lâchent les Pokémon K.O.) : petit, moyen, Super Bonbon
+  const candy = union(ellipse(8, 8, 4.2, 3.6), poly([[4.5, 8], [0.5, 4.5], [0.5, 11.5]]), poly([[11.5, 8], [15.5, 4.5], [15.5, 11.5]]));
+  const twist = (main) => (px, py) => ((px <= 2 || px >= 13) ? null : (px === 4 || px === 11) ? main : null);
+  draw(FX.candyS, candy, ['#1f7ac8', '#3aa6f0', '#8fd6ff', '#ffffff'], { outline: '#0e3a66', color: twist('#0e3a66') });
+  draw(FX.candyM, candy, ['#c87a00', '#f0b020', '#ffe066', '#ffffff'], { outline: '#5a3a00', color: twist('#5a3a00') });
+  draw(FX.candyL, candy, ['#3a2ab0', '#6a4af0', '#b8a8ff', '#ffffff'], { outline: '#1a0e5a', color: (px, py) => ((px >= 6 && px <= 9 && (py === 7 || py === 8)) ? '#ffffff' : (px === 4 || px === 11) && px > 2 && px < 13 ? '#1a0e5a' : null) });
   draw(FX.gem, poly([[8, 1], [13, 6], [8, 15], [3, 6]]), ['#1f9a4a', '#3ccf6e', '#8cf0a8', '#e6fff0'], { outline: '#0a4a20' });
   return pixelTex(c, false);
 };
