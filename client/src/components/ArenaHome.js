@@ -164,6 +164,7 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
 
   return (
     <div className="ah-wrap ah2" style={{ '--u': `${u}px` }}>
+      <div className="ah2-stage">
       <section className="ah2-panel ah2-hero">
         <span className="ah2-tone" aria-hidden="true" />
         <span className="ah2-lines" aria-hidden="true" />
@@ -223,6 +224,7 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
         <button type="button" className="ah2-more" onClick={() => setCarnet('board')}>Classement complet ›</button>
       </section>
       <footer className="ah2-foot">Fan-game non officiel, gratuit et sans but lucratif. Pokémon © Nintendo / Game Freak / The Pokémon Company. Sprites de dresseurs : Pokémon Showdown.</footer>
+      </div>
 
       {howto && (
         <div className="ah-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) setHowto(false); }}>

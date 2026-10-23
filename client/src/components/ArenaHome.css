@@ -442,3 +442,10 @@
 }
 .ah2-card.is-empty { background: #4a3f7a; animation: none; }
 .ah2-card.is-empty .ah2-card-in small { padding: 0 calc(var(--u) * 10); text-align: center; line-height: 1.3; }
+/* Scène centrée : la maquette 1280×720 reste au milieu sur les écrans plus larges ou plus hauts */
+.ah2-stage { position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 1280); height: calc(var(--u) * 720); transform: translate(-50%, -50%); }
+.ah2-music .pa-music-btn { height: calc(var(--u) * 34) !important; min-width: calc(var(--u) * 34); padding: 0 calc(var(--u) * 10) !important; border: 2px solid var(--line) !important; border-radius: 0 !important; background: var(--ink) !important; color: var(--line) !important; font-size: calc(var(--u) * 16) !important; opacity: 1 !important; }
+.ah2-music .pa-music-btn:hover { background: var(--line) !important; color: var(--ink) !important; }
+@media (max-width: 760px) {
+  .ah2-stage { position: static; transform: none; width: 100%; height: auto; display: flex; flex-direction: column; gap: 12px; }
+}
