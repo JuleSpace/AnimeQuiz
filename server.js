@@ -16,7 +16,12 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    // Domaine principal + éventuels domaines listés dans CLIENT_URL (séparés par des virgules)
+    origin: [
+      ...(process.env.CLIENT_URL || 'http://localhost:3000').split(',').map((u) => u.trim()).filter(Boolean),
+      'https://bullys-lair.dev',
+      'https://www.bullys-lair.dev'
+    ],
     methods: ["GET", "POST"]
   }
 });

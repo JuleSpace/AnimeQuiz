@@ -674,14 +674,40 @@
 .rx-home .rx-free { color: var(--k); }
 .rx-free-faces { margin: 0 10px !important; }
 
-/* Accueil : plus proche de la maquette (gros logo, gros partenaire, bas de l'écran assombri) */
-.rx-home .rx-bg-veil { background: linear-gradient(180deg, rgba(8, 12, 30, 0) 35%, rgba(8, 12, 30, 0.55) 70%, rgba(8, 12, 30, 0.92) 100%); }
-.rx-logo b { font-size: clamp(120px, 13vw, 200px); -webkit-text-stroke: 6px var(--k); text-shadow: 8px 8px 0 #2563ff, 14px 14px 0 var(--k); }
-.rx-logo-tag { font-size: 28px; }
-.rx-home-partner { right: 12vw; top: 8vh; }
-.rx-hero-plate { width: 360px; height: 340px; }
-.rx-hero-shadow { width: 240px; height: 50px; }
-.rx-sticker { font-size: 30px; padding: 10px 22px 12px; }
-.rx-home-side { right: 48px; bottom: 150px; }
-@media (max-width: 1180px) { .rx-home-partner { right: 4vw; } .rx-hero-plate { width: 300px; height: 280px; } }
-@media (max-width: 900px) { .rx-hero-plate { width: 220px; height: 210px; } .rx-hero-plate .sw-pmd { width: 220px !important; height: 220px !important; } .rx-logo b { font-size: 84px; } }
+/* Accueil : calé sur la maquette A+F (1280×720), tout est mis à l'échelle de l'écran via --u */
+@media (min-width: 701px) {
+  .rx-home { --u: 1px; }
+  .rx-home .rx-bg-veil { background: linear-gradient(180deg, rgba(8, 12, 30, 0.1) 30%, rgba(8, 12, 30, 0.88) 100%); }
+  .rx-home-top { top: calc(var(--u) * 30); left: calc(var(--u) * 56); right: calc(var(--u) * 56); }
+  .rx-home-kicker { font-size: calc(var(--u) * 13); }
+  .rx-home-chips { gap: calc(var(--u) * 10); }
+  .rx-home .acc-chip { height: calc(var(--u) * 38); padding: 0 calc(var(--u) * 14) 0 calc(var(--u) * 6); color: var(--k); background: #fff; border: 3px solid var(--k); border-radius: 12px; box-shadow: 3px 3px 0 var(--k); font: 800 calc(var(--u) * 15)/1 var(--f-b); }
+  .rx-home-chips .rx-chip { height: calc(var(--u) * 38); padding: 0 calc(var(--u) * 14); font-size: calc(var(--u) * 15); border-width: 3px; box-shadow: 3px 3px 0 var(--k); }
+  .rx-home-partner { right: calc(var(--u) * 130); top: calc(var(--u) * 100); transform: none; gap: calc(var(--u) * 6); }
+  .rx-home .rx-hero-plate { width: calc(var(--u) * 300); height: calc(var(--u) * 270); filter: drop-shadow(calc(var(--u) * 5) calc(var(--u) * 5) 0 var(--k)) drop-shadow(0 calc(var(--u) * 20) calc(var(--u) * 16) rgba(0, 0, 0, 0.4)); }
+  .rx-home .rx-sticker { display: block; padding: calc(var(--u) * 6) calc(var(--u) * 16); border-radius: calc(var(--u) * 12); box-shadow: 4px 4px 0 var(--k); font-size: calc(var(--u) * 18); white-space: nowrap; }
+  .rx-home .rx-sticker small { font-size: calc(var(--u) * 14); }
+  .rx-home-title { left: calc(var(--u) * 56); bottom: calc(var(--u) * 150); gap: calc(var(--u) * 22); }
+  .rx-home-title p { max-width: calc(var(--u) * 460); font-size: calc(var(--u) * 19); }
+  .rx-home .rx-logo-tag { font-size: calc(var(--u) * 24); padding: calc(var(--u) * 2) calc(var(--u) * 14); }
+  .rx-home .rx-logo b { font-size: calc(var(--u) * 150); line-height: 0.82; -webkit-text-stroke: calc(var(--u) * 5) var(--k); text-shadow: calc(var(--u) * 7) calc(var(--u) * 7) 0 #2563ff, calc(var(--u) * 12) calc(var(--u) * 12) 0 var(--k); }
+  .rx-home-side { display: block; right: calc(var(--u) * 56); bottom: calc(var(--u) * 150); width: calc(var(--u) * 320); }
+  .rx-home .rx-free { gap: calc(var(--u) * 10); padding-bottom: calc(var(--u) * 12); border: 4px solid var(--k); border-radius: calc(var(--u) * 18); box-shadow: 6px 6px 0 var(--k); }
+  .rx-home .rx-free header { padding: calc(var(--u) * 8) calc(var(--u) * 14); border-bottom-width: 4px; font-size: calc(var(--u) * 16); }
+  .rx-home .rx-free > span, .rx-home .rx-free > .rx-bar { margin: 0 calc(var(--u) * 14); font-size: calc(var(--u) * 15); }
+  .rx-home-bar { left: calc(var(--u) * 56); right: calc(var(--u) * 56); bottom: calc(var(--u) * 40); gap: calc(var(--u) * 30); padding-top: calc(var(--u) * 22); flex-wrap: nowrap; }
+  .rx-home .rx-bar-btn { font-size: calc(var(--u) * 20); }
+  .rx-home .rx-bar-btn em { font-size: calc(var(--u) * 15); }
+  .rx-home .rx-bar-btn.is-play { height: calc(var(--u) * 58); padding: 0 calc(var(--u) * 30); font-size: calc(var(--u) * 26); }
+  .rx-bar-quiet { margin-left: auto; display: flex; align-items: center; gap: calc(var(--u) * 22); }
+  .rx-home .rx-bar-btn.is-quit { margin-left: 0; font-size: calc(var(--u) * 16); }
+  .rx-home .rx-foot { left: calc(var(--u) * 56); bottom: calc(var(--u) * 10); font-size: calc(var(--u) * 10); }
+}
+@media (max-width: 700px) {
+  .rx-bar-quiet { display: flex; gap: 6px 14px; flex-wrap: wrap; }
+  .rx-home .rx-bar-btn.is-quit { font-size: 14px; }
+  .rx-home .rx-sticker { display: block; font-size: 20px; }
+  .rx-home-bar { bottom: 70px; }
+  .rx-home-title { bottom: 300px; }
+  .rx-home .rx-foot { left: 16px; right: 16px; bottom: 8px; font-size: 9px; }
+}

@@ -93,7 +93,7 @@ const Portfolio = ({ onClose, onGames, onOpen }) => {
           <button type="button" className="pf-btn is-main" onClick={onGames}>Ouvrir la ludothèque</button>
           <button type="button" className="pf-btn" onClick={onClose}>Accueil du site</button>
         </div>
-        <small>bullys-lair.up.railway.app/portfolio</small>
+        <small>bullys-lair.dev/portfolio</small>
       </footer>
     </div>
   );

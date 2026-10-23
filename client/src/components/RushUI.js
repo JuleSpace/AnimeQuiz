@@ -119,6 +119,19 @@ export const RushLogo = ({ small = false }) => (
   </div>
 );
 
+// Unité de mise en page de l'accueil : 1 px de la maquette 1280×720, mis à l'échelle de l'écran
+const QUIET = ['history', 'howto'];
+const homeUnit = () => (typeof window === 'undefined' ? 1 : Math.max(0.6, Math.min(window.innerWidth, (window.innerHeight * 16) / 9) / 1280));
+const useHomeUnit = () => {
+  const [u, setU] = useState(homeUnit);
+  useEffect(() => {
+    const on = () => setU(homeUnit());
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return u;
+};
+
 export const RushHome = ({ meta, partner, onAction }) => {
   const [focus, setFocus] = useState(0);
   const size = leagueSize(meta);
@@ -134,23 +147,23 @@ export const RushHome = ({ meta, partner, onAction }) => {
     Escape: () => onAction('quit')
   });
   const rec = meta.best?.[partner.id];
+  const u = useHomeUnit();
+  const main = MENU.filter((m) => !QUIET.includes(m.id));
   return (
-    <div className="rx-root rx-home">
+    <div className="rx-root rx-home" style={{ '--u': `${u}px` }}>
       <RushBackdrop />
       <div className="rx-home-top">
         <span className="rx-home-kicker">SURVIVOR · 3D · KANTO</span>
         <span className="rx-home-chips">
           <AccountChip returnHash="#pokerush" />
-          <span className="rx-chip">{fr(meta.runs)} parties</span>
-          <span className="rx-chip">🏆 {fr(meta.wins)}</span>
           <PL meta={meta} />
         </span>
       </div>
 
-      <button type="button" className="rx-home-partner" onClick={() => onAction('league')} title="Changer de partenaire">
-        <span className="rx-hero-plate"><span className="rx-hero-shadow" /><Sprite dex={partner.dex} anim="idle" size={340} scale={8} foot={0.92} /></span>
-        <span className="rx-sticker">{partner.name}<small>{partner.types.join(' / ')} · {partner.cls}</small></span>
-        <span className="rx-home-rec">{rec ? `${rec.win ? 'Victoire en' : 'Record'} ${clock(rec.t)} · ${fr(rec.score)} pts` : 'Changer de partenaire ›'}</span>
+      <button type="button" className="rx-home-partner" onClick={() => onAction('league')}
+        title={rec ? `${rec.win ? 'Victoire en' : 'Record'} ${clock(rec.t)} · ${fr(rec.score)} pts · changer de partenaire` : 'Changer de partenaire'}>
+        <span className="rx-hero-plate"><Sprite dex={partner.dex} anim="idle" size={Math.round(300 * u)} scale={10 * u} foot={0.95} /></span>
+        <span className="rx-sticker">{partner.name}<small> · {partner.types[0]}</small></span>
       </button>
 
       <div className="rx-home-title">
@@ -162,7 +175,6 @@ export const RushHome = ({ meta, partner, onAction }) => {
         {ready.length > 0 ? (
           <button type="button" className="rx-card rx-free" onClick={() => onAction('league', ready[0].id)}>
             <header>EN LIBERTÉ</header>
-            <span className="rx-free-faces">{ready.slice(0, 4).map((f) => <Sprite key={f.id} dex={f.dex} size={58} scale={1.8} still />)}</span>
             <span><b>{ready.map((f) => f.name).slice(0, 3).join(', ')}</b> traîne{ready.length > 1 ? 'nt' : ''} sur l’île. Capture-{ready.length > 1 ? 'les' : 'le'} pendant ta prochaine partie.</span>
           </button>
         ) : next && (
@@ -175,15 +187,24 @@ export const RushHome = ({ meta, partner, onAction }) => {
       </aside>
 
       <nav className="rx-home-bar">
-        {MENU.map((m, i) => (
-          <button key={m.id} type="button" className={`rx-bar-btn${i === 0 ? ' is-play' : ''}${i === focus ? ' is-focus' : ''}`}
-            onMouseEnter={() => setFocus(i)} onClick={() => onAction(m.id)}>
-            {m.label}
-            {m.id === 'league' && <em>{size}/{FAMILIES.length}</em>}
-            {badge[m.id] && <i className="rx-badge">{badge[m.id]}</i>}
-          </button>
-        ))}
-        <button type="button" className="rx-bar-btn is-quit" onClick={() => onAction('quit')}>Retour au Lair</button>
+        {main.map((m) => {
+          const i = MENU.indexOf(m);
+          return (
+            <button key={m.id} type="button" className={`rx-bar-btn${i === 0 ? ' is-play' : ''}${i === focus ? ' is-focus' : ''}`}
+              onMouseEnter={() => setFocus(i)} onClick={() => onAction(m.id)}>
+              {m.label}
+              {m.id === 'league' && <em>{size}/{FAMILIES.length}</em>}
+              {badge[m.id] && <i className="rx-badge">{badge[m.id]}</i>}
+            </button>
+          );
+        })}
+        <span className="rx-bar-quiet">
+          {MENU.filter((m) => QUIET.includes(m.id)).map((m) => {
+            const i = MENU.indexOf(m);
+            return <button key={m.id} type="button" className={`rx-bar-btn is-quit${i === focus ? ' is-focus' : ''}`} onMouseEnter={() => setFocus(i)} onClick={() => onAction(m.id)}>{m.label}</button>;
+          })}
+          <button type="button" className="rx-bar-btn is-quit" onClick={() => onAction('quit')}>Retour au Lair</button>
+        </span>
       </nav>
       <footer className="rx-foot">Fan-game non officiel, gratuit et sans but lucratif. Pokémon © Nintendo / Game Freak / The Pokémon Company. Sprites : PMDCollab SpriteCollab (CC BY-NC 4.0). Inspiré de Pokébonk et Megabonk.</footer>
     </div>
