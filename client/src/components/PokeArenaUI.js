@@ -342,6 +342,13 @@ export const useStageUnit = () => {
 };
 const REGION_OF_GEN = ['', 'Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Unys', 'Kalos', 'Alola', 'Galar', 'Paldea'];
 const trainerFace = (t) => ({ sprite: t.sprite || t.id, name: t.name });
+/** Sprite de dresseur en grand (remplit sa case), avec les sprites de secours. */
+const TrainerImg = ({ t, className = '' }) => {
+  const list = (Array.isArray(t.sprite) ? t.sprite : [t.sprite || t.id]).filter(Boolean);
+  const [idx, setIdx] = useState(0);
+  if (idx >= list.length) return <span className={`tp2-img is-fb ${className}`}>{(t.name || '?').slice(0, 1)}</span>;
+  return <img className={`tp2-img ${className}`} src={trainerSprite(list[idx])} alt="" draggable={false} loading="lazy" onError={() => setIdx((i) => i + 1)} />;
+};
 
 /** Écran plein « Choisis ton dresseur » (maquette Tactics D+F). */
 export const TrainerScreen = ({ value, onChange, onClose }) => {
@@ -374,7 +381,7 @@ export const TrainerScreen = ({ value, onChange, onClose }) => {
             className={`tp2-cell${pick === t.id ? ' is-on ah2-holo' : ''}`}
             onClick={() => setPick(t.id)} onDoubleClick={() => choose(t.id)}>
             <span className="tp2-cell-in">
-              <TrainerPortrait trainer={trainerFace(t)} size="md" />
+              <TrainerImg t={t} />
               <b>{t.name}</b>
               <small>Gen {t.gen}{value === t.id ? ' · actuel' : ''}</small>
             </span>
@@ -385,7 +392,7 @@ export const TrainerScreen = ({ value, onChange, onClose }) => {
         <span className="tp2-lines" aria-hidden="true" />
         <b className="tp2-name">{cur.name}</b>
         <span className="tp2-tag ah2-holo">{REGION_OF_GEN[cur.gen]} · Gen {cur.gen}</span>
-        <span className="tp2-frame ah2-holo"><span><TrainerPortrait key={cur.id} trainer={trainerFace(cur)} size="xl" /></span></span>
+        <span className="tp2-frame ah2-holo"><span><TrainerImg key={cur.id} t={cur} className="is-big" /></span></span>
         <span className="tp2-bubble" aria-hidden="true"><i /><i /><i /></span>
         <button type="button" className="tp2-go ah2-holo" onClick={() => choose(cur.id)}>C’EST MOI !</button>
       </aside>
@@ -969,6 +976,183 @@ export const EventScreen = ({ options, onChoose, hud, gold = 0 }) => (
 );
 
 /* ———————————————— Codex ———————————————— */
+
+
+/* ——— Pokédex « Nuit holo » : grille de cartes + fiche interactive ——— */
+const DexImg = ({ unit, big = false }) => {
+  const chain = (big ? [unit?.ani, unit?.sprite, unit?.home] : [unit?.sprite, unit?.home]).filter(Boolean);
+  const [idx, setIdx] = useState(0);
+  useEffect(() => { setIdx(0); }, [unit?.dex]);
+  if (idx >= chain.length) return <span className={big ? 'dx-big is-fb' : 'dx-mini is-fb'}>?</span>;
+  return <img className={big ? 'dx-big' : 'dx-mini'} src={chain[idx]} alt="" draggable={false} loading="lazy" onError={() => setIdx((i) => i + 1)} />;
+};
+const lineSteps = (line) => {
+  if (!line) return [];
+  const out = [];
+  if (line.forms) {
+    for (let i = 1; i < line.branchAt; i += 1) out.push({ key: `s${i}`, star: i, unit: unitFromLine(line.id, i, `dx-${i}`) });
+    for (let star = line.branchAt; star <= 3; star += 1) {
+      line.forms.forEach((f) => out.push({ key: `s${star}-${f.id}`, star, unit: unitFromLine(line.id, star, `dx-${f.id}-${star}`, [], f.id) }));
+    }
+  } else {
+    [1, 2, 3].forEach((star) => out.push({ key: `s${star}`, star, unit: unitFromLine(line.id, star, `dx-${star}`) }));
+  }
+  const formIds = line.forms?.length ? line.forms.map((f) => f.id) : [null];
+  formIds.filter((fid) => canMegaEvolve(line.id, fid)).forEach((fid) => {
+    const u = unitFromLine(line.id, 3, `dx-mega-${fid}`, ['megaring'], fid, !fid);
+    if (u?.mega) out.push({ key: `mega-${fid}`, star: 4, mega: true, unit: u });
+  });
+  return out.filter((x) => x.unit);
+};
+let DEX_MAX = null;
+const dexMax = () => {
+  if (!DEX_MAX) {
+    DEX_MAX = { hp: 1, atk: 1, spd: 1 };
+    LINES.forEach((l) => {
+      const u = unitFromLine(l.id, 3, `mx-${l.id}`);
+      if (!u) return;
+      DEX_MAX.hp = Math.max(DEX_MAX.hp, u.hp); DEX_MAX.atk = Math.max(DEX_MAX.atk, u.atk); DEX_MAX.spd = Math.max(DEX_MAX.spd, u.spd);
+    });
+  }
+  return DEX_MAX;
+};
+const COST_COLOR = ['', '#b8c0d8', '#6fd29a', '#6fb6ff', '#c78bff', '#ffd25e'];
+
+export const DexScreen = ({ onBack, onTrait }) => {
+  const u = useStageUnit();
+  const [cost, setCost] = useState(0);
+  const [query, setQuery] = useState('');
+  const [typeF, setTypeF] = useState('');
+  const [pick, setPick] = useState(LINES[0]?.id);
+  const [step, setStep] = useState(0);
+  const lines = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return LINES.filter((line) => {
+      if (cost && line.cost !== cost) return false;
+      const all = [...line.stages, ...(line.forms || []).flatMap((f) => f.stages)];
+      if (typeF && !all.some((x) => x.types.includes(typeF)) && !(line.traits || []).includes(typeF)) return false;
+      if (!q) return true;
+      return `${all.map((x) => x.name).join(' ')} ${line.spell?.name || ''} ${line.ab?.name || ''}`.toLowerCase().includes(q);
+    }).sort((a, b) => a.cost - b.cost || a.stages[0].name.localeCompare(b.stages[0].name, 'fr'));
+  }, [cost, query, typeF]);
+  const detail = (lines.find((l) => l.id === pick)) || lines[0] || null;
+  const steps = useMemo(() => lineSteps(detail), [detail]);
+  const cur = steps[Math.min(step, steps.length - 1)];
+  const unit = cur?.unit;
+  const max = dexMax();
+  const rows = detail ? lineSynergyRows(detail) : [];
+  const select = (id) => { setPick(id); setStep(0); };
+  useEffect(() => {
+    const k = (e) => {
+      if (e.target.tagName === 'INPUT') { if (e.key === 'Escape') e.target.blur(); return; }
+      const i = lines.findIndex((l) => l.id === detail?.id);
+      if (e.key === 'Escape') onBack();
+      else if (e.key === 'ArrowDown') { e.preventDefault(); if (lines[i + 1]) select(lines[i + 1].id); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); if (lines[i - 1]) select(lines[i - 1].id); }
+      else if (e.key === 'ArrowRight') setStep((x) => Math.min(x + 1, steps.length - 1));
+      else if (e.key === 'ArrowLeft') setStep((x) => Math.max(x - 1, 0));
+    };
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  });
+  return (
+    <div className="ah2 dx" style={{ '--u': `${u}px` }}>
+      <header className="tp2-head dx-head">
+        <button type="button" className="tp2-back" onClick={onBack}>← RETOUR</button>
+        <h1>POKÉDEX</h1>
+        <span className="dx-count">{lines.length} / {ROSTER_LINES} lignées</span>
+        <input className="dx-search" type="search" placeholder="Chercher un Pokémon, un sort, un talent…" value={query} onChange={(e) => setQuery(e.target.value)} aria-label="Rechercher" />
+      </header>
+      <div className="dx-left">
+      <div className="dx-filters">
+        <div className="dx-costs" role="group" aria-label="Coût">
+          {[0, 1, 2, 3, 4, 5].map((c) => (
+            <button key={c} type="button" className={cost === c ? 'is-on' : ''} style={{ '--c': COST_COLOR[c] || '#f3f0ff' }} onClick={() => setCost(cost === c ? 0 : c)}>{c ? `${c} or` : 'Tous'}</button>
+          ))}
+        </div>
+        <div className="dx-types" role="group" aria-label="Type">
+          {TYPES.map((t) => (
+            <button key={t} type="button" className={typeF === t ? 'is-on' : ''} style={{ '--t': tint(t) }} onClick={() => setTypeF(typeF === t ? '' : t)}>{t}</button>
+          ))}
+        </div>
+      </div>
+      <div className="dx-grid">
+        {lines.map((line) => {
+          const b = unitFromLine(line.id, 1, `dg-${line.id}`);
+          if (!b) return null;
+          return (
+            <button key={line.id} type="button" className={`dx-card${detail?.id === line.id ? ' is-on' : ''}`} style={{ '--t': tint(b.type), '--c': COST_COLOR[line.cost] }} onClick={() => select(line.id)}>
+              <span className="dx-card-cost">{line.cost}</span>
+              <DexImg unit={b} />
+              <b>{displayName(b.name)}</b>
+              <span className="dx-dots">{b.types.map((t) => <i key={t} style={{ background: tint(t) }} title={t} />)}</span>
+            </button>
+          );
+        })}
+        {!lines.length && <p className="dx-empty">Aucun Pokémon avec ces filtres.</p>}
+      </div>
+      </div>
+      {detail && unit && (
+        <aside className="ah2-panel dx-detail" style={{ '--t': tint(unit.type) }}>
+          <span className="tp2-lines" aria-hidden="true" />
+          <div className="dx-hero">
+            <span className="dx-glow" />
+            <DexImg key={unit.dex} unit={unit} big />
+          </div>
+          <div className="dx-title">
+            <b>{displayName(unit.name)}</b>
+            <span className="dx-chips">
+              {unit.types.map((t) => <TypeChip key={t} type={t} small onHover={onTrait} />)}
+              <span className="dx-cost" style={{ '--c': COST_COLOR[detail.cost] }}>{detail.cost} or</span>
+            </span>
+          </div>
+          <div className={`dx-steps${steps.length > 6 ? ' is-many' : ''}`} role="tablist" aria-label="Évolutions">
+            {[1, 2, 3, 4].map((star) => {
+              const group = steps.map((st, i) => ({ st, i })).filter(({ st }) => st.star === star);
+              if (!group.length) return null;
+              return (
+                <div key={star} className="dx-step-row">
+                  {steps.length > 6 && <span className="dx-step-label">{star === 4 ? 'MÉGA' : stars(star)}</span>}
+                  {group.map(({ st, i }) => (
+                    <button key={st.key} type="button" role="tab" aria-selected={i === step} className={i === step ? 'is-on' : ''} onClick={() => setStep(i)} title={displayName(st.unit.name)}>
+                      <DexImg unit={st.unit} />
+                      {steps.length <= 6 && <small>{st.mega ? 'MÉGA' : stars(st.star)}</small>}
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+          <div className="dx-stats">
+            {[['PV', unit.hp, max.hp], ['ATK', unit.atk, max.atk], ['VIT', unit.spd, max.spd]].map(([k, v, m]) => (
+              <div key={k} className="dx-stat"><span>{k}</span><i><b style={{ width: `${Math.max(4, Math.min(100, (v / m) * 100))}%` }} /></i><em>{v}</em></div>
+            ))}
+          </div>
+          <p className="dx-role">{linePlaystyle(detail)} · {rangeLabel(detail.range)}</p>
+          <div className="dx-boxes">
+            <section className="dx-box">
+              <h4>{detail.spell?.name || 'Sort'}</h4>
+              <p>{detail.spell?.desc}</p>
+              <small>Ciblage : {AIM_LABELS[detail.spell?.aim] || '—'}</small>
+            </section>
+            {(unit.ab || detail.ab) && (
+              <section className="dx-box is-talent">
+                <h4>Talent · {(unit.ab || detail.ab).name}</h4>
+                <p>{(unit.ab || detail.ab).desc}</p>
+              </section>
+            )}
+          </div>
+          <div className="dx-syn">
+            {rows.map((r) => (
+              <span key={r.trait} className="dx-syn-chip" style={{ '--t': tint(r.trait) }} title={r.tiers.map((t) => t.label).join(' ; ') || r.blurb}
+                onMouseEnter={(e) => onTrait?.(r.trait, e)} onMouseLeave={() => onTrait?.(null)}>{r.trait}</span>
+            ))}
+          </div>
+        </aside>
+      )}
+    </div>
+  );
+};
 
 export const CodexScreen = ({ onBack, onTrait }) => {
   const [cost, setCost] = useState(0);

@@ -75,7 +75,7 @@ import {
   versusView
 } from './pokeArenaVersus';
 import {
-  CodexScreen,
+  DexScreen,
   EventScreen,
   ComboPreview,
   ItemCraftsPopover,
@@ -1484,9 +1484,7 @@ const PokeArena = ({ onClose }) => {
   if (phase === 'codex') {
     return (
       <div className={`pa-root ${skinCls} pa-screen`}>
-        <ArenaFrame title="Pokédex" subtitle="Lignées, talents et synergies de l’arène" onBack={() => setPhase('hub')}>
-          <CodexScreen onBack={() => setPhase('hub')} onTrait={(t, e) => openTrait(t, e)} />
-        </ArenaFrame>
+        <DexScreen onBack={() => setPhase('hub')} onTrait={(t, e) => openTrait(t, e)} />
         <TraitPopup pop={traitPop} />
       </div>
     );

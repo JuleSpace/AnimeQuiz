@@ -2,10 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { HomeIcon } from './GameHome';
 import GamePage, { BoardPage, PageHead, Section, Stat, useKeys } from './GamePage';
 import { AccountChip, fetchLeaderboard } from './account';
-import { CHAMPIONS } from './pokeArenaTrainers';
-import { trainerSprite } from './pokeArenaCampaign';
 import { STARTER_LINES, spriteUrl, unitFromLine } from './pokeArenaData';
-import { displayName, playerTrainerSprite, useStageUnit } from './PokeArenaUI';
+import { displayName, useStageUnit } from './PokeArenaUI';
 import './ArenaHome.css';
 
 const itemSprite = (slug) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${slug}.png`;
@@ -35,11 +33,6 @@ export const addToRecord = (rec, run) => ({
   history: [run, ...(rec.history || [])].slice(0, 20)
 });
 
-const Trainer = ({ id, className }) => {
-  const [broken, setBroken] = useState(false);
-  if (!id || broken) return null;
-  return <img className={className} src={trainerSprite(playerTrainerSprite(id))} alt="" draggable={false} onError={() => setBroken(true)} />;
-};
 
 /* ——— Accueil « Nuit holo × manga » : mise en page de la maquette 1280×720, mise à l'échelle de l'écran ——— */
 const HERO_DEX = [150, 249, 250, 384, 483, 484, 487, 643, 644, 716, 717, 791, 792, 888, 889];
@@ -56,7 +49,7 @@ const HallRows = () => {
     fetchLeaderboard('arena', 1).then((b) => { if (alive) setBoard(b); });
     return () => { alive = false; };
   }, []);
-  const rows = (board?.score || []).slice(0, 3);
+  const rows = (board?.score || []).slice(0, 5);
   if (!board) return <div className="ah2-row is-empty">Chargement…</div>;
   if (!rows.length) return <div className="ah2-row is-empty">Aucun Maître pour l’instant : le titre est à prendre !</div>;
   return rows.map((r, i) => (
@@ -93,7 +86,6 @@ export const ArenaFrame = ({ title, subtitle, onBack, right, children }) => {
 const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, myTrainer, record, regionOf }) => {
   const [howto, setHowto] = useState(false);
   const [carnet, setCarnet] = useState(false);
-  const champ = CHAMPIONS[Math.floor(Date.now() / 60000) % CHAMPIONS.length];
   const fan = useMemo(() => {
     const lines = [...STARTER_LINES].sort(() => Math.random() - 0.5).slice(0, 3);
     return lines.map((l) => unitFromLine(l.id, 3)).filter(Boolean);
@@ -176,7 +168,7 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
 
       <button type="button" className="ah2-play ah2-holo" onClick={play.onClick}>
         <b>{saved ? 'CONTINUER' : 'JOUER'}</b>
-        <small>{saved ? `Étape ${saved.floor + 1}/${total} · ${regionOf(saved)}` : 'Chapitre 1 · Kanto'}</small>
+        {saved && <small>Étape {saved.floor + 1}/{total} · {regionOf(saved)}</small>}
       </button>
 
       <div className={`ah2-tiles${saved ? ' is-4' : ''}`}>
@@ -205,10 +197,6 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
         <h2>HALL DE LA <span className="ah2-holotxt">LIGUE</span></h2>
         <HallRows />
         <button type="button" className="ah2-more" onClick={() => setCarnet('board')}>Classement complet ›</button>
-        <p className="ah2-champ">
-          <Trainer id={champ.sprite} className="ah2-champ-face" />
-          <span><b>{champ.name}</b> t’attend au sommet · Maître de {champ.region}, équipe {champ.types.join(' / ')}</span>
-        </p>
       </section>
       <footer className="ah2-foot">Fan-game non officiel, gratuit et sans but lucratif. Pokémon © Nintendo / Game Freak / The Pokémon Company. Sprites de dresseurs : Pokémon Showdown.</footer>
 
