@@ -148,7 +148,7 @@ export const RushHome = ({ meta, partner, onAction }) => {
       </div>
 
       <button type="button" className="rx-home-partner" onClick={() => onAction('league')} title="Changer de partenaire">
-        <span className="rx-hero-plate"><span className="rx-hero-shadow" /><Sprite dex={partner.dex} anim="walk" size={250} scale={5} foot={0.9} /></span>
+        <span className="rx-hero-plate"><span className="rx-hero-shadow" /><Sprite dex={partner.dex} anim="idle" size={340} scale={8} foot={0.92} /></span>
         <span className="rx-sticker">{partner.name}<small>{partner.types.join(' / ')} · {partner.cls}</small></span>
         <span className="rx-home-rec">{rec ? `${rec.win ? 'Victoire en' : 'Record'} ${clock(rec.t)} · ${fr(rec.score)} pts` : 'Changer de partenaire ›'}</span>
       </button>

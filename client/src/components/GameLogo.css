@@ -5,3 +5,29 @@
 .gl-font { font-family: 'Luckiest Guy', 'Saira', 'Arial Black', sans-serif; }
 .gl-pixel { font-family: 'Pixelify Logo', 'Pixelify Sans', 'Courier New', monospace; font-weight: 700; }
 .gl-tag { font-family: 'Saira', 'Arial Black', sans-serif; font-style: italic; font-weight: 900; letter-spacing: 0.06em; }
+
+/* ——— Petites animations des décors (logos des jeux et des quiz) ——— */
+.gl-spin { transform-box: view-box; transform-origin: 200px 150px; animation: gl-spin 40s linear infinite; }
+.gl-spin.is-slow { animation-duration: 70s; }
+.gl-bob { transform-box: fill-box; transform-origin: center; animation: gl-bob 3.2s ease-in-out infinite; }
+.gl-bob.is-late { animation-delay: -1.6s; }
+.gl-twinkle { animation: gl-twinkle 2.4s ease-in-out infinite; animation-delay: calc(var(--k, 0) * -0.37s); }
+.gl-blink { animation: gl-blink 4s steps(1) infinite; animation-delay: calc(var(--k, 0) * -0.8s); }
+.gl-drift { animation: gl-drift 18s linear infinite alternate; }
+.gl-shimmer rect { animation: gl-twinkle 1.6s ease-in-out infinite; }
+.gl-shimmer rect:nth-child(2) { animation-delay: -0.5s; }
+.gl-shimmer rect:nth-child(3) { animation-delay: -1s; }
+.gl-hue { animation: gl-hue 6s linear infinite; }
+.gl-ring { transform-box: fill-box; transform-origin: center; animation: gl-ring 1.4s ease-in-out infinite; animation-delay: calc(var(--k, 0) * -0.18s); }
+.gl-word { animation: gl-breathe 4.5s ease-in-out infinite; }
+@keyframes gl-spin { to { transform: rotate(360deg); } }
+@keyframes gl-bob { 50% { transform: translateY(-7px) rotate(-3deg); } }
+@keyframes gl-twinkle { 50% { opacity: 0.25; } }
+@keyframes gl-blink { 0%, 92% { opacity: 1; } 93%, 97% { opacity: 0; } }
+@keyframes gl-drift { to { transform: translateX(40px); } }
+@keyframes gl-hue { to { filter: hue-rotate(360deg); } }
+@keyframes gl-ring { 50% { transform: scaleX(0.35); } }
+@keyframes gl-breathe { 50% { transform: translateY(-3px) scale(1.015); } }
+@media (prefers-reduced-motion: reduce) {
+  .gl-spin, .gl-bob, .gl-twinkle, .gl-blink, .gl-drift, .gl-shimmer rect, .gl-hue, .gl-ring, .gl-word { animation: none; }
+}

@@ -683,10 +683,10 @@ const FIELDS = {
 
 /** Surcharges du terrain en style Premium (lignes et cases dorées). */
 const PREMIUM_FIELD = {
-  line: 'rgba(244,214,150,0.92)',
-  emblem: 'rgba(233,196,106,0.14)',
-  tileLine: 'rgba(246,223,165,0.42)',
-  tileTop: 'rgba(255,236,190,0.07)'
+  line: 'rgba(230,220,255,0.92)',
+  emblem: 'rgba(160,130,255,0.16)',
+  tileLine: 'rgba(214,200,255,0.6)',
+  tileTop: 'rgba(170,140,255,0.12)'
 };
 
 const sceneryFns = {
@@ -716,14 +716,16 @@ export const drawScenery = (ctx, w, h, scene, horizon = h * HORIZON) => {
  * Étalonnage « Premium » : lumière de fin de journée, ombres chaudes et vignettage brun
  * pour que le plateau se fonde dans l’interface sombre et dorée. Appliqué sur tout le canvas.
  */
+// Étalonnage « Nuit holo » : crépuscule violet sur tous les décors (lune au lieu du soleil)
+const NIGHT = { sky: ['rgba(70,40,150,0.8)', 'rgba(170,110,220,0.6)'], top: 'rgba(130,100,230,0.6)', bottom: 'rgba(20,10,60,0.6)', warm: 'rgba(120,100,190,0.34)', sun: [0.78, 0.08, 'rgba(200,180,255,0.42)'] };
 const GRADES = {
-  prairie: { sky: ['rgba(214,120,60,0.75)', 'rgba(246,190,120,0.65)'], top: 'rgba(255,150,50,0.85)', bottom: 'rgba(120,60,20,0.55)', warm: 'rgba(170,105,55,0.26)', sun: [0.82, 0.08, 'rgba(255,196,110,0.5)'] },
-  montagne: { sky: ['rgba(150,90,140,0.7)', 'rgba(240,150,140,0.65)'], top: 'rgba(255,120,120,0.8)', bottom: 'rgba(70,40,80,0.55)', warm: 'rgba(150,95,95,0.26)', sun: [0.15, 0.06, 'rgba(255,170,140,0.45)'] },
-  ligue: { top: 'rgba(110,60,90,0.75)', bottom: 'rgba(50,28,30,0.6)', warm: 'rgba(120,75,60,0.32)', sun: [0.5, 0.04, 'rgba(255,214,150,0.4)'] },
-  plage: { sky: ['rgba(220,100,70,0.75)', 'rgba(250,180,100,0.7)'], top: 'rgba(255,110,50,0.85)', bottom: 'rgba(130,60,40,0.5)', warm: 'rgba(170,100,60,0.22)', sun: [0.25, 0.18, 'rgba(255,180,100,0.55)'] },
-  neige: { sky: ['rgba(170,120,170,0.55)', 'rgba(250,190,160,0.5)'], top: 'rgba(255,190,150,0.6)', bottom: 'rgba(60,60,110,0.45)', warm: 'rgba(150,120,120,0.18)', sun: [0.22, 0.08, 'rgba(255,200,160,0.45)'] },
-  volcan: { top: 'rgba(255,120,60,0.6)', bottom: 'rgba(60,20,10,0.5)', warm: 'rgba(150,80,50,0.2)', sun: [0.62, 0.1, 'rgba(255,150,60,0.5)'] },
-  grotte: { top: 'rgba(150,110,200,0.5)', bottom: 'rgba(30,15,30,0.5)', warm: 'rgba(110,80,70,0.22)', sun: [0.5, 0.35, 'rgba(200,170,255,0.3)'] }
+  prairie: NIGHT,
+  montagne: { ...NIGHT, sun: [0.15, 0.06, 'rgba(210,180,255,0.4)'] },
+  ligue: { top: 'rgba(130,90,220,0.6)', bottom: 'rgba(25,12,60,0.6)', warm: 'rgba(120,95,180,0.34)', sun: [0.5, 0.04, 'rgba(210,190,255,0.4)'] },
+  plage: { ...NIGHT, sun: [0.25, 0.18, 'rgba(190,200,255,0.45)'] },
+  neige: { ...NIGHT, warm: 'rgba(140,130,200,0.22)', sun: [0.22, 0.08, 'rgba(210,220,255,0.45)'] },
+  volcan: { top: 'rgba(200,90,160,0.5)', bottom: 'rgba(30,10,40,0.55)', warm: 'rgba(130,80,150,0.24)', sun: [0.62, 0.1, 'rgba(255,140,200,0.4)'] },
+  grotte: { top: 'rgba(150,110,240,0.5)', bottom: 'rgba(20,10,40,0.55)', warm: 'rgba(100,80,160,0.26)', sun: [0.5, 0.35, 'rgba(200,170,255,0.35)'] }
 };
 export const applyPremiumGrade = (ctx, w, h, scene, horizon = h * 0.3) => {
   const G = GRADES[scene] || GRADES.prairie;
@@ -749,8 +751,8 @@ export const applyPremiumGrade = (ctx, w, h, scene, horizon = h * 0.3) => {
   ctx.fillRect(0, 0, w, h);
   ctx.globalCompositeOperation = 'source-over';
   const v = ctx.createRadialGradient(w / 2, h * 0.55, Math.min(w, h) * 0.32, w / 2, h * 0.55, Math.max(w, h) * 0.78);
-  v.addColorStop(0, 'rgba(27,21,17,0)');
-  v.addColorStop(1, 'rgba(27,21,17,0.62)');
+  v.addColorStop(0, 'rgba(14,11,31,0)');
+  v.addColorStop(1, 'rgba(14,11,31,0.66)');
   ctx.fillStyle = v;
   ctx.fillRect(0, 0, w, h);
   ctx.restore();
@@ -844,10 +846,10 @@ export const drawField = (ctx, gridW, gridH, scene, SIZE, premium = false) => {
   if (premium) {
     // Liseré doré extérieur + incrustation dorée autour de la surface
     const gold = ctx.createLinearGradient(X, Y, X + W, Y + H);
-    gold.addColorStop(0, '#f6dfa5');
-    gold.addColorStop(0.45, '#b98532');
-    gold.addColorStop(0.6, '#f2d38c');
-    gold.addColorStop(1, '#a97a32');
+    gold.addColorStop(0, '#ff9ad5');
+    gold.addColorStop(0.35, '#9ab8ff');
+    gold.addColorStop(0.65, '#8ff0d4');
+    gold.addColorStop(1, '#ffe38a');
     ctx.strokeStyle = gold;
     ctx.lineWidth = 3;
     roundRect(ctx, X + 1.5, Y + 1.5, W - 3, H - 3, 23);
@@ -1011,12 +1013,14 @@ export const drawField = (ctx, gridW, gridH, scene, SIZE, premium = false) => {
   }
   if (premium) {
     // Emblème : anneau doré et étoile à quatre branches
-    ctx.strokeStyle = 'rgba(246,223,165,0.9)';
+    ctx.strokeStyle = 'rgba(214,200,255,0.9)';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(cx, midY, R * 0.78, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = '#e9c46a';
+    const holo = ctx.createLinearGradient(cx - SIZE * 0.3, midY - SIZE * 0.3, cx + SIZE * 0.3, midY + SIZE * 0.3);
+    holo.addColorStop(0, '#ff9ad5'); holo.addColorStop(0.5, '#9ab8ff'); holo.addColorStop(1, '#8ff0d4');
+    ctx.fillStyle = holo;
     ctx.beginPath();
     for (let k = 0; k < 8; k += 1) {
       const a = (k / 8) * Math.PI * 2 - Math.PI / 2;

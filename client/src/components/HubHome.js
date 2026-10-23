@@ -100,7 +100,9 @@ const HubHome = ({ name, onQuiz, onMusic, onGame, onAdmin, onPortfolio, onShelf 
             </span>
           </button>
           <button type="button" className="hub-mode is-music" onClick={onMusic}>
-            <span className="hub-mode-eq" aria-hidden="true">{Array.from({ length: 7 }, (_, i) => <i key={i} style={{ '--k': i }} />)}</span>
+            <span className="hub-vinyl" aria-hidden="true"><i /></span>
+            <span className="hub-notes" aria-hidden="true">{['♪', '♫', '♪', '♬'].map((n, i) => <i key={i} style={{ '--k': i }}>{n}</i>)}</span>
+            <span className="hub-mode-eq" aria-hidden="true">{Array.from({ length: 9 }, (_, i) => <i key={i} style={{ '--k': i }} />)}</span>
             <span className="hub-mode-text">
               <b><Icon name="music" />Music Quiz</b>
               <small>Extraits masqués : tout le monde écrit sa réponse, le chef corrige.</small>

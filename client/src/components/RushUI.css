@@ -673,3 +673,15 @@
 
 .rx-home .rx-free { color: var(--k); }
 .rx-free-faces { margin: 0 10px !important; }
+
+/* Accueil : plus proche de la maquette (gros logo, gros partenaire, bas de l'écran assombri) */
+.rx-home .rx-bg-veil { background: linear-gradient(180deg, rgba(8, 12, 30, 0) 35%, rgba(8, 12, 30, 0.55) 70%, rgba(8, 12, 30, 0.92) 100%); }
+.rx-logo b { font-size: clamp(120px, 13vw, 200px); -webkit-text-stroke: 6px var(--k); text-shadow: 8px 8px 0 #2563ff, 14px 14px 0 var(--k); }
+.rx-logo-tag { font-size: 28px; }
+.rx-home-partner { right: 12vw; top: 8vh; }
+.rx-hero-plate { width: 360px; height: 340px; }
+.rx-hero-shadow { width: 240px; height: 50px; }
+.rx-sticker { font-size: 30px; padding: 10px 22px 12px; }
+.rx-home-side { right: 48px; bottom: 150px; }
+@media (max-width: 1180px) { .rx-home-partner { right: 4vw; } .rx-hero-plate { width: 300px; height: 280px; } }
+@media (max-width: 900px) { .rx-hero-plate { width: 220px; height: 210px; } .rx-hero-plate .sw-pmd { width: 220px !important; height: 220px !important; } .rx-logo b { font-size: 84px; } }

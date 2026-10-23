@@ -895,7 +895,9 @@ const PokeArena = ({ onClose }) => {
         return;
       }
       setDrag(null);
-      const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-drop]');
+      // Une case visée gagne sur le Pokémon de la rangée devant (son sprite déborde vers le haut sur la case derrière lui)
+      const stack = document.elementsFromPoint(e.clientX, e.clientY);
+      const el = stack.find((x) => x.dataset?.drop === 'cell') || stack.map((x) => x.closest?.('[data-drop]')).find(Boolean);
       if (!el) return;
       const kind = el.dataset.drop;
       const index = Number(el.dataset.index);

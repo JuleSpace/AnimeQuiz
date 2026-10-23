@@ -19,9 +19,9 @@ if (typeof document !== 'undefined' && !document.getElementById('gl-fonts')) {
 
 const THEMES = {
   quiz: { top: 'Bully’s', main: 'LAIR', tag: 'Quiz entre potes', fill: ['#fff7b0', '#ffd23a', '#ff9a00'], line: '#ff2347', deep: '#08164d', tagBg: '#ff2347' },
-  arena: { top: 'Poké Bully', main: 'TACTICS', tag: 'Auto-battler', fill: ['#fff3cf', '#f2d38c', '#c08a2e'], line: '#5b3a17', deep: '#1b120b', tagBg: '#c9573f' },
+  arena: { top: 'Poké Bully', main: 'TACTICS', tag: 'Auto-battler', fill: ['#ffd6f0', '#b9c8ff', '#8ff0d4'], line: '#f3f0ff', deep: '#0e0b1f', tagBg: '#7a5cff' },
   swarm: { top: 'Poké', main: 'SWARM', tag: 'Survivor', fill: ['#fff3a6', '#ffd447', '#ff9f1a'], line: '#6b3fd6', deep: '#120b26', tagBg: '#ff6b57', pixel: true },
-  rush: { top: 'Poké', main: 'RUSH', tag: 'Survivor 3D', fill: ['#fff6b0', '#ffcb05', '#f29a00'], line: '#2f6fd6', deep: '#0d1f5c', tagBg: '#ff5d4f' },
+  rush: { top: 'Poké', main: 'RUSH', tag: 'Survivor 3D', fill: ['#fff27a', '#ffd60a', '#ffb800'], line: '#2563ff', deep: '#14142b', tagBg: '#ff3d57' },
   bonk: { top: 'Sonic', main: 'BONK', tag: 'Green Hill', fill: ['#fff6b0', '#ffd23a', '#ff8a00'], line: '#1f6dff', deep: '#0a1f6b', tagBg: '#ff2347' },
   cards: { top: 'Atelier des', main: 'CARTES', tag: 'Cartes jokers', fill: ['#ffffff', '#ffe1ea', '#ffb3c6'], line: '#e0193f', deep: '#5c0a22', tagBg: '#08164d' },
   academy: { top: 'Cobblemon', main: 'ACADEMY', tag: 'Guide', fill: ['#fffbd0', '#ffe14d', '#f2b705'], line: '#1f9d5a', deep: '#0b3322', tagBg: '#2a8cff' }
@@ -46,17 +46,21 @@ const Scene = ({ id, uid }) => {
     return (
       <>
         <rect width="400" height="260" fill="#0b3bd1" />
-        {rays(28, '#1f6dff', '#0b3bd1')}
+        <g className="gl-spin">{rays(28, '#1f6dff', '#0b3bd1')}</g>
         <radialGradient id={`${uid}v`} cx="50%" cy="58%" r="70%"><stop offset="40%" stopColor="#000" stopOpacity="0" /><stop offset="100%" stopColor="#030a33" stopOpacity="0.75" /></radialGradient>
         <rect width="400" height="260" fill={`url(#${uid}v)`} />
         <g opacity="0.9">
-          <rect x="300" y="26" width="58" height="80" rx="8" fill="#fff" transform="rotate(14 329 66)" />
-          <rect x="306" y="32" width="46" height="40" rx="4" fill="#ff2347" transform="rotate(14 329 66)" />
-          <text x="329" y="66" transform="rotate(14 329 66)" textAnchor="middle" className="gl-font" fontSize="34" fill="#fff">?</text>
-          <rect x="40" y="150" width="50" height="70" rx="7" fill="#ffd23a" transform="rotate(-16 65 185)" />
-          <text x="65" y="198" transform="rotate(-16 65 185)" textAnchor="middle" className="gl-font" fontSize="34" fill="#08164d">!</text>
+          <g className="gl-bob">
+            <rect x="300" y="26" width="58" height="80" rx="8" fill="#fff" transform="rotate(14 329 66)" />
+            <rect x="306" y="32" width="46" height="40" rx="4" fill="#ff2347" transform="rotate(14 329 66)" />
+            <text x="329" y="66" transform="rotate(14 329 66)" textAnchor="middle" className="gl-font" fontSize="34" fill="#fff">?</text>
+          </g>
+          <g className="gl-bob is-late">
+            <rect x="40" y="150" width="50" height="70" rx="7" fill="#ffd23a" transform="rotate(-16 65 185)" />
+            <text x="65" y="198" transform="rotate(-16 65 185)" textAnchor="middle" className="gl-font" fontSize="34" fill="#08164d">!</text>
+          </g>
         </g>
-        {[[70, 50], [345, 200], [120, 225], [270, 30]].map(([x, y], i) => <path key={i} d={`M${x} ${y - 9}L${x + 3} ${y - 3}L${x + 9} ${y}L${x + 3} ${y + 3}L${x} ${y + 9}L${x - 3} ${y + 3}L${x - 9} ${y}L${x - 3} ${y - 3}Z`} fill="#fff" opacity="0.85" />)}
+        {[[70, 50], [345, 200], [120, 225], [270, 30]].map(([x, y], i) => <path key={i} d={`M${x} ${y - 9}L${x + 3} ${y - 3}L${x + 9} ${y}L${x + 3} ${y + 3}L${x} ${y + 9}L${x - 3} ${y + 3}L${x - 9} ${y}L${x - 3} ${y - 3}Z`} fill="#fff" opacity="0.85" className="gl-twinkle" style={{ '--k': i }} />)}
       </>
     );
   }
@@ -66,7 +70,7 @@ const Scene = ({ id, uid }) => {
       <g shapeRendering="crispEdges">
         <linearGradient id={`${uid}s`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#140f2a" /><stop offset="0.7" stopColor="#352a5b" /><stop offset="1" stopColor="#5b3f8f" /></linearGradient>
         <rect width="400" height="260" fill={`url(#${uid}s)`} />
-        {stars.map(([x, y], i) => <rect key={i} x={x} y={y} width={i % 3 ? 4 : 6} height={i % 3 ? 4 : 6} fill={i % 4 ? '#fff' : '#ffd447'} />)}
+        {stars.map(([x, y], i) => <rect key={i} x={x} y={y} width={i % 3 ? 4 : 6} height={i % 3 ? 4 : 6} fill={i % 4 ? '#fff' : '#ffd447'} className="gl-twinkle" style={{ '--k': i }} />)}
         {/* lune pixel */}
         <g fill="#f6f1ff"><rect x="318" y="34" width="36" height="44" /><rect x="312" y="40" width="48" height="32" /></g>
         <g fill="#c9bdf0"><rect x="326" y="44" width="8" height="8" /><rect x="340" y="58" width="6" height="6" /></g>
@@ -82,40 +86,45 @@ const Scene = ({ id, uid }) => {
         })}
         <rect y="244" width="400" height="16" fill="#163a1e" />
         {/* yeux dans la nuit : la horde */}
-        {[[60, 214], [120, 226], [290, 218], [345, 230], [205, 232]].map(([x, y], i) => <g key={i} fill="#ff6b57"><rect x={x} y={y} width="5" height="5" /><rect x={x + 10} y={y} width="5" height="5" /></g>)}
+        {[[60, 214], [120, 226], [290, 218], [345, 230], [205, 232]].map(([x, y], i) => <g key={i} fill="#ff6b57" className="gl-blink" style={{ '--k': i }}><rect x={x} y={y} width="5" height="5" /><rect x={x + 10} y={y} width="5" height="5" /></g>)}
         <Ball x={58} y={64} r={26} o={0.9} px />
       </g>
     );
   }
   if (id === 'rush') {
+    // L'île en plein cadre, façon écran-titre (ciel, rivière, terrasses, pont)
     return (
       <>
-        <linearGradient id={`${uid}r`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2b6fc2" /><stop offset="0.45" stopColor="#7cbaf0" /><stop offset="0.68" stopColor="#ffd2a0" /></linearGradient>
+        <linearGradient id={`${uid}r`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#5aa8f0" /><stop offset="0.55" stopColor="#bfe4ff" /></linearGradient>
         <rect width="400" height="260" fill={`url(#${uid}r)`} />
-        <circle cx="300" cy="150" r="46" fill="#fff4c4" opacity="0.95" />
-        <circle cx="300" cy="150" r="70" fill="#ffe7a0" opacity="0.35" />
-        <rect y="168" width="400" height="92" fill="#4a9ee4" />
-        <polygon points="0,200 60,160 120,185 190,150 250,180 320,158 400,190 400,260 0,260" fill="#5fae45" />
-        <polygon points="60,160 120,185 90,200" fill="#4b9a3b" /><polygon points="190,150 250,180 210,196" fill="#4b9a3b" /><polygon points="320,158 400,190 350,200" fill="#4b9a3b" />
-        <polygon points="0,232 90,210 170,228 260,206 400,226 400,260 0,260" fill="#3f8a37" />
-        {[[40, 60, 120], [10, 110, 160], [250, 40, 140], [200, 96, 120]].map(([x, y, w], i) => <rect key={i} x={x} y={y} width={w} height="5" rx="2.5" fill="#fff" opacity="0.55" />)}
-        <Ball x={70} y={70} r={30} o={0.85} />
+        <path d="M0 96 L60 80 L120 92 L190 74 L260 90 L330 78 L400 92 L400 120 L0 120 Z" fill="#9cc3ea" />
+        <g className="gl-drift"><ellipse cx="90" cy="40" rx="34" ry="10" fill="#fff" /><ellipse cx="112" cy="32" rx="20" ry="10" fill="#fff" /><ellipse cx="300" cy="28" rx="26" ry="8" fill="#fff" opacity="0.9" /></g>
+        <rect y="112" width="400" height="148" fill="#5cc23c" />
+        {[0, 1, 2].map((i) => <rect key={i} x={-10 + i * 40} y={120 + i * 22} width={190 - i * 30} height="16" fill="#c08a52" stroke="#14142b" strokeWidth="2" />)}
+        {[0, 1, 2].map((i) => <rect key={`b${i}`} x={250 + i * 20} y={124 + i * 22} width={160 - i * 20} height="16" fill="#c08a52" stroke="#14142b" strokeWidth="2" />)}
+        <path d="M180 112 Q 205 170 175 260 L 240 260 Q 260 170 230 112 Z" fill="#3f9be8" stroke="#14142b" strokeWidth="3" />
+        <g className="gl-shimmer">{[[196, 190], [214, 222], [190, 244]].map(([x, y], i) => <rect key={i} x={x} y={y} width="16" height="3" rx="1.5" fill="#e8f6ff" />)}</g>
+        <path d="M150 150 Q 205 132 262 150" fill="none" stroke="#14142b" strokeWidth="13" strokeLinecap="round" />
+        <path d="M150 150 Q 205 132 262 150" fill="none" stroke="#b07a40" strokeWidth="8" strokeLinecap="round" />
+        <circle cx="330" cy="62" r="22" fill="#2f9a3e" stroke="#14142b" strokeWidth="3" /><rect x="326" y="80" width="8" height="26" fill="#7a4a24" stroke="#14142b" strokeWidth="2" />
+        <circle cx="60" cy="72" r="18" fill="#ff9ad5" stroke="#14142b" strokeWidth="3" /><rect x="56" y="88" width="8" height="22" fill="#7a4a24" stroke="#14142b" strokeWidth="2" />
+        <rect x="6" y="6" width="388" height="248" rx="10" fill="none" stroke="#14142b" strokeWidth="5" />
       </>
     );
   }
   if (id === 'arena') {
+    // Nuit violette, lignes de vitesse et trame façon manga, cadre holographique
     return (
       <>
-        <radialGradient id={`${uid}a`} cx="50%" cy="40%" r="75%"><stop offset="0" stopColor="#6b4c2c" /><stop offset="0.6" stopColor="#2c2018" /><stop offset="1" stopColor="#130d09" /></radialGradient>
+        <radialGradient id={`${uid}a`} cx="60%" cy="45%" r="75%"><stop offset="0" stopColor="#3a2b78" /><stop offset="0.6" stopColor="#17122e" /><stop offset="1" stopColor="#0b0918" /></radialGradient>
+        <linearGradient id={`${uid}h`} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#ff9ad5" /><stop offset="0.35" stopColor="#9ab8ff" /><stop offset="0.65" stopColor="#8ff0d4" /><stop offset="1" stopColor="#ffe38a" /></linearGradient>
+        <pattern id={`${uid}t`} width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="1.2" fill="#c9b8ff" opacity="0.35" /></pattern>
         <rect width="400" height="260" fill={`url(#${uid}a)`} />
-        {[[110, 18], [200, -4], [290, -18]].map(([x, a], i) => <polygon key={i} points={`${x - 12},0 ${x + 12},0 ${x + 70 + a},260 ${x - 70 + a},260`} fill="#ffe2a0" opacity="0.1" />)}
-        <g stroke="#dcb066" strokeOpacity="0.35" strokeWidth="1.5">
-          {Array.from({ length: 9 }, (_, i) => <line key={`h${i}`} x1="0" x2="400" y1={180 + i * i * 1.6} y2={180 + i * i * 1.6} />)}
-          {Array.from({ length: 13 }, (_, i) => <line key={`v${i}`} x1={200 + (i - 6) * 18} y1="180" x2={200 + (i - 6) * 70} y2="260" />)}
-        </g>
-        <text x="340" y="96" textAnchor="middle" fontSize="90" fill="#f2d38c" opacity="0.3" fontFamily="Georgia, serif">♛</text>
-        <Ball x={58} y={70} r={28} o={0.75} />
-        <rect x="6" y="6" width="388" height="248" rx="10" fill="none" stroke="#dcb066" strokeOpacity="0.6" strokeWidth="2" />
+        <g opacity="0.16" className="gl-spin is-slow" style={{ transformOrigin: '240px 118px' }}>{Array.from({ length: 36 }, (_, i) => { const a = (i / 36) * Math.PI * 2; return <polygon key={i} points={`240,118 ${240 + Math.cos(a) * 420},${118 + Math.sin(a) * 420} ${240 + Math.cos(a + 0.05) * 420},${118 + Math.sin(a + 0.05) * 420}`} fill="#b9a6ff" />; })}</g>
+        <rect y="170" width="400" height="90" fill={`url(#${uid}t)`} />
+        <text x="335" y="104" textAnchor="middle" fontSize="84" fill={`url(#${uid}h)`} opacity="0.55" fontFamily="Georgia, serif">♛</text>
+        <Ball x={58} y={70} r={28} o={0.8} />
+        <rect x="5" y="5" width="390" height="250" rx="8" fill="none" stroke={`url(#${uid}h)`} strokeWidth="5" className="gl-hue" />
       </>
     );
   }
@@ -131,7 +140,7 @@ const Scene = ({ id, uid }) => {
         <path d="M0 205 Q 120 180 230 205 T 400 200 L400 260 L0 260 Z" fill={`url(#${uid}c)`} />
         <path d="M0 205 Q 120 180 230 205 T 400 200" fill="none" stroke="#4bb532" strokeWidth="9" />
         <g transform="translate(60 205)"><rect x="-4" y="-70" width="8" height="70" fill="#a8662b" /><path d="M0 -70 q -30 -6 -46 10 q 22 -4 46 -6 q -8 -20 -34 -24 q 24 0 34 20 q 6 -24 30 -26 q -22 10 -26 26 q 20 -6 44 6 q -26 -10 -48 -6Z" fill="#2fa83a" /></g>
-        {[[150, 120], [175, 104], [200, 96], [225, 104], [250, 120]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="8" fill="none" stroke="#ffd23a" strokeWidth="4" />)}
+        {[[150, 120], [175, 104], [200, 96], [225, 104], [250, 120]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="8" fill="none" stroke="#ffd23a" strokeWidth="4" className="gl-ring" style={{ '--k': i }} />)}
       </>
     );
   }

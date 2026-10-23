@@ -163,3 +163,24 @@
 @media (max-width: 860px) { .hub-hero { grid-template-columns: 1fr; } }
 .hub-hello h1 { font-size: clamp(36px, 4.6vw, 60px); }
 @media (max-width: 860px) { .hub-fan { display: none; } }
+
+/* Music Quiz : vinyle qui tourne, notes qui s'envolent, égaliseur, dégradé qui respire */
+.hub-mode.is-music { background-size: auto, 200% 200%; animation: hub-music-bg 9s ease-in-out infinite; }
+@keyframes hub-music-bg { 50% { background-position: 0 0, 100% 100%; } }
+.hub-vinyl { position: absolute; right: -40px; bottom: -60px; width: 230px; height: 230px; border-radius: 50%; opacity: 0.9;
+  background: radial-gradient(circle, #ffd23a 0 13%, #1a0b24 13.5% 15%, transparent 15.5%), repeating-radial-gradient(circle, #1a0b24 0 3px, #2b1238 3px 5px);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25), 0 20px 40px rgba(0, 0, 0, 0.4); animation: hub-spin 6s linear infinite; }
+.hub-vinyl i { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 20deg, transparent 0 30deg, rgba(255, 255, 255, 0.16) 40deg, transparent 60deg 210deg, rgba(255, 255, 255, 0.12) 220deg, transparent 240deg); }
+@keyframes hub-spin { to { transform: rotate(360deg); } }
+.hub-notes { position: absolute; right: 150px; bottom: 60px; width: 1px; height: 1px; }
+.hub-notes i { position: absolute; font: normal 900 28px/1 var(--ce-title); font-style: normal; color: #fff; opacity: 0; text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+  animation: hub-note 3.6s ease-out infinite; animation-delay: calc(var(--k) * 0.9s); }
+@keyframes hub-note { 0% { opacity: 0; transform: translate(0, 0) rotate(-10deg) scale(0.6); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(-90px, -140px) rotate(20deg) scale(1.2); } }
+.hub-mode.is-music .hub-mode-eq { right: auto; left: 22px; top: 20px; height: 60px; gap: 5px; }
+.hub-mode.is-music .hub-mode-eq i { width: 9px; background: linear-gradient(180deg, #fff, #ffd23a); }
+.hub-mode.is-music:hover .hub-vinyl { animation-duration: 2s; }
+.hub-mode.is-quiz:hover .gl-spin { animation-duration: 12s; }
+.hub-game:hover .gl-word { animation-duration: 1.6s; }
+@media (prefers-reduced-motion: reduce) {
+  .hub-mode.is-music, .hub-vinyl, .hub-notes i { animation: none; }
+}
