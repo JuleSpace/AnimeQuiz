@@ -37,12 +37,12 @@ export const PROJECTS = [
     rarity: 'Légendaire',
     pitch: 'Un auto-battler : on recrute des Pokémon, on fusionne trois exemplaires pour les faire évoluer, on place son équipe sur le plateau et on traverse trois régions jusqu’à la Ligue.',
     highlights: [
-      '397 lignées, 925 formes, 32 étapes, 6 régions et plus de 100 dresseurs célèbres.',
+      'Les 1025 Pokémon : 560 lignées, 1164 formes (régionales et Méga comprises), 32 étapes et plus de 100 dresseurs célèbres.',
       'Talents, objets et synergies de types, boutique et carte de progression.',
       'Salons multijoueurs orchestrés côté serveur (Socket.IO).',
-      'Pokédex filtrable avec les statistiques de chaque forme.'
+      'Pokédex interactif : recherche, filtres par coût et type, fiche animée avec évolutions, stats et synergies.'
     ],
-    moves: [['Formes', '925'], ['Dresseurs', '100+']],
+    moves: [['Pokémon', '1025'], ['Lignées', '560']],
     tech: ['React', 'Socket.IO', 'Node.js', 'Plateau isométrique']
   },
   {
@@ -57,12 +57,12 @@ export const PROJECTS = [
     rarity: 'Rare',
     pitch: 'Un « bullet heaven » : le partenaire attaque tout seul, on se déplace dans la horde, on choisit ses bonus sous forme de cartes et on affronte un légendaire au bout de 9 minutes.',
     highlights: [
-      '13 starters de 4 régions, 40 attaques, évolutions au choix et Méga-Évolutions.',
-      '128 espèces ennemies avec leurs comportements, 5 décors générés à chaque partie.',
+      '19 starters de 6 régions (jusqu’à Kalos), 48 attaques, évolutions au choix et Méga-Évolutions.',
+      '189 espèces ennemies avec leurs comportements, 5 décors générés à chaque partie.',
       'Cartes d’attaque façon TCG avec une démo animée de chaque capacité.',
       'Progression entre les parties : talents, boutique, défis, missions, survie infinie.'
     ],
-    moves: [['Attaques', '40'], ['Espèces', '128']],
+    moves: [['Attaques', '48'], ['Espèces', '189']],
     tech: ['React', 'Canvas 2D', 'Python (sprites)']
   },
   {
@@ -79,8 +79,8 @@ export const PROJECTS = [
     highlights: [
       'Sprites animés en billboards instanciés : un seul appel de dessin par espèce, 8 directions selon la caméra (shader GLSL).',
       'Table des types complète, capture d’alliés, évolution en direct au ralenti.',
-      'Île générée : terrasses à franchir en sautant, rivière, hautes herbes, arène.',
-      'Jouable au clavier et à la souris comme au tactile.'
+      'Île générée : terrasses à franchir en sautant, rivière et ponts, rochers 3D, hautes herbes, arène.',
+      'Collection des 79 familles de Kanto à débloquer par des défis, partenaire au choix, cartes de montée de niveau.'
     ],
     moves: [['Types', '18'], ['Alliés', '3']],
     tech: ['Three.js', 'WebGL / GLSL', 'React']
@@ -148,8 +148,8 @@ export const GAMES = PROJECTS.filter((p) => p.id !== 'academy');
 
 export const STATS = [
   ['7', 'projets en ligne'],
-  ['≈ 53 000', 'lignes de code'],
-  ['116', 'commits'],
+  ['≈ 55 000', 'lignes de code'],
+  ['153', 'commits'],
   ['1 an', 'd’octobre 2025 à octobre 2026']
 ];
 
