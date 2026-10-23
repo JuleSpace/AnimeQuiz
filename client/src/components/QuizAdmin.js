@@ -963,6 +963,31 @@ const QuizAdmin = ({ admin }) => {
 
   const [qSearch, setQSearch] = useState('');
   const [qType, setQType] = useState('');
+  const [qCat, setQCat] = useState(null); // null = toutes, '' = sans catégorie, sinon id
+  const [picked, setPicked] = useState(() => new Set());
+  const lastPick = useRef(null);
+  const keyOf = (question, index) => question.clientKey || `i${index}`;
+  const togglePick = (index, shift) => {
+    const qs = quiz.questions || [];
+    const from = lastPick.current;
+    setPicked((cur) => {
+      const next = new Set(cur);
+      const k = keyOf(qs[index], index);
+      const on = !next.has(k);
+      if (shift && from != null) {
+        const [a, b] = [Math.min(from, index), Math.max(from, index)];
+        for (let i = a; i <= b; i += 1) { if (on) next.add(keyOf(qs[i], i)); else next.delete(keyOf(qs[i], i)); }
+      } else if (on) next.add(k); else next.delete(k);
+      return next;
+    });
+    lastPick.current = index;
+  };
+  /** Range des questions dans une catégorie, sans ouvrir chaque question. */
+  const assignCategory = async (keys, categoryId) => {
+    const questions = (quiz.questions || []).map((q, i) => (keys.has(keyOf(q, i)) ? { ...q, category: categoryId } : q));
+    const saved = await persist({ ...quiz, questions });
+    if (saved) setPicked(new Set());
+  };
   const formRef = useRef(null);
   const editQuestion = (index) => { setDraft(questionFromApi(quiz.questions[index])); setDraftIndex(index); };
   const addQuestion = () => { setDraft(emptyDraft((quiz.questions || []).slice(-1)[0]?.category || '')); setDraftIndex(null); setQType(''); setQSearch(''); };
@@ -1243,12 +1268,45 @@ const QuizAdmin = ({ admin }) => {
           ))}
         </div>
         <button type="button" className="btn btn-success adm-mini" onClick={addQuestion} disabled={draft && draftIndex == null}><Icon name="plus" />Nouvelle question</button>
+        {(quiz.categories || []).length > 0 && (
+          <div className="adm-qfilters is-cats">
+            <span className="adm-qf-label">Catégorie</span>
+            <button type="button" className={`adm-qf${qCat == null ? ' is-on' : ''}`} onClick={() => setQCat(null)}>Toutes</button>
+            {quiz.categories.map((c) => (
+              <button key={c.id} type="button" className={`adm-qf${qCat === c.id ? ' is-on' : ''}`} style={{ '--c': c.color }} onClick={() => setQCat(qCat === c.id ? null : c.id)}>
+                {c.name} <small>{(quiz.questions || []).filter((q) => q.category === c.id).length}</small>
+              </button>
+            ))}
+            <button type="button" className={`adm-qf${qCat === '' ? ' is-on' : ''}`} onClick={() => setQCat(qCat === '' ? null : '')}>
+              Sans catégorie <small>{(quiz.questions || []).filter((q) => !q.category).length}</small>
+            </button>
+          </div>
+        )}
       </div>
+      {(quiz.categories || []).length > 0 && (
+        <div className={`adm-bulk${picked.size ? ' is-on' : ''}`}>
+          {picked.size ? (
+            <>
+              <b>{picked.size} sélectionnée{picked.size > 1 ? 's' : ''}</b>
+              <span>Ranger dans :</span>
+              {quiz.categories.map((c) => (
+                <button key={c.id} type="button" className="adm-qf is-on" style={{ '--c': c.color }} disabled={loading} onClick={() => assignCategory(picked, c.id)}>{c.name}</button>
+              ))}
+              <button type="button" className="adm-qf" disabled={loading} onClick={() => assignCategory(picked, '')}>Sans catégorie</button>
+              <button type="button" className="btn btn-quiet adm-mini" onClick={() => setPicked(new Set())}>Désélectionner</button>
+            </>
+          ) : (
+            <span>Coche des questions (Maj + clic pour une plage) pour les ranger d’un coup dans une catégorie, ou change la catégorie directement sur la ligne.</span>
+          )}
+          <button type="button" className="btn btn-quiet adm-mini" onClick={() => setPicked(new Set((quiz.questions || []).map((q, i) => ({ q, i })).filter(({ q }) => (!qType || q.type === qType) && (qCat == null || (q.category || '') === qCat)).map(({ q, i }) => keyOf(q, i))))}>Tout cocher</button>
+        </div>
+      )}
       <p className="adm-note">Glisse une question pour la déplacer, clique dessus pour la modifier. Dans le formulaire : Ctrl + Entrée enregistre, Échap annule.</p>
       {(quiz.questions || []).map((question, index) => {
-        const filtered = qType || qSearch.trim();
+        const filtered = qType || qSearch.trim() || qCat != null;
         if (filtered && draftIndex !== index) {
           if (qType && question.type !== qType) return null;
+          if (qCat != null && (question.category || '') !== qCat) return null;
           const hay = `${question.prompt || ''} ${answerPreview(question)} ${question.musicUrl || ''}`.toLowerCase();
           if (qSearch.trim() && !hay.includes(qSearch.trim().toLowerCase())) return null;
         }
@@ -1265,9 +1323,14 @@ const QuizAdmin = ({ admin }) => {
               onDragOver={(event) => hoverQuestion(event, index)}
               onDrop={(event) => event.preventDefault()}
               onDragEnd={finishQuestionDrag}
-              onClick={(event) => { if (!event.target.closest('button') && !editingThis) editQuestion(index); }}
+              onClick={(event) => { if (!event.target.closest('button, select, input, label') && !editingThis) editQuestion(index); }}
             >
               <div className="question-row-body">
+                {(quiz.categories || []).length > 0 && (
+                  <label className="adm-qpick" title="Sélectionner (Maj + clic pour une plage)" onClick={(e) => { e.preventDefault(); togglePick(index, e.shiftKey); }}>
+                    <input type="checkbox" readOnly checked={picked.has(keyOf(question, index))} aria-label={`Sélectionner la question ${index + 1}`} />
+                  </label>
+                )}
                 <span className="drag-handle" aria-hidden="true">⋮⋮</span>
                 <span className="adm-qnum">{index + 1}</span>
                 <span className="adm-qicon" aria-hidden="true">{TYPE_ICON[question.type] || '?'}</span>
@@ -1275,7 +1338,19 @@ const QuizAdmin = ({ admin }) => {
                 <div className="adm-qtext">
                   <span className="adm-qtags">
                     <span className="adm-qtype">{typeLabel(question.type)}</span>
-                    {cat && <span className="adm-qcat" style={{ '--c': cat.color }}>{cat.name}</span>}
+                    {(quiz.categories || []).length > 0 ? (
+                      <select
+                        className={`adm-qcat-select${cat ? '' : ' is-none'}`}
+                        style={{ '--c': cat?.color || '#8a9ac9' }}
+                        value={question.category || ''}
+                        disabled={loading}
+                        aria-label="Catégorie de la question"
+                        onChange={(e) => assignCategory(new Set([keyOf(question, index)]), e.target.value)}
+                      >
+                        <option value="">Sans catégorie</option>
+                        {quiz.categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    ) : cat && <span className="adm-qcat" style={{ '--c': cat.color }}>{cat.name}</span>}
                   </span>
                   <div className="adm-qprompt">{question.prompt || question.musicUrl || 'Sans énoncé'}</div>
                   {ans && <div className="adm-qanswer">✔ {ans}</div>}

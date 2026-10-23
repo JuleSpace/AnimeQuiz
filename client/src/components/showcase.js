@@ -20,7 +20,7 @@ export const PROJECTS = [
       '11 formats de questions : choix multiple, images, vrai/faux, texte libre, texte à trous, blind test masqué, paroles, « Who’s that », classement, frise et schéma.',
       '14 cartes jokers distribuées en boosters au fil de la partie (double mise, filet, vol, bouclier…).',
       'Synchronisation en temps réel : reconnexion après un rafraîchissement, arrivée en cours de partie.',
-      'Mode Music Quiz, éditeur de quiz complet (recherche, filtres par format, édition en place, duplication) et comptes d’administration avec des rôles.'
+      'Mode Music Quiz, éditeur de quiz complet (recherche, filtres par format, édition en place, duplication, rangement en catégories en un clic) et comptes d’administration avec des rôles.'
     ],
     moves: [['Formats', '11'], ['Cartes jokers', '14']],
     tech: ['React', 'Node.js', 'Express', 'Socket.IO', 'MongoDB']
