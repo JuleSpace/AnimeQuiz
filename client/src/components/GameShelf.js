@@ -13,8 +13,7 @@ const CARD_META = {
   arena: { stage: 'Stratégie', hp: '32', unit: 'ÉT.', glyph: '♛', players: 'Solo · 8', time: '30 min' },
   swarm: { stage: 'Survie', hp: '9', unit: 'MIN', glyph: '★', players: 'Solo', time: '10 min' },
   rush: { stage: 'Action 3D', hp: '8', unit: 'MIN', glyph: '●', players: 'Solo', time: '9 min' },
-  bonk: { stage: 'Action 3D', hp: '8', unit: 'MIN', glyph: '◎', players: 'Solo', time: '8 min' },
-  prairie: { stage: 'Idle', hp: '1025', unit: 'POKÉ', glyph: '✿', players: 'Solo', time: '2 min' }
+  bonk: { stage: 'Action 3D', hp: '8', unit: 'MIN', glyph: '◎', players: 'Solo', time: '8 min' }
 };
 const DEFAULT_META = { stage: 'Jeu', hp: '', unit: '', glyph: '●', players: 'Solo', time: '—' };
 

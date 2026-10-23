@@ -13,7 +13,6 @@ import PokeArena, { ARENA_HASH } from './components/PokeArena';
 import PokeSwarm, { SWARM_HASH } from './components/PokeSwarm';
 import SonicBonk, { BONK_HASH } from './components/SonicBonk';
 import PokeRush, { RUSH_HASH } from './components/PokeRush';
-import PokePrairie, { PRAIRIE_HASH } from './components/PokePrairie';
 import Portfolio, { PORTFOLIO_HASH } from './components/Portfolio';
 import GameShelf, { GAMES_HASH } from './components/GameShelf';
 import { useAccount, logout as accountLogout } from './components/account';
@@ -27,7 +26,7 @@ const socket = io(process.env.REACT_APP_SERVER_URL || window.location.origin);
 const SEAT_KEY = 'animeQuizSeat';
 
 // Lien partagé en /academy, /swarm… (pour un aperçu Discord adapté) : on repasse en #academy, #swarm…
-const SECRET_PATHS = ['academy', 'swarm', 'arena', 'bonk', 'reliques', 'pokerush', 'prairie', 'portfolio', 'jeux', 'terms', 'privacy'];
+const SECRET_PATHS = ['academy', 'swarm', 'arena', 'bonk', 'reliques', 'pokerush', 'portfolio', 'jeux', 'terms', 'privacy'];
 (() => {
   const page = window.location.pathname.replace(/^\/+|\/+$/g, '');
   if (SECRET_PATHS.includes(page) && !window.location.hash) window.history.replaceState(null, '', `/${window.location.search}#${page}`);
@@ -40,7 +39,6 @@ const secretViewFromHash = () => {
   if (window.location.hash === SWARM_HASH) return 'swarm';
   if (window.location.hash === BONK_HASH) return 'bonk';
   if (window.location.hash === RUSH_HASH) return 'pokerush';
-  if (window.location.hash === PRAIRIE_HASH) return 'prairie';
   if (window.location.hash === PORTFOLIO_HASH) return 'portfolio';
   if (window.location.hash === GAMES_HASH) return 'jeux';
   if (window.location.hash === TERMS_HASH) return 'terms';
@@ -66,7 +64,7 @@ function clearSeat() {
   sessionStorage.removeItem(SEAT_KEY);
 }
 
-const FULLSCREEN_VIEWS = ['home', 'modes', 'login', 'reliques', 'academy', 'bonk', 'pokerush', 'prairie', 'swarm', 'arena', 'terms', 'privacy', 'portfolio', 'jeux'];
+const FULLSCREEN_VIEWS = ['home', 'modes', 'login', 'reliques', 'academy', 'bonk', 'pokerush', 'swarm', 'arena', 'terms', 'privacy', 'portfolio', 'jeux'];
 
 function App() {
   const [currentView, setCurrentView] = useState(() => secretViewFromHash() || 'login');
@@ -714,7 +712,7 @@ function App() {
 
   const renderCurrentView = () => {
     // Pages ouvertes à tous ; le reste demande un compte
-    const PUBLIC_VIEWS = ['login', 'portfolio', 'jeux', 'terms', 'privacy', 'academy', 'admin-login', 'admin', 'rejoin', 'prairie'];
+    const PUBLIC_VIEWS = ['login', 'portfolio', 'jeux', 'terms', 'privacy', 'academy', 'admin-login', 'admin', 'rejoin'];
     if (!PUBLIC_VIEWS.includes(currentView) && !account.user) {
       return (
         <div className="container">
@@ -1092,14 +1090,6 @@ function App() {
           ? <Portfolio onClose={toLogin} onGames={showGames} onOpen={openGame} />
           : <GameShelf onClose={toLogin} onOpen={openGame} onPortfolio={showPortfolio} />;
       }
-
-      case 'prairie':
-        return (
-          <PokePrairie onClose={() => {
-            window.history.replaceState(null, '', window.location.pathname + window.location.search);
-            setCurrentView('login');
-          }} />
-        );
 
       case 'pokerush':
         return (

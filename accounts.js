@@ -13,7 +13,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const { requireSuper } = require('./admins');
 
-const GAMES = ['swarm', 'rush', 'arena', 'bonk', 'prairie'];
+const GAMES = ['swarm', 'rush', 'arena', 'bonk'];
 const SESSION_COOKIE = 'bl_session';
 const STATE_COOKIE = 'bl_oauth';
 const SESSION_TTL = 30 * 24 * 60 * 60 * 1000;
