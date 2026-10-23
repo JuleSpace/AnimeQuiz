@@ -40,7 +40,7 @@ const Portfolio = ({ onClose, onGames, onOpen }) => {
         <div className="pf-hero-text">
           <span className="pf-kicker">Portfolio · développement web</span>
           <h1>Des jeux et des outils web, du quiz en temps réel à la 3D dans le navigateur.</h1>
-          <p>Sept projets conçus, développés et mis en ligne sur Bully’s Lair : un quiz multijoueur synchronisé en temps réel, des jeux d’action en 2D et en 3D, un auto-battler et des pages éditoriales animées. Tout est jouable directement depuis cette page.</p>
+          <p>Huit projets conçus, développés et mis en ligne sur Bully’s Lair : un quiz multijoueur synchronisé en temps réel, des jeux d’action en 2D et en 3D, un auto-battler, un jeu idle sur le bureau et des pages éditoriales animées. Tout est jouable directement depuis cette page.</p>
           <div className="pf-hero-cta">
             <button type="button" className="pf-btn is-main" onClick={() => go('pf-projets')}>Voir les projets</button>
             <button type="button" className="pf-btn" onClick={onGames}>Jouer aux jeux</button>

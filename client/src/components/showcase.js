@@ -124,8 +124,28 @@ export const PROJECTS = [
     tech: ['React', 'CSS', 'SVG', 'Audio']
   },
   {
-    id: 'academy',
+    id: 'prairie',
     no: 7,
+    title: 'Poké Prairie',
+    subtitle: 'Jeu idle, web et bureau',
+    genre: 'Idle · solo',
+    hash: '#prairie',
+    img: `${IMG}/prairie.webp`,
+    color: '#3fae49',
+    rarity: 'Rare',
+    pitch: 'Des Pokémon sauvages s’installent dans les hautes herbes au fil du temps, même jeu fermé, et on les attrape d’un coup pendant un Rush. Jouable sur le site comme dans une appli de bureau en bandeau au-dessus de la barre des tâches.',
+    highlights: [
+      'Les 1025 Pokémon, cinq niveaux de rareté, chromatiques, Pokédex par génération, boîte et transfert des doublons.',
+      'Apparitions rattrapées au retour (temps écoulé hors ligne), cadeau du jour, Leurre et Encens.',
+      'Sauvegarde locale synchronisée avec le compte ; service worker pour jouer hors ligne.',
+      'Appli de bureau Electron (bandeau toujours visible, icône de notification), construite par GitHub Actions.'
+    ],
+    moves: [['Pokémon', '1025'], ['Plateformes', 'Web + PC']],
+    tech: ['React', 'Electron', 'Service worker', 'GitHub Actions']
+  },
+  {
+    id: 'academy',
+    no: 8,
     title: 'Guide Cobblemon Academy',
     subtitle: 'Guide interactif',
     genre: 'Page éditoriale',
@@ -147,7 +167,7 @@ export const PROJECTS = [
 export const GAMES = PROJECTS.filter((p) => p.id !== 'academy');
 
 export const STATS = [
-  ['7', 'projets en ligne'],
+  ['8', 'projets en ligne'],
   ['≈ 55 000', 'lignes de code'],
   ['153', 'commits'],
   ['1 an', 'd’octobre 2025 à octobre 2026']
