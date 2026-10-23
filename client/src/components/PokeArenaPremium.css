@@ -419,3 +419,12 @@
 .pa-root.skin-nuit .pa-slot.cost-1 { border-bottom-color: #a99bd6; }
 .pa-root.skin-nuit .pa-shop-actions .ui-btn em { background: var(--foil); color: #0e0b1f; }
 .pa-root.skin-nuit .pa-arena-caption { border-radius: 4px; box-shadow: 0 0 0 2px var(--nh-line); text-transform: uppercase; }
+
+/* Musique flottante (écrans sans barre du haut) */
+.pa-music-float { position: fixed; left: 16px; bottom: 16px; z-index: 70; font-family: Manrope, system-ui, sans-serif; }
+.pa-music-float .pa-music-pop { background: #120e26; border: 2px solid rgba(201, 184, 255, 0.45); color: #f3f0ff; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5); }
+.pa-music-float .pa-music-pop .ui-btn { color: #f3f0ff; border: 2px solid rgba(201, 184, 255, 0.45); background: #1c1736; }
+.pa-music-float .pa-music-btn { width: 46px; height: 46px; border-radius: 0; border: 3px solid #f3f0ff; background: #17122e; color: #f3f0ff; font-size: 20px; box-shadow: 4px 4px 0 #f3f0ff; }
+.pa-music-float .pa-music-btn:hover { background: #f3f0ff; color: #0e0b1f; }
+.pa-music-row { display: flex; gap: 6px; }
+.pa-music-row .ui-btn { flex: 1; }

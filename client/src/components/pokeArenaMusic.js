@@ -32,6 +32,18 @@ export const TRACKS = {
   'donjons-mysteres-1': Y('Pokémon Donjon Mystère : Explorateurs (piste 1)', 'cave', ['WKLBhjeN27o']),
   'donjons-mysteres-2': Y('Pokémon Donjon Mystère : Explorateurs (piste 2)', 'cave', ['MvVwQ37VhkA']),
   'miroir-b-xd': Y('Miror B. — Pokémon XD', 'grunt', ['WuhqoZvyntA']),
+  // ——— Ajouts dans le même esprit (routes, villes, combats) ———
+  'illumis-xy': Y('Illumis — X / Y', 'town', ['2AfxpCJXcr0', 'jrLZqf_D5bc']),
+  'foret-vestigion-dp': Y('Forêt de Vestigion — Diamant / Perle', 'route', ['qraoFoREVtg', '9FxMZTQSFfY']),
+  'route-10-bw': Y('Route 10 — Noir / Blanc', 'route', ['c6HhK2RGIeo', 'U5soz9U3tlY']),
+  'route-119-oras': Y('Route 119 — Rubis Oméga / Saphir Alpha', 'route', ['5UxCH-Bm88w', 'FYhQXwfDi7k']),
+  'battle-trainer-bw': Y('Combat ! Dresseur — Noir / Blanc', 'battle', ['cWfP71MQusI', 'PtAU1V9nyYs']),
+  'battle-trainer-xy': Y('Combat ! Dresseur — X / Y', 'battle', ['SOtktDIVApg', 'dia2XIwOuJI']),
+  'battle-gym-kanto-hgss': Y('Combat ! Champion d’Arène (Kanto) — HeartGold / SoulSilver', 'gym', ['6y1BgmqegEw', 'Z2m81PRYQv4']),
+  'battle-gym-johto-hgss': Y('Combat ! Champion d’Arène (Johto) — HeartGold / SoulSilver', 'gym', ['1lefOgf5ST4', 'LLIwTix73T4', 'BtYpPKwua_E']),
+  'battle-gym-dp': Y('Combat ! Champion d’Arène — Diamant / Perle', 'gym', ['qiCpFkybzeI', 'A5h9QKIaXs8']),
+  'battle-grunt-rocket-hgss': Y('Combat ! Team Rocket — HeartGold / SoulSilver', 'grunt', ['qt0DzFhGhLo', '2Xcj7QrbgUw', 'RtZmeBVifrA']),
+  'battle-ghetsis-bw': Y('Combat ! Ghetis — Noir / Blanc', 'villain', ['TLfEzL5Y8-g', 'fJIfrrJYOys']),
   // Maîtres
   'battle-cynthia-dp': Y('Combat ! Maîtresse (Cynthia) — Diamant / Perle', 'champion', ['DfJYs5boP9A']),
   // Méchants
@@ -43,8 +55,8 @@ export const TRACKS = {
 const pickBy = (list, seedText) => list[hashString(seedText) % list.length];
 
 const BIOME_TRACKS = {
-  prairie: ['parc-naturel-hgss', 'route-209-dp', 'route-15-xy', 'pont-hameau-b2w2'],
-  montagne: ['route-15-xy', 'pont-hameau-b2w2', 'route-209-dp'],
+  prairie: ['parc-naturel-hgss', 'route-209-dp', 'route-15-xy', 'pont-hameau-b2w2', 'foret-vestigion-dp', 'route-119-oras'],
+  montagne: ['route-15-xy', 'pont-hameau-b2w2', 'route-209-dp', 'route-10-bw'],
   plage: ['port-yoneuve-bw', 'pont-hameau-b2w2', 'bourg-en-vol-oras'],
   neige: ['route-216-nuit-dp'],
   volcan: ['donjons-mysteres-1', 'donjons-mysteres-2'],
@@ -53,7 +65,7 @@ const BIOME_TRACKS = {
 };
 const LEGACY_BIOME = { forest: 'prairie', mountain: 'montagne', league: 'ligue' };
 
-export const TOWN_TRACKS = ['op-saison-3-vf', 'op-saison-8-vf', 'op-saison-9-vf', 'la-porte-xy', 'bourg-en-vol-oras'];
+export const TOWN_TRACKS = ['op-saison-3-vf', 'op-saison-8-vf', 'op-saison-9-vf', 'la-porte-xy', 'bourg-en-vol-oras', 'illumis-xy'];
 export const OPENING_TRACKS = ['op-saison-3-vf', 'op-saison-8-vf', 'op-saison-9-vf'];
 const TRAINER_TRACKS = ['battle-trainer-johto-hgss', 'battle-trainer-kanto-hgss', 'battle-trainer-dp', 'battle-trainer-bw', 'battle-trainer-xy'];
 
@@ -115,7 +127,7 @@ export const battleTrack = (node) => {
   else if (t.role === 'e4') key = E4_BY_REGION[t.region];
   else if (t.role === 'gym') key = GYM_BY_REGION[t.region];
   else if (node?.kind === 'rival') key = RIVAL_TRACK[t.name];
-  else if (node?.kind === 'villain') key = VILLAIN_TRACK[t.team]?.[0];
+  else if (node?.kind === 'villain') { const vl = VILLAIN_TRACK[t.team] || []; key = vl.find((k) => liveIds(k).length) || vl[0]; }
   else if (t.team) key = 'miroir-b-xd';
   else if ((hashString(`cyrus-${seed}`) % 1000) / 1000 < CYRUS_CHANCE) key = 'battle-cyrus-dp';
   else key = pickBy(TRAINER_TRACKS, seed);

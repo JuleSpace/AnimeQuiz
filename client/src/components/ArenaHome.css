@@ -440,3 +440,5 @@
   .dx-card b { font-size: 11px; }
   .dx-mini { width: 56px; height: 56px; }
 }
+.ah2-card.is-empty { background: #4a3f7a; animation: none; }
+.ah2-card.is-empty .ah2-card-in small { padding: 0 calc(var(--u) * 10); text-align: center; line-height: 1.3; }

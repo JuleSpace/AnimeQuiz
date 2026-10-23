@@ -178,11 +178,14 @@ const MusicControl = ({ volume, onVolume, now }) => {
   const [pos, setPos] = useState(null);
   const wrap = useRef(null);
   const btn = useRef(null);
+  const lastVol = useRef(0.5);
   useEffect(() => {
     if (!open) return undefined;
     const place = () => {
       const r = btn.current?.getBoundingClientRect();
-      if (r) setPos({ top: r.bottom + 8, left: Math.max(8, Math.min(window.innerWidth - 272, r.right - 264)) });
+      if (!r) return;
+      const left = Math.max(8, Math.min(window.innerWidth - 272, r.right - 264));
+      setPos(r.bottom + 230 > window.innerHeight ? { bottom: window.innerHeight - r.top + 8, left } : { top: r.bottom + 8, left });
     };
     place();
     const close = (e) => { if (wrap.current && !wrap.current.contains(e.target)) setOpen(false); };
@@ -227,9 +230,16 @@ const MusicControl = ({ volume, onVolume, now }) => {
             />
             <em>{pct} %</em>
           </label>
-          <button type="button" className="ui-btn is-small is-ghost pa-music-next" disabled={!now} onClick={() => musicPlayer().next()}>
-            Morceau suivant ⏭
-          </button>
+          <div className="pa-music-row">
+            <button type="button" className="ui-btn is-small is-ghost" onClick={() => {
+              if (volume > 0) { lastVol.current = volume; onVolume(0); } else onVolume(lastVol.current || 0.5);
+            }}>
+              {volume > 0 ? 'Couper 🔇' : 'Remettre 🔊'}
+            </button>
+            <button type="button" className="ui-btn is-small is-ghost pa-music-next" disabled={!now} onClick={() => musicPlayer().next()}>
+              Suivant ⏭
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -291,7 +301,7 @@ const TrainerStand = ({ sprite, side, label }) => {
   );
 };
 
-const PokeArena = ({ onClose }) => {
+const PokeArena = ({ onClose, musicButton, onFloatMusic }) => {
   const [phase, setPhase] = useState('hub');
   const [stage, setStage] = useState('prep');
   // Run
@@ -315,8 +325,6 @@ const PokeArena = ({ onClose }) => {
   const [stock, setStock] = useState([]);
   const [eventOpts, setEventOpts] = useState([]);
   const [rewardOpts, setRewardOpts] = useState(null);
-  const [musicVol, setMusicVol] = useState(readMusic);
-  const [nowPlaying, setNowPlaying] = useState(null);
   const [wins, setWins] = useState(0);
   const [starterId, setStarterId] = useState('');
   const playTimeRef = useRef(0);
@@ -424,15 +432,8 @@ const PokeArena = ({ onClose }) => {
 
   /* ———————————————— Musique ———————————————— */
 
-  useEffect(() => {
-    const player = musicPlayer();
-    const off = player.subscribe(setNowPlaying);
-    return () => { off(); player.stop(); };
-  }, []);
-  useEffect(() => {
-    musicPlayer().setVolume(musicVol);
-    try { localStorage.setItem(MUSIC_KEY, String(musicVol)); } catch { /* stockage indisponible */ }
-  }, [musicVol]);
+  // Écrans sans barre du haut : le bouton musique flotte dans un coin.
+  useEffect(() => { onFloatMusic?.(FLOAT_MUSIC_PHASES.includes(phase)); }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
   // Playlist continue ; seule la Ligue a sa propre musique (Cynthia et Hélio en boucle).
   const inLeague = mode !== 'versus'
     && (phase === 'map' || phase === 'mart' || phase === 'event' || phase === 'battle')
@@ -471,7 +472,6 @@ const PokeArena = ({ onClose }) => {
     });
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const musicButton = <MusicControl volume={musicVol} onVolume={setMusicVol} now={nowPlaying} />;
 
   const openTrait = (trait, event, extra = {}) => {
     if (!trait || !event?.currentTarget) {
@@ -1999,4 +1999,29 @@ const PokeArena = ({ onClose }) => {
   );
 };
 
-export default PokeArena;
+const FLOAT_MUSIC_PHASES = ['lobby', 'vs-over', 'codex', 'starter', 'over'];
+
+/** Musique de Tactics : un seul lecteur pour tous les écrans (bouton dans la barre, ou flottant). */
+const PokeArenaWithMusic = (props) => {
+  const [musicVol, setMusicVol] = useState(readMusic);
+  const [nowPlaying, setNowPlaying] = useState(null);
+  const [float, setFloat] = useState(false);
+  useEffect(() => {
+    const player = musicPlayer();
+    const off = player.subscribe(setNowPlaying);
+    return () => { off(); player.stop(); };
+  }, []);
+  useEffect(() => {
+    musicPlayer().setVolume(musicVol);
+    try { localStorage.setItem(MUSIC_KEY, String(musicVol)); } catch { /* stockage indisponible */ }
+  }, [musicVol]);
+  const musicButton = <MusicControl volume={musicVol} onVolume={setMusicVol} now={nowPlaying} />;
+  return (
+    <>
+      <PokeArena {...props} musicButton={musicButton} onFloatMusic={setFloat} />
+      {float && <div className="pa-music-float">{musicButton}</div>}
+    </>
+  );
+};
+
+export default PokeArenaWithMusic;

@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { HomeIcon } from './GameHome';
 import GamePage, { BoardPage, PageHead, Section, Stat, useKeys } from './GamePage';
 import { AccountChip, fetchLeaderboard } from './account';
-import { STARTER_LINES, spriteUrl, unitFromLine } from './pokeArenaData';
-import { displayName, useStageUnit } from './PokeArenaUI';
+import { spriteUrl } from './pokeArenaData';
+import { useStageUnit } from './PokeArenaUI';
 import './ArenaHome.css';
 
 const itemSprite = (slug) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${slug}.png`;
@@ -40,6 +40,12 @@ const HeroMon = ({ dex, small = false }) => {
   const [broken, setBroken] = useState(false);
   if (!dex || broken) return <span className={small ? 'ah2-mon-fb' : 'ah2-mon is-fb'}>★</span>;
   return <img className={small ? 'ah2-cardmon' : 'ah2-mon'} src={spriteUrl(dex)} alt="" draggable={false} onError={() => setBroken(true)} />;
+};
+
+const MvpImg = ({ src }) => {
+  const [broken, setBroken] = useState(false);
+  if (!src || broken) return <span className="ah2-mon-fb">★</span>;
+  return <img className="ah2-cardmon" src={src} alt="" draggable={false} onError={() => setBroken(true)} />;
 };
 
 const HallRows = () => {
@@ -86,10 +92,19 @@ export const ArenaFrame = ({ title, subtitle, onBack, right, children }) => {
 const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, myTrainer, record, regionOf }) => {
   const [howto, setHowto] = useState(false);
   const [carnet, setCarnet] = useState(false);
+  // Tes MVP : les Pokémon qui ont le plus souvent porté tes parties (carnet de dresseur).
   const fan = useMemo(() => {
-    const lines = [...STARTER_LINES].sort(() => Math.random() - 0.5).slice(0, 3);
-    return lines.map((l) => unitFromLine(l.id, 3)).filter(Boolean);
-  }, []);
+    const by = new Map();
+    (record.history || []).forEach((h) => {
+      if (!h.mvp) return;
+      const e = by.get(h.mvp) || { name: h.mvp, art: h.mvpArt, n: 0, wins: 0 };
+      e.n += 1; if (h.result === 'win') e.wins += 1; if (!e.art) e.art = h.mvpArt;
+      by.set(h.mvp, e);
+    });
+    const top = [...by.values()].sort((a, b) => b.n - a.n || b.wins - a.wins).slice(0, 3);
+    const slots = [top[1] || null, top[0] || null, top[2] || null];
+    return slots;
+  }, [record]);
   const u = useStageUnit();
   const heroDex = useMemo(() => HERO_DEX[Math.floor(Math.random() * HERO_DEX.length)], []);
   const saved = save && save.map?.length ? save : null;
@@ -179,14 +194,23 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
       </div>
 
       <section className="ah2-panel ah2-season">
-        <h2>LES CARTES DE LA SAISON</h2>
+        <h2>TES MVP</h2>
         <div className="ah2-fan">
-          {fan.map((u2, i) => (
-            <span key={u2.lineId || i} className={`ah2-card${i === 1 ? ' is-mid' : ''}`} style={{ '--r': `${(i - 1) * 9}deg` }}>
+          {fan.map((m, i) => (
+            <span key={m?.name || `empty-${i}`} className={`ah2-card${i === 1 ? ' is-mid' : ''}${m ? '' : ' is-empty'}`} style={{ '--r': `${(i - 1) * 9}deg` }}>
               <span className="ah2-card-in">
-                <HeroMon dex={u2.dex} small />
-                <b>{displayName(u2.name)}</b>
-                {i === 1 && <small>★★★</small>}
+                {m ? (
+                  <>
+                    <MvpImg src={m.art} />
+                    <b>{m.name}</b>
+                    <small>MVP ×{m.n}{m.wins ? ` · ♛ ${m.wins}` : ''}</small>
+                  </>
+                ) : (
+                  <>
+                    <span className="ah2-mon-fb">?</span>
+                    <small>{i === 1 ? 'Termine une partie : ton meilleur Pokémon arrive ici' : 'À débloquer'}</small>
+                  </>
+                )}
               </span>
             </span>
           ))}
