@@ -55,7 +55,7 @@ const HallRows = () => {
     fetchLeaderboard('arena', 1).then((b) => { if (alive) setBoard(b); });
     return () => { alive = false; };
   }, []);
-  const rows = (board?.score || []).slice(0, 5);
+  const rows = (board?.score || []).slice(0, 4);
   if (!board) return <div className="ah2-row is-empty">Chargement…</div>;
   if (!rows.length) return <div className="ah2-row is-empty">Aucun Maître pour l’instant : le titre est à prendre !</div>;
   return rows.map((r, i) => (

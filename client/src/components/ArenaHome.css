@@ -242,7 +242,7 @@
 .ah2-play:hover { transform: translate(calc(var(--u) * -3), calc(var(--u) * -3)); box-shadow: calc(var(--u) * 6) calc(var(--u) * 6) 0 var(--line), 0 0 calc(var(--u) * 50) rgba(160, 130, 255, 0.6); }
 .ah2-tiles { position: absolute; left: calc(var(--u) * 24); top: calc(var(--u) * 598); width: calc(var(--u) * 600); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: calc(var(--u) * 12); }
 .ah2-tiles.is-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.ah2-tile { position: relative; height: calc(var(--u) * 98); display: grid; place-content: center; justify-items: center; gap: calc(var(--u) * 4); font: 400 calc(var(--u) * 28)/1 Anton, Impact, sans-serif; cursor: pointer; transition: transform 0.15s, background 0.15s, color 0.15s; }
+.ah2 .ah2-tile { position: relative; height: calc(var(--u) * 98); display: grid; place-content: center; justify-items: center; gap: calc(var(--u) * 4); font: 400 calc(var(--u) * 28)/1 Anton, Impact, sans-serif; cursor: pointer; transition: transform 0.15s, background 0.15s, color 0.15s; }
 .ah2-tile small { font: 700 calc(var(--u) * 12)/1 Manrope, sans-serif; color: var(--lilac); }
 .ah2-tile:hover { background: var(--line); color: var(--ink); transform: translateY(calc(var(--u) * -3)); }
 .ah2-tile:hover small { color: #4a3f7a; }
