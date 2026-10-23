@@ -1692,7 +1692,7 @@ export const LINES = [
     [S('Taupikeau', 'Eau', 340, 34, 16, 960), S('Triopikeau', 'Eau', 710, 80, 19, 961), S('Triopikeau ★', 'Eau', 1130, 129, 20, 961)]),
   L('finizen', 1, [], 1,
     { name: 'Aqua-Jet', desc: 'Tous les 3 tours : 160% ATK Eau + ralentit (SPD -2).', every: 3, mult: 1.6, aim: 'front', slow: 2 },
-    [S('Dofin', 'Eau', 470, 34, 15, 963), S('Superdofin', 'Eau', 850, 61, 18, 964), S('Superdofin ★', 'Eau', 1360, 99, 19, 964)]),
+    [S('Dofin', 'Eau', 470, 34, 15, 963), S('Superdofin', 'Eau', 850, 61, 18, 964), S('Superdofin (Forme Super)', 'Eau', 1420, 138, 20, 10256)]),
   L('cyclizar', 2, [], 1,
     { name: 'Draco-Charge', desc: 'Tous les 3 tours : 170% ATK Dragon + ralentit (SPD -2).', every: 3, mult: 1.7, aim: 'front', slow: 2 },
     [S('Motorizard', ['Dragon', 'Normal'], 530, 47, 18, 967), S('Motorizard ★', ['Dragon', 'Normal'], 950, 85, 19, 967), S('Motorizard ★★', ['Dragon', 'Normal'], 1510, 137, 20, 967)]),
