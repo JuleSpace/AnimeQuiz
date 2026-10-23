@@ -150,6 +150,18 @@ const questionFromApi = (question) => ({
   }))
 });
 
+const TYPE_COLOR = { qcm: '#1f6dff', imageqcm: '#7b5cff', boolean: '#18a957', text: '#ff8a1f', gaps: '#e0a800', music: '#e5306b', lyrics: '#c2185b', whos: '#5a3fd1', order: '#0aa5b8', layout: '#6d7a99' };
+const TYPE_ICON = { qcm: '☰', imageqcm: '▦', boolean: '✓✗', text: 'Aa', gaps: '_ _', music: '♪', lyrics: '♫', whos: '?', order: '⇅', layout: '⟷' };
+/** Aperçu court de la bonne réponse, pour la liste des questions. */
+const answerPreview = (q) => {
+  if (q.type === 'boolean') return q.correctBoolean === false ? 'Faux' : 'Vrai';
+  if ((q.type === 'qcm' || q.choice) && q.options?.length) return (q.correctIndexes || []).map((i) => q.options[i]).filter(Boolean).join(' · ');
+  if (q.type === 'imageqcm') return `${(q.correctIndexes || []).length} bonne(s) image(s) sur ${q.options?.length || 0}`;
+  if (q.type === 'order' || q.type === 'layout') return (q.items || []).map((it) => it.label || it.text || it).filter((x) => typeof x === 'string').slice(0, 4).join(' → ');
+  if (q.blanks?.length) return q.blanks.join(' · ');
+  if (q.acceptedAnswers?.length) return q.acceptedAnswers.join(' · ');
+  return '';
+};
 const typeLabel = (type) => TYPE_OPTIONS.find((option) => option.id === type)?.label || type;
 
 const withoutBlanks = (quiz) => ({
@@ -949,6 +961,34 @@ const QuizAdmin = ({ admin }) => {
     }
   };
 
+  const [qSearch, setQSearch] = useState('');
+  const [qType, setQType] = useState('');
+  const formRef = useRef(null);
+  const editQuestion = (index) => { setDraft(questionFromApi(quiz.questions[index])); setDraftIndex(index); };
+  const addQuestion = () => { setDraft(emptyDraft((quiz.questions || []).slice(-1)[0]?.category || '')); setDraftIndex(null); setQType(''); setQSearch(''); };
+  const cancelDraft = () => { setDraft(null); setDraftIndex(null); };
+  const duplicateQuestion = async (index) => {
+    const questions = [...(quiz.questions || [])];
+    const { clientKey, _id, ...copy } = questions[index];
+    questions.splice(index + 1, 0, { ...copy, clientKey: `dup-${Date.now()}` });
+    await persist({ ...quiz, questions });
+  };
+  // Le formulaire s'ouvre sous la question : on le fait défiler à l'écran.
+  useEffect(() => {
+    if (!draft) return undefined;
+    const t = setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 60);
+    return () => clearTimeout(t);
+  }, [draftIndex, Boolean(draft)]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!draft) return undefined;
+    const k = (e) => {
+      if (e.key === 'Escape' && !e.target.closest?.('.confirm-pop')) cancelDraft();
+      else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commitDraft(); }
+    };
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  });
+
   const moveQuestion = (index, direction) => {
     applyQuestionMove(index, index + direction, true);
   };
@@ -1192,70 +1232,114 @@ const QuizAdmin = ({ admin }) => {
       </section>
 
       <h3 className="adm-section-title"><Icon name="list" bare />Questions <small>{(quiz.questions || []).length}</small></h3>
-      <p className="adm-note">Glisse une question pour la déplacer.</p>
-      {(quiz.questions || []).map((question, index) => (
-        <div
-          key={question.clientKey || index}
-          className={`adm-qrow question-row${dragIndex === index ? ' is-dragging' : ''}${draftIndex === index ? ' is-editing' : ''}`}
-          draggable={!loading}
-          onDragStart={(event) => startQuestionDrag(event, index)}
-          onDragOver={(event) => hoverQuestion(event, index)}
-          onDrop={(event) => event.preventDefault()}
-          onDragEnd={finishQuestionDrag}
-        >
-          <div className="question-row-body">
-            <span className="drag-handle" aria-hidden="true">⋮⋮</span>
-            <span className="adm-qnum">{index + 1}</span>
-            <div className="adm-qtext">
-              <span className="adm-qtags">
-                <span className="adm-qtype">{typeLabel(question.type)}</span>
-                {(() => {
-                  const cat = (quiz.categories || []).find((c) => c.id === question.category);
-                  return cat ? <span className="adm-qcat" style={{ '--c': cat.color }}>{cat.name}</span> : null;
-                })()}
-              </span>
-              <div className="adm-qprompt">{question.prompt || question.musicUrl || 'Sans énoncé'}</div>
-              <div className="adm-qmeta">
-                {question.points || 1} pt · {question.timeLimit ? `${question.timeLimit}s` : 'temps libre'}
-                {question.stopOnFirstAnswer ? ' · 1ʳᵉ réponse' : ''}
+      <div className="adm-qtools">
+        <input className="input adm-qsearch" type="search" placeholder="Chercher une question ou une réponse…" value={qSearch} onChange={(e) => setQSearch(e.target.value)} aria-label="Chercher une question" />
+        <div className="adm-qfilters">
+          <button type="button" className={`adm-qf${!qType ? ' is-on' : ''}`} onClick={() => setQType('')}>Tous</button>
+          {TYPE_OPTIONS.filter((t) => (quiz.questions || []).some((q) => q.type === t.id)).map((t) => (
+            <button key={t.id} type="button" className={`adm-qf${qType === t.id ? ' is-on' : ''}`} style={{ '--c': TYPE_COLOR[t.id] }} onClick={() => setQType(qType === t.id ? '' : t.id)}>
+              {t.label} <small>{(quiz.questions || []).filter((q) => q.type === t.id).length}</small>
+            </button>
+          ))}
+        </div>
+        <button type="button" className="btn btn-success adm-mini" onClick={addQuestion} disabled={draft && draftIndex == null}><Icon name="plus" />Nouvelle question</button>
+      </div>
+      <p className="adm-note">Glisse une question pour la déplacer, clique dessus pour la modifier. Dans le formulaire : Ctrl + Entrée enregistre, Échap annule.</p>
+      {(quiz.questions || []).map((question, index) => {
+        const filtered = qType || qSearch.trim();
+        if (filtered && draftIndex !== index) {
+          if (qType && question.type !== qType) return null;
+          const hay = `${question.prompt || ''} ${answerPreview(question)} ${question.musicUrl || ''}`.toLowerCase();
+          if (qSearch.trim() && !hay.includes(qSearch.trim().toLowerCase())) return null;
+        }
+        const cat = (quiz.categories || []).find((c) => c.id === question.category);
+        const ans = answerPreview(question);
+        const editingThis = draft && draftIndex === index;
+        return (
+          <React.Fragment key={question.clientKey || index}>
+            <div
+              className={`adm-qrow question-row${dragIndex === index ? ' is-dragging' : ''}${editingThis ? ' is-editing' : ''}`}
+              style={{ '--tc': TYPE_COLOR[question.type] || '#1f6dff' }}
+              draggable={!loading && !editingThis}
+              onDragStart={(event) => startQuestionDrag(event, index)}
+              onDragOver={(event) => hoverQuestion(event, index)}
+              onDrop={(event) => event.preventDefault()}
+              onDragEnd={finishQuestionDrag}
+              onClick={(event) => { if (!event.target.closest('button') && !editingThis) editQuestion(index); }}
+            >
+              <div className="question-row-body">
+                <span className="drag-handle" aria-hidden="true">⋮⋮</span>
+                <span className="adm-qnum">{index + 1}</span>
+                <span className="adm-qicon" aria-hidden="true">{TYPE_ICON[question.type] || '?'}</span>
+                {question.imageUrl && <img className="adm-qthumb" src={question.imageUrl} alt="" loading="lazy" />}
+                <div className="adm-qtext">
+                  <span className="adm-qtags">
+                    <span className="adm-qtype">{typeLabel(question.type)}</span>
+                    {cat && <span className="adm-qcat" style={{ '--c': cat.color }}>{cat.name}</span>}
+                  </span>
+                  <div className="adm-qprompt">{question.prompt || question.musicUrl || 'Sans énoncé'}</div>
+                  {ans && <div className="adm-qanswer">✔ {ans}</div>}
+                  <div className="adm-qmeta">
+                    {question.points || 1} pt · {question.timeLimit ? `${question.timeLimit}s` : 'temps libre'}
+                    {question.stopOnFirstAnswer ? ' · 1ʳᵉ réponse' : ''}
+                  </div>
+                </div>
+              </div>
+              <div className="adm-qactions">
+                <button type="button" className="btn btn-quiet adm-mini adm-icon-only" aria-label="Monter" title="Monter" onClick={() => moveQuestion(index, -1)} disabled={index === 0 || Boolean(draft)}>↑</button>
+                <button type="button" className="btn btn-quiet adm-mini adm-icon-only" aria-label="Descendre" title="Descendre" onClick={() => moveQuestion(index, 1)} disabled={index === quiz.questions.length - 1 || Boolean(draft)}>↓</button>
+                <button type="button" className="btn btn-quiet adm-mini adm-icon-only" aria-label="Dupliquer" title="Dupliquer juste en dessous" onClick={() => duplicateQuestion(index)} disabled={Boolean(draft) || loading}>⧉</button>
+                {editingThis ? (
+                  <button type="button" className="btn btn-quiet adm-mini" onClick={cancelDraft}>Fermer</button>
+                ) : (
+                  <button type="button" className="btn adm-mini" onClick={() => editQuestion(index)}><Icon name="pencil" />Modifier</button>
+                )}
+                <button
+                  type="button"
+                  aria-label="Supprimer la question"
+                  className="btn btn-danger adm-mini adm-icon-only"
+                  onClick={() => setConfirm({
+                    title: 'Supprimer cette question ?',
+                    message: `La question ${index + 1} sera retirée du quiz.`,
+                    run: () => deleteQuestion(index)
+                  })}
+                >
+                  <Icon name="trash" bare />
+                </button>
               </div>
             </div>
-          </div>
-          <div className="adm-qactions">
-            <button type="button" className="btn btn-quiet adm-mini adm-icon-only" aria-label="Monter" onClick={() => moveQuestion(index, -1)} disabled={index === 0}>↑</button>
-            <button type="button" className="btn btn-quiet adm-mini adm-icon-only" aria-label="Descendre" onClick={() => moveQuestion(index, 1)} disabled={index === quiz.questions.length - 1}>↓</button>
-            <button type="button" className="btn adm-mini" onClick={() => { setDraft(questionFromApi(question)); setDraftIndex(index); }}>
-              <Icon name="pencil" />Modifier
-            </button>
-            <button
-              type="button"
-              aria-label="Supprimer la question"
-              className="btn btn-danger adm-mini adm-icon-only"
-              onClick={() => setConfirm({
-                title: 'Supprimer cette question ?',
-                message: `La question ${index + 1} sera retirée du quiz.`,
-                run: () => deleteQuestion(index)
-              })}
-            >
-              <Icon name="trash" bare />
-            </button>
-          </div>
-        </div>
-      ))}
+            {editingThis && (
+              <div className="adm-inline-form" ref={formRef}>
+                <QuestionForm
+                  draft={draft}
+                  setDraft={setDraft}
+                  submitLabel="Mettre à jour"
+                  busy={loading}
+                  categories={quiz.categories || []}
+                  onCancel={cancelDraft}
+                  onSubmit={commitDraft}
+                />
+              </div>
+            )}
+          </React.Fragment>
+        );
+      })}
 
-      {draft ? (
-        <QuestionForm
-          draft={draft}
-          setDraft={setDraft}
-          submitLabel={draftIndex == null ? 'Ajouter la question' : 'Mettre à jour'}
-          busy={loading}
-          categories={quiz.categories || []}
-          onCancel={() => { setDraft(null); setDraftIndex(null); }}
-          onSubmit={commitDraft}
-        />
+      {draft && draftIndex == null ? (
+        <div className="adm-inline-form is-new" ref={formRef}>
+          <QuestionForm
+            draft={draft}
+            setDraft={setDraft}
+            submitLabel="Ajouter la question"
+            busy={loading}
+            categories={quiz.categories || []}
+            onCancel={cancelDraft}
+            onSubmit={commitDraft}
+          />
+        </div>
       ) : (
         <div className="adm-actions">
-          <button type="button" className="btn btn-success" onClick={() => { setDraft(emptyDraft((quiz.questions || []).slice(-1)[0]?.category || '')); setDraftIndex(null); }}>
+          <button type="button" className="btn btn-success" onClick={addQuestion}>
             <Icon name="plus" />Ajouter une question
           </button>
         </div>
