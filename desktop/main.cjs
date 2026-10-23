@@ -8,7 +8,7 @@ const fs = require('node:fs')
 
 const SITE = process.env.PRAIRIE_URL || 'https://bullys-lair.dev/#prairie'
 const SITE_ORIGIN = new URL(SITE).origin
-const STRIP_H = 84
+const STRIP_H = 110
 const PANEL_H = 760
 
 app.setName('Poké Prairie')
@@ -27,7 +27,7 @@ function place() {
   if (!win) return
   const area = screen.getPrimaryDisplay().workArea
   const h = mode === 'panel' ? Math.min(PANEL_H, area.height) : STRIP_H
-  const w = mode === 'panel' ? Math.min(1180, area.width) : Math.min(760, area.width)
+  const w = mode === 'panel' ? Math.min(1180, area.width) : Math.min(980, area.width)
   win.setBounds({ x: Math.round(area.x + (area.width - w) / 2), y: area.y + area.height - h, width: w, height: h })
 }
 
@@ -39,7 +39,7 @@ function applyTop() {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 760,
+    width: 980,
     height: STRIP_H,
     frame: false,
     transparent: true,
