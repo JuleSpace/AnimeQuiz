@@ -329,6 +329,70 @@ export const playerTrainerSprite = (id) => {
 };
 const TRAINER_GENS = [[0, 'Tous'], [1, 'Kanto'], [2, 'Johto'], [3, 'Hoenn'], [4, 'Sinnoh'], [5, 'Unys'], [6, 'Kalos'], [7, 'Alola'], [8, 'Galar'], [9, 'Paldea']];
 
+/* Unité de mise en page des écrans « maquette » (1280×720 mis à l'échelle de la fenêtre) */
+const stageUnit = () => (typeof window === 'undefined' ? 1 : Math.max(0.55, Math.min(window.innerWidth, (window.innerHeight * 16) / 9) / 1280));
+export const useStageUnit = () => {
+  const [u, setU] = useState(stageUnit);
+  useEffect(() => {
+    const on = () => setU(stageUnit());
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return u;
+};
+const REGION_OF_GEN = ['', 'Kanto', 'Johto', 'Hoenn', 'Sinnoh', 'Unys', 'Kalos', 'Alola', 'Galar', 'Paldea'];
+const trainerFace = (t) => ({ sprite: t.sprite || t.id, name: t.name });
+
+/** Écran plein « Choisis ton dresseur » (maquette Tactics D+F). */
+export const TrainerScreen = ({ value, onChange, onClose }) => {
+  const u = useStageUnit();
+  const [gen, setGen] = useState(0);
+  const [pick, setPick] = useState(value || PLAYER_TRAINERS[0].id);
+  const list = PLAYER_TRAINERS.filter((t) => !gen || t.gen === gen);
+  const cur = PLAYER_TRAINERS.find((t) => t.id === pick) || PLAYER_TRAINERS[0];
+  const choose = (id) => { onChange(id); onClose(); };
+  useEffect(() => {
+    const k = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, [onClose]);
+  return (
+    <div className="ah2 tp2" style={{ '--u': `${u}px` }} role="dialog" aria-label="Choisis ton dresseur">
+      <header className="tp2-head">
+        <button type="button" className="tp2-back" onClick={onClose}>← RETOUR</button>
+        <h1>CHOISIS TON DRESSEUR</h1>
+        <div className="tp2-gens" role="tablist" aria-label="Génération">
+          {['TOUS', 1, 2, 3, 4, 5, 6, 7, 8, 9].map((g, i) => (
+            <button key={g} type="button" role="tab" aria-selected={gen === i} title={i ? REGION_OF_GEN[i] : 'Toutes les générations'}
+              className={gen === i ? 'is-on ah2-holo' : ''} onClick={() => setGen(i)}>{g}</button>
+          ))}
+        </div>
+      </header>
+      <div className="tp2-grid" role="listbox" aria-label="Dresseurs">
+        {list.map((t) => (
+          <button key={t.id} type="button" role="option" aria-selected={pick === t.id}
+            className={`tp2-cell${pick === t.id ? ' is-on ah2-holo' : ''}`}
+            onClick={() => setPick(t.id)} onDoubleClick={() => choose(t.id)}>
+            <span className="tp2-cell-in">
+              <TrainerPortrait trainer={trainerFace(t)} size="md" />
+              <b>{t.name}</b>
+              <small>Gen {t.gen}{value === t.id ? ' · actuel' : ''}</small>
+            </span>
+          </button>
+        ))}
+      </div>
+      <aside className="ah2-panel tp2-detail">
+        <span className="tp2-lines" aria-hidden="true" />
+        <b className="tp2-name">{cur.name}</b>
+        <span className="tp2-tag ah2-holo">{REGION_OF_GEN[cur.gen]} · Gen {cur.gen}</span>
+        <span className="tp2-frame ah2-holo"><span><TrainerPortrait key={cur.id} trainer={trainerFace(cur)} size="xl" /></span></span>
+        <span className="tp2-bubble" aria-hidden="true"><i /><i /><i /></span>
+        <button type="button" className="tp2-go ah2-holo" onClick={() => choose(cur.id)}>C’EST MOI !</button>
+      </aside>
+    </div>
+  );
+};
+
 export const TrainerPicker = ({ value, onChange }) => {
   const [gen, setGen] = useState(0);
   const list = PLAYER_TRAINERS.filter((t) => !gen || t.gen === gen);
@@ -366,6 +430,7 @@ export const StarterScreen = ({ onPick, onBack, onTrait, trainer, onTrainer }) =
   const [gen, setGen] = useState(0);
   const [type, setType] = useState('');
   const [pickId, setPickId] = useState(STARTERS_BY_DEX[0]?.id);
+  const [trainerOpen, setTrainerOpen] = useState(false);
   const list = STARTERS_BY_DEX.filter((line) => {
     const first = line.stages[0];
     if (gen && genOf(first.dex) !== gen) return false;
@@ -391,11 +456,15 @@ export const StarterScreen = ({ onPick, onBack, onTrait, trainer, onTrainer }) =
         <button type="button" className="ui-btn is-ghost" onClick={onBack}>Retour</button>
       </header>
       {onTrainer && (
-        <section className="ui-starter-trainer">
-          <h3>Ton dresseur</h3>
-          <TrainerPicker value={trainer} onChange={onTrainer} />
+        <section className="ui-starter-trainer is-compact">
+          <button type="button" className="tp2-open" onClick={() => setTrainerOpen(true)}>
+            <TrainerPortrait trainer={trainerFace(PLAYER_TRAINERS.find((t) => t.id === trainer) || { id: trainer, name: trainer })} size="md" />
+            <span><small>Ton dresseur</small><b>{(PLAYER_TRAINERS.find((t) => t.id === trainer) || {}).name || 'Choisir'}</b></span>
+            <em>Changer ›</em>
+          </button>
         </section>
       )}
+      {trainerOpen && <TrainerScreen value={trainer} onChange={onTrainer} onClose={() => setTrainerOpen(false)} />}
       <div className="ui-starter-body">
         <section className="ui-starter-pick">
           <div className="ui-filters" role="toolbar" aria-label="Filtres">

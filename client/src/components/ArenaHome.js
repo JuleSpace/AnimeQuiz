@@ -1,11 +1,11 @@
-import React, { useMemo, useState } from 'react';
-import GameHome, { HomeBoard, HomeIcon } from './GameHome';
+import React, { useEffect, useMemo, useState } from 'react';
+import { HomeIcon } from './GameHome';
 import GamePage, { BoardPage, PageHead, Section, Stat, useKeys } from './GamePage';
-import { AccountChip } from './account';
+import { AccountChip, fetchLeaderboard } from './account';
 import { CHAMPIONS } from './pokeArenaTrainers';
 import { trainerSprite } from './pokeArenaCampaign';
-import { STARTER_LINES, unitFromLine } from './pokeArenaData';
-import { displayName, playerTrainerSprite } from './PokeArenaUI';
+import { STARTER_LINES, spriteUrl, unitFromLine } from './pokeArenaData';
+import { displayName, playerTrainerSprite, useStageUnit } from './PokeArenaUI';
 import './ArenaHome.css';
 
 const itemSprite = (slug) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${slug}.png`;
@@ -35,28 +35,36 @@ export const addToRecord = (rec, run) => ({
   history: [run, ...(rec.history || [])].slice(0, 20)
 });
 
-/** Une carte rare en éventail : illustration HOME, cadre doré, reflet holographique. */
-const FanCard = ({ unit, tilt, label }) => {
-  const [idx, setIdx] = useState(0);
-  const chain = [unit?.home, unit?.art, unit?.sprite].filter(Boolean);
-  if (!unit) return null;
-  return (
-    <span className="ah-card" style={{ '--tilt': `${tilt}deg`, '--drop': `${Math.abs(tilt) * 1.2}px`, '--delay': `${tilt * 0.08}s` }}>
-      <span className="ah-card-art">
-        {idx < chain.length
-          ? <img src={chain[idx]} alt="" draggable={false} onError={() => setIdx((i) => i + 1)} />
-          : <span className="ah-card-fb" />}
-      </span>
-      <span className="ah-card-name">{label}</span>
-      <span className="ah-card-holo" />
-    </span>
-  );
-};
-
 const Trainer = ({ id, className }) => {
   const [broken, setBroken] = useState(false);
   if (!id || broken) return null;
   return <img className={className} src={trainerSprite(playerTrainerSprite(id))} alt="" draggable={false} onError={() => setBroken(true)} />;
+};
+
+/* ——— Accueil « Nuit holo × manga » : mise en page de la maquette 1280×720, mise à l'échelle de l'écran ——— */
+const HERO_DEX = [150, 249, 250, 384, 483, 484, 487, 643, 644, 716, 717, 791, 792, 888, 889];
+const HeroMon = ({ dex, small = false }) => {
+  const [broken, setBroken] = useState(false);
+  if (!dex || broken) return <span className={small ? 'ah2-mon-fb' : 'ah2-mon is-fb'}>★</span>;
+  return <img className={small ? 'ah2-cardmon' : 'ah2-mon'} src={spriteUrl(dex)} alt="" draggable={false} onError={() => setBroken(true)} />;
+};
+
+const HallRows = () => {
+  const [board, setBoard] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    fetchLeaderboard('arena', 1).then((b) => { if (alive) setBoard(b); });
+    return () => { alive = false; };
+  }, []);
+  const rows = (board?.score || []).slice(0, 3);
+  if (!board) return <div className="ah2-row is-empty">Chargement…</div>;
+  if (!rows.length) return <div className="ah2-row is-empty">Aucun Maître pour l’instant : le titre est à prendre !</div>;
+  return rows.map((r, i) => (
+    <div key={`${r.name}-${i}`} className={`ah2-row${i === 0 ? ' ah2-holo is-first' : ''}`}>
+      <span>{i + 1} · {r.name}{r.form ? ` · ${r.form}` : ''}</span>
+      <b>{(r.score || 0).toLocaleString('fr-FR')} pts</b>
+    </div>
+  ));
 };
 
 const ArenaScene = () => (
@@ -90,16 +98,14 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
     const lines = [...STARTER_LINES].sort(() => Math.random() - 0.5).slice(0, 3);
     return lines.map((l) => unitFromLine(l.id, 3)).filter(Boolean);
   }, []);
-  const last = record.history?.[0];
+  const u = useStageUnit();
+  const heroDex = useMemo(() => HERO_DEX[Math.floor(Math.random() * HERO_DEX.length)], []);
   const saved = save && save.map?.length ? save : null;
   const total = saved?.map.length || 32;
 
   const play = saved
     ? { title: 'Continuer', sub: `Étape ${saved.floor + 1}/${total} · ${regionOf(saved)} · ${saved.hp} PV`, onClick: onContinue }
     : { title: 'Jouer', sub: 'Nouvelle aventure · 3 régions jusqu’à la Ligue', onClick: onNew };
-  const side = saved
-    ? { title: 'Nouvelle', sub: 'partie', art: <HomeIcon src={itemSprite('poke-ball')} fallback="●" />, onClick: onNew }
-    : { title: 'Multi', sub: 'Salon en ligne', art: <HomeIcon src={itemSprite('link-cable')} fallback="⇄" />, onClick: onMulti };
 
   const ARENA_TABS = [
     { id: 'score', label: 'Score', sub: 'Meilleur score', value: (r) => (r.score || 0).toLocaleString('fr-FR'), unit: 'pts' },
@@ -150,87 +156,62 @@ const ArenaHome = ({ onClose, save, onContinue, onNew, onMulti, onCodex, music, 
   }
 
   return (
-    <div className="ah-wrap">
-      <GameHome
-        theme="gh-arena"
-        backdrop={<ArenaScene />}
-        topLeft={(
-          <>
-            <button type="button" className="gh-pill is-plain" onClick={onClose}>← Bully’s Lair</button>
-            <button type="button" className="gh-pill is-plain" onClick={() => setHowto(true)}>Comment jouer</button>
-          </>
-        )}
-        topRight={(
-          <>
-            <AccountChip returnHash="#arena" />
-            <span className="gh-pill" title="Parties terminées">{record.runs} parties</span>
-            <span className="gh-pill is-strong" title="Ligues remportées">♛ {record.wins}</span>
-          </>
-        )}
-        logo={(
-          <div className="ah-logo">
-            <span className="ah-kicker">Salle des Champions</span>
-            <h1>Poké Bully <em>Tactics</em></h1>
-          </div>
-        )}
-        stage={(
-          <>
-            <Trainer id={myTrainer} className="ah-trainer is-me" />
-            <span className="ah-fan">
-              {fan.map((u, i) => <FanCard key={u.lineId || i} unit={u} tilt={(i - 1) * 12} label={displayName(u.name)} />)}
-            </span>
-            <Trainer id={champ.sprite} className="ah-trainer is-champ" />
-          </>
-        )}
-        play={{ ...play, art: <span className="ah-play-crest">♛</span> }}
-        side={side}
-        cards={[
-          {
-            key: 'champ', tone: 'event', kicker: `Maître de la Ligue · ${champ.region}`,
-            title: `${champ.name} t’attend au sommet`,
-            sub: `Équipe ${champ.types.join(' / ')}`,
-            art: <Trainer id={champ.sprite} className="ah-mini-trainer" />,
-            onClick: saved ? onContinue : onNew
-          },
-          last ? {
-            key: 'last', tone: last.result === 'win' ? 'done' : 'light', kicker: 'Dernière partie',
-            title: last.result === 'win' ? 'Ligue conquise !' : `Arrêt à l’étape ${last.floor}`,
-            sub: `${last.mvp ? `MVP ${last.mvp}` : ''}${last.mvp ? ' · ' : ''}${last.wins} combats gagnés`,
-            art: <HomeIcon src={last.mvpArt} fallback="★" />,
-            onClick: () => setCarnet(true)
-          } : {
-            key: 'multi', tone: 'light', kicker: 'Entre amis',
-            title: 'Salon multijoueur',
-            sub: 'Jusqu’à 8 dresseurs, le dernier debout gagne',
-            art: <HomeIcon src={itemSprite('link-cable')} fallback="⇄" />,
-            onClick: onMulti
-          }
-        ]}
-        tiles={[
-          { key: 'dex', label: 'Pokédex', value: 'lignées', color: '#d25a42', icon: <HomeIcon src={itemSprite('poke-ball')} fallback="●" />, onClick: onCodex },
-          { key: 'multi', label: 'Multi', value: 'en ligne', color: '#7b98dc', icon: <HomeIcon src={itemSprite('link-cable')} fallback="⇄" />, onClick: onMulti },
-          { key: 'carnet', label: 'Carnet', value: `record ${record.best || 0}`, color: '#e9c46a', icon: <HomeIcon src={itemSprite('town-map')} fallback="☰" />, onClick: () => setCarnet(true) },
+    <div className="ah-wrap ah2" style={{ '--u': `${u}px` }}>
+      <section className="ah2-panel ah2-hero">
+        <span className="ah2-tone" aria-hidden="true" />
+        <span className="ah2-lines" aria-hidden="true" />
+        <HeroMon dex={heroDex} />
+        <div className="ah2-logo">
+          <b>POKÉ BULLY</b>
+          <em>TACTICS</em>
+        </div>
+        <span className="ah2-bubble">Je deviendrai Maître !</span>
+        <nav className="ah2-mini">
+          <button type="button" onClick={onClose} title="Retour au Bully’s Lair">← Lair</button>
+          <button type="button" onClick={() => setHowto(true)} title="Comment jouer">?</button>
+          <span className="ah2-music">{music}</span>
+          <AccountChip returnHash="#arena" />
+        </nav>
+      </section>
 
-        ]}
-        links={<span className="ah-music">{music}</span>}
-        board={(
-          <HomeBoard
-            game="arena"
-            gen={1}
-            title="Hall de la Ligue"
-            subtitle="Meilleure partie de chaque dresseur"
-            describe={(r) => `${r.form || 'Équipe'} · niv. ${r.level}`}
-            tabs={[
-              { id: 'score', label: 'Score', value: (r) => (r.score || 0).toLocaleString('fr-FR'), unit: 'pts' },
-              { id: 'fastest', label: 'Maîtres', value: (r) => clock(r.t), unit: 'temps' },
-              { id: 'kills', label: 'Plus loin', value: (r) => `${r.kills}`, unit: 'étape' }
-            ]}
-            empty="Aucun Maître pour l’instant : le titre est à prendre !"
-            onMore={() => setCarnet('board')}
-          />
-        )}
-        footer="Fan-game non officiel, gratuit et sans but lucratif. Pokémon © Nintendo / Game Freak / The Pokémon Company. Sprites de dresseurs : Pokémon Showdown."
-      />
+      <button type="button" className="ah2-play ah2-holo" onClick={play.onClick}>
+        <b>{saved ? 'CONTINUER' : 'JOUER'}</b>
+        <small>{saved ? `Étape ${saved.floor + 1}/${total} · ${regionOf(saved)}` : 'Chapitre 1 · Kanto'}</small>
+      </button>
+
+      <div className={`ah2-tiles${saved ? ' is-4' : ''}`}>
+        {saved && <button type="button" className="ah2-panel ah2-tile" onClick={onNew}>NOUVELLE<small>partie</small></button>}
+        <button type="button" className="ah2-panel ah2-tile" onClick={onMulti}>MULTI<small>jusqu’à 8</small></button>
+        <button type="button" className="ah2-panel ah2-tile" onClick={onCodex}>POKÉDEX<small>lignées</small></button>
+        <button type="button" className="ah2-panel ah2-tile" onClick={() => setCarnet(true)}>CARNET<small>{record.runs} parties · ♛ {record.wins}</small></button>
+      </div>
+
+      <section className="ah2-panel ah2-season">
+        <h2>LES CARTES DE LA SAISON</h2>
+        <div className="ah2-fan">
+          {fan.map((u2, i) => (
+            <span key={u2.lineId || i} className={`ah2-card${i === 1 ? ' is-mid' : ''}`} style={{ '--r': `${(i - 1) * 9}deg` }}>
+              <span className="ah2-card-in">
+                <HeroMon dex={u2.dex} small />
+                <b>{displayName(u2.name)}</b>
+                {i === 1 && <small>★★★</small>}
+              </span>
+            </span>
+          ))}
+        </div>
+      </section>
+
+      <section className="ah2-panel ah2-hall">
+        <h2>HALL DE LA <span className="ah2-holotxt">LIGUE</span></h2>
+        <HallRows />
+        <button type="button" className="ah2-more" onClick={() => setCarnet('board')}>Classement complet ›</button>
+        <p className="ah2-champ">
+          <Trainer id={champ.sprite} className="ah2-champ-face" />
+          <span><b>{champ.name}</b> t’attend au sommet · Maître de {champ.region}, équipe {champ.types.join(' / ')}</span>
+        </p>
+      </section>
+      <footer className="ah2-foot">Fan-game non officiel, gratuit et sans but lucratif. Pokémon © Nintendo / Game Freak / The Pokémon Company. Sprites de dresseurs : Pokémon Showdown.</footer>
+
       {howto && (
         <div className="ah-modal" onPointerDown={(e) => { if (e.target === e.currentTarget) setHowto(false); }}>
           <div className="ah-sheet">
