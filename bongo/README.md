@@ -10,7 +10,7 @@ Télécharge l'artefact `bongo-stream-windows` de la dernière construction dans
 ## Ton personnage
 Réglages → « Ouvrir le dossier », puis dépose des PNG transparents de **800 × 500**, alignés entre eux :
 `body.png`, `hand-up.png`, `hand-1.png` … `hand-4.png`, `mouse-hand.png`, et en option `desk.png`, `keys.png`.
-Une image absente est remplacée par le dessin par défaut.
+Une image absente est remplacée par le dessin par défaut. Dessine-les « à plat » : l'appli incline toute la scène (7° par défaut), comme le style Bongo.
 
 ## Développer
 ```

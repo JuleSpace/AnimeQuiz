@@ -16,10 +16,10 @@
     const big = base * cfg.bigFirst;
     const gap = 10;
     const out = [];
-    let x = 96;
+    let x = 120;
     cfg.keys.forEach((k, i) => {
       const w = i === 0 ? big : base;
-      out.push({ x, y: 392 - (i === 0 ? (big - base) / 2 : 0), w, h: w * 0.82, label: k });
+      out.push({ x, y: 372 - (i === 0 ? (big - base) / 2 : 0), w, h: w * 0.82, label: k });
       x += w + gap;
     });
     return out;
@@ -27,26 +27,21 @@
 
   /* ——— Dessin par défaut (personnage original) ——— */
   const svg = (w, h, inner) => `<svg viewBox="0 0 ${w} ${h}" width="100%" height="100%" xmlns="${NS}">${inner}</svg>`;
+  // Style « dessin au trait » : aplats blancs, trait noir épais, personnage qui dépasse derrière le bord de la table.
+  const INK = '#111';
   const DEFAULT_BODY = svg(W, H, `
-    <defs>
-      <radialGradient id="g-body" cx="45%" cy="35%" r="70%"><stop offset="0" stop-color="#bfe9ff"/><stop offset="1" stop-color="#5aa8f0"/></radialGradient>
-    </defs>
-    <path d="M300 92 L285 30 L330 80 Z" fill="#ffd23f" stroke="#1b2a4a" stroke-width="6" stroke-linejoin="round"/>
-    <path d="M500 92 L515 30 L470 80 Z" fill="#ffd23f" stroke="#1b2a4a" stroke-width="6" stroke-linejoin="round"/>
-    <ellipse cx="400" cy="300" rx="190" ry="150" fill="url(#g-body)" stroke="#1b2a4a" stroke-width="7"/>
-    <ellipse cx="400" cy="185" rx="150" ry="118" fill="url(#g-body)" stroke="#1b2a4a" stroke-width="7"/>
-    <ellipse cx="350" cy="182" rx="15" ry="20" fill="#1b2a4a"/><ellipse cx="450" cy="182" rx="15" ry="20" fill="#1b2a4a"/>
-    <circle cx="355" cy="175" r="5" fill="#fff"/><circle cx="455" cy="175" r="5" fill="#fff"/>
-    <ellipse cx="318" cy="222" rx="22" ry="12" fill="#ff8fb1" opacity="0.7"/><ellipse cx="482" cy="222" rx="22" ry="12" fill="#ff8fb1" opacity="0.7"/>
-    <path d="M385 222 Q400 236 415 222" fill="none" stroke="#1b2a4a" stroke-width="6" stroke-linecap="round"/>`);
+    <path d="M372 132 C360 104 372 82 398 78 C394 100 388 116 372 132 Z" fill="#fff" stroke="${INK}" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M404 128 C420 102 446 98 462 112 C444 122 426 130 404 128 Z" fill="#fff" stroke="${INK}" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M236 340 C236 250 300 150 400 140 C500 150 566 250 566 340 Z" fill="#fff" stroke="${INK}" stroke-width="8" stroke-linejoin="round"/>
+    <circle cx="350" cy="262" r="9" fill="${INK}"/><circle cx="452" cy="262" r="9" fill="${INK}"/>
+    <path d="M388 282 Q401 296 414 282" fill="none" stroke="${INK}" stroke-width="7" stroke-linecap="round"/>
+    <ellipse cx="322" cy="290" rx="16" ry="8" fill="#ffc9d6"/><ellipse cx="480" cy="290" rx="16" ry="8" fill="#ffc9d6"/>`);
   const DEFAULT_DESK = svg(W, H, `
-    <rect x="20" y="360" width="760" height="150" rx="26" fill="#6b4a33" stroke="#1b2a4a" stroke-width="7"/>
-    <rect x="20" y="360" width="760" height="22" rx="11" fill="#8a6244"/>
-    <rect x="470" y="376" width="270" height="100" rx="18" fill="#2b2f45" stroke="#1b2a4a" stroke-width="5"/>`);
+    <rect x="-60" y="330" width="920" height="260" fill="#fff"/>
+    <line x1="-60" y1="330" x2="860" y2="330" stroke="${INK}" stroke-width="8" stroke-linecap="round"/>`);
   const DEFAULT_MOUSE = svg(120, 140, `
-    <rect x="22" y="10" width="76" height="118" rx="38" fill="#f4f6fb" stroke="#1b2a4a" stroke-width="6"/>
-    <line x1="60" y1="12" x2="60" y2="58" stroke="#1b2a4a" stroke-width="5"/>
-    <rect x="54" y="26" width="12" height="22" rx="6" fill="#7cc6ff" stroke="#1b2a4a" stroke-width="3"/>`);
+    <rect x="26" y="14" width="68" height="104" rx="34" fill="#fff" stroke="${INK}" stroke-width="7"/>
+    <line x1="60" y1="16" x2="60" y2="56" stroke="${INK}" stroke-width="6"/>`);
 
   /* ——— Couches perso (dossier « skin ») ——— */
   const has = (name) => cfg.skin.find((f) => f.replace(/\.(png|gif|webp|svg)$/i, '').toLowerCase() === name);
@@ -55,6 +50,7 @@
 
   const build = () => {
     stage.style.setProperty('--scale', cfg.scale || 1);
+    stage.style.setProperty('--tilt', `${cfg.tilt ?? 7}deg`);
     document.body.dataset.bg = cfg.background === 'green' ? 'green' : cfg.background === 'transparent' ? 'transparent' : 'color';
     if (cfg.background && cfg.background.startsWith('#')) document.body.style.setProperty('--bg', cfg.background);
     setLayer('body', 'body', DEFAULT_BODY);
@@ -82,13 +78,13 @@
   /* ——— Bras dessinés (mode par défaut) ——— */
   const arm = (from, to, raised) => {
     const mid = { x: (from.x + to.x) / 2, y: Math.min(from.y, to.y) - (raised ? 50 : 24) };
-    return `<path d="M${from.x} ${from.y} Q${mid.x} ${mid.y} ${to.x} ${to.y}" fill="none" stroke="#1b2a4a" stroke-width="44" stroke-linecap="round"/>
-      <path d="M${from.x} ${from.y} Q${mid.x} ${mid.y} ${to.x} ${to.y}" fill="none" stroke="#8ccbff" stroke-width="32" stroke-linecap="round"/>
-      <ellipse cx="${to.x}" cy="${to.y}" rx="${raised ? 26 : 28}" ry="${raised ? 24 : 20}" fill="#d9f1ff" stroke="#1b2a4a" stroke-width="6"/>`;
+    return `<path d="M${from.x} ${from.y} Q${mid.x} ${mid.y} ${to.x} ${to.y}" fill="none" stroke="${INK}" stroke-width="46" stroke-linecap="round"/>
+      <path d="M${from.x} ${from.y} Q${mid.x} ${mid.y} ${to.x} ${to.y}" fill="none" stroke="#fff" stroke-width="32" stroke-linecap="round"/>
+      <ellipse cx="${to.x}" cy="${to.y}" rx="${raised ? 27 : 30}" ry="${raised ? 25 : 21}" fill="#fff" stroke="${INK}" stroke-width="7"/>`;
   };
-  const SHOULDER_L = { x: 290, y: 300 };
-  const SHOULDER_R = { x: 520, y: 300 };
-  const MOUSE_HOME = { x: 600, y: 395 };
+  const SHOULDER_L = { x: 268, y: 300 };
+  const SHOULDER_R = { x: 534, y: 300 };
+  const MOUSE_HOME = { x: 620, y: 384 };
 
   const render = (force) => {
     const keys = keyRects();
@@ -103,7 +99,7 @@
     const hk = $('hand-keys');
     if (f) { if (force || hk.dataset.f !== f) { hk.innerHTML = img(f); hk.dataset.f = f; } } else {
       const r = active >= 0 ? keys[active] : null;
-      const to = r ? { x: r.x + r.w / 2, y: r.y + r.h * 0.35 } : { x: 210, y: 318 };
+      const to = r ? { x: r.x + r.w / 2, y: r.y + r.h * 0.35 } : { x: 218, y: 286 };
       hk.dataset.f = '';
       hk.innerHTML = svg(W, H, arm(SHOULDER_L, to, !r));
     }
@@ -125,7 +121,7 @@
   const armR = document.createElement('div');
   armR.className = 'layer';
   armR.id = 'arm-r';
-  stage.insertBefore(armR, $('hand-keys'));
+  $('tilt').insertBefore(armR, $('hand-keys'));
 
   // lissage de la souris
   const tick = () => {
