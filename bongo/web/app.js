@@ -62,8 +62,10 @@
       state.glb = glb;
       import('./three3d.js')
         .then((m) => m.start({ url: `/skin/${encodeURIComponent(glb)}`, under: $('m3d-under'), over: $('m3d-over') }))
-        .then((h) => { state.m3d = h; })
-        .catch((e) => { console.error('Modèle 3D illisible', e); state.glbFailed = true; build(); });
+        .then((h) => { state.m3d = h; state.m3dStatus = `Modèle 3D chargé : ${glb}${h.info.hasArms ? '' : ' (bras introuvables : il ne bougera pas les mains)'}`; showStatus(); })
+        .catch((e) => { console.error('Modèle 3D illisible', e); state.glbFailed = true; state.m3dStatus = `Modèle 3D illisible (${glb}) : ${e.message || e}`; showStatus(); build(); });
+      state.m3dStatus = `Chargement du modèle 3D ${glb}…`;
+      showStatus();
     }
     setLayer('body', 'body', state.is3d ? '' : DEFAULT_BODY);
     setLayer('desk', 'desk', DEFAULT_DESK);
@@ -86,6 +88,8 @@
     $('hand-mouse').classList.toggle('is-skin', Boolean(mh));
     render(true);
   };
+
+  const showStatus = () => { const el = document.getElementById('m3d-status'); if (el) el.textContent = state.m3dStatus || 'Aucun modèle 3D (.glb) dans le dossier.'; };
 
   /* ——— Bras dessinés (mode par défaut) ——— */
   const arm = (from, to, raised) => {
@@ -204,6 +208,8 @@
           <li><code>desk.png</code>, <code>keys.png</code> : le bureau et le clavier (facultatif)</li>
         </ul>
         <p class="hint">Une image manquante est remplacée par le dessin par défaut.${c.skin.length ? ` Trouvées : ${c.skin.join(', ')}.` : ''}</p>
+        <p>Ou un <b>modèle 3D .glb</b> avec squelette : il remplace le personnage, et ses bras vont sur les touches et la souris.</p>
+        <p class="status" id="m3d-status"></p>
         <div class="row"><button id="open">Ouvrir le dossier</button><button id="reload">Recharger les images</button></div>
       </section>
       <p class="hint">Astuce : appuie sur ${c.keys.join(' ')} ou bouge la souris pour tester l’aperçu.</p>`;
@@ -213,8 +219,9 @@
     $('range').oninput = (e) => window.bongo.setCfg({ mouseRange: Number(e.target.value) });
     $('bg').onchange = (e) => window.bongo.setCfg({ background: e.target.value === 'color' ? $('bgc').value : e.target.value });
     $('bgc').oninput = (e) => { if ($('bg').value === 'color') window.bongo.setCfg({ background: e.target.value }); };
+    showStatus();
     $('open').onclick = () => window.bongo.openSkin();
-    $('reload').onclick = () => window.bongo.reloadSkin();
+    $('reload').onclick = () => { state.glbFailed = false; state.glb = null; window.bongo.reloadSkin(); };
   };
 
   build();

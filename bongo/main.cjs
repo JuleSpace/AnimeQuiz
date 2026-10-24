@@ -35,13 +35,6 @@ const server = http.createServer((req, res) => {
 function handle(req, res) {
   const url = new URL(req.url, 'http://localhost')
   if (url.pathname === '/config.json') return send(res, 200, JSON.stringify({ ...readCfg(), skin: listSkin() }), TYPES['.json'])
-  if (url.pathname.startsWith('/vendor/three/')) {
-    // dossier de la bibliothèque three, rangé avec l'appli (fonctionne aussi dans l'archive app.asar)
-    const base = path.join(__dirname, 'node_modules', 'three')
-    const f = path.join(base, decodeURIComponent(url.pathname.slice('/vendor/three/'.length)))
-    if (!f.startsWith(base) || !fs.existsSync(f)) return send(res, 404, 'introuvable')
-    return send(res, 200, fs.readFileSync(f), TYPES[path.extname(f)] || 'application/octet-stream')
-  }
   if (url.pathname.startsWith('/skin/')) {
     const f = path.join(skinDir(), path.basename(decodeURIComponent(url.pathname.slice(6))))
     if (!f.startsWith(skinDir()) || !fs.existsSync(f)) return send(res, 404, 'introuvable')

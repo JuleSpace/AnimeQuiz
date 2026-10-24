@@ -7,8 +7,9 @@
   "main": "main.cjs",
   "private": true,
   "scripts": {
-    "start": "electron .",
-    "dist": "electron-builder --win nsis portable"
+    "start": "node scripts/vendor.cjs && electron .",
+    "dist": "node scripts/vendor.cjs && electron-builder --win nsis portable",
+    "vendor": "node scripts/vendor.cjs"
   },
   "dependencies": {
     "uiohook-napi": "^1.5.4",
