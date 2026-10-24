@@ -17,7 +17,9 @@ const userDir = () => app.getPath('userData')
 const skinDir = () => path.join(userDir(), 'skin')
 const cfgFile = () => path.join(userDir(), 'config.json')
 const DEFAULT_CFG = {
-  keys: ['Q', 'W', 'E', 'R'],
+  keys: ['Q', 'W', 'E', 'R'], // touches affichées sur la scène
+  codes: [null, null, null, null], // touches du clavier enregistrées (code physique), sinon la lettre affichée
+  mouseFlip: true, // souris retournée : boutons vers la caméra
   bigFirst: 1.35, // taille du Q par rapport aux autres touches
   mouseRange: 1, // amplitude du mouvement de la main sur la souris
   background: 'transparent', // transparent | green | #rrggbb
@@ -55,12 +57,28 @@ function listSkin() {
 }
 
 /* ——— Écoute globale du clavier et de la souris ——— */
-const keyIndex = () => readCfg().keys.map((k) => UiohookKey[String(k).toUpperCase()] ?? -1)
+const keyIndex = () => { const c = readCfg(); return c.keys.map((k, i) => (Number.isInteger(c.codes?.[i]) ? c.codes[i] : (UiohookKey[String(k).toUpperCase()] ?? -1))) }
+const keyName = (code) => Object.keys(UiohookKey).find((n) => UiohookKey[n] === code) || `#${code}`
+let recording = null // emplacement en attente d'une touche (bouton « Enregistrer »)
 let codes = []
 let lastMove = 0
 function startHook() {
   codes = keyIndex()
-  uIOhook.on('keydown', (e) => { const i = codes.indexOf(e.keycode); if (i >= 0) broadcast({ t: 'key', i, down: true }) })
+  uIOhook.on('keydown', (e) => {
+    if (recording !== null) {
+      const c = readCfg()
+      const list = [...(c.codes || [null, null, null, null])]
+      list[recording] = e.keycode
+      const slot = recording
+      recording = null
+      writeCfg({ ...c, codes: list })
+      codes = keyIndex()
+      broadcast({ t: 'recorded', i: slot, name: keyName(e.keycode) })
+      broadcast({ t: 'cfg', cfg: { ...readCfg(), skin: listSkin() } })
+      return
+    }
+    const i = codes.indexOf(e.keycode); if (i >= 0) broadcast({ t: 'key', i, down: true })
+  })
   uIOhook.on('keyup', (e) => { const i = codes.indexOf(e.keycode); if (i >= 0) broadcast({ t: 'key', i, down: false }) })
   uIOhook.on('mousemove', (e) => {
     const now = Date.now()
@@ -95,6 +113,8 @@ ipcMain.handle('cfg:set', (_e, patch) => {
   broadcast({ t: 'cfg', cfg: { ...c, skin: listSkin() } })
   return c
 })
+ipcMain.handle('key:record', (_e, i) => { recording = Number(i); return true })
+ipcMain.handle('key:names', () => { const c = readCfg(); return c.keys.map((k, i) => (Number.isInteger(c.codes?.[i]) ? keyName(c.codes[i]) : String(k).toUpperCase())) })
 ipcMain.handle('skin:open', () => { fs.mkdirSync(skinDir(), { recursive: true }); shell.openPath(skinDir()) })
 ipcMain.handle('skin:reload', () => { broadcast({ t: 'cfg', cfg: { ...readCfg(), skin: listSkin() } }); return listSkin() })
 ipcMain.handle('url:copy', () => { require('electron').clipboard.writeText(`http://localhost:${PORT}/`); return true })

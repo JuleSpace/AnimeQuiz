@@ -40,3 +40,8 @@ body.is-settings #stage { transform: scale(0.65); }
 #settings label { display: grid; gap: 4px; margin: 8px 0; font-size: 13px; }
 canvas.layer { width: 800px; height: 500px; }
 #settings .status { padding: 6px 10px; border-radius: 8px; background: #0e1022; color: #ffd23f; font-weight: 700; }
+#mouse.is-flip svg { transform: rotate(180deg); }
+#settings .keyrow { gap: 10px; }
+#settings .keyrow span { color: #a9adcf; }
+#settings .kn { min-width: 70px; padding: 6px 10px; border-radius: 8px; background: #0e1022; color: #8fd0ff; text-align: center; }
+#settings .chk { display: flex; align-items: center; gap: 8px; }

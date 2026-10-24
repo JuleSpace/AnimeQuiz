@@ -134,6 +134,7 @@
     const mm = $('mouse-move');
     mm.style.transform = `translate(${dx}px, ${dy}px)`;
     mm.classList.toggle('is-click', state.click);
+    $('mouse').classList.toggle('is-flip', cfg.mouseFlip !== false);
     if (state.is3d) $('arm-r').innerHTML = '';
     else if (!has('mouse-hand')) {
       const to = { x: MOUSE_HOME.x + dx, y: MOUSE_HOME.y - 6 + dy + (state.click ? 4 : 0) };
@@ -166,6 +167,7 @@
       else if (e.t === 'key') { state.down[e.i] = e.down; if (e.down) { state.last = e.i; } state.lastAt = Date.now(); }
       else if (e.t === 'mouse') { state.mx = e.x; state.my = e.y; }
       else if (e.t === 'click') { state.click = e.down; }
+      else if (e.t === 'recorded') { const n = document.getElementById(`kn-${e.i}`); if (n) n.textContent = e.name; document.querySelectorAll('.rec').forEach((b) => { b.textContent = 'Enregistrer'; }); }
   };
   window.__bongoEvent = handle; // tests
 
@@ -184,8 +186,10 @@
         <p class="hint">Le fond est transparent. Laisse l’appli ouverte pendant le stream (elle peut rester réduite près de l’horloge).</p>
       </section>
       <section><h2>Touches</h2>
-        <div class="row">${c.keys.map((k, i) => `<input class="k" data-i="${i}" maxlength="1" value="${k}">`).join('')}</div>
+        <p class="hint">À gauche, la lettre affichée sur la scène ; à droite, la touche de ton clavier qui la déclenche (clique sur « Enregistrer » puis appuie dessus).</p>
+        ${c.keys.map((k, i) => `<div class="row keyrow"><input class="k" data-i="${i}" maxlength="2" value="${k}" title="Touche affichée"><span>←</span><b class="kn" id="kn-${i}">…</b><button class="rec" data-i="${i}">Enregistrer</button></div>`).join('')}
         <label>Taille de la première touche <input id="big" type="range" min="1" max="1.8" step="0.05" value="${c.bigFirst}"></label>
+        <label class="chk"><input id="flip" type="checkbox" ${c.mouseFlip !== false ? 'checked' : ''}> Souris retournée (boutons vers la caméra)</label>
         <label>Amplitude de la souris <input id="range" type="range" min="0.3" max="2" step="0.1" value="${c.mouseRange}"></label>
       </section>
       <section><h2>Fond</h2>
@@ -216,6 +220,10 @@
     $('copy').onclick = async () => { await window.bongo.copyUrl(); $('copy').textContent = 'Copié !'; };
     el.querySelectorAll('.k').forEach((inp) => { inp.onchange = () => { const keys = [...c.keys]; keys[Number(inp.dataset.i)] = inp.value.toUpperCase() || keys[Number(inp.dataset.i)]; window.bongo.setCfg({ keys }); }; });
     $('big').oninput = (e) => window.bongo.setCfg({ bigFirst: Number(e.target.value) });
+    $('flip').onchange = (e) => window.bongo.setCfg({ mouseFlip: e.target.checked });
+    const names = await window.bongo.keyNames();
+    names.forEach((n, i) => { const el2 = $(`kn-${i}`); if (el2) el2.textContent = n; });
+    el.querySelectorAll('.rec').forEach((b) => { b.onclick = () => { b.textContent = 'Appuie sur une touche…'; window.bongo.recordKey(Number(b.dataset.i)); }; });
     $('range').oninput = (e) => window.bongo.setCfg({ mouseRange: Number(e.target.value) });
     $('bg').onchange = (e) => window.bongo.setCfg({ background: e.target.value === 'color' ? $('bgc').value : e.target.value });
     $('bgc').oninput = (e) => { if ($('bg').value === 'color') window.bongo.setCfg({ background: e.target.value }); };

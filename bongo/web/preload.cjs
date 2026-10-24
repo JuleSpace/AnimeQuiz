@@ -4,5 +4,7 @@ contextBridge.exposeInMainWorld('bongo', {
   setCfg: (patch) => ipcRenderer.invoke('cfg:set', patch),
   openSkin: () => ipcRenderer.invoke('skin:open'),
   reloadSkin: () => ipcRenderer.invoke('skin:reload'),
-  copyUrl: () => ipcRenderer.invoke('url:copy')
+  copyUrl: () => ipcRenderer.invoke('url:copy'),
+  recordKey: (i) => ipcRenderer.invoke('key:record', i),
+  keyNames: () => ipcRenderer.invoke('key:names')
 })
