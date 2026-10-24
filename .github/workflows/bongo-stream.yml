@@ -1,0 +1,26 @@
+# Construit Bongo Stream (overlay de stream façon Bongo Cat) pour Windows.
+# Les .exe sont dans l'onglet Actions (artefact « bongo-stream-windows ») de chaque construction.
+name: Bongo Stream (Windows)
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths: ['bongo/**', '.github/workflows/bongo-stream.yml']
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Installer
+        working-directory: bongo
+        run: npm install --no-audit --no-fund
+      - name: Construire
+        working-directory: bongo
+        run: npx electron-builder --win nsis portable --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bongo-stream-windows
+          path: bongo/release/*.exe

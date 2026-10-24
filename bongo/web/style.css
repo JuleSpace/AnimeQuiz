@@ -1,0 +1,41 @@
+html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, 'Segoe UI', sans-serif; }
+body { background: transparent; }
+body[data-bg='green'] { background: #00ff00; }
+body[data-bg='color'] { background: var(--bg, #1b1e2e); }
+#stage-wrap { position: absolute; left: 0; top: 0; width: 800px; height: 500px; }
+#stage { position: relative; width: 800px; height: 500px; transform: scale(var(--scale, 1)); transform-origin: 0 0; }
+.layer { position: absolute; inset: 0; pointer-events: none; }
+.layer img, .layer svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+#keys { position: absolute; inset: 0; }
+.key { position: absolute; display: grid; place-items: center; box-sizing: border-box; border-radius: 12px; background: #f4f6fb; color: #1b2a4a; font-weight: 900;
+  border: 5px solid #1b2a4a; box-shadow: 0 8px 0 #9aa3c2, 0 8px 0 5px #1b2a4a; transition: transform 0.05s, box-shadow 0.05s; }
+.key.is-big { background: #ffe066; }
+.key.is-down { transform: translateY(6px); box-shadow: 0 2px 0 #9aa3c2, 0 2px 0 5px #1b2a4a; background: #7cc6ff; }
+.key.is-big.is-down { background: #ffb800; }
+#mouse-move { position: absolute; left: 0; top: 0; width: 800px; height: 500px; will-change: transform; }
+#mouse { position: absolute; left: 540px; top: 330px; width: 120px; height: 140px; transition: transform 0.05s; }
+#mouse-move.is-click #mouse { transform: translateY(3px) scale(0.97); }
+#hand-mouse { position: absolute; inset: 0; }
+#hand-mouse.is-skin img { position: absolute; inset: 0; width: 100%; height: 100%; }
+#mouse-move.is-click #hand-mouse.is-skin { transform: translateY(4px); }
+
+/* Fenêtre de réglages : aperçu à gauche, réglages à droite */
+body.is-settings { background: #14162a; color: #eef0ff; }
+body.is-settings[data-bg='green'] #stage-wrap { background: #00ff00; }
+body.is-settings[data-bg='color'] #stage-wrap { background: var(--bg); }
+body.is-settings #stage-wrap { left: 16px; top: 16px; width: 520px; height: 325px; border-radius: 16px; overflow: hidden;
+  background: repeating-conic-gradient(#2a2d48 0 25%, #22253d 0 50%) 0 0 / 24px 24px; }
+body.is-settings #stage { transform: scale(0.65); }
+#settings { position: absolute; left: 552px; right: 0; top: 0; bottom: 0; overflow: auto; padding: 16px 20px; box-sizing: border-box; }
+#settings h1 { margin: 0 0 8px; font-size: 24px; }
+#settings h2 { margin: 0 0 6px; font-size: 15px; color: #ffd23f; }
+#settings section { margin: 0 0 12px; padding: 12px; border-radius: 14px; background: #1f2240; }
+#settings p, #settings li { margin: 4px 0; font-size: 13px; line-height: 1.45; }
+#settings ul { padding-left: 18px; margin: 4px 0; }
+#settings .hint { color: #a9adcf; }
+#settings code { padding: 2px 6px; border-radius: 6px; background: #0e1022; color: #8fd0ff; }
+#settings .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 6px 0; }
+#settings button, #settings select { height: 32px; padding: 0 12px; border: 0; border-radius: 10px; background: #ffd23f; color: #1b1e2e; font-weight: 800; cursor: pointer; }
+#settings select { background: #eef0ff; }
+#settings .k { width: 42px; height: 38px; text-align: center; font-size: 18px; font-weight: 900; border-radius: 10px; border: 0; background: #eef0ff; text-transform: uppercase; }
+#settings label { display: grid; gap: 4px; margin: 8px 0; font-size: 13px; }

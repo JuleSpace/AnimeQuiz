@@ -1,0 +1,31 @@
+{
+  "name": "bongo-stream",
+  "productName": "Bongo Stream",
+  "version": "1.0.0",
+  "description": "Overlay de stream façon Bongo Cat : ton personnage tape Q W E R et bouge la souris en même temps que toi.",
+  "author": "Jules Broto",
+  "main": "main.cjs",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis portable"
+  },
+  "dependencies": {
+    "uiohook-napi": "^1.5.4",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "dev.bullys-lair.bongo",
+    "productName": "Bongo Stream",
+    "files": ["main.cjs", "web/**", "build/icon.png", "package.json"],
+    "asarUnpack": ["node_modules/uiohook-napi/**"],
+    "directories": { "output": "release" },
+    "win": { "icon": "build/icon.png" },
+    "nsis": { "oneClick": true, "perMachine": false, "artifactName": "Bongo-Stream-Setup.exe", "shortcutName": "Bongo Stream" },
+    "portable": { "artifactName": "Bongo-Stream-portable.exe" }
+  }
+}
