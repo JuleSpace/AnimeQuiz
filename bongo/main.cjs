@@ -30,10 +30,14 @@ const writeCfg = (c) => { fs.mkdirSync(userDir(), { recursive: true }); fs.write
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.json': 'application/json', '.glb': 'model/gltf-binary', '.mjs': 'text/javascript' }
 const send = (res, code, body, type = 'text/plain') => { res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }); res.end(body) }
 const server = http.createServer((req, res) => {
+  try { return handle(req, res) } catch (e) { console.error(e); return send(res, 500, 'erreur') }
+})
+function handle(req, res) {
   const url = new URL(req.url, 'http://localhost')
   if (url.pathname === '/config.json') return send(res, 200, JSON.stringify({ ...readCfg(), skin: listSkin() }), TYPES['.json'])
   if (url.pathname.startsWith('/vendor/three/')) {
-    const base = path.dirname(require.resolve('three/package.json'))
+    // dossier de la bibliothèque three, rangé avec l'appli (fonctionne aussi dans l'archive app.asar)
+    const base = path.join(__dirname, 'node_modules', 'three')
     const f = path.join(base, decodeURIComponent(url.pathname.slice('/vendor/three/'.length)))
     if (!f.startsWith(base) || !fs.existsSync(f)) return send(res, 404, 'introuvable')
     return send(res, 200, fs.readFileSync(f), TYPES[path.extname(f)] || 'application/octet-stream')
@@ -47,7 +51,7 @@ const server = http.createServer((req, res) => {
   const f = path.join(WEB, rel)
   if (!f.startsWith(WEB) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) return send(res, 404, 'introuvable')
   return send(res, 200, fs.readFileSync(f), TYPES[path.extname(f)] || 'application/octet-stream')
-})
+}
 const wss = new WebSocketServer({ server, path: '/events' })
 const broadcast = (msg) => { const s = JSON.stringify(msg); wss.clients.forEach((c) => { if (c.readyState === 1) c.send(s) }) }
 wss.on('connection', (ws) => ws.send(JSON.stringify({ t: 'hello', cfg: { ...readCfg(), skin: listSkin() } })))
