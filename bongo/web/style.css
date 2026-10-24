@@ -38,3 +38,4 @@ body.is-settings #stage { transform: scale(0.65); }
 #settings select { background: #eef0ff; }
 #settings .k { width: 42px; height: 38px; text-align: center; font-size: 18px; font-weight: 900; border-radius: 10px; border: 0; background: #eef0ff; text-transform: uppercase; }
 #settings label { display: grid; gap: 4px; margin: 8px 0; font-size: 13px; }
+canvas.layer { width: 800px; height: 500px; }

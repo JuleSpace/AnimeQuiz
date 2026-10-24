@@ -16,7 +16,7 @@
     const big = base * cfg.bigFirst;
     const gap = 10;
     const out = [];
-    let x = 120;
+    let x = state.is3d ? 205 : 120;
     cfg.keys.forEach((k, i) => {
       const w = i === 0 ? big : base;
       out.push({ x, y: 372 - (i === 0 ? (big - base) / 2 : 0), w, h: w * 0.82, label: k });
@@ -53,7 +53,19 @@
     stage.style.setProperty('--tilt', `${cfg.tilt ?? 7}deg`);
     document.body.dataset.bg = cfg.background === 'green' ? 'green' : cfg.background === 'transparent' ? 'transparent' : 'color';
     if (cfg.background && cfg.background.startsWith('#')) document.body.style.setProperty('--bg', cfg.background);
-    setLayer('body', 'body', DEFAULT_BODY);
+    // Modèle 3D (.glb) : il remplace le personnage et ses mains
+    const glb = cfg.skin.find((f) => /\.glb$/i.test(f));
+    state.is3d = Boolean(glb) && !state.glbFailed;
+    $('m3d-under').hidden = !glb;
+    $('m3d-over').hidden = !glb;
+    if (glb && state.glb !== glb) {
+      state.glb = glb;
+      import('./three3d.js')
+        .then((m) => m.start({ url: `/skin/${encodeURIComponent(glb)}`, under: $('m3d-under'), over: $('m3d-over') }))
+        .then((h) => { state.m3d = h; })
+        .catch((e) => { console.error('Modèle 3D illisible', e); state.glbFailed = true; build(); });
+    }
+    setLayer('body', 'body', state.is3d ? '' : DEFAULT_BODY);
     setLayer('desk', 'desk', DEFAULT_DESK);
     // touches
     const box = $('keys');
@@ -97,7 +109,14 @@
     // main gauche sur les touches
     const f = active >= 0 ? (has(`hand-${active + 1}`) || has(`hand-${cfg.keys[active]?.toLowerCase()}`)) : has('hand-up');
     const hk = $('hand-keys');
-    if (f) { if (force || hk.dataset.f !== f) { hk.innerHTML = img(f); hk.dataset.f = f; } } else {
+    if (state.is3d) {
+      hk.innerHTML = '';
+      const r = active >= 0 ? keys[active] : null;
+      const left = r ? { x: r.x + r.w / 2, y: r.y + r.h * 0.3 } : { x: 230, y: 300 };
+      const range = cfg.mouseRange || 1;
+      const right = { x: MOUSE_HOME.x + (state.sx - 0.5) * 120 * range, y: MOUSE_HOME.y - 10 + (state.sy - 0.5) * 50 * range + (state.click ? 4 : 0) };
+      if (state.m3d) state.m3d.aim(left, right);
+    } else if (f) { if (force || hk.dataset.f !== f) { hk.innerHTML = img(f); hk.dataset.f = f; } } else {
       const r = active >= 0 ? keys[active] : null;
       const to = r ? { x: r.x + r.w / 2, y: r.y + r.h * 0.35 } : { x: 218, y: 286 };
       hk.dataset.f = '';
@@ -111,7 +130,8 @@
     const mm = $('mouse-move');
     mm.style.transform = `translate(${dx}px, ${dy}px)`;
     mm.classList.toggle('is-click', state.click);
-    if (!has('mouse-hand')) {
+    if (state.is3d) $('arm-r').innerHTML = '';
+    else if (!has('mouse-hand')) {
       const to = { x: MOUSE_HOME.x + dx, y: MOUSE_HOME.y - 6 + dy + (state.click ? 4 : 0) };
       $('arm-r').innerHTML = svg(W, H, arm(SHOULDER_R, to, false));
     } else $('arm-r').innerHTML = '';

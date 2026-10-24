@@ -27,11 +27,17 @@ const readCfg = () => { try { return { ...DEFAULT_CFG, ...JSON.parse(fs.readFile
 const writeCfg = (c) => { fs.mkdirSync(userDir(), { recursive: true }); fs.writeFileSync(cfgFile(), JSON.stringify(c, null, 2)) }
 
 /* ——— Serveur local : la page, la config, les images perso, et le flux des touches (WebSocket) ——— */
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.json': 'application/json' }
+const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.json': 'application/json', '.glb': 'model/gltf-binary', '.mjs': 'text/javascript' }
 const send = (res, code, body, type = 'text/plain') => { res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' }); res.end(body) }
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost')
   if (url.pathname === '/config.json') return send(res, 200, JSON.stringify({ ...readCfg(), skin: listSkin() }), TYPES['.json'])
+  if (url.pathname.startsWith('/vendor/three/')) {
+    const base = path.dirname(require.resolve('three/package.json'))
+    const f = path.join(base, decodeURIComponent(url.pathname.slice('/vendor/three/'.length)))
+    if (!f.startsWith(base) || !fs.existsSync(f)) return send(res, 404, 'introuvable')
+    return send(res, 200, fs.readFileSync(f), TYPES[path.extname(f)] || 'application/octet-stream')
+  }
   if (url.pathname.startsWith('/skin/')) {
     const f = path.join(skinDir(), path.basename(decodeURIComponent(url.pathname.slice(6))))
     if (!f.startsWith(skinDir()) || !fs.existsSync(f)) return send(res, 404, 'introuvable')
@@ -46,9 +52,9 @@ const wss = new WebSocketServer({ server, path: '/events' })
 const broadcast = (msg) => { const s = JSON.stringify(msg); wss.clients.forEach((c) => { if (c.readyState === 1) c.send(s) }) }
 wss.on('connection', (ws) => ws.send(JSON.stringify({ t: 'hello', cfg: { ...readCfg(), skin: listSkin() } })))
 
-/** Images perso présentes dans le dossier skin (body.png, hand-up.png, hand-1.png… mouse-hand.png, desk.png). */
+/** Images perso du dossier skin (body.png, hand-up.png, hand-1.png… mouse-hand.png, desk.png) ou un modèle 3D .glb. */
 function listSkin() {
-  try { return fs.readdirSync(skinDir()).filter((f) => /\.(png|gif|webp|svg)$/i.test(f)) } catch { return [] }
+  try { return fs.readdirSync(skinDir()).filter((f) => /\.(png|gif|webp|svg|glb)$/i.test(f)) } catch { return [] }
 }
 
 /* ——— Écoute globale du clavier et de la souris ——— */

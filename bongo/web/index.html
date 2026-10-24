@@ -4,15 +4,18 @@
 <meta charset="utf-8">
 <title>Bongo Stream</title>
 <link rel="stylesheet" href="style.css">
+<script type="importmap">{ "imports": { "three": "/vendor/three/build/three.module.js", "three/addons/": "/vendor/three/examples/jsm/" } }</script>
 </head>
 <body>
 <div id="stage-wrap">
   <div id="stage"><div id="tilt">
     <!-- Personnage par défaut (original). Remplacé couche par couche par les images du dossier « skin ». -->
     <div class="layer" id="body"></div>
+    <canvas class="layer" id="m3d-under" width="800" height="500" hidden></canvas>
     <div class="layer" id="desk"></div>
     <div id="keys"></div>
     <div class="layer" id="mouse-zone"><div id="mouse-move"><div id="mouse"></div><div id="hand-mouse"></div></div></div>
+    <canvas class="layer" id="m3d-over" width="800" height="500" hidden></canvas>
     <div class="layer" id="hand-keys"></div>
   </div></div>
 </div>

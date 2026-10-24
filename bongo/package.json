@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "uiohook-napi": "^1.5.4",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "three": "^0.170.0"
   },
   "devDependencies": {
     "electron": "^31.7.7",
@@ -21,11 +22,29 @@
   "build": {
     "appId": "dev.bullys-lair.bongo",
     "productName": "Bongo Stream",
-    "files": ["main.cjs", "web/**", "build/icon.png", "package.json"],
-    "asarUnpack": ["node_modules/uiohook-napi/**"],
-    "directories": { "output": "release" },
-    "win": { "icon": "build/icon.png" },
-    "nsis": { "oneClick": true, "perMachine": false, "artifactName": "Bongo-Stream-Setup.exe", "shortcutName": "Bongo Stream" },
-    "portable": { "artifactName": "Bongo-Stream-portable.exe" }
+    "files": [
+      "main.cjs",
+      "web/**",
+      "build/icon.png",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/uiohook-napi/**"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "Bongo-Stream-Setup.exe",
+      "shortcutName": "Bongo Stream"
+    },
+    "portable": {
+      "artifactName": "Bongo-Stream-portable.exe"
+    }
   }
 }
