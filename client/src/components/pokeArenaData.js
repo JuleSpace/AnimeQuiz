@@ -1845,7 +1845,16 @@ export const MEGA_STONES = {
   398: [{ name: 'Méga-Étouraptor', types: ['Combat', 'Vol'], dex: 10308 }],
   604: [{ name: 'Méga-Ohmassacre', types: ['Électrik'], dex: 10290 }],
   15: [{ name: 'Méga-Dardargnan', types: ['Insecte', 'Poison'], dex: 10090 }],
-  71: [{ name: 'Méga-Empiflor', types: ['Plante', 'Poison'], dex: 10279 }]
+  71: [{ name: 'Méga-Empiflor', types: ['Plante', 'Poison'], dex: 10279 }],
+  // Méga-Évolutions de Légendes Z-A et anciennes Méga qui manquaient (au Bracelet Méga)
+  150: [{ name: 'Méga-Mewtwo X', types: ['Psy', 'Combat'], dex: 10043 }, { name: 'Méga-Mewtwo Y', types: ['Psy'], dex: 10044 }],
+  214: [{ name: 'Méga-Scarhino', types: ['Insecte', 'Combat'], dex: 10047 }],
+  227: [{ name: 'Méga-Airmure', types: ['Acier', 'Vol'], dex: 10284 }],
+  531: [{ name: 'Méga-Nanméouïe', types: ['Normal', 'Fée'], dex: 10069 }],
+  560: [{ name: 'Méga-Baggaïd', types: ['Ténèbres', 'Combat'], dex: 10289 }],
+  670: [{ name: 'Méga-Floette', types: ['Fée'], dex: 10296 }],
+  154: [{ name: 'Méga-Méganium', types: ['Plante', 'Fée'], dex: 10282 }],
+  718: [{ name: 'Méga-Zygarde', types: ['Dragon', 'Sol'], dex: 10301 }]
 };
 
 /**
@@ -3485,15 +3494,20 @@ export const enforceBoardCap = (board, bench, cap) => {
  * Retourne { unit, note, stripped } ou null si impossible.
  */
 export const equipItemOnUnit = (unit, itemId) => {
-  if (!unit || !itemId) return null;
+  if (!unit || !itemId) return { error: 'Choisis un Pokémon.' };
   const def = ITEM_MAP[itemId];
-  if (!def || def.consumable) return null;
+  if (!def) return { error: 'Objet inconnu.' };
+  if (def.consumable) return { error: `${def.name} s’utilise directement, pas comme objet tenu.` };
+  const full = { error: `Ses ${ITEM_SLOTS} emplacements d’objets sont déjà pris.` };
+  const starMega = (LINE_MAP[unit.lineId]?.stages || []).some((st) => MEGA_BY_DEX[st.dex]);
+  const noMega = { error: starMega ? `${unit.name} prend déjà sa forme Méga tout seul en 3★ : le Bracelet Méga ne lui sert pas.` : `${unit.name} n’a pas de Méga-Évolution.` };
   const items = [...(unit.items || [])];
 
   const rebuild = (nextItems) => unitFromLine(unit.lineId, unit.star, unit.uid, nextItems, unit.formId) || { ...unit, items: nextItems };
   if (def.megaRing) {
-    if (items.includes('megaring') || !canMegaEvolve(unit.lineId, unit.formId)) return null;
-    if (items.length >= ITEM_SLOTS) return null;
+    if (items.includes('megaring')) return { error: `${unit.name} porte déjà un Bracelet Méga.` };
+    if (!canMegaEvolve(unit.lineId, unit.formId)) return noMega;
+    if (items.length >= ITEM_SLOTS) return full;
     items.push(itemId);
     return { unit: rebuild(items), note: unit.star >= 3 ? `${unit.name} Méga-évolue !` : 'Bracelet Méga équipé : Méga-Évolution en 3★.' };
   }
@@ -3503,8 +3517,9 @@ export const equipItemOnUnit = (unit, itemId) => {
     if (compIdx >= 0) {
       const other = items[compIdx];
       const result = craftResult(other, itemId);
-      if (!result) return null;
-      if (result === 'megaring' && !canMegaEvolve(unit.lineId, unit.formId)) return null;
+      if (!result) return { error: `${ITEM_MAP[other].name} et ${def.name} ne se combinent pas.` };
+      if (result === 'megaring' && !canMegaEvolve(unit.lineId, unit.formId)) return noMega;
+      if (result === 'megaring' && items.includes('megaring')) return { error: `${unit.name} porte déjà un Bracelet Méga.` };
       items.splice(compIdx, 1);
       items.push(result);
       return {
@@ -3513,13 +3528,13 @@ export const equipItemOnUnit = (unit, itemId) => {
         crafted: result
       };
     }
-    if (items.length >= ITEM_SLOTS) return null;
+    if (items.length >= ITEM_SLOTS) return full;
     items.push(itemId);
     return { unit: { ...unit, items }, note: `${def.name} équipé` };
   }
 
-  if (def.plate && unitTraits(unit).includes(def.addTrait)) return null;
-  if (items.length >= ITEM_SLOTS) return null;
+  if (def.plate && unitTraits(unit).includes(def.addTrait)) return { error: `${unit.name} a déjà le type ${def.addTrait}.` };
+  if (items.length >= ITEM_SLOTS) return full;
   items.push(itemId);
   return { unit: { ...unit, items }, note: `${def.name} équipé` };
 };

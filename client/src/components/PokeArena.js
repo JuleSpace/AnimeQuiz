@@ -862,8 +862,8 @@ const PokeArena = ({ onClose, musicButton, onFloatMusic }) => {
       return;
     }
     const res = equipItemOnUnit(target, itemId);
-    if (!res) {
-      say(item.plate ? 'Ce Pokémon a déjà ce type, ou ses 3 emplacements sont pris.' : `Maximum ${ITEM_SLOTS} objets par Pokémon.`);
+    if (!res || res.error) {
+      say(res?.error || `Maximum ${ITEM_SLOTS} objets par Pokémon.`);
       return;
     }
     mapUnit(uid, () => res.unit);
