@@ -1,6 +1,6 @@
 /**
  * Données du mode Swarm : générations, partenaires, attaques, objets passifs, ennemis, vagues et boss.
- * Chaque génération (1 à 4) a ses starters, ses Pokémon sauvages et ses 3 boss.
+ * Chaque génération (1 à 9) a ses starters, ses Pokémon sauvages et ses 3 boss.
  */
 
 export const RUN_SECONDS = 10 * 60;
@@ -12,7 +12,10 @@ export const GENS = [
   { id: 3, name: 'Hoenn', label: '3e génération' },
   { id: 4, name: 'Sinnoh', label: '4e génération' },
   { id: 5, name: 'Unys', label: '5e génération' },
-  { id: 6, name: 'Kalos', label: '6e génération' }
+  { id: 6, name: 'Kalos', label: '6e génération' },
+  { id: 7, name: 'Alola', label: '7e génération' },
+  { id: 8, name: 'Galar', label: '8e génération' },
+  { id: 9, name: 'Paldea', label: '9e génération' }
 ];
 
 /**
@@ -153,6 +156,51 @@ export const PARTNERS = [
     id: 'froakie', gen: 6, name: 'Grenousse', dex: 656, type: 'Eau', color: '#6390f0', hp: 105, speed: 3.15, weapon: 'watershuriken', learn: ['Eau', 'Ténèbres'],
     blurb: 'Le plus vif de tous : ses Sheauriken ricochent d’ennemi en ennemi sans jamais rater.',
     evolutions: [{ level: 8, name: 'Croâporal', dex: 657, hp: 25 }, { level: 16, name: 'Amphinobi', dex: 658, hp: 45 }]
+  },
+  {
+    id: 'rowlet', gen: 7, name: 'Brindibou', dex: 722, type: 'Plante', color: '#7ac74c', hp: 120, speed: 2.8, weapon: 'spiritshackle', learn: ['Plante', 'Spectre'],
+    blurb: 'Archer silencieux d’Alola : ses flèches-plumes Tisse Ombre transpercent toute une ligne d’ennemis.',
+    evolutions: [{ level: 8, name: 'Efflèche', dex: 723, hp: 30 }, { level: 16, name: 'Archéduc', dex: 724, hp: 50 }]
+  },
+  {
+    id: 'litten', gen: 7, name: 'Flamiaou', dex: 725, type: 'Feu', color: '#ee8130', hp: 140, speed: 2.5, weapon: 'darkestlariat', learn: ['Feu', 'Ténèbres'],
+    blurb: 'Catcheur des rings d’Alola : Dark Lariat le fait tournoyer et balaie toute la horde autour de lui.',
+    evolutions: [{ level: 8, name: 'Matoufeu', dex: 726, hp: 35 }, { level: 16, name: 'Félinferno', dex: 727, hp: 60 }]
+  },
+  {
+    id: 'popplio', gen: 7, name: 'Otaquin', dex: 728, type: 'Eau', color: '#6390f0', hp: 110, speed: 2.8, weapon: 'sparklingaria', learn: ['Eau', 'Fée'],
+    blurb: 'Une star de la scène : Aria de l’Écume enferme les ennemis dans des bulles qui les rendent vulnérables.',
+    evolutions: [{ level: 8, name: 'Otarlette', dex: 729, hp: 25 }, { level: 16, name: 'Oratoria', dex: 730, hp: 50 }]
+  },
+  {
+    id: 'grookey', gen: 8, name: 'Ouistempo', dex: 810, type: 'Plante', color: '#7ac74c', hp: 140, speed: 2.5, weapon: 'drumbeating', learn: ['Plante', 'Normal'],
+    blurb: 'Batteur de Galar : chaque coup de Tambour Battant fait exploser des racines sous les ennemis.',
+    evolutions: [{ level: 8, name: 'Badabouin', dex: 811, hp: 35 }, { level: 16, name: 'Gorythmic', dex: 812, hp: 60 }]
+  },
+  {
+    id: 'scorbunny', gen: 8, name: 'Flambino', dex: 813, type: 'Feu', color: '#ee8130', hp: 100, speed: 3.1, weapon: 'pyroball', learn: ['Feu', 'Combat'],
+    blurb: 'Buteur de Galar : il shoote des Ballons Brûlants qui explosent sur l’ennemi le plus proche.',
+    evolutions: [{ level: 8, name: 'Lapyro', dex: 814, hp: 25 }, { level: 16, name: 'Pyrobut', dex: 815, hp: 45 }]
+  },
+  {
+    id: 'sobble', gen: 8, name: 'Larméléon', dex: 816, type: 'Eau', color: '#6390f0', hp: 95, speed: 3.0, weapon: 'snipeshot', learn: ['Eau', 'Glace'],
+    blurb: 'Agent secret : Tir de Précision transperce tout en ligne droite, et de plus en plus de directions.',
+    evolutions: [{ level: 8, name: 'Arrozard', dex: 817, hp: 25 }, { level: 16, name: 'Lézargus', dex: 818, hp: 45 }]
+  },
+  {
+    id: 'sprigatito', gen: 9, name: 'Poussacha', dex: 906, type: 'Plante', color: '#7ac74c', hp: 105, speed: 3.1, weapon: 'flowertrick', learn: ['Plante', 'Ténèbres'],
+    blurb: 'Magicienne de Paldea : Magie Florale fait éclore des bouquets piégés sur les ennemis proches, toujours en critique.',
+    evolutions: [{ level: 8, name: 'Matourgeon', dex: 907, hp: 25 }, { level: 16, name: 'Miascarade', dex: 908, hp: 45 }]
+  },
+  {
+    id: 'fuecoco', gen: 9, name: 'Chochodile', dex: 909, type: 'Feu', color: '#ee8130', hp: 150, speed: 2.3, weapon: 'torchsong', learn: ['Feu', 'Spectre'],
+    blurb: 'Un gourmand très résistant : Chant Flamboyant crache un grand cône de flammes devant lui.',
+    evolutions: [{ level: 8, name: 'Crocogril', dex: 910, hp: 35 }, { level: 16, name: 'Flâmigator', dex: 911, hp: 60 }]
+  },
+  {
+    id: 'quaxly', gen: 9, name: 'Coiffeton', dex: 912, type: 'Eau', color: '#6390f0', hp: 115, speed: 2.8, weapon: 'aquastep', learn: ['Eau', 'Combat'],
+    blurb: 'Danseur élégant : Danse Aquatique fait jaillir une vague qui repousse toute la horde.',
+    evolutions: [{ level: 8, name: 'Canarbello', dex: 913, hp: 30 }, { level: 16, name: 'Palmaval', dex: 914, hp: 50 }]
   }
 ];
 
@@ -543,6 +591,90 @@ export const WEAPONS = {
     desc: (lv) => `Un shuriken d’eau qui ricoche sur ${lv + 1} ennemis à la suite. Il ne rate jamais.`,
     at: (lv) => ({ cd: 1.2 - lv * 0.07, dmg: 11 + lv * 5, chains: lv + 1, range: 320 })
   },
+  /* — Alola — */
+  spiritshackle: {
+    gen: 7,
+    base: 'hydropump',
+    name: 'Tisse Ombre',
+    type: 'Spectre',
+    color: '#8a6bd6',
+    desc: () => 'Une flèche-plume spectrale qui transperce toute une ligne d’ennemis.',
+    at: (lv) => ({ cd: 1.5 - lv * 0.1, dmg: 18 + lv * 7, len: 360 + lv * 30, w: 14 + lv * 2 })
+  },
+  darkestlariat: {
+    gen: 7,
+    base: 'quake',
+    name: 'Dark Lariat',
+    type: 'Ténèbres',
+    color: '#c44a4a',
+    desc: () => 'Tournoie en balayant tous les ennemis autour de toi, de plus en plus souvent.',
+    at: (lv) => ({ cd: 2.2 - lv * 0.18, dmg: 18 + lv * 7, radius: 90 + lv * 14 })
+  },
+  sparklingaria: {
+    gen: 7,
+    base: 'bubble',
+    name: 'Aria de l’Écume',
+    type: 'Eau',
+    color: '#7fd0ff',
+    desc: (lv) => `${2 + Math.ceil(lv / 2)} bulles chantantes qui emprisonnent les ennemis (${(1.2 + lv * 0.15).toFixed(1)} s) : ils y prennent +25 % de dégâts.`,
+    at: (lv) => ({ cd: 1.35 - lv * 0.08, dmg: 10 + lv * 4, count: 2 + Math.ceil(lv / 2), trap: 1.2 + lv * 0.15, speed: 2.8 })
+  },
+  /* — Galar — */
+  drumbeating: {
+    gen: 8,
+    base: 'seedbomb',
+    name: 'Tambour Battant',
+    type: 'Plante',
+    color: '#5fae3a',
+    desc: (lv) => `${1 + Math.ceil(lv / 2)} roulements de tambour : des racines jaillissent sous les ennemis et explosent.`,
+    at: (lv) => ({ cd: 1.7 - lv * 0.12, dmg: 20 + lv * 7, count: 1 + Math.ceil(lv / 2), blast: 44 + lv * 5 })
+  },
+  pyroball: {
+    gen: 8,
+    base: 'doublekick',
+    name: 'Ballon Brûlant',
+    type: 'Feu',
+    color: '#ff7a2a',
+    desc: () => 'Un ballon enflammé shooté sur l’ennemi le plus proche, qui explose à l’impact.',
+    at: (lv) => ({ cd: 0.85 - lv * 0.06, dmg: 15 + lv * 6, blast: 32 + lv * 5, range: 110 + lv * 8 })
+  },
+  snipeshot: {
+    gen: 8,
+    base: 'watergun',
+    name: 'Tir de Précision',
+    type: 'Eau',
+    color: '#4ab0ff',
+    desc: (lv) => `Un tir qui transperce tout vers l’ennemi le plus proche${lv >= 3 ? ', et aussi dans l’autre sens' : ''}${lv >= 5 ? ' et sur les côtés' : ''}.`,
+    at: (lv) => ({ cd: 0.7 - lv * 0.04, dmg: 11 + lv * 4, back: lv >= 3, side: lv >= 5, speed: 11, size: 6 + lv })
+  },
+  /* — Paldea — */
+  flowertrick: {
+    gen: 9,
+    base: 'nightslash',
+    name: 'Magie Florale',
+    type: 'Plante',
+    color: '#ff8ad0',
+    desc: (lv) => `Des bouquets piégés explosent sur ${lv + 1} ennemis proches, avec +25 % de chances de coup critique.`,
+    at: (lv) => ({ cd: 1.2 - lv * 0.07, dmg: 14 + lv * 6, count: lv + 1, range: 160 + lv * 6 })
+  },
+  torchsong: {
+    gen: 9,
+    base: 'flamethrower',
+    name: 'Chant Flamboyant',
+    type: 'Feu',
+    color: '#ff5a2a',
+    desc: () => 'Un chant de flammes en grand cône devant toi, qui touche tout sur sa route.',
+    at: (lv) => ({ cd: 1.1 - lv * 0.07, dmg: 13 + lv * 5, range: 140 + lv * 14, arc: 0.55, knock: 2.5 })
+  },
+  aquastep: {
+    gen: 9,
+    base: 'surf',
+    name: 'Danse Aquatique',
+    type: 'Eau',
+    color: '#5fc8ff',
+    desc: () => 'Un pas de danse fait jaillir une vague autour de toi, qui repousse loin toute la horde.',
+    at: (lv) => ({ cd: 2.8 - lv * 0.2, dmg: 15 + lv * 6, radius: 120 + lv * 16, knock: 12 })
+  },
   // Attaques ajoutées pour la Ligue du Poké Rush (Insecte, Osselet)
   pinmissile: {
     gen: 1,
@@ -784,7 +916,112 @@ export const FOES = {
   xerneas: { name: 'Xerneas', dex: 716, ai: 'mewtwo', scale: 2, color: '#5fa8ff', hp: 8400, speed: 1.25, dmg: 31, size: 120, xp: 0, boss: 'final', shoots: true },
   yveltal: { name: 'Yveltal', dex: 717, ai: 'mewtwo', flying: true, scale: 2, color: '#c43a4a', hp: 8400, speed: 1.3, dmg: 32, size: 120, xp: 0, boss: 'final', shoots: true },
   zygarde: { name: 'Zygarde', dex: 718, ai: 'mewtwo', scale: 2, color: '#3aa05a', hp: 8600, speed: 1.2, dmg: 32, size: 120, xp: 0, boss: 'final', shoots: true },
-  diancie: { name: 'Diancie', dex: 719, ai: 'mewtwo', flying: true, scale: 2.6, color: '#ff9ad8', hp: 8000, speed: 1.3, dmg: 30, size: 108, xp: 0, boss: 'final', shoots: true }
+  diancie: { name: 'Diancie', dex: 719, ai: 'mewtwo', flying: true, scale: 2.6, color: '#ff9ad8', hp: 8000, speed: 1.3, dmg: 30, size: 108, xp: 0, boss: 'final', shoots: true },
+  /* — Alola — */
+  yungoos: { name: 'Manglouton', dex: 734, ai: 'walk', color: '#a8724a', hp: 13, speed: 1.3, dmg: 4, size: 30, xp: 1 },
+  grubbin: { name: 'Larvibule', dex: 736, ai: 'web', color: '#a6b91a', hp: 14, speed: 0.95, dmg: 4, size: 28, xp: 1 },
+  cutiefly: { name: 'Bombydou', dex: 742, ai: 'fly', flying: true, color: '#f4d23c', hp: 9, speed: 2.0, dmg: 4, size: 26, xp: 1 },
+  rockruff: { name: 'Rocabot', dex: 744, ai: 'charge', color: '#b6a136', hp: 15, speed: 1.5, dmg: 5, size: 30, xp: 1 },
+  mareanie: { name: 'Vorastérie', dex: 747, ai: 'spit', color: '#a33ea1', hp: 14, speed: 1.0, dmg: 4, size: 28, xp: 1 },
+  fomantis: { name: 'Mimantis', dex: 753, ai: 'walk', color: '#7ac74c', hp: 13, speed: 1.2, dmg: 4, size: 28, xp: 1 },
+  morelull: { name: 'Spododo', dex: 755, ai: 'zigzag', color: '#b48cff', hp: 12, speed: 1.4, dmg: 4, size: 28, xp: 1 },
+  charjabug: { name: 'Chrysapile', dex: 737, ai: 'shock', heavy: true, color: '#5fae3a', hp: 36, speed: 0.9, dmg: 7, size: 32, xp: 2 },
+  crabrawler: { name: 'Crabagarre', dex: 739, ai: 'charge', color: '#c22e28', hp: 34, speed: 1.3, dmg: 9, size: 32, xp: 2 },
+  oricorio: { name: 'Plumeline', dex: 741, ai: 'fly', flying: true, color: '#e8604a', hp: 24, speed: 1.9, dmg: 7, size: 30, xp: 2 },
+  mudbray: { name: 'Tiboudet', dex: 749, ai: 'charge', heavy: true, color: '#a8724a', hp: 40, speed: 1.2, dmg: 8, size: 34, xp: 2 },
+  dewpider: { name: 'Araqua', dex: 751, ai: 'web', color: '#6390f0', hp: 26, speed: 1.1, dmg: 7, size: 30, xp: 2 },
+  salandit: { name: 'Tritox', dex: 757, ai: 'spit', color: '#a33ea1', hp: 26, speed: 1.6, dmg: 8, size: 30, xp: 2 },
+  stufful: { name: 'Nounourson', dex: 759, ai: 'charge', color: '#ff9ad8', hp: 38, speed: 1.2, dmg: 9, size: 32, xp: 2 },
+  bounsweet: { name: 'Croquine', dex: 761, ai: 'zigzag', color: '#a6d65a', hp: 24, speed: 1.6, dmg: 7, size: 28, xp: 2 },
+  vikavolt: { name: 'Lucanon', dex: 738, ai: 'shock', flying: true, color: '#ffd23a', hp: 90, speed: 1.5, dmg: 12, size: 40, xp: 3 },
+  lycanroc: { name: 'Lougaroc', dex: 745, ai: 'charge', color: '#b6a136', hp: 95, speed: 1.8, dmg: 13, size: 40, xp: 3 },
+  toxapex: { name: 'Prédastérie', dex: 748, ai: 'heal', heavy: true, color: '#a33ea1', hp: 140, speed: 0.8, dmg: 12, size: 40, xp: 4 },
+  mudsdale: { name: 'Bourrinos', dex: 750, ai: 'charge', heavy: true, color: '#8a5a3a', hp: 150, speed: 1.2, dmg: 16, size: 46, xp: 4 },
+  araquanid: { name: 'Tarenbulle', dex: 752, ai: 'web', heavy: true, color: '#6390f0', hp: 120, speed: 1.0, dmg: 13, size: 42, xp: 4 },
+  lurantis: { name: 'Floramantis', dex: 754, ai: 'zigzag', color: '#ff7ab0', hp: 95, speed: 1.5, dmg: 13, size: 40, xp: 3 },
+  salazzle: { name: 'Malamandre', dex: 758, ai: 'spit', color: '#c44a6a', hp: 90, speed: 1.6, dmg: 13, size: 40, xp: 3 },
+  bewear: { name: 'Chelours', dex: 760, ai: 'charge', heavy: true, color: '#ff9ad8', hp: 150, speed: 1.2, dmg: 17, size: 46, xp: 4 },
+  golisopod: { name: 'Sarmuraï', dex: 768, ai: 'charge', heavy: true, color: '#5a6fb8', hp: 140, speed: 1.3, dmg: 15, size: 44, xp: 4 },
+  mimikyu: { name: 'Mimiqui', dex: 778, ai: 'ghost', flying: true, blink: true, color: '#e8d36a', hp: 100, speed: 1.3, dmg: 13, size: 38, xp: 4 },
+  kommoo: { name: 'Ékaïser', dex: 784, ai: 'dashboss', scale: 2.4, color: '#c9a36b', hp: 1100, speed: 1.25, dmg: 24, size: 100, xp: 30, boss: 'mini' },
+  turtonator: { name: 'Boumata', dex: 776, ai: 'snorlax', scale: 2.5, color: '#e8604a', hp: 1150, speed: 0.85, dmg: 25, size: 100, xp: 30, boss: 'mini' },
+  drampa: { name: 'Draïeul', dex: 780, ai: 'onix', flying: true, scale: 2.3, color: '#a6e0a6', hp: 1100, speed: 1.0, dmg: 22, size: 100, xp: 25, boss: 'mini' },
+  tapukoko: { name: 'Tokorico', dex: 785, ai: 'dashboss', flying: true, scale: 2.4, color: '#ffd23a', hp: 1050, speed: 1.3, dmg: 23, size: 96, xp: 25, boss: 'mini' },
+  solgaleo: { name: 'Solgaleo', dex: 791, ai: 'mewtwo', scale: 2, color: '#ff9a3c', hp: 8400, speed: 1.25, dmg: 31, size: 120, xp: 0, boss: 'final', shoots: true },
+  lunala: { name: 'Lunala', dex: 792, ai: 'mewtwo', flying: true, scale: 2, color: '#5a3ad6', hp: 8400, speed: 1.3, dmg: 31, size: 120, xp: 0, boss: 'final', shoots: true },
+  necrozma: { name: 'Necrozma', dex: 800, ai: 'mewtwo', flying: true, scale: 2, color: '#3a3a5a', hp: 8600, speed: 1.2, dmg: 32, size: 120, xp: 0, boss: 'final', shoots: true },
+  marshadow: { name: 'Marshadow', dex: 802, ai: 'mewtwo', scale: 2.6, color: '#5a5a5a', hp: 8000, speed: 1.3, dmg: 30, size: 108, xp: 0, boss: 'final', shoots: true },
+  /* — Galar — */
+  skwovet: { name: 'Rongourmand', dex: 819, ai: 'walk', color: '#c9a36b', hp: 14, speed: 1.3, dmg: 4, size: 28, xp: 1 },
+  rookidee: { name: 'Minisange', dex: 821, ai: 'fly', flying: true, color: '#5fa8d6', hp: 9, speed: 2.0, dmg: 4, size: 26, xp: 1 },
+  blipbug: { name: 'Larvadar', dex: 824, ai: 'web', color: '#a6b91a', hp: 13, speed: 0.95, dmg: 4, size: 28, xp: 1 },
+  nickit: { name: 'Goupilou', dex: 827, ai: 'zigzag', color: '#c97a3a', hp: 12, speed: 1.6, dmg: 4, size: 28, xp: 1 },
+  wooloo: { name: 'Moumouton', dex: 831, ai: 'charge', color: '#e8e0d0', hp: 16, speed: 1.4, dmg: 5, size: 30, xp: 1 },
+  chewtle: { name: 'Khélocrok', dex: 833, ai: 'charge', color: '#6390f0', hp: 15, speed: 1.3, dmg: 5, size: 30, xp: 1 },
+  yamper: { name: 'Voltoutou', dex: 835, ai: 'shock', color: '#ffd23a', hp: 12, speed: 1.6, dmg: 4, size: 28, xp: 1 },
+  corvisquire: { name: 'Bleuseille', dex: 822, ai: 'swoop', flying: true, color: '#5a6fb8', hp: 26, speed: 1.9, dmg: 7, size: 30, xp: 2 },
+  thievul: { name: 'Roublenard', dex: 828, ai: 'zigzag', color: '#c97a3a', hp: 26, speed: 1.7, dmg: 8, size: 32, xp: 2 },
+  silicobra: { name: 'Dunaja', dex: 843, ai: 'walk', heavy: true, color: '#c9a36b', hp: 38, speed: 1.0, dmg: 8, size: 32, xp: 2 },
+  cramorant: { name: 'Nigosier', dex: 845, ai: 'fly', flying: true, color: '#5fa8d6', hp: 30, speed: 1.7, dmg: 8, size: 32, xp: 2 },
+  toxel: { name: 'Toxizap', dex: 848, ai: 'shock', color: '#a33ea1', hp: 22, speed: 1.4, dmg: 7, size: 28, xp: 2 },
+  sizzlipede: { name: 'Grillepattes', dex: 850, ai: 'charge', color: '#e8604a', hp: 30, speed: 1.5, dmg: 8, size: 30, xp: 2 },
+  hattrem: { name: 'Chapotus', dex: 857, ai: 'heal', color: '#ff9ad8', hp: 28, speed: 1.1, dmg: 7, size: 30, xp: 2 },
+  morgrem: { name: 'Fourbelin', dex: 860, ai: 'zigzag', blink: true, color: '#3a3a5a', hp: 28, speed: 1.5, dmg: 8, size: 30, xp: 2 },
+  greedent: { name: 'Rongrigou', dex: 820, ai: 'charge', heavy: true, color: '#c9a36b', hp: 130, speed: 1.2, dmg: 14, size: 42, xp: 4 },
+  corviknight: { name: 'Corvaillus', dex: 823, ai: 'swoop', flying: true, heavy: true, color: '#3a4a7a', hp: 120, speed: 1.8, dmg: 15, size: 44, xp: 4 },
+  drednaw: { name: 'Torgamord', dex: 834, ai: 'charge', heavy: true, color: '#6390f0', hp: 140, speed: 1.2, dmg: 15, size: 44, xp: 4 },
+  boltund: { name: 'Fulgudog', dex: 836, ai: 'charge', color: '#ffd23a', hp: 85, speed: 2.0, dmg: 12, size: 40, xp: 3 },
+  flapple: { name: 'Pomdrapi', dex: 841, ai: 'swoop', flying: true, color: '#e8604a', hp: 85, speed: 1.9, dmg: 12, size: 38, xp: 3 },
+  sandaconda: { name: 'Dunaconda', dex: 844, ai: 'walk', heavy: true, color: '#c9a36b', hp: 150, speed: 1.0, dmg: 15, size: 46, xp: 4 },
+  barraskewda: { name: 'Hastacuda', dex: 847, ai: 'charge', color: '#a8724a', hp: 85, speed: 2.1, dmg: 13, size: 40, xp: 3 },
+  toxtricity: { name: 'Salarsen', dex: 849, ai: 'shock', color: '#8a5ad6', hp: 95, speed: 1.5, dmg: 13, size: 40, xp: 3 },
+  centiskorch: { name: 'Scolocendre', dex: 851, ai: 'charge', heavy: true, color: '#ff6a1f', hp: 130, speed: 1.4, dmg: 15, size: 44, xp: 4 },
+  hatterene: { name: 'Sorcilence', dex: 858, ai: 'spit', color: '#ff9ad8', hp: 95, speed: 1.2, dmg: 13, size: 40, xp: 3 },
+  grimmsnarl: { name: 'Angoliath', dex: 861, ai: 'charge', heavy: true, color: '#3a3a5a', hp: 140, speed: 1.3, dmg: 16, size: 44, xp: 4 },
+  dragapult: { name: 'Lanssorien', dex: 887, ai: 'dashboss', flying: true, scale: 2.3, color: '#3aa0a0', hp: 1050, speed: 1.35, dmg: 23, size: 96, xp: 25, boss: 'mini' },
+  duraludon: { name: 'Duralugon', dex: 884, ai: 'snorlax', scale: 2.4, color: '#9aa0aa', hp: 1150, speed: 0.9, dmg: 25, size: 100, xp: 30, boss: 'mini' },
+  copperajah: { name: 'Pachyradjah', dex: 879, ai: 'snorlax', scale: 2.2, color: '#3aa05a', hp: 1150, speed: 0.85, dmg: 25, size: 100, xp: 30, boss: 'mini' },
+  frosmoth: { name: 'Beldeneige', dex: 873, ai: 'onix', flying: true, scale: 2.4, color: '#9be8ff', hp: 1050, speed: 1.1, dmg: 21, size: 96, xp: 25, boss: 'mini' },
+  zacian: { name: 'Zacian', dex: 888, ai: 'mewtwo', scale: 2, color: '#5fa8ff', hp: 8400, speed: 1.3, dmg: 31, size: 120, xp: 0, boss: 'final', shoots: true },
+  zamazenta: { name: 'Zamazenta', dex: 889, ai: 'mewtwo', scale: 2, color: '#c43a4a', hp: 8400, speed: 1.25, dmg: 31, size: 120, xp: 0, boss: 'final', shoots: true },
+  eternatus: { name: 'Éthernatos', dex: 890, ai: 'mewtwo', flying: true, scale: 2, color: '#8a3ad6', hp: 8600, speed: 1.15, dmg: 32, size: 120, xp: 0, boss: 'final', shoots: true },
+  calyrex: { name: 'Sylveroy', dex: 898, ai: 'mewtwo', flying: true, scale: 2.6, color: '#9ad65a', hp: 8000, speed: 1.3, dmg: 30, size: 108, xp: 0, boss: 'final', shoots: true },
+  /* — Paldea — */
+  lechonk: { name: 'Gourmelet', dex: 915, ai: 'charge', color: '#9aa0aa', hp: 16, speed: 1.3, dmg: 5, size: 30, xp: 1 },
+  tarountula: { name: 'Tissenboule', dex: 917, ai: 'web', color: '#d8d0c0', hp: 14, speed: 0.95, dmg: 4, size: 28, xp: 1 },
+  nymble: { name: 'Lilliterelle', dex: 919, ai: 'zigzag', color: '#a6b91a', hp: 11, speed: 1.7, dmg: 4, size: 26, xp: 1 },
+  pawmi: { name: 'Pohm', dex: 921, ai: 'shock', color: '#ffb03a', hp: 12, speed: 1.6, dmg: 4, size: 28, xp: 1 },
+  tandemaus: { name: 'Compagnol', dex: 924, ai: 'walk', color: '#c9c0b0', hp: 12, speed: 1.5, dmg: 4, size: 26, xp: 1 },
+  fidough: { name: 'Pâtachiot', dex: 926, ai: 'charge', color: '#f4d28a', hp: 14, speed: 1.4, dmg: 5, size: 28, xp: 1 },
+  smoliv: { name: 'Olivini', dex: 928, ai: 'walk', color: '#a6d65a', hp: 13, speed: 1.1, dmg: 4, size: 26, xp: 1 },
+  wattrel: { name: 'Zapétrel', dex: 940, ai: 'fly', flying: true, color: '#ffd23a', hp: 9, speed: 2.0, dmg: 4, size: 26, xp: 1 },
+  oinkologne: { name: 'Fragroin', dex: 916, ai: 'charge', heavy: true, color: '#9aa0aa', hp: 40, speed: 1.2, dmg: 9, size: 34, xp: 2 },
+  pawmo: { name: 'Pohmotte', dex: 922, ai: 'shock', color: '#ffb03a', hp: 26, speed: 1.6, dmg: 8, size: 30, xp: 2 },
+  nacli: { name: 'Selutin', dex: 932, ai: 'walk', heavy: true, color: '#c9a36b', hp: 40, speed: 0.9, dmg: 8, size: 30, xp: 2 },
+  charcadet: { name: 'Charbambin', dex: 935, ai: 'charge', color: '#ff6a1f', hp: 30, speed: 1.5, dmg: 8, size: 30, xp: 2 },
+  tadbulb: { name: 'Têtampoule', dex: 938, ai: 'shock', color: '#ffd23a', hp: 26, speed: 1.2, dmg: 7, size: 30, xp: 2 },
+  kilowattrel: { name: 'Fulgulairo', dex: 941, ai: 'swoop', flying: true, color: '#ffd23a', hp: 28, speed: 1.9, dmg: 8, size: 32, xp: 2 },
+  tinkatink: { name: 'Forgerette', dex: 957, ai: 'charge', color: '#ff9ad8', hp: 30, speed: 1.3, dmg: 9, size: 28, xp: 2 },
+  wiglett: { name: 'Taupikeau', dex: 960, ai: 'zigzag', color: '#e8d8c8', hp: 24, speed: 1.7, dmg: 7, size: 28, xp: 2 },
+  spidops: { name: 'Filentrappe', dex: 918, ai: 'web', heavy: true, color: '#7ac74c', hp: 120, speed: 1.0, dmg: 13, size: 42, xp: 4 },
+  lokix: { name: 'Gambex', dex: 920, ai: 'charge', color: '#5a5a3a', hp: 90, speed: 1.9, dmg: 13, size: 40, xp: 3 },
+  arboliva: { name: 'Arboliva', dex: 930, ai: 'heal', heavy: true, color: '#7ac74c', hp: 130, speed: 0.9, dmg: 12, size: 42, xp: 4 },
+  garganacl: { name: 'Gigansel', dex: 934, ai: 'walk', heavy: true, color: '#c9a36b', hp: 160, speed: 0.9, dmg: 16, size: 46, xp: 4 },
+  armarouge: { name: 'Carmadura', dex: 936, ai: 'spit', color: '#ff6a1f', hp: 95, speed: 1.4, dmg: 13, size: 40, xp: 3 },
+  ceruledge: { name: 'Malvalame', dex: 937, ai: 'ghost', blink: true, color: '#5a3ad6', hp: 100, speed: 1.5, dmg: 14, size: 40, xp: 4 },
+  bellibolt: { name: 'Ampibidou', dex: 939, ai: 'shock', heavy: true, color: '#3aa0ff', hp: 140, speed: 0.9, dmg: 14, size: 44, xp: 4 },
+  tinkaton: { name: 'Forgelina', dex: 959, ai: 'charge', heavy: true, color: '#ff9ad8', hp: 130, speed: 1.3, dmg: 16, size: 42, xp: 4 },
+  glimmora: { name: 'Floréclat', dex: 970, ai: 'spit', color: '#c44ad6', hp: 95, speed: 1.1, dmg: 13, size: 40, xp: 3 },
+  houndstone: { name: 'Tomberro', dex: 972, ai: 'ghost', flying: true, color: '#c8c0e0', hp: 110, speed: 1.3, dmg: 14, size: 42, xp: 4 },
+  clodsire: { name: 'Terraiste', dex: 980, ai: 'walk', heavy: true, color: '#7a5a4a', hp: 150, speed: 0.9, dmg: 15, size: 44, xp: 4 },
+  kingambit: { name: 'Scalpereur', dex: 983, ai: 'dashboss', scale: 2.4, color: '#c43a4a', hp: 1100, speed: 1.2, dmg: 24, size: 100, xp: 30, boss: 'mini' },
+  baxcalibur: { name: 'Glaivodo', dex: 998, ai: 'dashboss', scale: 2.2, color: '#9be8ff', hp: 1100, speed: 1.25, dmg: 24, size: 100, xp: 30, boss: 'mini' },
+  gholdengo: { name: 'Gromago', dex: 1000, ai: 'onix', flying: true, scale: 2.6, color: '#ffd447', hp: 1050, speed: 1.1, dmg: 21, size: 96, xp: 25, boss: 'mini' },
+  annihilape: { name: 'Courrousinge', dex: 979, ai: 'dashboss', scale: 2.6, color: '#9aa0aa', hp: 1050, speed: 1.3, dmg: 23, size: 96, xp: 25, boss: 'mini' },
+  koraidon: { name: 'Koraidon', dex: 1007, ai: 'mewtwo', scale: 2, color: '#e8604a', hp: 8400, speed: 1.3, dmg: 31, size: 120, xp: 0, boss: 'final', shoots: true },
+  chiyu: { name: 'Chi-Yu', dex: 1004, ai: 'mewtwo', flying: true, scale: 2.6, color: '#ff6a1f', hp: 8000, speed: 1.3, dmg: 30, size: 108, xp: 0, boss: 'final', shoots: true },
+  terapagos: { name: 'Terapagos', dex: 1024, ai: 'mewtwo', scale: 2, color: '#5fd0ff', hp: 8600, speed: 1.2, dmg: 32, size: 120, xp: 0, boss: 'final', shoots: true },
+  ogerpon: { name: 'Ogerpon', dex: 1017, ai: 'mewtwo', scale: 2.6, color: '#3aa05a', hp: 8000, speed: 1.3, dmg: 30, size: 108, xp: 0, boss: 'final', shoots: true }
 };
 
 /**
@@ -833,6 +1070,27 @@ export const GEN_POOLS = {
     t3: ['fletchinder', 'diggersby', 'meowstic', 'pangoro', 'doublade', 'malamar', 'heliolisk', 'floette', 'noivern'],
     minis: ['goodra', 'tyrantrum', 'aurorus', 'aegislash'],
     finals: ['xerneas', 'yveltal', 'zygarde', 'diancie']
+  },
+  7: {
+    t1: ['yungoos', 'grubbin', 'cutiefly', 'rockruff', 'mareanie', 'fomantis', 'morelull'],
+    t2: ['charjabug', 'crabrawler', 'oricorio', 'mudbray', 'dewpider', 'salandit', 'stufful', 'bounsweet'],
+    t3: ['vikavolt', 'lycanroc', 'toxapex', 'mudsdale', 'araquanid', 'lurantis', 'salazzle', 'bewear', 'golisopod', 'mimikyu'],
+    minis: ['kommoo', 'turtonator', 'drampa', 'tapukoko'],
+    finals: ['solgaleo', 'lunala', 'necrozma', 'marshadow']
+  },
+  8: {
+    t1: ['skwovet', 'rookidee', 'blipbug', 'nickit', 'wooloo', 'chewtle', 'yamper'],
+    t2: ['corvisquire', 'thievul', 'silicobra', 'cramorant', 'toxel', 'sizzlipede', 'hattrem', 'morgrem'],
+    t3: ['greedent', 'corviknight', 'drednaw', 'boltund', 'flapple', 'sandaconda', 'barraskewda', 'toxtricity', 'centiskorch', 'hatterene', 'grimmsnarl'],
+    minis: ['dragapult', 'duraludon', 'copperajah', 'frosmoth'],
+    finals: ['zacian', 'zamazenta', 'eternatus', 'calyrex']
+  },
+  9: {
+    t1: ['lechonk', 'tarountula', 'nymble', 'pawmi', 'tandemaus', 'fidough', 'smoliv', 'wattrel'],
+    t2: ['oinkologne', 'pawmo', 'nacli', 'charcadet', 'tadbulb', 'kilowattrel', 'tinkatink', 'wiglett'],
+    t3: ['spidops', 'lokix', 'arboliva', 'garganacl', 'armarouge', 'ceruledge', 'bellibolt', 'tinkaton', 'glimmora', 'houndstone', 'clodsire'],
+    minis: ['kingambit', 'baxcalibur', 'gholdengo', 'annihilape'],
+    finals: ['koraidon', 'chiyu', 'terapagos', 'ogerpon']
   }
 };
 
@@ -922,7 +1180,9 @@ export const CAST_ANIM = {
   willowisp: 'shoot', surf: 'attack', hydropump: 'shoot', whirlpool: 'shoot', gigadrain: 'shoot',
   rockslide: 'shoot', aerialace: 'attack', bodyslam: 'attack', blizzard: 'shoot', dazzlinggleam: 'shoot',
   nightslash: 'attack', flashcannon: 'shoot', hyperbeam: 'shoot', pinmissile: 'shoot', bonemerang: 'attack',
-  vinewhip: 'attack', flamecharge: 'attack', razorshell: 'attack', needlearm: 'attack', mysticalfire: 'shoot', watershuriken: 'shoot'
+  vinewhip: 'attack', flamecharge: 'attack', razorshell: 'attack', needlearm: 'attack', mysticalfire: 'shoot', watershuriken: 'shoot',
+  spiritshackle: 'shoot', darkestlariat: 'attack', sparklingaria: 'shoot', drumbeating: 'attack', pyroball: 'attack', snipeshot: 'shoot',
+  flowertrick: 'shoot', torchsong: 'shoot', aquastep: 'attack'
 };
 
 /* ——— Ultime : une attaque surpuissante par type de starter (touche R) ——— */
